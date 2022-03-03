@@ -1390,7 +1390,7 @@ CREATE TABLE IF NOT EXISTS `dss_guide_chapter` (
   PRIMARY KEY (`id`)
 ) ENGINE=INNODB DEFAULT CHARSET=utf8 COMMENT='用户向导知识库文章';
 
-DROP TABLE IF EXISTS `dss_user`;
+DROP TABLE IF EXISTS `dss_proxy_user`;
 CREATE TABLE `dss_proxy_user` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(64) DEFAULT NULL,
