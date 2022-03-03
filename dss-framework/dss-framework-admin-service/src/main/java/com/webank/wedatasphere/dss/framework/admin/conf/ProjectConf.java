@@ -34,6 +34,7 @@ public interface ProjectConf {
     CommonVars<String> LDAP_BASE_DN = CommonVars.apply("wds.dss.ldap.base.dn", "");
     CommonVars<String> EXCHANGE_URL = CommonVars.apply("wds.dss.exchange.url", "");
     CommonVars<String> EXCHANGE_ADMIN_COOKIE = CommonVars.apply("wds.dss.exchange.cookie", "");
+    CommonVars<String> DS_TRUST_TOKEN = CommonVars.apply("wds.dss.trust.token", "");
 
 
 }
