@@ -39,4 +39,6 @@ public class ApplicationConf {
 
     public static final String ESB_APPID = CommonVars.apply("wds.dss.esb.appid", "").getValue();
 
+    public static final CommonVars<Boolean> DSS_ENV_PROXY_ENABLE=  CommonVars.apply("wds.dss.env.proxy.enable", false);
+
 }
