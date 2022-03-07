@@ -20,6 +20,7 @@ import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
 import org.apache.linkis.common.conf.CommonVars;
 import org.apache.linkis.common.conf.CommonVars$;
+import org.apache.linkis.server.conf.ServerConfiguration;
 
 
 public class DSSWorkFlowConstant {
@@ -36,7 +37,7 @@ public class DSSWorkFlowConstant {
 
     public static final String SPLIT = "_";
 
-    public static final String BDP_USER_TICKET_ID = "bdp-user-ticket-id";
+    public static final String BDP_USER_TICKET_ID = ServerConfiguration.LINKIS_SERVER_SESSION_TICKETID_KEY().getValue();
     /**
      * 用户已锁定编辑错误码
      */

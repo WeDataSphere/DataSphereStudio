@@ -92,7 +92,7 @@ object OriginSSORequestOperation extends Logging {
 
   def getHttpClient(urlBuilder: SSOUrlBuilderOperation, appName: String): Client = urlBuilder match {
     case builder: SSOUrlBuilderOperationImpl =>
-      builder.getCookies.find(_._1 == "bdp-user-ticket-id").foreach { case (_, ticketId) =>
+      builder.getCookies.find(cookie =>cookie._1 == "bdp-user-ticket-id" || cookie._1 == "linkis_user_session_ticket_id_v1").foreach { case (_, ticketId) =>
         val baseUrl = HttpClient.getBaseUrl(builder.getBuiltUrl)
         val key = getKey(ticketId, appName,baseUrl)
         info("Get http client key is "+key)
