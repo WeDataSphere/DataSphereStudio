@@ -37,6 +37,7 @@ public class DssProxyUserController {
 
         List<DssProxyUser> userList = dssProxyUserService.selectProxyUserList(username);
         List<String> proxyUserNameList=userList.stream().map(dssProxyUser -> dssProxyUser.getProxyUserName()).collect(Collectors.toList());
+        proxyUserNameList.add(username);
         return Message.ok().data("proxyUserList", proxyUserNameList);
     }
 
@@ -61,7 +62,7 @@ public class DssProxyUserController {
                             }
                         }
                     }
-                    Tuple2<String, String> userTicketIdKv = ProxyUserSSOUtils.getProxyUserTicketKV(username, trustCode);
+                    Tuple2<String, String> userTicketIdKv = ProxyUserSSOUtils.getProxyUserTicketKV(userRep.getProxyUserName(), trustCode);
                     Cookie cookie = new Cookie(userTicketIdKv._1, userTicketIdKv._2);
                     cookie.setMaxAge(-1);
                     if(sslEnable) cookie.setSecure(true);
