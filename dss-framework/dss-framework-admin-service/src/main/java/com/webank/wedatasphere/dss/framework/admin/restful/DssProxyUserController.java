@@ -20,8 +20,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.webank.wedatasphere.dss.framework.admin.conf.ProjectConf.DS_TRUST_TOKEN;
-import static com.webank.wedatasphere.dss.framework.admin.conf.ProjectConf.LDAP_ADMIN_NAME;
+import static com.webank.wedatasphere.dss.framework.admin.conf.ProjectConf.*;
 
 @RequestMapping(path = "/dss/framework/admin/user", produces = {"application/json"})
 @RestController
@@ -37,7 +36,9 @@ public class DssProxyUserController {
 
         List<DssProxyUser> userList = dssProxyUserService.selectProxyUserList(username);
         List<String> proxyUserNameList=userList.stream().map(dssProxyUser -> dssProxyUser.getProxyUserName()).collect(Collectors.toList());
-        proxyUserNameList.add(username);
+        if(DS_PROXY_SELF_ENABLE.getValue()) {
+            proxyUserNameList.add(username);
+        }
         return Message.ok().data("proxyUserList", proxyUserNameList);
     }
 
@@ -51,7 +52,8 @@ public class DssProxyUserController {
                 return Message.error("User name is empty");
             }else if(StringUtils.isEmpty(userRep.getProxyUserName())){
                 return Message.error("Proxy user name is empty");
-            }else  if (dssProxyUserService.isExists(userRep.getUserName(),userRep.getProxyUserName())) {
+            }else  if (dssProxyUserService.isExists(userRep.getUserName(),userRep.getProxyUserName()) ||
+                    userRep.getProxyUserName().equals(username) ) {
                 if (userRep.getUserName().equals(username)) {
                     for(Cookie cookie: req.getCookies()){
                         if(null!=cookie){

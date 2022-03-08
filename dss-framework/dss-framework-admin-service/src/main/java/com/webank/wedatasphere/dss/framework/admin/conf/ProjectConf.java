@@ -35,6 +35,7 @@ public interface ProjectConf {
     CommonVars<String> EXCHANGE_URL = CommonVars.apply("wds.dss.exchange.url", "");
     CommonVars<String> EXCHANGE_ADMIN_COOKIE = CommonVars.apply("wds.dss.exchange.cookie", "");
     CommonVars<String> DS_TRUST_TOKEN = CommonVars.apply("wds.dss.trust.token", "");
+    CommonVars<Boolean> DS_PROXY_SELF_ENABLE = CommonVars.apply("wds.dss.proxy.self.enable", true);
 
 
 }
