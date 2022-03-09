@@ -42,7 +42,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import static com.webank.wedatasphere.dss.framework.workspace.constant.ApplicationConf.DSS_ENV_PROXY_ENABLE;
+import static com.webank.wedatasphere.dss.framework.workspace.constant.ApplicationConf.*;
 
 
 @RequestMapping(path = "/dss/framework/workspace", produces = {"application/json"})
@@ -98,7 +98,9 @@ public class DSSWorkspaceRoleRestful {
         return Message.ok().data("applications", applicationList).
                 data("username", username).data("isAdmin", isAdmin)
                 .data("DWSParams", Collections.singletonMap("faq", faqUrl))
-                .data("proxyEnable",DSS_ENV_PROXY_ENABLE.getValue());
+                .data("proxyEnable",DSS_ENV_PROXY_ENABLE.getValue())
+                .data("exportResEnable", DSS_ENV_EXPORT_RES_ENABLE.getValue())
+                .data("visualEnable", DSS_ENV_VISUAL_ENABLE.getValue());
     }
 
     @RequestMapping(path ="getWorkspaceRoles", method = RequestMethod.GET)

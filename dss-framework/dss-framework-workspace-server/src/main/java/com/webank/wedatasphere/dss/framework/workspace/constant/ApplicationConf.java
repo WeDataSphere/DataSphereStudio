@@ -41,4 +41,8 @@ public class ApplicationConf {
 
     public static final CommonVars<Boolean> DSS_ENV_PROXY_ENABLE=  CommonVars.apply("wds.dss.env.proxy.enable", false);
 
+    public static final CommonVars<Boolean> DSS_ENV_EXPORT_RES_ENABLE=  CommonVars.apply("wds.dss.env.export.enable", true);
+
+    public static final CommonVars<Boolean> DSS_ENV_VISUAL_ENABLE=  CommonVars.apply("wds.dss.env.visual.enable", true);
+
 }
