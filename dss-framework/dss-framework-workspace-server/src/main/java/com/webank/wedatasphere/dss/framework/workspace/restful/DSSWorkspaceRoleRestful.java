@@ -100,7 +100,8 @@ public class DSSWorkspaceRoleRestful {
                 .data("DWSParams", Collections.singletonMap("faq", faqUrl))
                 .data("proxyEnable",DSS_ENV_PROXY_ENABLE.getValue())
                 .data("exportResEnable", DSS_ENV_EXPORT_RES_ENABLE.getValue())
-                .data("visualEnable", DSS_ENV_VISUAL_ENABLE.getValue());
+                .data("visualEnable", DSS_ENV_VISUAL_ENABLE.getValue())
+                .data("resCopyEnable", DSS_ENV_RES_COPY_ENABLE.getValue());
     }
 
     @RequestMapping(path ="getWorkspaceRoles", method = RequestMethod.GET)
