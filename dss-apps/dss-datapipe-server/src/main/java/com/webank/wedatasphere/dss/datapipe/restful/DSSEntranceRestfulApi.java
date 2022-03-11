@@ -26,6 +26,7 @@ import org.apache.linkis.protocol.constants.TaskConstant;
 import org.apache.linkis.server.Message;
 import org.apache.linkis.server.security.SecurityFilter;
 import org.apache.linkis.server.socket.controller.ServerEvent;
+import org.apache.linkis.server.utils.ModuleUserUtils;
 import org.apache.linkis.ujes.client.UJESClient;
 import org.apache.linkis.ujes.client.response.JobExecuteResult;
 import org.slf4j.Logger;
@@ -62,11 +63,12 @@ public class DSSEntranceRestfulApi {
         Gson gson = new Gson();
         Map<String, Object> executionCode = (Map<String, Object>) json.get("executionCode");
         executionCode = gson.fromJson(gson.toJson(executionCode),LinkedTreeMap.class);
+        String username = ModuleUserUtils.getOperationUser(req, "backgroundservice");
         json.put("executionCode",executionCode);
-        json.put(TaskConstant.UMUSER, SecurityFilter.getLoginUsername(req));
+        json.put(TaskConstant.UMUSER, username);
         ServerEvent serverEvent = new ServerEvent();
         serverEvent.setData(json);
-        serverEvent.setUser(SecurityFilter.getLoginUsername(req));
+        serverEvent.setUser(username);
         ServerEvent operation = bgService.operation(serverEvent);
 
 
