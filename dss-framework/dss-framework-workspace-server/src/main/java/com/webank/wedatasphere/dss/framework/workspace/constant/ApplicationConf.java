@@ -45,4 +45,6 @@ public class ApplicationConf {
 
     public static final CommonVars<Boolean> DSS_ENV_VISUAL_ENABLE=  CommonVars.apply("wds.dss.env.visual.enable", true);
 
+    public static final CommonVars<Boolean> DSS_ENV_RES_COPY_ENABLE=  CommonVars.apply("wds.dss.env.res.copy.enable", true);
+
 }
