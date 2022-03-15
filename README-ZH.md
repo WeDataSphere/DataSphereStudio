@@ -94,8 +94,8 @@
 | [**Visualis**](https://github.com/WeBankFinTech/Visualis)   | 基于宜信开源项目 Davinci 二次开发的数据可视化 BI 工具，为用户在数据安全方面提供金融级数据可视化能力。 | >=0.5.0 | 规划在1.0.2 | **开发实现中**      |
 | [**Prophecis**](https://github.com/WeBankFinTech/Prophecis)     | 一站式机器学习平台，集成多种开源机器学习框架。Prophecis 的 MLFlow 通过 AppConn 可以接入到 DSS 工作流中。      | 不支持 | 规划在1.0.2 | **开发实现中** |
 | **UserManager** | 自动初始化一个 DSS 新用户所必须的所有用户环境，包含：创建 Linux 用户、各种用户路径、目录授权等。                 |  >=0.9.1 | 规划在1.0.2 | **开发实现中** |
-| **DolphinScheduler** | Apache DolphinScheduler，分布式易扩展的可视化工作流任务调度平台，支持一键将DSS工作流发布到 DolphinScheduler。    | 不支持 | 规划在1.1.0 | **开发实现中** |
-| **UserGuide**     | 包含帮助文档、新手指引、Dark模式换肤等。      | 不支持 | 规划在1.1.0 | **开发实现中** |
+| **DolphinScheduler** | Apache DolphinScheduler，分布式易扩展的可视化工作流任务调度平台，支持一键将DSS工作流发布到 DolphinScheduler。    | 不支持 | 规划在1.1.2 | **开发实现中** |
+| **UserGuide**     | 包含帮助文档、新手指引、Dark模式换肤等。      | 不支持 | 规划在1.1.2 | **开发实现中** |
 | **DataModelCenter**     | 主要提供数仓规划、数据模型开发和数据资产管理的能力。数仓规划包含主题域、数仓分层、修饰词等；数据模型开发包含指标、维度、度量、向导式建表等；数据资产打通 **Apache Atlas**，提供**数据血缘**能力。      | 不支持 | 规划在1.2.0 | **开发实现中** |
 | **Airflow**     | 支持将 DSS 工作流发布到 Airflow 进行定时调度。      | >=0.9.1，尚未合并 | 不支持 | **尚无规划** |
 
