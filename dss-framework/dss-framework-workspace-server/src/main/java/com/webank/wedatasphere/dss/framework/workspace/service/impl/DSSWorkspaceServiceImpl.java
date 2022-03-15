@@ -205,7 +205,7 @@ public class DSSWorkspaceServiceImpl implements DSSWorkspaceService {
             dssWorkspaceHomePageVO.setHomePageUrl(homepageUrl);
             dssWorkspaceHomePageVO.setWorkspaceId(workspaceId);
             dssWorkspaceHomePageVO.setRoleName(CommonRoleEnum.ANALYSER.getName());
-        }else if(workspaceIds.size() == 1){
+        }else if(workspaceIds.size() >= 1){
             //只有一个工作空间，那么就返回该工作空间的首页
             List<Integer> roleIds = dssWorkspaceUserMapper.getRoleInWorkspace(workspaceIds.get(0), userName);
             int minRoleId = Collections.min(roleIds);
