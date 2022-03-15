@@ -27,10 +27,6 @@ import com.webank.wedatasphere.dss.linkis.node.execution.parser.JobParser;
 import com.webank.wedatasphere.dss.linkis.node.execution.parser.JobRuntimeParamsParser;
 import com.webank.wedatasphere.dss.linkis.node.execution.service.LinkisURLService;
 import com.webank.wedatasphere.dss.linkis.node.execution.service.impl.BuildJobActionImpl;
-import com.webank.wedatasphere.dss.linkis.node.execution.conf.LinkisJobExecutionConfiguration;
-import com.webank.wedatasphere.dss.linkis.node.execution.job.Job;
-import com.webank.wedatasphere.dss.linkis.node.execution.parser.CodeParser;
-import com.webank.wedatasphere.dss.linkis.node.execution.parser.JobParser;
 import com.webank.wedatasphere.dss.linkis.node.execution.utils.LinkisJobExecutionUtils;
 import com.webank.wedatasphere.dss.linkis.node.execution.utils.LinkisUjesClientUtils;
 import org.apache.linkis.common.exception.LinkisException;
@@ -44,7 +40,6 @@ import org.apache.linkis.ujes.client.response.JobInfoResult;
 import org.apache.linkis.ujes.client.response.JobLogResult;
 import org.apache.linkis.ujes.client.response.OpenLogResult;
 import org.apache.commons.lang.StringUtils;
-import scala.tools.nsc.settings.Final;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -53,7 +48,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
 
 
 public class LinkisNodeExecutionImpl implements LinkisNodeExecution , LinkisExecutionListener {
@@ -260,7 +254,7 @@ public class LinkisNodeExecutionImpl implements LinkisNodeExecution , LinkisExec
             printJobLog(job);
         }
         if (!jobInfo.isSucceed()) {
-            //printJobLog(job);
+            printJobLog(job);
             throw new LinkisJobExecutionErrorException(90101, "Failed to execute Job: " + jobInfo.getMessage());
         }
     }
