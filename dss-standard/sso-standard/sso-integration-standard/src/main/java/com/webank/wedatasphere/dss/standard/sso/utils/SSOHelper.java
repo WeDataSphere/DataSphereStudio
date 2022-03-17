@@ -19,6 +19,7 @@ package com.webank.wedatasphere.dss.standard.sso.utils;
 import com.webank.wedatasphere.dss.standard.app.sso.Workspace;
 import com.webank.wedatasphere.dss.standard.app.sso.builder.SSOUrlBuilderOperation;
 import com.webank.wedatasphere.dss.standard.app.sso.builder.impl.SSOUrlBuilderOperationImpl;
+import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.common.conf.Configuration;
 import java.util.Arrays;
 import javax.servlet.http.Cookie;
@@ -28,7 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 
 public class SSOHelper {
 
-    public static Workspace getWorkspace(HttpServletRequest request){
+    public static Workspace getWorkspace(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         Cookie workspaceCookie = Arrays.stream(cookies).
                 filter(cookie -> "workspaceId".equals(cookie.getName())).findAny().orElse(null);
@@ -38,7 +39,13 @@ public class SSOHelper {
         }
         SSOUrlBuilderOperation ssoUrlBuilderOperation = new SSOUrlBuilderOperationImpl();
         Arrays.stream(cookies).forEach(cookie -> ssoUrlBuilderOperation.addCookie(cookie.getName(), cookie.getValue()));
-        ssoUrlBuilderOperation.setDSSUrl(Configuration.GATEWAY_URL().getValue());
+        String gateWayUrl = Configuration.GATEWAY_URL().getValue();
+        String forwardedHost = request.getHeader("X-Forwarded-Host");
+        if (StringUtils.isNotEmpty(forwardedHost)) {
+            gateWayUrl = "http://" + request.getHeader("X-Forwarded-Host") + "/";
+        }
+//        ssoUrlBuilderOperation.setDSSUrl(Configuration.GATEWAY_URL().getValue());
+        ssoUrlBuilderOperation.setDSSUrl(gateWayUrl);
         ssoUrlBuilderOperation.setWorkspace(workspace.getWorkspaceName());
         workspace.setSSOUrlBuilderOperation(ssoUrlBuilderOperation);
         return workspace;
