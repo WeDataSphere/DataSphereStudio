@@ -93,7 +93,7 @@
     <select id="getLatestOrchestratorVersionById"
             resultType="com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorVersion">
         SELECT
-        *
+        <include refid="orchestrator_version"/>
         FROM
         `dss_orchestrator_version_info`
         WHERE
@@ -105,7 +105,7 @@
     <select id="getLatestOrchestratorVersionByIdAndValidFlag"
             resultType="com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorVersion">
         SELECT
-        *
+        <include refid="orchestrator_version"/>
         FROM
         `dss_orchestrator_version_info`
         WHERE
@@ -115,9 +115,21 @@
     </select>
 
 
+
+    <select id="getOrcVersionByIdAndOrcVersionId"
+            resultType="com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorVersion">
+        SELECT
+        <include refid="orchestrator_version"/>
+        FROM
+        `dss_orchestrator_version_info`
+        WHERE
+        orchestrator_id = #{orchestratorId} and id = #{orcVersionId} and valid_flag = #{validFlag}
+    </select>
+
+
     <select id="getOrchestratorVersion" resultType="com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorVersion">
         SELECT
-        *
+        <include refid="orchestrator_version"/>
         FROM
         `dss_orchestrator_version_info`
         WHERE

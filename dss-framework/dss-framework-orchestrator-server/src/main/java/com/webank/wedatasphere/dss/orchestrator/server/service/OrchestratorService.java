@@ -22,6 +22,7 @@ import com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorInf
 import com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorVersion;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.OrchestratorVo;
 import com.webank.wedatasphere.dss.standard.app.sso.Workspace;
+
 import java.util.List;
 
 
@@ -72,6 +73,15 @@ public interface OrchestratorService {
     OrchestratorVo getOrchestratorVoById(Long orchestratorId);
 
     /**
+     * 获取一个指定版本编排
+     *
+     * @param orchestratorId 編排id
+     * @param orcVersionId   编排版本id
+     * @return 编排
+     */
+    OrchestratorVo getOrchestratorVoByIdAndOrcVersionId(Long orchestratorId, Long orcVersionId);
+
+    /**
      * 根据一个集合查找
      *
      * @param orchestratorIds
@@ -81,6 +91,7 @@ public interface OrchestratorService {
     List<OrchestratorVo> getOrchestratorVoList(List<Long> orchestratorIds);
 
     String openOrchestrator(String userName, String workspaceName, Long orchestratorId, List<DSSLabel> dssLabels) throws Exception;
+
     /**
      * 获取编排模式下的版本号
      *

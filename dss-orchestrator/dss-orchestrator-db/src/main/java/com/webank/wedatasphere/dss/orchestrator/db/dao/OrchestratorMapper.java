@@ -60,7 +60,19 @@ public interface OrchestratorMapper {
      * @param orchestratorId
      * @return
      */
-    DSSOrchestratorVersion getLatestOrchestratorVersionByIdAndValidFlag(@Param("orchestratorId") Long orchestratorId,@Param("validFlag")Integer validFlag);
+    DSSOrchestratorVersion getLatestOrchestratorVersionByIdAndValidFlag(@Param("orchestratorId") Long orchestratorId, @Param("validFlag") Integer validFlag);
+
+    /**
+     * 获取orc指定版本信息
+     *
+     * @param orchestratorId id
+     * @param orcVersionId   orc版本id
+     * @param validFlag      有效标志
+     * @return DSSOrchestratorVersion
+     */
+    DSSOrchestratorVersion getOrcVersionByIdAndOrcVersionId(@Param("orchestratorId") Long orchestratorId,
+                                                                        @Param("orcVersionId") Long orcVersionId,
+                                                                        @Param("validFlag") Integer validFlag);
 
     void updateOrchestratorVersion(DSSOrchestratorVersion dssOrchestratorVersion);
 
@@ -71,29 +83,28 @@ public interface OrchestratorMapper {
      *
      * @param orchestratorId
      * @return
-     *
      */
     List<DSSOrchestratorVersion> getVersionByOrchestratorId(Long orchestratorId);
 
-    OrchestratorInfo getOrcInfoByAppId(@Param("appId")Long appId);
+    OrchestratorInfo getOrcInfoByAppId(@Param("appId") Long appId);
 
     @Select("select max(id) from dss_orchestrator_version_info where `orchestrator_id` = #{orchestratorId}")
     Long findLatestOrcVersionId(@Param("orchestratorId") Long orchestratorId);
 
     @Select("select id from dss_orchestrator_version_info where `orchestrator_id` = #{orchestratorId} and valid_flag = #{validFlag} ORDER BY version DESC LIMIT 1")
-    Long findLatestVIdByOrcIdAndValidFlag(@Param("orchestratorId") Long orchestratorId,@Param("validFlag")Integer validFlag);
+    Long findLatestVIdByOrcIdAndValidFlag(@Param("orchestratorId") Long orchestratorId, @Param("validFlag") Integer validFlag);
 
     List<DSSOrchestratorVersion> getOrchestratorVersions(@Param("projectId") Long projectId, @Param("orchestratorId") Long orchestratorId);
 
     @Select("select max(`version`) from dss_orchestrator_version_info where orchestrator_id = #{orchestratorId} and valid_flag = #{validFlag}")
-    String getLatestVersion(@Param("orchestratorId") Long orchestratorId,@Param("validFlag")Integer validFlag);
+    String getLatestVersion(@Param("orchestratorId") Long orchestratorId, @Param("validFlag") Integer validFlag);
 
 
     @Select("select uuid from dss_orchestrator_info where project_id = #{projectId} and name = #{name}")
-    String getOrcNameByParam(@Param("projectId") Long projectId,@Param("name") String name);
+    String getOrcNameByParam(@Param("projectId") Long projectId, @Param("name") String name);
 
     @Select("select id from `dss_orchestrator_info` where `project_id` = #{projectId} and `is_published` = 1")
-    List<Long> getAllOrcIdsByProjectId(@Param("projectId")Long projectId);
+    List<Long> getAllOrcIdsByProjectId(@Param("projectId") Long projectId);
 
     @Select("select max(`app_id`) from `dss_orchestrator_version_info` where `orchestrator_id` = #{orchestratorId} and `version` = #{version}")
     Long getAppIdByVersion(@Param("orchestratorId") Long orchestratorId, @Param("version") String version);
@@ -101,7 +112,7 @@ public interface OrchestratorMapper {
     DSSOrchestratorVersion getVersionByOrchestratorIdAndVersion(@Param("orchestratorId") Long orchestratorId, @Param("version") String version);
 
     @Update("update `dss_orchestrator_info` set `is_published` =  1 where id = #{orchestratorId}")
-    void setPublished(@Param("orchestratorId")Long orchestratorId);
+    void setPublished(@Param("orchestratorId") Long orchestratorId);
 
     @Select("select `name` from dss_orchestrator_info where `id` = #{orchestratorId}")
     String getOrchestratorNameById(@Param("orchestratorId") int orchestratorId);
@@ -110,7 +121,7 @@ public interface OrchestratorMapper {
     int deleteScheduleInfo(@Param("orchestratorId") Integer orchestratorId);
 
     @Update("update dss_orchestrator_schedule_info set active_flag = #{activeFlag}  where `orchestrator_id` = #{orchestratorId}")
-    int updateScheduleInfoActiveFlag(@Param("orchestratorId") Long orchestratorId,@Param("activeFlag") String activeFlag );
+    int updateScheduleInfoActiveFlag(@Param("orchestratorId") Long orchestratorId, @Param("activeFlag") String activeFlag);
 
 
     @Insert({
@@ -123,15 +134,15 @@ public interface OrchestratorMapper {
             "</foreach>",
             "</script>"
     })
-    void setOrchestratorPriv(@Param("workspaceId")int workspaceId,
-                             @Param("projectId")Long projectId, @Param("orchestratorId")int orchestratorId,
-                             @Param("accessUsers")List<String> accessUsers, @Param("priv")int priv, @Param("updateTime") Date date);
+    void setOrchestratorPriv(@Param("workspaceId") int workspaceId,
+                             @Param("projectId") Long projectId, @Param("orchestratorId") int orchestratorId,
+                             @Param("accessUsers") List<String> accessUsers, @Param("priv") int priv, @Param("updateTime") Date date);
 
     @Delete("delete from `dss_orchestrator_user` " +
             "where `workspace_id` = #{workspaceId} " +
             "and `project_id` = #{projectId} " +
             "and `orchestrator_id` = #{orchestratorId}")
-    void deleteAllOrchestratorPriv(@Param("workspaceId")int workspaceId, @Param("projectId")Long projectId, @Param("orchestratorId")int orchestratorId);
+    void deleteAllOrchestratorPriv(@Param("workspaceId") int workspaceId, @Param("projectId") Long projectId, @Param("orchestratorId") int orchestratorId);
 
 
     List<OrchestratorUser> getOrchestratorUserByOrcId(@Param("orchestratorId") Long orchestratorId);

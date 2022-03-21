@@ -61,12 +61,12 @@ public class OrchestratorIERestful {
     @Autowired
     private DSSOrchestratorContext orchestratorContext;
 
-    @RequestMapping(path ="importOrchestratorFile", method = RequestMethod.POST)
+    @RequestMapping(path = "importOrchestratorFile", method = RequestMethod.POST)
     public Message importOrcFile(HttpServletRequest req,
-                                  @RequestParam(required = false, name = "projectName") String projectName,
-                                  @RequestParam(required = false, name = "projectID") Long projectID,
-                                  @RequestParam(required = false, name = "labels") String labels,
-                                  @RequestParam(required = false, name = "file") List<MultipartFile> files) throws DSSErrorException, Exception {
+                                 @RequestParam(required = false, name = "projectName") String projectName,
+                                 @RequestParam(required = false, name = "projectID") Long projectID,
+                                 @RequestParam(required = false, name = "labels") String labels,
+                                 @RequestParam(required = false, name = "file") List<MultipartFile> files) throws DSSErrorException, Exception {
         if (null == files || files.size() == 0) {
             throw new DSSErrorException(100788, "Import orchestrator failed for files is empty");
         }
@@ -89,7 +89,7 @@ public class OrchestratorIERestful {
                     fileName, projectName);
             try {
                 RequestImportOrchestrator importRequest = new RequestImportOrchestrator(userName,
-                        workspace.getWorkspaceName(),projectName,
+                        workspace.getWorkspaceName(), projectName,
                         projectID, resultMap.get("resourceId").toString(),
                         resultMap.get("version").toString(), null, dssLabelList,
                         DSSCommonUtils.COMMON_GSON.toJson(workspace));
@@ -102,16 +102,16 @@ public class OrchestratorIERestful {
         return Message.ok().data("importOrcId", importOrcId);
     }
 
-    @RequestMapping(path ="exportOrchestrator", method = RequestMethod.GET)
+    @RequestMapping(path = "exportOrchestrator", method = RequestMethod.GET)
     public void exportOrcFile(HttpServletRequest req,
                               HttpServletResponse resp,
-                              @RequestParam(defaultValue = "exportOrc",required = false, name = "outputFileName") String outputFileName,
-                              @RequestParam(defaultValue = "utf-8",required = false, name = "charset") String charset,
-                              @RequestParam(defaultValue = "zip",required = false, name = "outputFileType") String outputFileType,
+                              @RequestParam(defaultValue = "exportOrc", required = false, name = "outputFileName") String outputFileName,
+                              @RequestParam(defaultValue = "utf-8", required = false, name = "charset") String charset,
+                              @RequestParam(defaultValue = "zip", required = false, name = "outputFileType") String outputFileType,
                               @RequestParam(required = false, name = "projectName") String projectName,
                               @RequestParam(required = false, name = "orchestratorId") Long orchestratorId,
                               @RequestParam(required = false, name = "orcVersionId") Long orcVersionId,
-                              @RequestParam(defaultValue = "false",required = false, name = "addOrcVersion") Boolean addOrcVersion,
+                              @RequestParam(defaultValue = "false", required = false, name = "addOrcVersion") Boolean addOrcVersion,
                               @RequestParam(required = false, name = "labels") String labels) throws DSSErrorException, IOException {
         resp.addHeader("Content-Disposition", "attachment;filename="
                 + new String(outputFileName.getBytes("UTF-8"), "ISO8859-1") + "." + outputFileType);
@@ -120,7 +120,12 @@ public class OrchestratorIERestful {
         String userName = SecurityFilter.getLoginUsername(req);
         List<DSSLabel> dssLabelList = getDSSLabelList(labels);
         Map<String, Object> res = null;
-        OrchestratorVo orchestratorVo = orchestratorService.getOrchestratorVoById(orchestratorId);
+        OrchestratorVo orchestratorVo;
+        if (orcVersionId != null) {
+            orchestratorVo = orchestratorService.getOrchestratorVoByIdAndOrcVersionId(orchestratorId, orcVersionId);
+        } else {
+            orchestratorVo = orchestratorService.getOrchestratorVoById(orchestratorId);
+        }
         orcVersionId = orchestratorVo.getDssOrchestratorVersion().getId();
         logger.info("export orchestrator orchestratorId " + orchestratorId + ",orcVersionId:" + orcVersionId);
         try {
@@ -154,12 +159,12 @@ public class OrchestratorIERestful {
     //生成label list
     public List<DSSLabel> getDSSLabelList(String labels) {
         String labelStr = DSSCommonUtils.ENV_LABEL_VALUE_DEV;
-        try{
+        try {
             Map<String, Object> labelMap = DSSCommonUtils.COMMON_GSON.fromJson(labels, Map.class);
             if (labelMap.containsKey(LabelKeyConvertor.ROUTE_LABEL_KEY)) {
                 labelStr = (String) labelMap.get(LabelKeyConvertor.ROUTE_LABEL_KEY);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             logger.error("get labels failed for {}", e.getMessage());
         }
         List<DSSLabel> dssLabelList = Arrays.asList(new EnvDSSLabel(labelStr));
