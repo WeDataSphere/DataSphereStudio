@@ -222,14 +222,14 @@ public class DSSFrameworkProjectServiceImpl implements DSSFrameworkProjectServic
                 StructureIntegrationStandard appStandard = ((OnlyStructureAppConn) appConn).getOrCreateStructureStandard();
                 for (AppInstance appInstance : appConn.getAppDesc().getAppInstances()) {
                     ProjectService projectService = appStandard.getProjectService(appInstance);
+                    if (!isNeadToCreateProject(appInstance.getId())) {
+                        continue;
+                    }
                     if (projectService == null) {
                         continue;
                     }
                     ProjectGetOperation projectGetOperation = projectService.getProjectGetOperation();
                     if (projectGetOperation == null) {
-                        continue;
-                    }
-                    if (!isNeadToCreateProject(appInstance.getId())) {
                         continue;
                     }
                     try {
