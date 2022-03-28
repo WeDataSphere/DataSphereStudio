@@ -5,6 +5,7 @@ import com.webank.wedatasphere.dss.framework.admin.common.utils.StringUtils;
 import com.webank.wedatasphere.dss.framework.admin.exception.DSSAdminErrorException;
 import com.webank.wedatasphere.dss.framework.admin.pojo.entity.DssProxyUser;
 import com.webank.wedatasphere.dss.framework.admin.service.DssProxyUserService;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.linkis.server.Message;
 import org.apache.linkis.server.conf.ServerConfiguration;
 import org.apache.linkis.server.security.ProxyUserSSOUtils;
@@ -83,7 +84,7 @@ public class DssProxyUserController {
 
         } catch (Exception exception) {
             LOGGER.error("Failed to set cookie for proxy user", exception);
-            return Message.error(exception.getMessage());
+            return Message.error(ExceptionUtils.getRootCauseMessage(exception));
         }
 
     }
@@ -93,7 +94,7 @@ public class DssProxyUserController {
         String username = SecurityFilter.getLoginUsername(req);
 
         try {
-            if(!username.equals(LDAP_ADMIN_NAME.getValue())){
+            if(!username.equals(DSS_PROXY_ADMIN_NAME.getValue())){
                 DSSExceptionUtils.dealErrorException(100104, "Only administrators can add proxy users", DSSAdminErrorException.class);
             }
             if(StringUtils.isEmpty(userRep.getUserName())){
@@ -107,7 +108,7 @@ public class DssProxyUserController {
             return Message.ok("Success to add proxy user");
         } catch (Exception exception) {
             LOGGER.error("Failed to add proxy user", exception);
-            return Message.error(exception.getMessage());
+            return Message.error(ExceptionUtils.getRootCauseMessage(exception));
         }
 
     }
