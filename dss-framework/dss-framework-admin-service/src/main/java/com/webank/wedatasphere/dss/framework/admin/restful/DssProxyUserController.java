@@ -7,6 +7,8 @@ import org.apache.linkis.server.Message;
 import org.apache.linkis.server.conf.ServerConfiguration;
 import org.apache.linkis.server.security.ProxyUserSSOUtils;
 import org.apache.linkis.server.security.SecurityFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,6 +29,7 @@ import static com.webank.wedatasphere.dss.framework.admin.conf.ProjectConf.*;
 public class DssProxyUserController {
     private Boolean sslEnable = (Boolean) ServerConfiguration.BDP_SERVER_SECURITY_SSL().getValue();
     private String  PROXY_USER_TICKET_ID_STRING = ServerConfiguration.LINKIS_SERVER_SESSION_PROXY_TICKETID_KEY().getValue();
+    protected final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
     @Autowired
     DssProxyUserService dssProxyUserService;
 
@@ -48,34 +51,34 @@ public class DssProxyUserController {
         String username = SecurityFilter.getLoginUsername(req);
         String trustCode = DS_TRUST_TOKEN.getValue();
         try {
-            if(StringUtils.isEmpty(userRep.getUserName())){
-                return Message.error("User name is empty");
-            }else if(StringUtils.isEmpty(userRep.getProxyUserName())){
-                return Message.error("Proxy user name is empty");
-            }else  if (dssProxyUserService.isExists(userRep.getUserName(),userRep.getProxyUserName()) ||
-                    userRep.getProxyUserName().equals(username) ) {
-                if (userRep.getUserName().equals(username)) {
-                    for(Cookie cookie: req.getCookies()){
-                        if(null!=cookie){
-                            if(cookie.getName() == PROXY_USER_TICKET_ID_STRING)
-                                cookie.setValue(null);
-                                cookie.setMaxAge(0);
-                                resp.addCookie(cookie);
-                            }
+            if (userRep.getUserName().equals(username)) {
+                if (StringUtils.isEmpty(userRep.getUserName())) {
+                    return Message.error("User name is empty");
+                } else if (StringUtils.isEmpty(userRep.getProxyUserName())) {
+                    return Message.error("Proxy user name is empty");
+                } else if (dssProxyUserService.isExists(userRep.getUserName(), userRep.getProxyUserName())) {
+                    for (Cookie cookie : req.getCookies()) {
+                        if (null != cookie && cookie.getName().equalsIgnoreCase(PROXY_USER_TICKET_ID_STRING)) {
+                            cookie.setValue(null);
+                            cookie.setMaxAge(0);
+                            resp.addCookie(cookie);
                         }
                     }
-                    Tuple2<String, String> userTicketIdKv = ProxyUserSSOUtils.getProxyUserTicketKV(userRep.getProxyUserName(), trustCode);
-                    Cookie cookie = new Cookie(userTicketIdKv._1, userTicketIdKv._2);
-                    cookie.setMaxAge(-1);
-                    if(sslEnable) cookie.setSecure(true);
-                    cookie.setPath("/");
-                    resp.addCookie(cookie);
-
-                }else {
-                    return Message.error("The requested user name is not a login user");
                 }
-                return Message.ok("Success to add proxy user into cookie");
+                Tuple2<String, String> userTicketIdKv = ProxyUserSSOUtils.getProxyUserTicketKV(userRep.getProxyUserName(), trustCode);
+                Cookie cookie = new Cookie(userTicketIdKv._1, userTicketIdKv._2);
+                cookie.setMaxAge(-1);
+                if (sslEnable) cookie.setSecure(true);
+                cookie.setPath("/");
+                resp.addCookie(cookie);
+
+            } else {
+                return Message.error("The requested user name is not a login user");
+            }
+            return Message.ok("Success to add proxy user into cookie");
+
         } catch (Exception exception) {
+            LOGGER.error("Failed to set cookie for proxy user", exception);
             return Message.error(exception.getMessage());
         }
 
@@ -95,9 +98,10 @@ public class DssProxyUserController {
             }else  if (dssProxyUserService.isExists(userRep.getUserName(),userRep.getProxyUserName())) {
                 return Message.error("Failed to add proxy user，'userName：" + userRep.getUserName() + ",proxyName："+userRep.getProxyUserName()+" already exists");
             }
-            int rows = dssProxyUserService.insertProxyUser(userRep);
+            dssProxyUserService.insertProxyUser(userRep);
             return Message.ok("Success to add proxy user");
         } catch (Exception exception) {
+            LOGGER.error("Failed to add proxy user", exception);
             return Message.error(exception.getMessage());
         }
 

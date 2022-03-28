@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.util.List;
 
+import static com.webank.wedatasphere.dss.framework.admin.conf.ProjectConf.DS_PROXY_SELF_ENABLE;
+
 @Service
 public class DssProxyUserServiceImpl implements DssProxyUserService {
     @Resource
@@ -26,7 +28,9 @@ public class DssProxyUserServiceImpl implements DssProxyUserService {
     @Override
     public boolean isExists(String userName, String proxyUserName) {
         List<DssProxyUser> res= dssProxyUserMapper.getProxyUserList(userName,proxyUserName);
-        if(res.size()==0){
+        if(DS_PROXY_SELF_ENABLE.getValue() && userName.equalsIgnoreCase(proxyUserName)){
+           return true;
+        }else if(res.size()==0){
             return false;
         }else {
             return true;
