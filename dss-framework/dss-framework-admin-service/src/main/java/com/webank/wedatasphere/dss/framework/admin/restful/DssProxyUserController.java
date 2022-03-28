@@ -1,6 +1,8 @@
 package com.webank.wedatasphere.dss.framework.admin.restful;
 
+import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
 import com.webank.wedatasphere.dss.framework.admin.common.utils.StringUtils;
+import com.webank.wedatasphere.dss.framework.admin.exception.DSSAdminErrorException;
 import com.webank.wedatasphere.dss.framework.admin.pojo.entity.DssProxyUser;
 import com.webank.wedatasphere.dss.framework.admin.service.DssProxyUserService;
 import org.apache.linkis.server.Message;
@@ -53,9 +55,9 @@ public class DssProxyUserController {
         try {
             if (userRep.getUserName().equals(username)) {
                 if (StringUtils.isEmpty(userRep.getUserName())) {
-                    return Message.error("User name is empty");
+                    DSSExceptionUtils.dealErrorException(100101, "User name is empty", DSSAdminErrorException.class);
                 } else if (StringUtils.isEmpty(userRep.getProxyUserName())) {
-                    return Message.error("Proxy user name is empty");
+                    DSSExceptionUtils.dealErrorException(100102, "Proxy user name is empty", DSSAdminErrorException.class);
                 } else if (dssProxyUserService.isExists(userRep.getUserName(), userRep.getProxyUserName())) {
                     for (Cookie cookie : req.getCookies()) {
                         if (null != cookie && cookie.getName().equalsIgnoreCase(PROXY_USER_TICKET_ID_STRING)) {
@@ -68,12 +70,14 @@ public class DssProxyUserController {
                 Tuple2<String, String> userTicketIdKv = ProxyUserSSOUtils.getProxyUserTicketKV(userRep.getProxyUserName(), trustCode);
                 Cookie cookie = new Cookie(userTicketIdKv._1, userTicketIdKv._2);
                 cookie.setMaxAge(-1);
-                if (sslEnable) cookie.setSecure(true);
+                if (sslEnable){
+                    cookie.setSecure(true);
+                }
                 cookie.setPath("/");
                 resp.addCookie(cookie);
 
             } else {
-                return Message.error("The requested user name is not a login user");
+                DSSExceptionUtils.dealErrorException(100103,"The requested user name is not a login user",DSSAdminErrorException.class);
             }
             return Message.ok("Success to add proxy user into cookie");
 
@@ -87,16 +91,17 @@ public class DssProxyUserController {
     @RequestMapping(path = "proxy/add", method = RequestMethod.POST)
     public Message add(@RequestBody DssProxyUser userRep, HttpServletRequest req) {
         String username = SecurityFilter.getLoginUsername(req);
-        if(!username.equals(LDAP_ADMIN_NAME.getValue())){
-            return Message.error("Only administrators can add proxy users");
-        }
+
         try {
+            if(!username.equals(LDAP_ADMIN_NAME.getValue())){
+                DSSExceptionUtils.dealErrorException(100104, "Only administrators can add proxy users", DSSAdminErrorException.class);
+            }
             if(StringUtils.isEmpty(userRep.getUserName())){
-                return Message.error("User name is empty");
+                DSSExceptionUtils.dealErrorException(100105, "User name is empty", DSSAdminErrorException.class);
             }else if(StringUtils.isEmpty(userRep.getProxyUserName())){
-                return Message.error("Proxy user name is empty");
+                DSSExceptionUtils.dealErrorException(100106, "Proxy user name is empty", DSSAdminErrorException.class);
             }else  if (dssProxyUserService.isExists(userRep.getUserName(),userRep.getProxyUserName())) {
-                return Message.error("Failed to add proxy user，'userName：" + userRep.getUserName() + ",proxyName："+userRep.getProxyUserName()+" already exists");
+                DSSExceptionUtils.dealErrorException(100107, "Failed to add proxy user，'userName：" + userRep.getUserName() + ",proxyName："+userRep.getProxyUserName()+" already exists", DSSAdminErrorException.class);
             }
             dssProxyUserService.insertProxyUser(userRep);
             return Message.ok("Success to add proxy user");
