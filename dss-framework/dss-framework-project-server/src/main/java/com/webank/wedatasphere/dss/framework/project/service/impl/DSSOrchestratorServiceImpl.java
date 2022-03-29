@@ -212,6 +212,7 @@ public class DSSOrchestratorServiceImpl extends ServiceImpl<DSSOrchestratorMappe
         if (StringUtils.isNotBlank(orchestratorRequest.getOrchestratorMode())) {
             queryWrapper.eq("orchestrator_mode", orchestratorRequest.getOrchestratorMode());
         }
+        queryWrapper.orderByDesc("update_time");
         List<DSSOrchestrator> list = this.list(queryWrapper);
         List<OrchestratorBaseInfo> retList = new ArrayList<OrchestratorBaseInfo>(list.size());
         if (!CollectionUtils.isEmpty(list)) {
