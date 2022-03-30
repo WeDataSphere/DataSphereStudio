@@ -51,14 +51,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.apache.linkis.server.security.SecurityFilter;
 import org.apache.linkis.server.Message;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.File;
@@ -67,8 +67,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
 
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes({MediaType.APPLICATION_JSON, MediaType.MULTIPART_FORM_DATA})
 @RestController
 @RequestMapping(path = "/dss/framework/release", produces = {"application/json"})
 public class DSSMigrateRestful {
@@ -103,10 +101,10 @@ public class DSSMigrateRestful {
     private Sender workflowSender = Sender.getSender(MigrateConf.WORKFLOW_SERVER_NAME);
 
 
-    @RequestMapping(path = "/importOldDSSProject", method = RequestMethod.POST)
-    public Message importOldDSSProject(@Context HttpServletRequest req,
-                                       @FormDataParam("dssLabels") String dssLabels,
-                                       FormDataMultiPart form) throws Exception {
+    @RequestMapping(path = "/importOldDSSProject", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA})
+    public Message importOldDSSProject(HttpServletRequest req,
+                                       @RequestParam(name = "dssLabels", required = false) String dssLabels,
+                                       @RequestParam(name = "file") List<MultipartFile> multipartFileList) throws Exception {
         //通过从0.x导出的zip包上传到此处，然后进行一下导入到开发环境
         //1.下载到本地解压
         //2.保证工程信息要同步，如果没有建工程，那么就要把工程给建立
@@ -115,15 +113,13 @@ public class DSSMigrateRestful {
         //4.上传到bml
         //5.通过resourceId 和 version 导入到 dev的 orchestrator-server
         String userName = SecurityFilter.getLoginUsername(req);
-        List<FormDataBodyPart> files = form.getFields("file");
-        if (files == null || files.size() <= 0) {
+        if (multipartFileList == null || multipartFileList.size() == 0) {
             LOG.error("files are null, can not continue");
             return Message.error("no files to import");
         }
         //只取第一个文件
-        FormDataBodyPart p = files.get(0);
-        FormDataContentDisposition fileDetail = p.getFormDataContentDisposition();
-        String fileName = new String(fileDetail.getFileName().getBytes("ISO8859-1"), "UTF-8");
+        MultipartFile multipartFile = multipartFileList.get(0);
+        String fileName = new String(multipartFile.getResource().getFilename().getBytes("ISO8859-1"), "UTF-8");
         InputStream is = null;
         OutputStream os = null;
         try {
@@ -132,7 +128,7 @@ public class DSSMigrateRestful {
             if (file.getParentFile().exists()) {
                 FileUtils.deleteDirectory(file.getParentFile());
             }
-            is = p.getValueAs(InputStream.class);
+            is = multipartFile.getInputStream();
             os = IoUtils.generateExportOutputStream(inputPath);
             IOUtils.copy(is, os);
             Workspace workspace = SSOHelper.getWorkspace(req);
