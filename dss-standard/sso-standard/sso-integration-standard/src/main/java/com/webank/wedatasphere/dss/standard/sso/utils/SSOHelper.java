@@ -41,10 +41,9 @@ public class SSOHelper {
         Arrays.stream(cookies).forEach(cookie -> ssoUrlBuilderOperation.addCookie(cookie.getName(), cookie.getValue()));
         String gateWayUrl = Configuration.GATEWAY_URL().getValue();
         String forwardedHost = request.getHeader("X-Forwarded-Host");
-        if (StringUtils.isNotEmpty(forwardedHost)) {
-            gateWayUrl = "http://" + request.getHeader("X-Forwarded-Host") + "/";
+        if (StringUtils.isNotEmpty(forwardedHost) && forwardedHost.contains(":")) {
+            gateWayUrl = "http://" + forwardedHost + "/";
         }
-//        ssoUrlBuilderOperation.setDSSUrl(Configuration.GATEWAY_URL().getValue());
         ssoUrlBuilderOperation.setDSSUrl(gateWayUrl);
         ssoUrlBuilderOperation.setWorkspace(workspace.getWorkspaceName());
         workspace.setSSOUrlBuilderOperation(ssoUrlBuilderOperation);
