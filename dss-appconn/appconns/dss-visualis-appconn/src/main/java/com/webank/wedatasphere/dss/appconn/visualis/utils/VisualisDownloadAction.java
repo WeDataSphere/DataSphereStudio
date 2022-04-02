@@ -77,7 +77,8 @@ public class VisualisDownloadAction extends GetAction implements DownloadAction,
 
     @Override
     public void write( InputStream inputStream, HttpResponse response) {
-
+        this.inputStream = inputStream;
+        this.response = response;
     }
 
     @Override
