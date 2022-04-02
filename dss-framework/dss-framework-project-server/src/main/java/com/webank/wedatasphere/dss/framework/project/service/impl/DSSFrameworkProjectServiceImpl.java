@@ -77,7 +77,7 @@ public class DSSFrameworkProjectServiceImpl implements DSSFrameworkProjectServic
     @Override
     @Transactional(rollbackFor = Exception.class)
     public DSSProjectVo createProject(ProjectCreateRequest projectCreateRequest, String username, Workspace workspace,boolean checkProjectName) throws Exception {
-        validReleaseUserExistWtss(projectCreateRequest.getReleaseUsers(),workspace);
+
         //1.新建DSS工程,这样才能进行回滚,如果后面去DSS工程，可能会由于DSS工程建立失败了，但是仍然无法去回滚第三方系统的工程
         //2.开始创建appconn的相关的工程，如果失败了，抛异常，然后进行数据库进行回滚
         boolean isWorkspaceUser = projectUserService.isWorkspaceUser(projectCreateRequest.getWorkspaceId(), username);
@@ -232,6 +232,11 @@ public class DSSFrameworkProjectServiceImpl implements DSSFrameworkProjectServic
                     if (projectGetOperation == null) {
                         continue;
                     }
+                    
+                    if(appConn instanceof SchedulisAppConn) {
+                        validReleaseUserExistWtss(dssProjectCreateRequest.getReleaseUsers(),workspace);
+                    }
+
                     try {
                         LOGGER.info("begin to check project name in {}...", appConn.getAppDesc().getAppName());
                         //获取各组件工程信息
@@ -339,7 +344,7 @@ public class DSSFrameworkProjectServiceImpl implements DSSFrameworkProjectServic
      * @param releaseUsers
      * @param workspace
      */
-    public void validReleaseUserExistWtss(List<String> releaseUsers,Workspace workspace)throws DSSErrorException {
+    public void validReleaseUserExistWtss(List<String> releaseUsers,Workspace workspace)throws ExternalOperationFailedException {
         if (releaseUsers == null || releaseUsers.size() == 0) {
             return;
         }
@@ -366,7 +371,7 @@ public class DSSFrameworkProjectServiceImpl implements DSSFrameworkProjectServic
         for (String accessUser : releaseUsers) {
             String userId = AzkabanUserService.getUserIdByName(accessUser, baseUrl, projectService.getSSORequestService(), workspace);
             if (userId == null || userId.equals("")) {
-                throw new DSSErrorException(100323, "当前设置用户: " + accessUser + ", 在WTSS系统不存在，请联系WTSS管理员创建该用户！");
+                throw new ExternalOperationFailedException(100323, "当前设置用户: " + accessUser + ", 在WTSS系统不存在，请联系WTSS管理员创建该用户！");
             }
         }
     }
