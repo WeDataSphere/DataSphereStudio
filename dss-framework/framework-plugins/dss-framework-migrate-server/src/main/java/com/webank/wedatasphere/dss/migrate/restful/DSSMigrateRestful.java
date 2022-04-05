@@ -42,10 +42,6 @@ import org.apache.linkis.common.exception.LinkisException;
 import org.apache.linkis.rpc.Sender;
 import org.apache.linkis.server.BDPJettyServerHelper;
 import org.codehaus.jackson.JsonNode;
-import org.glassfish.jersey.media.multipart.FormDataBodyPart;
-import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
-import org.glassfish.jersey.media.multipart.FormDataMultiPart;
-import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -167,29 +163,27 @@ public class DSSMigrateRestful {
      * @param projectName   项目名没有就创建
      * @param projectUser   项目用户，接口会保证本用户加入到权限列表。格式跟createProject接口的用户一致 {"editUsers":["alexyang"],"accessUsers":["alexyang"],"releaseUsers":["alexyang"]}
      * @param dssLabels
-     * @param form
      * @return
      * @throws Exception
      */
-    @RequestMapping(path = "/importworkflow", method = RequestMethod.POST)
-    public Message importWorkFlow(@Context HttpServletRequest req,
-                                  @Context HttpServletResponse response,
-                                  @FormDataParam("workspaceName") String workspaceName,
-                                  @FormDataParam("projectName") String projectName,
-                                  @FormDataParam("projectUser") String projectUser,
-                                  @FormDataParam("flowName") String flowName,
-                                  @FormDataParam("dssLabels") String dssLabels,
-                                  FormDataMultiPart form) throws Exception {
+    @RequestMapping(path = "/importworkflow", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA})
+    public Message importWorkFlow(HttpServletRequest req,
+                                  HttpServletResponse response,
+                                  @RequestParam(name = "workspaceName") String workspaceName,
+                                  @RequestParam(name = "projectName") String projectName,
+                                  @RequestParam(name = "projectUser") String projectUser,
+                                  @RequestParam(name = "flowName") String flowName,
+                                  @RequestParam(name = "dssLabels", required = false) String dssLabels,
+                                  @RequestParam(name = "file") List<MultipartFile> multipartFileList) throws Exception {
         String userName = SecurityFilter.getLoginUsername(req);
-        List<FormDataBodyPart> files = form.getFields("file");
-        if (files == null || files.size() <= 0) {
+
+        if (multipartFileList == null || multipartFileList.size() == 0) {
             LOG.error("files are null, can not continue");
             return Message.error("no files to import");
         }
         //只取第一个文件
-        FormDataBodyPart p = files.get(0);
-        FormDataContentDisposition fileDetail = p.getFormDataContentDisposition();
-        String fileName = new String(fileDetail.getFileName().getBytes("ISO8859-1"), "UTF-8");
+        MultipartFile multipartFile = multipartFileList.get(0);
+        String fileName = new String(multipartFile.getResource().getFilename().getBytes("ISO8859-1"), "UTF-8");
         InputStream is = null;
         OutputStream os = null;
         Message responseMsg = Message.ok();
@@ -202,7 +196,7 @@ public class DSSMigrateRestful {
             if (file.getParentFile().exists()) {
                 FileUtils.deleteDirectory(file.getParentFile());
             }
-            is = p.getValueAs(InputStream.class);
+            is = multipartFile.getInputStream();
             os = IoUtils.generateExportOutputStream(inputZipPath);
             IOUtils.copy(is, os);
             // 获取工作空间id，没有就报错
