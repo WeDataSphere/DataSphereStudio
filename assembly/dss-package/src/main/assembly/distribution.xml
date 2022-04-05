@@ -79,6 +79,17 @@
       </includes>
     </fileSet>
 
+    <!--dss-framework-migrate-server-->
+    <fileSet>
+      <directory>
+        ${basedir}/../../dss-framework/dss-framework-project-server/target/out/dss-framework-migrate-server/lib/
+      </directory>
+      <outputDirectory>lib/dss-framework/dss-framework-migrate-server</outputDirectory>
+      <includes>
+        <include>**/*</include>
+      </includes>
+    </fileSet>
+
     <!--dss-framework-orchestrator-server-->
     <fileSet>
       <directory>
