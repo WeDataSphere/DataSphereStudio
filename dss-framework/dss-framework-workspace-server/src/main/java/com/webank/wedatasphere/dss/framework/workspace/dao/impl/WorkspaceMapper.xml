@@ -245,12 +245,12 @@
         FROM
         dss_onestop_user_favorites
         WHERE
-        menu_application_id = #{applicationId}
+        id = #{applicationId}
         AND username = #{username}
         AND workspace_id = #{workspaceId}
-        AND type = #{type}
-
-
+        <if test="type != null and type != ''">
+            AND `type` = #{type}
+        </if>
     </delete>
 
 

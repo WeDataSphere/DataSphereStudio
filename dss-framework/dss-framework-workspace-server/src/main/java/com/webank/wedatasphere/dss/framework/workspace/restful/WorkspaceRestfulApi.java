@@ -133,6 +133,16 @@ public class WorkspaceRestfulApi {
         boolean isChinese = "zh-CN".equals(header);
         String username = SecurityFilter.getLoginUsername(req);
         List<WorkspaceFavoriteVo> favorites = dssWorkspaceService.getWorkspaceFavorites(workspaceId, username, isChinese, type == null ? "" : type);
+        Set<WorkspaceFavoriteVo> favoriteVos = new HashSet<>(favorites);
+        return Message.ok().data("favorites", favoriteVos);
+    }
+
+    @RequestMapping(path = "/workspaces/{workspaceId}/components", method = RequestMethod.GET)
+    public Message getWorkspaceComponent(HttpServletRequest req, @PathVariable("workspaceId") Long workspaceId, @RequestParam(value = "type", required = false) String type) {
+        String header = req.getHeader("Content-language").trim();
+        boolean isChinese = "zh-CN".equals(header);
+        String username = SecurityFilter.getLoginUsername(req);
+        List<WorkspaceFavoriteVo> favorites = dssWorkspaceService.getWorkspaceFavorites(workspaceId, username, isChinese, type == null ? "" : type);
         Long menuApplicationId = dssWorkspaceService.getIdByTitleEn("Scriptis");
         if (favorites == null || favorites.size() == 0) {
             dssWorkspaceService.addFavorite(username, workspaceId, menuApplicationId, type == null ? "" : type);
@@ -144,16 +154,6 @@ public class WorkspaceRestfulApi {
                 favorites = dssWorkspaceService.getWorkspaceFavorites(workspaceId, username, isChinese, type == null ? "" : type);
             }
         }
-        Set<WorkspaceFavoriteVo> favoriteVos = new HashSet<>(favorites);
-        return Message.ok().data("favorites", favoriteVos);
-    }
-
-    @RequestMapping(path = "/workspaces/{workspaceId}/components", method = RequestMethod.GET)
-    public Message getWorkspaceComponent(HttpServletRequest req, @PathVariable("workspaceId") Long workspaceId, @RequestParam(value = "type", required = false) String type) {
-        String header = req.getHeader("Content-language").trim();
-        boolean isChinese = "zh-CN".equals(header);
-        String username = SecurityFilter.getLoginUsername(req);
-        List<WorkspaceFavoriteVo> favorites = dssWorkspaceService.getWorkspaceFavorites(workspaceId, username, isChinese, type == null ? "" : type);
         Set<WorkspaceFavoriteVo> favoriteVos = new HashSet<>(favorites);
         return Message.ok().data("favorites", favoriteVos);
     }
