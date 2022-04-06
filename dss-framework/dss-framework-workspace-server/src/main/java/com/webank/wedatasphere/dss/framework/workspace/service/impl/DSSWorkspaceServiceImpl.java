@@ -602,6 +602,11 @@ public class DSSWorkspaceServiceImpl implements DSSWorkspaceService {
     }
 
     @Override
+    public Long getIdByTitleEn(String titleEn) {
+        return workspaceMapper.getIdByTitleEn(titleEn);
+    }
+
+    @Override
     public List<WorkspaceFavoriteVo> getWorkspaceFavorites(Long workspaceId, String username, boolean isChinese,String type) {
         return isChinese ? workspaceMapper.getWorkspaceFavoritesCn(username, workspaceId,type) : workspaceMapper.getWorkspaceFavoritesEn(username, workspaceId,type);
     }

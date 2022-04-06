@@ -70,4 +70,6 @@ public interface WorkspaceMapper {
     String getDepartName(@Param("id") Long id);
 
     List<DSSWorkspaceUser01> getWorkspaceUsers01(@Param("id") Long id);
+
+    Long getIdByTitleEn(@Param("titleEn") String titleEn);
 }

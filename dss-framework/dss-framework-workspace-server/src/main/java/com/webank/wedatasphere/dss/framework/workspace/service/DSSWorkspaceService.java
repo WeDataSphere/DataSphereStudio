@@ -86,6 +86,8 @@ public interface DSSWorkspaceService {
 
     List<OnestopMenuVo> getWorkspaceApplications(Long workspaceId, String username, boolean isChinese);
 
+    Long getIdByTitleEn(String titleEn);
+
     DSSWorkspace getWorkspacesById(Long id);
 
     List<WorkspaceFavoriteVo> getWorkspaceFavorites(Long workspaceId, String username, boolean isChinese,String type);

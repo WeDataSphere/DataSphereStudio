@@ -236,6 +236,10 @@
         (#{id},#{username},#{workspaceId},#{menuApplicationId},#{order},#{createBy},#{createTime},#{lastUpdateUser},#{lastUpdateTime},#{type})
     </insert>
 
+    <select id="getIdByTitleEn" resultType="java.lang.Long">
+        select id from dss_onestop_menu_application where title_en = #{titleEn}
+    </select>
+
     <delete id="deleteFavorite">
         DELETE
         FROM

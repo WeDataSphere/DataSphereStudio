@@ -133,6 +133,17 @@ public class WorkspaceRestfulApi {
         boolean isChinese = "zh-CN".equals(header);
         String username = SecurityFilter.getLoginUsername(req);
         List<WorkspaceFavoriteVo> favorites = dssWorkspaceService.getWorkspaceFavorites(workspaceId, username, isChinese, type == null ? "" : type);
+        Long menuApplicationId = dssWorkspaceService.getIdByTitleEn("Scriptis");
+        if (favorites == null || favorites.size() == 0) {
+            dssWorkspaceService.addFavorite(username, workspaceId, menuApplicationId, type == null ? "" : type);
+            favorites = dssWorkspaceService.getWorkspaceFavorites(workspaceId, username, isChinese, type == null ? "" : type);
+        } else {
+            boolean isHaveScripts = favorites.stream().anyMatch(favorite -> favorite.getMenuApplicationId().equals(menuApplicationId));
+            if (!isHaveScripts) {
+                dssWorkspaceService.addFavorite(username, workspaceId, menuApplicationId, type == null ? "" : type);
+                favorites = dssWorkspaceService.getWorkspaceFavorites(workspaceId, username, isChinese, type == null ? "" : type);
+            }
+        }
         Set<WorkspaceFavoriteVo> favoriteVos = new HashSet<>(favorites);
         return Message.ok().data("favorites", favoriteVos);
     }
