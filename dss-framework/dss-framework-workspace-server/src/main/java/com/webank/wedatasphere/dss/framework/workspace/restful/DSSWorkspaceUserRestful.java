@@ -36,6 +36,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -95,6 +100,16 @@ public class DSSWorkspaceUserRestful {
         dssWorkspaceUsersVo.setEditUsers(dssWorkspaceUserService.getAllWorkspaceUsers(workspaceId));
         dssWorkspaceUsersVo.setReleaseUsers(dssWorkspaceUserService.getAllWorkspaceUsers(workspaceId));
         return Message.ok().data("users", dssWorkspaceUsersVo);
+    }
+
+
+    @RequestMapping(path ="existUserInWorkspace",method = RequestMethod.GET)
+    public Message getAllWorkspaceUsers(HttpServletRequest request, @RequestParam(WORKSPACE_ID_STR) int workspaceId, @RequestParam("queryUserName") String queryUserName){
+        String username = SecurityFilter.getLoginUsername(request);
+        List<String> users = dssWorkspaceUserService.getAllWorkspaceUsers(workspaceId);
+        boolean existFlag = users.stream().anyMatch(user->user.equalsIgnoreCase(queryUserName));
+        LOGGER.info("Check exist user result:"+existFlag+", query user  is " +queryUserName+",workSpace id is "+workspaceId);
+        return Message.ok().data("existFlag", existFlag);
     }
 
     @RequestMapping(path = "addWorkspaceUser", method = RequestMethod.POST)
