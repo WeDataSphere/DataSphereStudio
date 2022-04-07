@@ -20,11 +20,11 @@ import org.apache.linkis.common.conf.CommonVars
 
 object SendEmailAppConnConfiguration {
 
-  // com.webank.wedatasphere.dss.appconn.sendemail.email.sender.EsbEmailSender
   val EMAIL_SENDER_CLASS = CommonVars("wds.dss.appconn.email.sender.class",
     "com.webank.wedatasphere.dss.appconn.sendemail.email.sender.EsbEmailSender")
-  val EMAIL_HOOK_CLASSES = CommonVars("wds.dss.appconn.email.hook.classes", "com.webank.wedatasphere.dss.appconn.sendemail.hook.SendEmailItsmCheckHook,com.webank.wedatasphere.dss.appconn.sendemail.hook.SendEmailContentLimitHook")
-  val EMAIL_HOOK_CLASSES_1 = CommonVars("wds.dss.appconn.email.hook1.classes", "com.webank.wedatasphere.dss.appconn.sendemail.hook.SendEmailItsmCheckHook,com.webank.wedatasphere.dss.appconn.sendemail.hook.SendEmailContentLimitHook")
+  val EMAIL_HOOK_CLASSES = CommonVars("wds.dss.appconn.email.hook.classes",
+    "com.webank.wedatasphere.dss.appconn.sendemail.hook.SendEmailItsmCheckHook," +
+      "com.webank.wedatasphere.dss.appconn.sendemail.hook.SendEmailContentLimitHook")
 
   val EMAIL_IMAGE_HEIGHT = CommonVars("wds.dss.appconn.email.image.height", 500)
   val EMAIL_IMAGE_WIDTH = CommonVars("wds.dss.appconn.email.image.width", 1920)
