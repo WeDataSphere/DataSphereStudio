@@ -35,13 +35,14 @@ import com.webank.wedatasphere.dss.standard.app.sso.Workspace;
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
 import com.webank.wedatasphere.dss.standard.sso.utils.SSOHelper;
 import com.webank.wedatasphere.dss.workflow.common.protocol.ResponseQueryWorkflow;
+
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.common.exception.LinkisException;
 import org.apache.linkis.rpc.Sender;
 import org.apache.linkis.server.BDPJettyServerHelper;
-import org.codehaus.jackson.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +56,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.File;
 import java.io.FileInputStream;
@@ -387,23 +387,22 @@ public class DSSMigrateRestful {
         }
     }
 
+
     /**
      * 批量导出工程下所有工作流到指定本地目录。导出机器在响应需求的project server上
      *
      * @param req
      * @param response
-     * @param json
      * @return
      * @throws Exception
      */
     @RequestMapping(path = "/exportallflow", method = RequestMethod.POST)
-    public Message exportAllFlowInProject(@Context HttpServletRequest req,
-                                          @Context HttpServletResponse response,
-                                          JsonNode json) throws Exception {
+    public Message exportAllFlowInProject(HttpServletRequest req,
+                                          HttpServletResponse response,
+                                          @RequestParam(name = "workspaceName") String workspaceName,
+                                          @RequestParam(name = "projectName") String projectName,
+                                          @RequestParam(name = "pathRoot") String pathRoot) throws Exception {
         String username = SecurityFilter.getLoginUsername(req);
-        String workspaceName = json.get("workspaceName").getTextValue();
-        String projectName = json.get("projectName").getTextValue();
-        String pathRoot = json.get("pathRoot").getTextValue();
 
         // 1，获取项目下所有的工作流
         // 获取工作空间id，没有就报错
