@@ -104,13 +104,14 @@ public class DSSWorkspaceUserRestful {
 
 
     @RequestMapping(path ="existUserInWorkspace",method = RequestMethod.GET)
-    public Message getAllWorkspaceUsers(HttpServletRequest request, @RequestParam(WORKSPACE_ID_STR) int workspaceId, @RequestParam("queryUserName") String queryUserName){
+    public Message existUserInWorkspace(HttpServletRequest request, @RequestParam(WORKSPACE_ID_STR) int workspaceId, @RequestParam("queryUserName") String queryUserName){
         String username = SecurityFilter.getLoginUsername(request);
         List<String> users = dssWorkspaceUserService.getAllWorkspaceUsers(workspaceId);
         boolean existFlag = users.stream().anyMatch(user->user.equalsIgnoreCase(queryUserName));
         LOGGER.info("Check exist user result:"+existFlag+", query user  is " +queryUserName+",workSpace id is "+workspaceId);
         return Message.ok().data("existFlag", existFlag);
     }
+
 
     @RequestMapping(path = "addWorkspaceUser", method = RequestMethod.POST)
     public Message addWorkspaceUser(HttpServletRequest request, @RequestBody UpdateWorkspaceUserRequest updateWorkspaceUserRequest) {
