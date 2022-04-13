@@ -85,7 +85,14 @@ public class WorkFlowInputServiceImpl implements WorkFlowInputService {
         String flowJson = bmlService.readLocalFlowJsonFile(userName, flowJsonPath);
         //如果包含subflow,需要一同导入subflow内容，并更新parrentflow的json内容
         // TODO: 2020/7/31 优化update方法里面的saveContent
-        String updateFlowJson = updateFlowContextId(flowJson, contextId);
+        String updateFlowJson = updateFlowContextId(userName,
+                workspace.getWorkspaceName(),
+                projectName,
+                flowJson,
+                dssFlow,
+                parentFlowId,
+                version,
+                contextId);
         updateFlowJson = inputWorkFlowNodes(userName, projectName, updateFlowJson, dssFlow, flowInputPath, workspace, orcVersion);
         List<? extends DSSFlow> subFlows = dssFlow.getChildren();
         if (subFlows != null) {
@@ -104,9 +111,23 @@ public class WorkFlowInputServiceImpl implements WorkFlowInputService {
 
     }
 
-    private String updateFlowContextId(String flowJson, String contextId) throws IOException {
+    private String updateFlowContextId(String userName,
+                                       String workspaceName,
+                                       String projectName,
+                                       String flowJson,
+                                       DSSFlow dssFlow,
+                                       Long parentFlowId,
+                                       String version,
+                                       String contextId) throws IOException, DSSErrorException {
 
-//        String contextID = contextService.checkAndInitContext(flowJson, parentFlowIdStr, workspace, projectName, flowName, flowVersion, userName);
+        String parentFlowIdStr=null;
+        if(parentFlowId!=null){
+            parentFlowIdStr = parentFlowId.toString();
+        }
+        if(!dssFlow.getRootFlow()) {
+            contextId = contextService.checkAndInitContext(flowJson, parentFlowIdStr, workspaceName, projectName, dssFlow.getName(), version, userName);
+            logger.info("create subflow contextID is "+ contextId);
+        }
         String updatedFlowJson = workFlowParser.updateFlowJsonWithKey(flowJson, "contextID", contextId);
         return updatedFlowJson;
     }
