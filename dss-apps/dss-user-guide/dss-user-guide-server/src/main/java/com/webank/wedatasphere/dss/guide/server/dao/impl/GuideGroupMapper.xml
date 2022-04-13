@@ -58,6 +58,7 @@
                b.title_alias AS children_title_alias,
                b.seq AS children_seq,
                b.type AS children_type,
+               b.content AS children_content,
                b.content_html AS children_content_html,
                b.create_by AS children_create_by,
                b.create_time AS children_create_time,

@@ -120,3 +120,17 @@ body {
   z-index: 1001;
 }
 
+.v-note-panel {
+  border: none !important;
+}
+
+.v-show-content {
+  background-color: white !important;
+  p{
+    font-size: 12px;
+  }
+}
+
+.v-note-wrapper {
+  border: none !important;
+}

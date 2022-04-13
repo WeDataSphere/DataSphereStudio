@@ -58,9 +58,10 @@
                   <SvgIcon icon-class="open" v-else />
                 </span>
               </div>
-              <div class="step-content">
-                <p v-html="step.contentHtml"></p>
-              </div>
+              <mavon-editor v-if="step.expand" defaultOpen="preview"
+                            :toolbarsFlag="false" :subfield="false"
+                            :boxShadow="false" :fontSize="12"
+                            :preview="true" v-model="step.content"/>
             </div>
           </div>
         </div>
@@ -97,6 +98,7 @@
   </div>
 </template>
 <script>
+import { mavonEditor } from "mavon-editor";
 import eventbus from "@/common/helper/eventbus";
 import { GetGuideByPath, QueryChapter } from "@/common/service/apiGuide";
 import libraryHome from "./libraryHome.vue";
@@ -108,7 +110,8 @@ export default {
   components: {
     libraryHome,
     librarySearch,
-    libraryDetail
+    libraryDetail,
+    mavonEditor
   },
   props: {
     show: {

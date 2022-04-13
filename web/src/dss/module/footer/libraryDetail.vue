@@ -2,15 +2,20 @@
   <div class="library-detail" >
     <div class="library-detail-title">{{ doc.title }}</div>
     <div class="library-detail-time">更新时间：{{ doc.updateTime }}</div>
-    <div class="library-detail-content" ref="libraryDetail">
-      <p v-html="doc.contentHtml"></p>
-    </div>
+    <mavon-editor defaultOpen="preview"
+                  :boxShadow="false" :fontSize="12"
+                  :toolbarsFlag="false" :subfield="false"
+                  :preview="true" v-model="doc.content"/>
   </div>
 </template>
 <script>
+import { mavonEditor } from "mavon-editor";
 import { GetChapterDetail } from "@/common/service/apiGuide";
 export default {
   name: "libraryDetail",
+  components: {
+    mavonEditor,
+  },
   props: {
     doc: {
       type: Object,
