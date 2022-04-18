@@ -84,7 +84,7 @@ public class DefaultRefFactory implements RefFactory {
     }
 
     @Override
-    public <R extends Ref> R newRef(Class<R> clazz, ClassLoader classLoader, String packageName) throws DSSErrorException {
+    public synchronized  <R extends Ref> R newRef(Class<R> clazz, ClassLoader classLoader, String packageName) throws DSSErrorException {
         RefKey refKey = new RefKey(classLoader, clazz, packageName);
         Class<? extends Ref> refClass = cacheMap.get(refKey);
         if(cacheMap.containsKey(refKey) && refClass != null){
