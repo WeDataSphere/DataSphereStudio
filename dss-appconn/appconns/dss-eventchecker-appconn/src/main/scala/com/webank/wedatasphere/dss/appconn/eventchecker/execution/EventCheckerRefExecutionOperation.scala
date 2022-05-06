@@ -38,7 +38,7 @@ class EventCheckerRefExecutionOperation  extends LongTermRefExecutionOperation w
 
   private var service:DevelopmentService = _
   private val logger = LoggerFactory.getLogger(classOf[EventCheckerRefExecutionOperation])
-  private var killTag = false
+
 
 
 
@@ -60,13 +60,14 @@ class EventCheckerRefExecutionOperation  extends LongTermRefExecutionOperation w
     }
   }
 
-  override def kill(action: RefExecutionAction): Boolean = {
-    killTag = true
-    action match {
-      case longTermAction: EventCheckerExecutionAction =>
-        longTermAction.setKilledFlag(true)
-        longTermAction.setState(RefExecutionState.Killed)
-        true
+  override def kill(action: RefExecutionAction): Boolean = action match {
+    case longTermAction: EventCheckerExecutionAction =>
+      longTermAction.setKilledFlag(true)
+      longTermAction.setState(RefExecutionState.Killed)
+      true
+    case _ => {
+      logger.error("EventChecker kill failed for error action")
+      false
     }
   }
 
@@ -123,14 +124,13 @@ class EventCheckerRefExecutionOperation  extends LongTermRefExecutionOperation w
             putErrorMsg("EventChecker run failed!" + t.getMessage, t, action)
             false
           })
-          if(killTag) {
-            killTag = false
-            return RefExecutionState.Killed
-          }
         }
         action.state
       }
-      case _ => RefExecutionState.Failed
+      case _ => {
+        logger.error("EventChecker run failed for error action")
+        RefExecutionState.Failed
+      }
     }
   }
 
@@ -156,9 +156,12 @@ class EventCheckerRefExecutionOperation  extends LongTermRefExecutionOperation w
         }
         response
       }
-      case _ =>
+      case _ =>{
+        logger.error("EventChecker run failed for result action error")
         response.setIsSucceed(false);
         response
+      }
+
     }
 
   }
