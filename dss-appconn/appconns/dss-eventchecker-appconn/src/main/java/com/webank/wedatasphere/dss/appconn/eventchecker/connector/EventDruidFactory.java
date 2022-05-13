@@ -34,11 +34,11 @@ public class EventDruidFactory {
 		log.info("EVENT_DRUID_USERNAME：" + EVENT_DRUID_USERNAME + "");
 		log.info("EVENT_DRUID_URL：" + EVENT_DRUID_URL + "");
 		String key = props.getProperty(EVENT_DRUID_USERNAME) + props.getProperty(EVENT_DRUID_URL);
-		if (instanceMap.contains(key)) {
+		if (instanceMap.containsKey(key)) {
 			return instanceMap.get(key);
 		} else {
 			synchronized (EventDruidFactory.class) {
-				if (instanceMap.contains(key)) {
+				if (instanceMap.containsKey(key)) {
 					return instanceMap.get(key);
 				}
 				DruidDataSource msgInstance = createDataSource(props, log, "Msg");
@@ -93,24 +93,24 @@ public class EventDruidFactory {
 
 		ds.setUrl(url);
 		ds.setDriverClassName("com.mysql.jdbc.Driver");
-	    ds.setUsername(username);
-	    ds.setPassword(password);
-	    ds.setInitialSize(initialSize);
-	    ds.setMinIdle(minIdle);
-	    ds.setMaxActive(maxActive);
-	    ds.setMaxWait(maxWait);
-	    ds.setTestOnBorrow(testOnBorrow);
-	    ds.setValidationQuery(validationQuery);
-	    ds.setTimeBetweenEvictionRunsMillis(timeBetweenEvictionRunsMillis);
-	    ds.setMinEvictableIdleTimeMillis(minEvictableIdleTimeMillis);
-	    if (maxOpenPreparedStatements > 0) {
-	      ds.setPoolPreparedStatements(true);
-	      ds.setMaxPoolPreparedStatementPerConnectionSize(
-	          maxOpenPreparedStatements);
-	    } else {
-	      ds.setPoolPreparedStatements(false);
-	    }
-	    log.info("Druid data source initialed!");
-	    return ds;
+		ds.setUsername(username);
+		ds.setPassword(password);
+		ds.setInitialSize(initialSize);
+		ds.setMinIdle(minIdle);
+		ds.setMaxActive(maxActive);
+		ds.setMaxWait(maxWait);
+		ds.setTestOnBorrow(testOnBorrow);
+		ds.setValidationQuery(validationQuery);
+		ds.setTimeBetweenEvictionRunsMillis(timeBetweenEvictionRunsMillis);
+		ds.setMinEvictableIdleTimeMillis(minEvictableIdleTimeMillis);
+		if (maxOpenPreparedStatements > 0) {
+			ds.setPoolPreparedStatements(true);
+			ds.setMaxPoolPreparedStatementPerConnectionSize(
+					maxOpenPreparedStatements);
+		} else {
+			ds.setPoolPreparedStatements(false);
+		}
+		log.info("Druid data source initialed!");
+		return ds;
 	}
 }
