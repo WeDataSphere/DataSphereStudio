@@ -28,7 +28,6 @@ import com.webank.wedatasphere.dss.standard.sso.utils.SSOHelper;
 import com.webank.wedatasphere.dss.workflow.WorkFlowManager;
 import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlow;
 import com.webank.wedatasphere.dss.workflow.constant.DSSWorkFlowConstant;
-import com.webank.wedatasphere.dss.workflow.entity.DSSFlowEditLock;
 import com.webank.wedatasphere.dss.workflow.entity.request.*;
 import com.webank.wedatasphere.dss.workflow.entity.vo.ExtraToolBarsVO;
 import com.webank.wedatasphere.dss.workflow.exception.DSSWorkflowErrorException;
@@ -267,7 +266,6 @@ public class FlowRestfulApi {
             if (StringUtils.isBlank(flowEditLock)) {
                 throw new DSSErrorException(60057, "工作流编辑锁不能为空");
             }
-            // 锁更新操作，保证保存后的锁是最新的
             version = flowService.saveFlow(flowID, jsonFlow, null, userName, workspaceName, projectName);
         }
         return Message.ok().data("flowVersion", version).data("flowEditLock", flowEditLock);
@@ -296,4 +294,15 @@ public class FlowRestfulApi {
         List<ExtraToolBarsVO> barsVOList = flowService.getExtraToolBars(workspace.getWorkspaceId(), getExtraToolBarsRequest.getProjectId());
         return Message.ok().data("extraBars", barsVOList);
     }
+
+
+    @RequestMapping(value = "/deleteFlowEditLock/{flowEditLock}", method = RequestMethod.POST)
+    public Message deleteFlowEditLock(HttpServletRequest req, @PathVariable("flowEditLock") String flowEditLock) throws DSSErrorException {
+        if (StringUtils.isBlank(flowEditLock)) {
+            throw new DSSErrorException(60068, "delete flowEditLock failed,flowEditLock is null");
+        }
+        DSSFlowEditLockManager.deleteLock(flowEditLock);
+        return Message.ok();
+    }
+
 }
