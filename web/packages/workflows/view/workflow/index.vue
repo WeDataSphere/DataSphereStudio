@@ -388,6 +388,21 @@ export default {
         )
         .then((res) => {
           this.loadingTree = false;
+          if (this.$route.query.projectID) {
+            let index
+            let it
+            res.projects.find((item, idx) => {
+              if (item.id == this.$route.query.projectID) {
+                index = idx
+                it = item
+              }
+            })
+            if (it) {
+              res.projects.splice(index, 1)
+              res.projects.unshift(it)
+            }
+          }
+
           if (this.modeOfKey == "streamis_prod") {
             this.projectsTree = res.projects
               .filter((n) => {
@@ -970,6 +985,7 @@ export default {
           }
         }
         this.tabList.splice(index, 1);
+        this.deleteEditLock(removeData.query.appId);
         let workspaceId = this.$route.query.workspaceId;
         let workFlowLists = JSON.parse(sessionStorage.getItem(`work_flow_lists_${workspaceId}`)) || [];
         workFlowLists = workFlowLists.filter(it=>it.tabId !== tabId);
@@ -1012,6 +1028,19 @@ export default {
         name: routerMap[item.dicValue],
         query: this.$route.query,
       });
+    },
+    deleteEditLock(flowId) {
+      const data = storage.get("flowEditLock") || {}
+      const key = this.getUserName()
+      const item = (data[key] || []).find(it => it.flowId == flowId && it.projectId == this.$route.query.projectID)
+      if (item && item.lock) {
+        api
+          .fetch(
+            `${this.$API_PATH.WORKFLOW_PATH}deleteFlowEditLock/${item.lock}`,
+            {},
+            "post"
+          )
+      }
     },
     /**
      * 切换tab
@@ -1113,7 +1142,7 @@ export default {
               overflow: 'hidden'
             },
             attrs: {
-              title: item.name
+              title: `名称：${item.name}\n描述：${item.description||''}`
             }
           }, [item.name]),
           (item.canWrite ? projectAdd : ''),
@@ -1140,7 +1169,7 @@ export default {
               overflow: 'hidden'
             },
             attrs: {
-              title: item.name
+              title: `名称：${item.name}\n描述：${item.description||''}`
             }
           },
           item.name
