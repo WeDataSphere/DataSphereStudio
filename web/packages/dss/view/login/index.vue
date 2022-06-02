@@ -86,7 +86,6 @@ export default {
   },
   mounted() {
     const workspaceId = this.getCurrentWorkspaceId()
-    storage.remove('flowEditLock')
     sessionStorage.removeItem(`work_flow_lists_${workspaceId}`)
   },
   methods: {
