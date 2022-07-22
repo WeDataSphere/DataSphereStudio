@@ -41,6 +41,8 @@ import com.webank.wedatasphere.dss.standard.common.utils.RequestRefUtils;
 import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlow;
 import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlowRelation;
 import com.webank.wedatasphere.dss.workflow.common.parser.WorkFlowParser;
+import com.webank.wedatasphere.dss.workflow.common.protocol.RequestSubFlowContextIds;
+import com.webank.wedatasphere.dss.workflow.common.protocol.ResponseSubFlowContextIds;
 import com.webank.wedatasphere.dss.workflow.constant.DSSWorkFlowConstant;
 import com.webank.wedatasphere.dss.workflow.entity.DSSFlowImportParam;
 import com.webank.wedatasphere.dss.workflow.io.export.WorkFlowExportService;
@@ -51,6 +53,7 @@ import com.webank.wedatasphere.dss.workflow.service.DSSFlowService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.linkis.common.exception.ErrorException;
 import org.apache.linkis.protocol.util.ImmutablePair;
 import org.apache.linkis.server.BDPJettyServerHelper;
 import org.slf4j.Logger;
@@ -174,7 +177,7 @@ public class DefaultWorkFlowManager implements WorkFlowManager {
                                               String projectName, Workspace workspace,
                                               List<DSSLabel> dssLabels) throws Exception {
         DSSFlow dssFlow = flowService.getFlowByID(flowId);
-        String exportPath = workFlowExportService.exportFlowInfo(dssProjectId, projectName, flowId, userName, workspace,dssLabels);
+        String exportPath = workFlowExportService.exportFlowInfo(dssProjectId, projectName, flowId, userName, workspace, dssLabels);
         InputStream inputStream = bmlService.readLocalResourceFile(userName, exportPath);
         return bmlService.upload(userName, inputStream, dssFlow.getName() + ".export", projectName);
     }
@@ -249,6 +252,19 @@ public class DefaultWorkFlowManager implements WorkFlowManager {
         } else {
             return responseList.get(0);
         }
+    }
+
+    @Override
+    public ResponseSubFlowContextIds getSubFlowContextIdsByFlowIds(RequestSubFlowContextIds requestSubFlowContextIds) throws ErrorException {
+        List<String> contextIdList = flowService.getSubFlowContextIdsByFlowIds(requestSubFlowContextIds.getFlowIdList());
+        ResponseSubFlowContextIds responseSubFlowContextIds = new ResponseSubFlowContextIds();
+        responseSubFlowContextIds.setContextIdList(contextIdList);
+        return responseSubFlowContextIds;
+    }
+
+    @Override
+    public void batchDeleteBmlResource(List<Long> flowIdList) {
+        flowService.batchDeleteBmlResource(flowIdList);
     }
 
     private ResponseOperateOrchestrator convert(RequestConvertOrchestrations requestConversionWorkflow,

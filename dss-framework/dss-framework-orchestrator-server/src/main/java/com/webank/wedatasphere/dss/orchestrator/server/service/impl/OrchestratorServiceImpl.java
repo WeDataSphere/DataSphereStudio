@@ -16,10 +16,13 @@
 
 package com.webank.wedatasphere.dss.orchestrator.server.service.impl;
 
+import com.google.common.collect.Lists;
 import com.webank.wedatasphere.dss.common.constant.project.ProjectUserPrivEnum;
 import com.webank.wedatasphere.dss.common.exception.DSSErrorException;
 import com.webank.wedatasphere.dss.common.label.DSSLabel;
 import com.webank.wedatasphere.dss.common.label.DSSLabelUtil;
+import com.webank.wedatasphere.dss.common.label.EnvDSSLabel;
+import com.webank.wedatasphere.dss.common.protocol.JobStatus;
 import com.webank.wedatasphere.dss.common.protocol.project.ProjectUserAuthRequest;
 import com.webank.wedatasphere.dss.common.protocol.project.ProjectUserAuthResponse;
 import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
@@ -39,6 +42,8 @@ import com.webank.wedatasphere.dss.orchestrator.core.utils.OrchestratorUtils;
 import com.webank.wedatasphere.dss.orchestrator.db.dao.OrchestratorMapper;
 import com.webank.wedatasphere.dss.orchestrator.loader.OrchestratorManager;
 import com.webank.wedatasphere.dss.orchestrator.publish.utils.OrchestrationDevelopmentOperationUtils;
+import com.webank.wedatasphere.dss.orchestrator.server.conf.OrchestratorConf;
+import com.webank.wedatasphere.dss.orchestrator.server.constant.DSSOrchestratorConstant;
 import com.webank.wedatasphere.dss.orchestrator.server.entity.request.OrchestratorModifyRequest;
 import com.webank.wedatasphere.dss.orchestrator.server.entity.request.OrchestratorRequest;
 import com.webank.wedatasphere.dss.orchestrator.server.entity.vo.OrchestratorBaseInfo;
@@ -54,7 +59,14 @@ import com.webank.wedatasphere.dss.standard.app.sso.Workspace;
 import com.webank.wedatasphere.dss.standard.common.desc.AppInstance;
 import com.webank.wedatasphere.dss.standard.common.entity.ref.ResponseRef;
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationWarnException;
+import com.webank.wedatasphere.dss.workflow.common.protocol.RequestDeleteBmlSource;
+import com.webank.wedatasphere.dss.workflow.common.protocol.RequestSubFlowContextIds;
+import com.webank.wedatasphere.dss.workflow.common.protocol.ResponseDeleteBmlSource;
+import com.webank.wedatasphere.dss.workflow.common.protocol.ResponseSubFlowContextIds;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.linkis.cs.client.ContextClient;
+import org.apache.linkis.cs.client.builder.ContextClientFactory;
+import org.apache.linkis.rpc.Sender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -62,10 +74,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class OrchestratorServiceImpl implements OrchestratorService {
@@ -429,6 +443,75 @@ public class OrchestratorServiceImpl implements OrchestratorService {
             put("orchestrator_mode", requestOrchestratorInfos.getOrchestratorMode());
         }});
         return new ResponseOrchestratorInfos(orchestratorInfos);
+    }
+
+    @Override
+    public void batchClearContextId() {
+        LOGGER.info("--------------------{} start clear old contextId------------------------", LocalDateTime.now());
+        try {
+            // 1、先去查询dss_orchestrator_version_info表，筛选出发布过n次及以上的编排，并获取老的发布记录。
+            List<DSSOrchestratorVersion> historyOrcVersionList = orchestratorMapper.getHistoryOrcVersion(OrchestratorConf.DSS_PUBLISH_MAX_VERSION.getValue());
+            if (historyOrcVersionList == null || historyOrcVersionList.isEmpty()) {
+                LOGGER.info("--------------------{} end clear old contextId------------------------", LocalDateTime.now());
+                return;
+            }
+            List<String> contextIdList = historyOrcVersionList.stream().map(DSSOrchestratorVersion::getContextId).collect(Collectors.toList());
+            // 2、将dss_orchestrator_version_info表contextId置空（不管cs清理是否成功，这部分数据都是废弃数据，可以先做清理）
+            if (historyOrcVersionList.size() < DSSOrchestratorConstant.MAX_CLEAR_SIZE) {
+                orchestratorMapper.batchUpdateOrcInfo(historyOrcVersionList);
+            } else {
+                int len = DSSOrchestratorConstant.MAX_CLEAR_SIZE;
+                int size = historyOrcVersionList.size();
+                int count = (size + len - 1) / len;
+                for (int i = 0; i < count; i++) {
+                    List<DSSOrchestratorVersion> subHistoryList = historyOrcVersionList.subList(i * len, (Math.min((i + 1) * len, size)));
+                    LOGGER.info("update dss contextId by batch, {} batch", i + 1);
+                    orchestratorMapper.batchUpdateOrcInfo(subHistoryList);
+                    Thread.sleep(500);
+                }
+            }
+            // 3、根据appIds去查询子工作流contextId
+            List<DSSLabel> dssLabels = Lists.newArrayList(new EnvDSSLabel(OrchestratorConf.DSS_CS_CLEAR_ENV.getValue()));
+            Sender sender = DSSSenderServiceFactory.getOrCreateServiceInstance().getWorkflowSender(dssLabels);
+            List<Long> workflowIdList = historyOrcVersionList.stream().map(orcInfo -> orcInfo.getAppId()).collect(Collectors.toList());
+            ResponseSubFlowContextIds response = (ResponseSubFlowContextIds) sender.ask(new RequestSubFlowContextIds(workflowIdList));
+            if (response != null) {
+                List<String> subContextIdList = response.getContextIdList();
+                if (subContextIdList != null && subContextIdList.size() > 0) {
+                    contextIdList.addAll(response.getContextIdList());
+                }
+            }
+            // 4、调用linkis接口批量删除contextId
+            ContextClient contextClient = ContextClientFactory.getOrCreateContextClient();
+            // 每次处理1000条数据
+            if (contextIdList.size() < DSSOrchestratorConstant.MAX_CLEAR_SIZE) {
+                LOGGER.info("clear old contextId, contextIds：{}", contextIdList.toString());
+                //contextClient.batchClearContextByHAID(contextIdList);
+            } else {
+                int len = DSSOrchestratorConstant.MAX_CLEAR_SIZE;
+                int size = contextIdList.size();
+                int count = (size + len - 1) / len;
+                for (int i = 0; i < count; i++) {
+                    List<String> subList = contextIdList.subList(i * len, (Math.min((i + 1) * len, size)));
+                    LOGGER.info("clear old contextId by batch, {} batch, contextIds：{}", i + 1, subList.toString());
+                    //contextClient.batchClearContextByHAID(subList);
+                    Thread.sleep(500);
+                }
+            }
+            LOGGER.info("--------------------{} end clear old contextId------------------------", LocalDateTime.now());
+
+            // 5、删除历史bml文件
+            LOGGER.info("--------------------{} start clear old bml resource------------------------", LocalDateTime.now());
+            ResponseDeleteBmlSource responseDeleteBmlSource = (ResponseDeleteBmlSource) sender.ask(new RequestDeleteBmlSource(workflowIdList));
+            if (responseDeleteBmlSource.getJobStatus() == JobStatus.Success) {
+                LOGGER.info("--------------------{} end clear old bml resource------------------------", LocalDateTime.now());
+            } else {
+                LOGGER.warn("--------------------{}  clear old bml resource failed------------------------", LocalDateTime.now());
+            }
+
+        } catch (Exception e) {
+            LOGGER.warn("execute linkis batch clear csId failed，", e);
+        }
     }
 
 }

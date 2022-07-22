@@ -13,13 +13,41 @@
         <div class="project-nav-tree-top">
           <div class="project-nav-tree-top-t">
             <span class="project-nav-tree-top-t-txt">项目</span>
-            <span class="project-nav-tree-top-t-icon">
+            <div class="project-nav-tree-top-t-icon">
+              <Dropdown class="sort-icon" @on-click="filerSort($event,'sort')">
+                <SvgIcon class="icon" :icon-class="filterBar.sort ==='name' ? 'text-sort' : 'down'" style="display: inline-flex;font-size:14px"/>
+                <DropdownMenu slot="list">
+                  <DropdownItem
+                    v-for="(item) in sortTypeList"
+                    :name="item.value"
+                    :key="item.value"
+                  >{{ item.lable}}</DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
+              <Dropdown class="projcat-icon" @on-click="filerSort($event,'filter')">
+                <Icon :type="{all: 'ios-funnel-outline',owner:'ios-person-add',share:'md-share'}[filterBar.cat] " class="icon" size="16"></Icon>
+                <DropdownMenu slot="list">
+                  <DropdownItem
+                    name="all"
+                    key="all"
+                  >所有项目</DropdownItem>
+                  <DropdownItem
+                    name="owner"
+                    key="owner"
+                  >个人项目</DropdownItem>
+                  <DropdownItem
+                    name="share"
+                    key="share"
+                  >共享项目</DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
               <SvgIcon
                 icon-class="dev_center_flod"
+                class="icon"
                 style="opacity: 0.65"
                 @click="handleTreeToggle"
               />
-            </span>
+            </div>
           </div>
         </div>
         <virtual-tree
@@ -30,6 +58,7 @@
           :render="renderNode"
           :open="openNode"
           :height="height - 30"
+          @we-open-node="openNodeChange"
           @we-click="handleTreeClick" />
         <Spin v-show="loadingTree" size="large" fix />
       </div>
@@ -235,21 +264,42 @@ export default {
         show: false
       },
       height: 500,
-      openNode: {}
-    };
+      openNode: {},
+      filterBar: {
+        sort: 'updateTime',
+        cat: this.$route.query.viewState || 'all'
+      },
+      sortTypeList: [
+        {
+          lable: this.$t('message.workflow.projectDetail.sortUpdateTime'),
+          value: 'updateTime'
+        },
+        {
+          lable: this.$t('message.workflow.projectDetail.sortName'),
+          value: 'name'
+        }
+      ]
+    }
   },
   filters,
   watch: {
     tabList(val) {
       this.updateTabList(val)
     },
-    "$route.query"() {
+    "$route.query"(v) {
       this.tabList = [];
       this.getAreaMap();
       this.getProjectData(()=>{
         this.updateBread();
         this.tryOpenWorkFlow();
       });
+      if (v.projectID) {
+        this.currentTreeId = +v.projectID;
+        this.openNode = {
+          ...this.openNode,
+          [this.currentTreeId]: true
+        }
+      }
     }
   },
   created() {
@@ -259,10 +309,32 @@ export default {
   },
   mounted() {
     // 获取所有project展示tree
-    this.getAllProjects(() => {
+    this.getAllProjects((res) => {
+      if (this.$route.query.projectID) {
+        let index
+        let it
+        res.projects.find((item, idx) => {
+          if (item.id == this.$route.query.projectID) {
+            index = idx
+            it = item
+          }
+        })
+        if (it) {
+          res.projects.splice(index, 1)
+          res.projects.unshift(it)
+        }
+      }
+      this.setVirtualRolesForProj(res)
       this.updateBread();
       this.tryOpenWorkFlow();
     });
+    if (this.$route.query.projectID) {
+      this.currentTreeId = +this.$route.query.projectID;
+      this.openNode = {
+        ...this.openNode,
+        [this.currentTreeId]: true
+      }
+    }
     this.height = this.$el.clientHeight
     window.addEventListener('resize', this.resize);
   },
@@ -316,6 +388,11 @@ export default {
           this.currentProjectData.devProcessList.includes(item.dicValue)
         )
         : [];
+      // 切换项目，若项目没有对应模式，自动切换第一个
+      const checkHasMode = this.selectDevprocess.some(it => it.dicValue === this.modeOfKey)
+      if (this.selectDevprocess.length > 0 && !checkHasMode) {
+        this.handleChangeButton(this.selectDevprocess[0])
+      }
     },
     // 获取编排列表
     getSelectOrchestratorList() {
@@ -388,54 +465,7 @@ export default {
         )
         .then((res) => {
           this.loadingTree = false;
-          if (this.$route.query.projectID) {
-            let index
-            let it
-            res.projects.find((item, idx) => {
-              if (item.id == this.$route.query.projectID) {
-                index = idx
-                it = item
-              }
-            })
-            if (it) {
-              res.projects.splice(index, 1)
-              res.projects.unshift(it)
-            }
-          }
-
-          if (this.modeOfKey == "streamis_prod") {
-            this.projectsTree = res.projects
-              .filter((n) => {
-                return (
-                  n.devProcessList &&
-                  n.releaseUsers &&
-                  n.releaseUsers.indexOf(this.getUserName()) !== -1
-                );
-              })
-              .map((n) => {
-                setVirtualRoles(n, this.getUserName());
-                return {
-                  id: n.id,
-                  name: n.name,
-                  type: "streamis_prod",
-                  canWrite: n.canWrite(),
-                };
-              });
-            if (!this.$route.query.projectID) {
-              this.handleTreeClick({item: this.projectsTree[0]});
-            }
-          } else {
-            this.projectsTree = res.projects.map((n) => {
-              setVirtualRoles(n, this.getUserName());
-              return {
-                id: n.id,
-                name: n.name,
-                type: "project",
-                canWrite: n.canWrite(),
-              };
-            });
-          }
-          callback();
+          callback(res);
         });
     },
     // 获取project下工作流
@@ -503,6 +533,9 @@ export default {
           this.refreshFlow = true;
         });
     },
+    openNodeChange(v) {
+      this.openNode = {...v}
+    },
     handleTreeClick({item}) {
       const node = item
       // 切换到开发模式
@@ -515,7 +548,6 @@ export default {
         this.modeOfKey = "streamis_prod"
         return;
       }
-      console.log(node)
       if (node && node.children.length < 1 && node.type === 'project') {
         this.currentTreeId = node.id;
         if (node.id != this.$route.query.projectID) {
@@ -530,8 +562,6 @@ export default {
             query,
           })
           this.updateBread();
-        } else {
-          this.openNode[node.id] = !this.openNode[node.id]
         }
       } else if (node && node.type === 'flow') {
         const { canContinue } = this.hasOpenedTab({id: node.id, version: node.orchestratorVersionId})
@@ -689,15 +719,6 @@ export default {
           this.tabList = curProjectCachedTab
         }
       }
-      setTimeout(()=>{
-        if (!this.$route.query.flowId) {
-          this.currentTreeId = +this.$route.query.projectID;
-          this.openNode = {
-            ...this.openNode,
-            [this.currentTreeId]: true
-          }
-        }
-      }, 50)
     },
     tryOpenWorkFlow() {
       // this.modeOfKey不能为空
@@ -764,10 +785,6 @@ export default {
           return item;
         }
       });
-      this.openNode = {
-        ...this.openNode,
-        [project.id]: true
-      }
     },
     // 确认新增工程 || 确认修改
     ProjectConfirm(projectData, callback) {
@@ -1024,10 +1041,12 @@ export default {
       this.current = {};
       this.tabId = "";
       const routerMap =  { scheduler: 'Scheduler', dev: 'Workflow', prod: 'ScheduleCenter'}
-      this.$router.push({
-        name: routerMap[item.dicValue],
-        query: this.$route.query,
-      });
+      if (routerMap[item.dicValue]) {
+        this.$router.push({
+          name: routerMap[item.dicValue],
+          query: this.$route.query,
+        });
+      }
     },
     deleteEditLock(flowId) {
       const data = storage.get("flowEditLock") || {}
@@ -1211,6 +1230,106 @@ export default {
     resize() {
       this.height = this.$el.clientHeight
     },
+    setVirtualRolesForProj(res) {
+      if (this.modeOfKey == "streamis_prod") {
+        this.projectsTree = res.projects
+          .filter((n) => {
+            return (
+              n.devProcessList &&
+                  n.releaseUsers &&
+                  n.releaseUsers.indexOf(this.getUserName()) !== -1
+            );
+          })
+          .map((n) => {
+            setVirtualRoles(n, this.getUserName());
+            return {
+              id: n.id,
+              name: n.name,
+              type: "streamis_prod",
+              canWrite: n.canWrite(),
+            };
+          });
+        if (!this.$route.query.projectID) {
+          this.handleTreeClick({item: this.projectsTree[0]});
+        }
+      } else {
+        this.projectsTree = res.projects.map((n) => {
+          setVirtualRoles(n, this.getUserName());
+          return {
+            id: n.id,
+            name: n.name,
+            type: "project",
+            canWrite: n.canWrite(),
+            children: n.children || []
+          };
+        });
+      }
+    },
+    /**
+     * 排序+筛选
+     */
+    filerSort(name, type) {
+      // 保存已经加载项目下工作流数据
+      if (!this.flowData) {
+        this.flowData = {}
+      }
+      this.projectsTree.forEach(it => {
+        if (it.children) {
+          this.flowData[it.id] = it.children
+        }
+      })
+      const filterFn = () => {
+        let sortName = this.filterBar.sort
+        let filterCat = this.filterBar.cat
+        if (type === 'sort') {
+          sortName = name
+        } else {
+          filterCat = name
+        }
+        // 先排序，再按分类筛选
+        this.sortTypeChange(sortName)
+        const projs = this.changeCatType(filterCat)
+        this.setVirtualRolesForProj({projects: projs})
+      }
+      if (this.rawProjects) {
+        filterFn()
+      } else {
+        this.getAllProjects((res) => {
+          this.rawProjects = res;
+          filterFn()
+        })
+      }
+    },
+    sortTypeChange(name = this.filterBar.sort) {
+      this.filterBar.sort = name
+      if (!this.rawProjects) return []
+      this.rawProjects.projects.sort((a, b) => {
+        if (name === 'updateTime') {
+          return b[name] - a[name]
+        } else {
+          return a[name].localeCompare(b[name])
+        }
+      })
+    },
+    changeCatType(type = this.filterBar.cat) {
+      this.filterBar.cat = type
+      const curUser = this.getUserName()
+      // 筛选
+      if (!this.rawProjects) return []
+      const projs = this.rawProjects.projects.filter(item => {
+        if (this.flowData && this.flowData[item.id]) {
+          item.children = this.flowData[item.id]
+        }
+        if (type === 'owner') {
+          return item.createBy === curUser
+        } else if(type === 'share') {
+          return item.createBy !== curUser
+        } else {
+          return true
+        }
+      })
+      return projs
+    }
   },
   beforeDestroy() {
     window.removeEventListener('resize', this.resize);
