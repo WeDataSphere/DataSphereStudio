@@ -5,6 +5,7 @@
     "scripts": {
         "serve": "npm run postinstall && cd packages/dss && npm run serve",
         "build": "npm run postinstall && cd packages/dss && npm run build",
+        "build-sandbox": "npm run postinstall && cd packages/dss && npm run build-sandbox",
         "lint": "vue-cli-service lint --no-fix",
         "fix": "vue-cli-service lint --fix",
         "precommit": "lint-staged",

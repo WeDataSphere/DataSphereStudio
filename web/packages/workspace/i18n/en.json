@@ -48,6 +48,10 @@
       "error": {
         "fileExists": "Duplicated file!"
       },
+      "topNotice": {
+        "title": "Tips",
+        "content": "Dear Sandbox users: The sand environment is an open environment for testing, deploying all the components of the WeDataSphere open source version. Currently, only demos are allowed to run due to security restrictions, and users cannot add or modify test data. Please take care of the use of the sandbox environment."
+      },
       "ALTY": "Demos",
       "KSRM": "Admin",
       "HYP": "Change",

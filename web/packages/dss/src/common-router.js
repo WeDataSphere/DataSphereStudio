@@ -106,5 +106,16 @@ export default [
     },
     component: () =>
       import('../view/404.vue'),
-  }
+  },
+  {
+    path: '/register',
+    name: 'register',
+    meta: {
+      title: 'Register',
+      publicPage: true,
+      keepAlive: true,
+    },
+    component: () =>
+      import ('../view/register/index.vue'),
+  },
 ]

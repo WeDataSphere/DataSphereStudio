@@ -30,6 +30,7 @@
             v-model="rememberUserNameAndPass"
             class="remember-user-name"
             style="">{{$t('message.common.login.remenber')}}</Checkbox>
+          <router-link to="/register"> <span class="toRegister">{{$t('message.common.login.toRegister')}}</span></router-link>
         </FormItem>
         <FormItem>
           <Button
@@ -156,6 +157,7 @@ export default {
           Object.keys(config.stores).map((key) => {
             db.db[key].clear();
           })
+          storage.remove('workspace_top_notice')
           api
             .fetch(`/user/login`, params)
             .then((rst) => {
