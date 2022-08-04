@@ -37,11 +37,16 @@ import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlow;
 import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlowRelation;
 import com.webank.wedatasphere.dss.workflow.common.parser.WorkFlowParser;
 import com.webank.wedatasphere.dss.workflow.constant.DSSWorkFlowConstant;
+import com.webank.wedatasphere.dss.workflow.core.WorkflowFactory;
+import com.webank.wedatasphere.dss.workflow.core.entity.Workflow;
+import com.webank.wedatasphere.dss.workflow.core.entity.WorkflowWithContextImpl;
+import com.webank.wedatasphere.dss.workflow.core.json2flow.JsonToFlowParser;
 import com.webank.wedatasphere.dss.workflow.dao.FlowMapper;
 import com.webank.wedatasphere.dss.workflow.dao.NodeInfoMapper;
 import com.webank.wedatasphere.dss.workflow.entity.CommonAppConnNode;
 import com.webank.wedatasphere.dss.workflow.entity.NodeInfo;
 import com.webank.wedatasphere.dss.workflow.entity.vo.ExtraToolBarsVO;
+import com.webank.wedatasphere.dss.workflow.entity.vo.FlowInfoVo;
 import com.webank.wedatasphere.dss.workflow.io.export.NodeExportService;
 import com.webank.wedatasphere.dss.workflow.io.input.NodeInputService;
 import com.webank.wedatasphere.dss.workflow.lock.Lock;
@@ -51,6 +56,8 @@ import com.webank.wedatasphere.dss.workflow.service.WorkflowNodeService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.common.conf.CommonVars;
+import org.apache.linkis.common.exception.ErrorException;
+import org.apache.linkis.cs.client.utils.SerializeHelper;
 import org.apache.linkis.cs.common.utils.CSCommonUtils;
 import org.apache.linkis.server.BDPJettyServerHelper;
 import org.slf4j.Logger;
@@ -184,6 +191,34 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         return DSSFlow;
     }
 
+    @Override
+    public List<String> getSubFlowContextIdsByFlowIds(List<Long> flowIdList) throws ErrorException {
+        ArrayList<String> contextIdList = new ArrayList<>();
+        // 查出工作流的父子关系
+        List<FlowInfoVo> flowInfoVoList = flowMapper.selectSubFlowIdsByFlowIds(flowIdList);
+        if (flowInfoVoList == null || flowInfoVoList.isEmpty()) {
+            return contextIdList;
+        }
+        // 获取子工作流 contextId
+        JsonToFlowParser jsonToFlowParser = WorkflowFactory.INSTANCE.getJsonToFlowParser();
+        for (FlowInfoVo flowInfoVo : flowInfoVoList) {
+            List<DSSFlowRelation> subFlowList = flowInfoVo.getSubFlowList();
+            if (subFlowList != null && subFlowList.size() > 0) {
+                for (DSSFlowRelation flowRelation : subFlowList) {
+                    DSSFlow dssFlow = getFlow(flowRelation.getFlowID());
+                    Workflow workflow = jsonToFlowParser.parse(dssFlow);
+                    String contextIDStr = ((WorkflowWithContextImpl) workflow).getContextID();
+                    if (StringUtils.isNotBlank(contextIDStr)) {
+                        // 获取需要清理的contextId
+                        contextIdList.add(SerializeHelper.deserializeContextID(contextIDStr).getContextId());
+                    }
+                }
+            }
+        }
+        return contextIdList;
+    }
+
+
     @Lock
     @Transactional(rollbackFor = DSSErrorException.class)
     @Override
@@ -195,6 +230,25 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             throw new DSSErrorException(90003, "工作流名不能重复");
         }
     }
+
+    @Override
+    public void batchDeleteBmlResource(List<Long> flowIdList) {
+        List<Long> newFlowList = new ArrayList<>(flowIdList);
+        List<FlowInfoVo> flowInfoVos = flowMapper.selectSubFlowIdsByFlowIds(flowIdList);
+        for (FlowInfoVo flowInfoVo : flowInfoVos) {
+            List<DSSFlowRelation> subFlowList = flowInfoVo.getSubFlowList();
+            if (subFlowList != null && subFlowList.size() > 0) {
+                subFlowList.forEach(dssFlowRelation -> newFlowList.add(dssFlowRelation.getFlowID()));
+            }
+        }
+        List<DSSFlow> dssFlowList = flowMapper.selectResourcesByWorkflowIds(newFlowList);
+        if (dssFlowList != null && dssFlowList.size() > 0) {
+            for (DSSFlow dssFlow : dssFlowList) {
+                bmlService.deleteBmlResource(dssFlow.getCreator(), dssFlow.getResourceId());
+            }
+        }
+    }
+
 
     @Lock
     @Transactional(rollbackFor = DSSErrorException.class)
@@ -238,6 +292,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         dssFlow.setDescription(comment);
         dssFlow.setResourceId(bmlReturnMap.get("resourceId").toString());
         dssFlow.setBmlVersion(bmlReturnMap.get("version").toString());
+        updateMetrics(dssFlow, jsonFlow);
         //todo 数据库增加版本更新
         flowMapper.updateFlowInputInfo(dssFlow);
 
@@ -249,6 +304,17 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         String version = bmlReturnMap.get("version").toString();
         return version;
+    }
+
+    private void updateMetrics(DSSFlow dssFlow, String flowJson) {
+        Map<String, Object> metricsMap = new HashMap<>();
+        List<DSSNode> nodes = workFlowParser.getWorkFlowNodes(flowJson);
+        metricsMap.put("totalNodes", nodes == null ? 0 : nodes.size());
+        if (nodes != null) {
+            Map<String, Long> mapCnt = nodes.stream().collect(Collectors.groupingBy(DSSNode::getNodeType, Collectors.counting()));
+            metricsMap.putAll(mapCnt);
+        }
+        dssFlow.setMetrics(new Gson().toJson(metricsMap));
     }
 
     public boolean isEqualTwoJson(String oldJsonNode, String newJsonNode) {

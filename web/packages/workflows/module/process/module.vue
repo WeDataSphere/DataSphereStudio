@@ -341,11 +341,6 @@
           @click="workflowPublish">{{$t('message.workflow.ok')}}</Button>
       </div>
     </Modal>
-    <module v-model="showDispatchHistoryModel" width="1500" :footerDisable="false">
-      <div class="schedulisIframe">
-        <iframe class="iframeClass" :src="schedulislSrc" frameborder="0" width="100%" height="100%"/>
-      </div>
-    </module>
     <Modal
       v-model="workflowExportShow"
       :title="$t('message.workflow.exportWorkflow')"
@@ -404,9 +399,10 @@ import mixin from '@dataspherestudio/shared/common/service/mixin';
 import util from '@dataspherestudio/shared/common/util';
 import plugin from '@dataspherestudio/shared/common/util/plugin';
 import eventbus from "@dataspherestudio/shared/common/helper/eventbus";
-import module from './component/modal.vue';
 import moment from 'moment';
 import { getPublishStatus } from '@/workflows/service/api.js';
+import module from './index';
+import nodeIcons from './nodeicon'
 
 const extComponents = plugin.emitHook('workflow_bottom_panel') || {}
 export default {
@@ -416,8 +412,7 @@ export default {
     resource,
     nodeParameter,
     associateScript,
-    console,
-    module
+    console
   },
   mixins: [mixin],
   directives: {
@@ -484,9 +479,6 @@ export default {
       // 是否为父工作流
       isRootFlow: true,
       name: '',
-      versionId: '',
-      // 0 未发布过 1发布过
-      state: '',
       shapes: [],
       // 原始数据
       originalData: null,
@@ -517,14 +509,11 @@ export default {
       },
       // 是否有改变
       jsonChange: false,
-      publishChangeCount: 0,
       loading: false,
       repetitionNameShow: false,
       repeatTitles: [],
       nodebaseinfoShow: false, // 自定义节点信息弹窗展示
       clickCurrentNode: {}, // 当前点击的节点
-      timerClick: '',
-
       viewOptions: {
         showBaseInfoOnAdd: false, // 不显示默认的拖拽添加节点弹出的基础信息面板
         shapeView: true, // 左侧shape列表
@@ -534,8 +523,6 @@ export default {
       addNodeShow: false, // 创建节点的弹窗显示
       cacheNode: null,
       addNodeTitle: this.$t('message.workflow.process.createSubFlow'), // 创建节点时弹窗的title
-      IframeProjectLoading: false,
-      // nodeBasicInfoData: [], // 后台返回的节点基本信息
       workflowIsExecutor: false, // 当前工作流是否再执行
       openningNode: null, // 上一次打开控制台的节点
       shapeWidth: 0, // 流程图插件左侧工具栏的宽度
@@ -545,14 +532,11 @@ export default {
       executorStatusTimer: '',
       workflowExecutorCache: [],
       isDispatch: false,
-      showDispatchHistoryModel: false,
-      schedulislSrc: '', // 调度历史跳转的url
       contextID: '',
       pubulishFlowComment: '',
       pubulishShow: false,
       flowVersion: '',
       isFlowPubulish: false,
-      // bmlVersion: '',
       workflowExportShow: false,
       exportDesc: '',
       exporTChangeVersion: false,
@@ -564,25 +548,6 @@ export default {
       locked: false,
       newOrchestratorVersionId: this.orchestratorVersionId,
       extraToolbar: [],
-      // 工作流icon
-      workFlowImage: {
-        'sql': require('./images/workflow/sql.png'),
-        'python': require('./images/workflow/python.png'),
-        'pyspark': require('./images/workflow/pyspark.png'),
-        'scala': require('./images/workflow/scala.png'),
-        'hql': require('./images/workflow/hql.png'),
-        'shell': require('./images/workflow/shell.png'),
-        'display': require('./images/workflow/display.png'),
-        'dashboard': require('./images/workflow/dashboard.png'),
-        'widget': require('./images/workflow/widget.png'),
-        'mlss': require('./images/workflow/mlss.png'),
-        'eventreceiver': require('./images/workflow/eventreceiver.png'),
-        'eventsender': require('./images/workflow/eventsender.png'),
-        'datachecker': require('./images/workflow/datachecker.png'),
-        'connector': require('./images/workflow/connector.png'),
-        'subFlow': require('./images/workflow/subflow.png'),
-        'sendemail': require('./images/workflow/sendemail.png'),
-      },
       extComponents
     };
   },
@@ -684,7 +649,6 @@ export default {
   },
   watch: {
     jsonChange(val) {
-      this.publishChangeCount += 1;
       this.$emit('isChange', val);
     },
     workflowExecutorCache() {
@@ -920,7 +884,6 @@ export default {
     },
     convertJson(flow) {
       this.name = flow.name;
-      this.state = flow.state;
       this.isRootFlow = flow.rootFlow;
       this.rank = flow.rank; // 工作流层级
       let json;
@@ -939,6 +902,7 @@ export default {
             return node;
           });
         }
+        this.orcVersion = json.orcVersion
       }
       return json;
     },
@@ -950,8 +914,8 @@ export default {
           if (item.children.length > 0) {
             item.children = item.children.map((subItem) => {
               // svg绘制的点太多，导致动画卡顿，使用图片代替
-              if (this.workFlowImage[subItem.title]) {
-                subItem.image = this.workFlowImage[subItem.title];
+              if (nodeIcons[subItem.title]) {
+                subItem.image = nodeIcons[subItem.title];
               } else if (subItem.image) {
                 subItem.image = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(subItem.image)))
               }
@@ -1419,7 +1383,8 @@ export default {
         props: this.props,
         resources: this.resources,
         scheduleParams: this.scheduleParams,
-        contextID: this.contextID
+        contextID: this.contextID,
+        orcVersion: this.orcVersion
       })));
       if (this.schedulerAppConnName !== undefined) {
         paramsJson.schedulerAppConnName = this.schedulerAppConnName
@@ -2349,16 +2314,6 @@ export default {
       time=0;
       return timeResult;
     },
-    // 新建widget节点的弹框里，绑定view下拉框
-    // handleBindViewChange(key) {
-    //   // 更新当前选择的view的值 this.selectBindView
-    //   for (let i = 0; i < this.sqlNodeList.length; i++) {
-    //     if (key === this.sqlNodeList[i].key) {
-    //       this.selectBindView = this.sqlNodeList[i]
-    //       break
-    //     }
-    //   }
-    // },
     workflowPublishIsShow() {
       // 已经在发布不能再点击
       if(this.isFlowPubulish) return this.$Message.warning(this.$t('message.workflow.publishing'))
@@ -2424,15 +2379,15 @@ export default {
       if (type === 'publish') {
         typeName = this.$t('message.workflow.process.publish')
       }
-      const timer = setTimeout(() => {
+      this.timer = setTimeout(() => {
         timeoutValue += 2000;
         getPublishStatus(+id, this.getCurrentDsslabels()).then((res) => {
           if (timeoutValue <= (10 * 60 * 1000)) {
             if (res.status === 'init' || res.status === 'running') {
-              clearTimeout(timer);
+              clearTimeout(this.timer);
               this.checkResult(id, timeoutValue, type);
             } else if (res.status === 'success') {
-              clearTimeout(timer);
+              clearTimeout(this.timer);
               this.isFlowPubulish = false;
               // 如果是导出成功需要下载文件
               if (type === 'export' && res.msg) {
@@ -2450,11 +2405,10 @@ export default {
                 });
               }
               this.$Message.success(this.$t('message.workflow.workflowSuccess', { name: typeName }));
-              this.publishChangeCount = 0;
               // 发布成功后，根工作流id会变化，导致修改工作流后保存的还是旧id
               this.refreshOpen(this.getBaseInfo)
             } else if (res.status === 'failed') {
-              clearTimeout(timer);
+              clearTimeout(this.timer);
               this.isFlowPubulish = false;
               this.$Modal.error({
                 title: this.$t('message.workflow.workflowFail', { name: typeName }),
@@ -2466,10 +2420,12 @@ export default {
               this.refreshOpen(this.getBaseInfo)
             }
           } else {
-            clearTimeout(timer);
+            clearTimeout(this.timer);
             this.isFlowPubulish = false;
             this.$Message.warning(this.$t('message.workflow.projectDetail.workflowRunOvertime'));
           }
+          // 扩展插件发布历史列表更新
+          eventbus.emit('get_publish_status', res)
         }).catch(()=> {
           this.isFlowPubulish = false;
           this.refreshOpen(this.getBaseInfo)
@@ -2586,10 +2542,6 @@ export default {
       const key = `${username}-workflow-${this.orchestratorId}-taskId`;
       return key
     },
-    isCurrentOrchestrator(){
-      const username = this.getUserName();
-      return this.getTaskKey().replace(this.orchestratorId, '') ===  `${username}-workflow--taskId`;
-    },
     setTaskId(taskId) {
       const key = this.getTaskKey();
       storage.set(key, taskId);
@@ -2608,6 +2560,20 @@ export default {
             this.allDelete();
           } else {
             this.nodeDelete(selectNodes[0])
+          }
+        }
+      }
+    },
+    async checkLastPublish(cb) {
+      const publishTaskId = this.getTaskId()
+      if (publishTaskId) {
+        const res = await getPublishStatus(publishTaskId, this.getCurrentDsslabels())
+        if (res.status === 'running') {
+          this.isFlowPubulish = true
+          this.checkResult(publishTaskId, 0, 'publish')
+          // 打开发布历史panel
+          if (cb) {
+            cb()
           }
         }
       }

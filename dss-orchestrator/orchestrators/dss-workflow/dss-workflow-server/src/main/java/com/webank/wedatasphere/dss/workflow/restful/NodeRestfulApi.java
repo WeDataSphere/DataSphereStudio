@@ -163,8 +163,7 @@ public class NodeRestfulApi {
         Map<String, Object> params = createExternalNodeRequest.getParams();
         String nodeId = createExternalNodeRequest.getNodeID();
 
-        logger.info("User {} try to create a {} node for workflow {} in projectId {}, params is {}.",
-                userName, nodeType, flowId, projectId, params);
+        logger.info("user {} try to create a {} node for workflow {}, params is {}.", userName, nodeType, flowId, params);
         CommonAppConnNode node = new CommonAppConnNode();
         node.setNodeType(nodeType);
         node.setFlowId(flowId);

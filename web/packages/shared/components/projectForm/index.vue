@@ -14,7 +14,7 @@
       ref="projectForm"
       :model="projectDataCurrent"
       :rules="formValid"
-      v-if="ProjectShow"
+      class="project_form"
     >
       <FormItem
         :label="$t('message.workflow.projectDetail.projectName')"
@@ -191,6 +191,7 @@ import _ from "lodash";
 import {
   GetWorkspaceUserList,
   GetDicList,
+  CheckProjectNameRepeat
 } from '@dataspherestudio/shared/common/service/apiCommonMethod.js';
 export default {
   components: {
@@ -249,21 +250,28 @@ export default {
   },
   computed: {
     formValid() {
-      let validateName = (rule, value, callback) => {
+      let validateName = async (rule, value, callback) => {
         let currentWorkspaceName = storage.get("currentWorkspace")
           ? storage.get("currentWorkspace").name
           : null;
         let username = storage.get("baseInfo", "local")
           ? storage.get("baseInfo", "local").username
           : null;
-        if (
-          (currentWorkspaceName &&
-            username &&
-            value.match(currentWorkspaceName)) ||
-          value.match(username)
-        ) {
+        // 校验是否重名
+        let repeat
+        try {
+          const res = await CheckProjectNameRepeat(value)
+          repeat = res.repeat
+        } catch (error) {
+          //
+        }
+        if ((currentWorkspaceName && username && value.match(currentWorkspaceName)) || value.match(username)) {
           callback(
             new Error(this.$t("message.workflow.projectDetail.validateName"))
+          );
+        } else if (repeat && this.actionType === 'add') {
+          callback(
+            new Error(this.$t("message.workflow.projectDetail.nameUnrepeatable"))
           );
         } else {
           callback();
@@ -378,6 +386,7 @@ export default {
             if (success) this.ProjectShow = false;
             this.submiting = false;
           });
+          this.$refs.projectForm.resetFields();
         } else {
           this.submiting = false;
           this.$Message.warning(this.$t("message.workflow.failedNotice"));
@@ -386,6 +395,7 @@ export default {
     },
     Cancel() {
       this.ProjectShow = false;
+      this.$refs.projectForm.resetFields();
       this.projectData.business = this.originBusiness;
     },
     addTag(label) {
@@ -418,5 +428,11 @@ export default {
   margin-left: 10px;
   font-size: 16px;
   color: black;
+}
+.project_form {
+  height: 60vh;
+  overflow-y: auto;
+  padding: 5px;
+  max-height: 500px;
 }
 </style>

@@ -21,7 +21,7 @@ import java.util
 import com.webank.wedatasphere.dss.common.exception.DSSErrorException
 import com.webank.wedatasphere.dss.common.protocol._
 import com.webank.wedatasphere.dss.common.utils.DSSCommonUtils
-import com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestConvertOrchestrations
+import com.webank.wedatasphere.dss.orchestrator.common.protocol.{RequestConvertOrchestrations}
 import com.webank.wedatasphere.dss.standard.app.sso.Workspace
 import com.webank.wedatasphere.dss.workflow.WorkFlowManager
 import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlow
@@ -54,6 +54,10 @@ class DSSWorkflowReceiver(workflowManager: WorkFlowManager)  extends Receiver {
 
     case reqDeleteFlow: RequestDeleteWorkflow =>
       workflowManager.deleteWorkflow(reqDeleteFlow.userName, reqDeleteFlow.flowID)
+      new ResponseDeleteWorkflow(JobStatus.Success)
+
+    case reqDelBmlSource: RequestDeleteBmlSource =>
+      workflowManager.batchDeleteBmlResource(reqDelBmlSource.getFlowIdList)
       new ResponseDeleteWorkflow(JobStatus.Success)
 
     case reqExportFlow: RequestExportWorkflow =>
@@ -101,6 +105,8 @@ class DSSWorkflowReceiver(workflowManager: WorkFlowManager)  extends Receiver {
 
     case requestConvertOrchestrator: RequestConvertOrchestrations =>
       workflowManager.convertWorkflow(requestConvertOrchestrator)
+    case requestWorkflowIdList : RequestSubFlowContextIds =>
+      workflowManager.getSubFlowContextIdsByFlowIds(requestWorkflowIdList)
 
     case _ => throw new DSSErrorException(90000, "Not support protocol " + message)
   }

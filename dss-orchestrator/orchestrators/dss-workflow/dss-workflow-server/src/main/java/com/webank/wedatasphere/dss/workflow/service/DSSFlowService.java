@@ -21,6 +21,7 @@ import com.webank.wedatasphere.dss.common.label.DSSLabel;
 import com.webank.wedatasphere.dss.standard.app.sso.Workspace;
 import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlow;
 import com.webank.wedatasphere.dss.workflow.entity.vo.ExtraToolBarsVO;
+import org.apache.linkis.common.exception.ErrorException;
 
 import java.io.IOException;
 import java.util.List;
@@ -40,8 +41,11 @@ public interface DSSFlowService {
      */
     DSSFlow getFlow(Long flowId);
 
+    List<String> getSubFlowContextIdsByFlowIds(List<Long> flowIdList) throws ErrorException;
+
     void updateFlowBaseInfo(DSSFlow dssFlow) throws DSSErrorException;
 
+    void batchDeleteBmlResource(List<Long> flowIdList);
 
     void batchDeleteFlow(List<Long> flowIdlist);
 
