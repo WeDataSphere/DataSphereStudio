@@ -180,7 +180,7 @@ export default {
       applicationAreaMap: [],
       orchestratorModeList: {},
       ifDelOtherSys: false,
-      viewState: 'owner'
+      viewState: 'all'
     }
   },
   computed: {
