@@ -89,7 +89,8 @@ public class MigrateServiceImpl implements MigrateService {
             LOG.info("dssProject {} is not exist will create it first", dssProject.getName());
             ProjectCreateRequest projectCreateRequest = new ProjectCreateRequest();
             projectCreateRequest.setName(dssProject.getName());
-            projectCreateRequest.setDescription(dssProject.getDescription());
+            //增加迁移临时标记，后续可以去掉
+            projectCreateRequest.setDescription(dssProject.getDescription()+"_FromDSS0X");
             projectCreateRequest.setBusiness(dssProject.getBusiness());
             projectCreateRequest.setEditUsers(StringUtils.isNotBlank(dssProject.getUsername()) ? Lists.newArrayList(dssProject.getUsername()) : Lists.newArrayList(userName));
             projectCreateRequest.setAccessUsers(StringUtils.isNotBlank(dssProject.getUsername()) ? Lists.newArrayList(dssProject.getUsername()) : Lists.newArrayList(userName));

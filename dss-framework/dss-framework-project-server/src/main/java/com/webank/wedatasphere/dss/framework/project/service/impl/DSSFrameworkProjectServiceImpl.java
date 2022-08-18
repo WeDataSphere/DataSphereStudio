@@ -62,6 +62,7 @@ public class DSSFrameworkProjectServiceImpl implements DSSFrameworkProjectServic
     private static final Logger LOGGER = LoggerFactory.getLogger(DSSFrameworkProjectServiceImpl.class);
     public static final int MAX_PROJECT_NAME_SIZE = 150;
     public static final int MAX_PROJECT_DESC_SIZE = 2048;
+    public static final String FROM_DSS_0_X = "_FromDSS0X";
     @Autowired
     private DSSProjectService dssProjectService;
     @Autowired
@@ -91,8 +92,12 @@ public class DSSFrameworkProjectServiceImpl implements DSSFrameworkProjectServic
         } else if(projectCreateRequest.getDescription().length() > MAX_PROJECT_DESC_SIZE) {
             DSSExceptionUtils.dealErrorException(60021,"project description is too long. the length must be less than " + MAX_PROJECT_DESC_SIZE, DSSProjectErrorException.class);
         }
-
-        this.checkProjectName(projectCreateRequest.getName(), workspace, username);
+        //临时添加迁移标识，迁移后可以去掉。迁移项目都已经存在调度项目
+        if(!projectCreateRequest.getDescription().contains(FROM_DSS_0_X)) {
+            this.checkProjectName(projectCreateRequest.getName(), workspace, username);
+        }else{
+            LOGGER.info("Create project from dss0x;");
+        }
 
         Map<AppInstance, Long> projectMap = createAppConnProject(projectCreateRequest, workspace, username);
         //3.保存dss_project
