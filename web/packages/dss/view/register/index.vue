@@ -537,6 +537,8 @@ export default {
 .register {
     min-width: 1200px;
     margin-left: 20%;
+    height: 100%;
+    overflow: auto;
     .registerInput {
         // margin-left: 20%;
         width: 70%;
