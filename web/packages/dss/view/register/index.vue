@@ -53,6 +53,7 @@
                 <Checkbox :label="$t('message.register.discover.search')"></Checkbox>
                 <Checkbox :label="$t('message.register.discover.csdn')"></Checkbox>
                 <Checkbox :label="$t('message.register.discover.decomend')"></Checkbox>
+                <Checkbox :label="$t('message.register.discover.meeting')"></Checkbox>
               </CheckboxGroup>
             </FormItem>
             <FormItem :label="$t('message.register.des')" prop="desc">
@@ -405,10 +406,11 @@ export default {
           let discoveryList = this.formValidate.discovery;
           let discoveryAll = [
             "GitHub",
-            "OsChina",
+            "OsChina/Gitee",
             "搜索引擎",
             "CSDN",
-            "朋友推荐"
+            "朋友推荐",
+            "相关活动吸引"
           ];
           let discoveryIndex = [];
           discoveryAll.forEach(item => {
@@ -418,6 +420,7 @@ export default {
             }
           });
           let discoveryFormat = discoveryIndex.join(",");
+          console.log(discoveryFormat, this.formValidate.discovery)
           const params = {
             phone: this.formValidate.phone.replace(/(^\s*)|(\s*$)/g, ""),
             name: this.formValidate.name.replace(/(^\s*)|(\s*$)/g, ""),

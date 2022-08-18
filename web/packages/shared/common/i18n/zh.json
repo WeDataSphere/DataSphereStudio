@@ -393,9 +393,10 @@
       "discover": {
           "how": "如何发现DSS的",
           "GitHub": "GitHub",
-          "OsChina": "OsChina",
+          "OsChina": "OsChina/Gitee",
           "search": "搜索引擎",
           "csdn": "CSDN",
+          "meeting": "相关活动吸引",
           "decomend": "朋友推荐"
       },
       "des": "需求描述",

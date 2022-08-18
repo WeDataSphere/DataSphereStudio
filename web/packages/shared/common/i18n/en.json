@@ -392,9 +392,10 @@
       "discover": {
         "how": "How did you hear about us?",
         "GitHub": "GitHub",
-        "OsChina": "OsChina",
+        "OsChina": "OsChina/Gitee",
         "search": "Search Engines",
         "csdn": "CSDN",
+        "meeting": "Community",
         "decomend": "Friend's/Colleague's recommendation"
       },
       "des": "Requirement description",
