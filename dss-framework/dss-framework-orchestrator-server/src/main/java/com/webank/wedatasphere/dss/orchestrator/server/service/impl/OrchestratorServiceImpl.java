@@ -451,7 +451,7 @@ public class OrchestratorServiceImpl implements OrchestratorService {
         try {
             // 1、先去查询dss_orchestrator_version_info表，筛选出发布过n次及以上的编排，并获取老的发布记录。
             //为了不影响正常使用，需要频繁下载工作流bml文件，每次只拿50条工作流进行清理
-            List<DSSOrchestratorVersion> historyOrcVersionList = orchestratorMapper.getHistoryOrcVersion(OrchestratorConf.DSS_PUBLISH_MAX_VERSION.getValue());
+            List<DSSOrchestratorVersion> historyOrcVersionList = orchestratorMapper.getHistoryOrcVersion(OrchestratorConf.DSS_PUBLISH_MAX_VERSION.getValue(),OrchestratorConf.DSS_PUBLISH_BEGIN_CLEAR_TIME.getValue());
             while (historyOrcVersionList.size()>0) {
                 LOGGER.info("Clear historyOrcVersionList size is "+ historyOrcVersionList.size());
                 if (historyOrcVersionList == null || historyOrcVersionList.isEmpty()) {
@@ -493,7 +493,7 @@ public class OrchestratorServiceImpl implements OrchestratorService {
 
                 orchestratorMapper.batchUpdateOrcInfo(historyOrcVersionList);
                 Thread.sleep(5000);
-                historyOrcVersionList=orchestratorMapper.getHistoryOrcVersion(OrchestratorConf.DSS_PUBLISH_MAX_VERSION.getValue());
+                historyOrcVersionList=orchestratorMapper.getHistoryOrcVersion(OrchestratorConf.DSS_PUBLISH_MAX_VERSION.getValue(),OrchestratorConf.DSS_PUBLISH_BEGIN_CLEAR_TIME.getValue());
             }
 
         } catch (Exception e) {

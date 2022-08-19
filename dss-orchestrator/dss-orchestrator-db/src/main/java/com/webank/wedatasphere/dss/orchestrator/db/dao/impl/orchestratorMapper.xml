@@ -252,14 +252,14 @@
         dss_orchestrator_version_info a
         inner join (
         select
-        orchestrator_id, max(version) as maxVersion
+        orchestrator_id, max(version) as maxVersion,max(update_time) as maxUpdateTime
         from
         dss_orchestrator_version_info
         where context_id != ''
         group by
         orchestrator_id
         HAVING
-        substring(maxVersion,2)  &gt; #{remainVersion}) b on
+        substring(maxVersion,2)  &gt; #{remainVersion} and maxUpdateTime > #{beginClearTime}) b on
         a.orchestrator_id = b.orchestrator_id
         where
         substring(a.version,2) + #{remainVersion} &lt;= substring(b.maxVersion,2)
