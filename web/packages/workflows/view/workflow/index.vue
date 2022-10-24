@@ -142,21 +142,26 @@
     <!-- flow 基础属性 -->
     <Modal v-model="baseprop.show" :footer-hide="true" class="prop-modal" title="基础属性">
       <div class="prop-item">
-        <span class="label-prop"> 创建用户；</span> {{ baseprop.createUser }}
+        <span class="label-prop">  {{$t('message.workflow.CreateUser') }}</span> {{ baseprop.createUser }}
       </div>
       <div class="prop-item">
-        <span class="label-prop"> 创建时间；</span> {{ baseprop.createTime | formatDate }}
+        <span class="label-prop"> {{$t('message.workflow.CreateTime') }}</span> {{ baseprop.createTime | formatDate }}
       </div>
       <div class="prop-item">
-        <span class="label-prop"> 最近修改用户；</span> {{ baseprop.updateUser }}
+        <span class="label-prop"> {{$t('message.workflow.LastModifyUser') }}</span> {{ baseprop.updateUser }}
       </div>
       <div class="prop-item">
-        <span class="label-prop"> 最近修改时间；</span> {{ baseprop.updateTime | formatDate }}
+        <span class="label-prop"> {{$t('message.workflow.LastModifyTime') }}</span> {{ baseprop.updateTime | formatDate }}
       </div>
     </Modal>
+    <!-- 复制工作流 -->
+    <CopyModal v-model="showCopyForm" ref="copyForm" @finish="copySended" />
+    <!-- 导入工作流 -->
+    <ImportFlow v-model="importModal" ref="import" @finish="importSended" />
   </div>
 </template>
 <script>
+import qs from 'qs';
 import Workflow from '@/workflows/module/workflow';
 import WorkflowModal from '@/workflows/module/workflow/module/workflowModal.vue';
 import Process from '@/workflows/module/process';
@@ -174,6 +179,7 @@ import {
 import { setVirtualRoles } from '@dataspherestudio/shared/common/config/permissions.js';
 import Streamis from '@/workflows/module/innerIframe';
 import filters from '@dataspherestudio/shared/common/util/filters';
+import ImportFlow from './importModal.vue'
 
 export default {
   components: {
@@ -183,7 +189,8 @@ export default {
     process: Process.component,
     WorkflowTabList,
     ProjectForm,
-    Streamis: Streamis.component
+    Streamis: Streamis.component,
+    ImportFlow
   },
   data() {
     return {
@@ -235,8 +242,26 @@ export default {
         show: false
       },
       height: 500,
-      openNode: {}
-    };
+      openNode: {},
+      filterBar: {
+        sort: 'updateTime',
+        cat: this.$route.query.viewState || 'all'
+      },
+      sortTypeList: [
+        {
+          lable: this.$t('message.common.projectDetail.sortUpdateTime'),
+          value: 'updateTime'
+        },
+        {
+          lable: this.$t('message.common.projectDetail.sortName'),
+          value: 'name'
+        }
+      ],
+      showCopyForm: false,
+      uploadUrl: `/api/rest_j/v1/dss/framework/orchestrator/importOrchestratorFile?labels=dev`,
+      uploadData: null,
+      importModal: false
+    }
   },
   filters,
   watch: {
@@ -466,6 +491,11 @@ export default {
           resolve(flow);
         });
     },
+    importSended(target){
+      this.getFlow({id: target.id, name: target.name}, (flows) => {
+        this.reFreshTreeData({id: target.id, name: target.name}, flows)
+      })
+    },
     handleTreeModal(project) {
       this.treeModalShow = true;
       this.currentTreeProject = project;
@@ -670,6 +700,46 @@ export default {
     },
     onViewVersion(project) {
       this.$refs.workflow.versionDetail(project.id, project);
+    },
+    exportWorkflow(node) {
+      const params = {
+        workspaceId: node.workspaceId,
+        projectId: node.projectId,
+        projectName: node.projectName,
+        orchestratorId: node.orchestratorId,
+        orcVersionId: node.orchestratorVersionId,
+        addOrcVersion: false,
+        dssLabels: this.modeOfKey,
+        outputFileName: `${node.projectName}_${node.name}`,
+        labels: {
+          route: this.modeOfKey
+        }
+      };
+      const qstring = qs.stringify(params)
+      const url = `http://${window.location.host}/api/rest_j/v1/dss/framework/orchestrator/exportOrchestrator?${qstring}`;
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      const evObj = document.createEvent("MouseEvents");
+      evObj.initMouseEvent(
+        "click",
+        true,
+        true,
+        window,
+        0,
+        0,
+        0,
+        0,
+        0,
+        false,
+        false,
+        true,
+        false,
+        0,
+        null
+      );
+      a.dispatchEvent(evObj);
+      this.$Message.success(this.$t('message.workflow.downloadrequest'))
     },
     onBasepropShow(flow) {
       this.baseprop = {
@@ -1088,8 +1158,9 @@ export default {
             <SvgIcon icon-class="more_more" />
           </div>
           <DropdownMenu slot="list">
-            <DropdownItem name="config_project" nativeOnClick={(e)=>{this.handleFlowDropDown(e,'config_project', item)}}>配置</DropdownItem>
-            <DropdownItem name="delete_project" nativeOnClick={(e)=>{this.handleFlowDropDown(e,'delete_project', item)}}>删除</DropdownItem>
+            <DropdownItem name="config_project" nativeOnClick={(e)=>{this.handleFlowDropDown(e,'config_project', item)}}>{ this.$t('message.workflow.Configuration') }</DropdownItem>
+            <DropdownItem name="delete_project" nativeOnClick={(e)=>{this.handleFlowDropDown(e,'delete_project', item)}}>{ this.$t('message.workflow.Delete') }</DropdownItem>
+            <DropdownItem name="import" nativeOnClick={(e)=>{this.handleFlowDropDown(e,'import', item)}}>{ this.$t('message.workflow.importflow') }</DropdownItem>
           </DropdownMenu>
         </Dropdown>
       )
@@ -1113,10 +1184,11 @@ export default {
             <SvgIcon icon-class="more_more" />
           </div>
           <DropdownMenu slot="list">
-            {item.editable && <DropdownItem name="config_flow" nativeOnClick={(e)=>{this.handleFlowDropDown(e,'config_flow', item)}}>配置</DropdownItem>}
-            {item.editable && <DropdownItem name="delete_flow" nativeOnClick={(e)=>{this.handleFlowDropDown(e,'delete_flow', item)}}>删除</DropdownItem>}
-            <DropdownItem name="viewVersion" nativeOnClick={(e)=>{this.handleFlowDropDown(e,'viewVersion', item)}}>查看版本</DropdownItem>
-            <DropdownItem name="baseprop" nativeOnClick={(e)=>{this.handleFlowDropDown(e,'baseprop', item)}}>基础属性</DropdownItem>
+            {item.editable && <DropdownItem name="config_flow" nativeOnClick={(e)=>{this.handleFlowDropDown(e,'config_flow', item)}}>{this.$t('message.workflow.Configuration') }</DropdownItem>}
+            {item.editable && <DropdownItem name="delete_flow" nativeOnClick={(e)=>{this.handleFlowDropDown(e,'delete_flow', item)}}>{this.$t('message.workflow.Delete') }</DropdownItem>}
+            {(item.editable || item.canPublish) && <DropdownItem name="export" nativeOnClick={(e)=>{this.handleFlowDropDown(e,'export', item)}}>{this.$t('message.workflow.Export') }</DropdownItem>}
+            <DropdownItem name="viewVersion" nativeOnClick={(e)=>{this.handleFlowDropDown(e,'viewVersion', item)}}>{this.$t('message.workflow.Show') }</DropdownItem>
+            <DropdownItem name="baseprop" nativeOnClick={(e)=>{this.handleFlowDropDown(e,'baseprop', item)}}>{this.$t('message.workflow.Essential') }</DropdownItem>
           </DropdownMenu>
         </Dropdown>
       )
@@ -1205,6 +1277,17 @@ export default {
           break;
         case "baseprop":
           this.onBasepropShow(node);
+          break;
+        case "import":
+          this.importModal = true;
+          this.$refs.import.init(node)
+          break;
+        case "export":
+          this.exportWorkflow(node);
+          break;
+        case "copy_flow":
+          this.showCopyForm = true
+          this.$refs.copyForm.init(node, this.rawProjects)
           break;
       }
     },
