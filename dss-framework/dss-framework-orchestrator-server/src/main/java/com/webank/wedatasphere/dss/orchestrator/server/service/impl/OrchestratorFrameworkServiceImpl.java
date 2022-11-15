@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.dss.orchestrator.server.service.impl;
 
+import com.webank.wedatasphere.dss.appconn.core.AppConn;
 import com.webank.wedatasphere.dss.appconn.scheduler.SchedulerAppConn;
 import com.webank.wedatasphere.dss.appconn.scheduler.structure.orchestration.OrchestrationCreationOperation;
 import com.webank.wedatasphere.dss.appconn.scheduler.structure.orchestration.OrchestrationDeletionOperation;
@@ -41,6 +42,7 @@ import com.webank.wedatasphere.dss.orchestrator.core.type.DSSOrchestratorRelatio
 import com.webank.wedatasphere.dss.orchestrator.core.type.DSSOrchestratorRelationManager;
 import com.webank.wedatasphere.dss.orchestrator.core.utils.OrchestratorUtils;
 import com.webank.wedatasphere.dss.orchestrator.db.dao.OrchestratorMapper;
+import com.webank.wedatasphere.dss.orchestrator.loader.LinkedAppConnResolver;
 import com.webank.wedatasphere.dss.orchestrator.loader.OrchestratorManager;
 import com.webank.wedatasphere.dss.orchestrator.server.entity.request.OrchestratorCreateRequest;
 import com.webank.wedatasphere.dss.orchestrator.server.entity.request.OrchestratorDeleteRequest;
@@ -79,7 +81,8 @@ public class OrchestratorFrameworkServiceImpl implements OrchestratorFrameworkSe
     private OrchestratorService newOrchestratorService;
     @Autowired
     private OrchestratorManager orchestratorManager;
-
+    @Autowired
+    private LinkedAppConnResolver linkedAppConnResolver;
     /**
      * 1.拿到的dss orchestrator的appconn
      * 2.然后创建
@@ -141,6 +144,10 @@ public class OrchestratorFrameworkServiceImpl implements OrchestratorFrameworkSe
                                                                                                Workspace workspace, DSSOrchestratorInfo dssOrchestrator,
                                                                                                Function<OrchestrationService, StructureOperation> getOrchestrationOperation,
                                                                                                BiFunction<StructureOperation, K, V> responseRefConsumer, String operationName) {
+        List<AppConn> appConnList = linkedAppConnResolver.resolveAppConnByUser(userName, workspace.getWorkspaceName(), dssOrchestrator.getType());
+        if (appConnList.stream().noneMatch(appConn -> appConn instanceof SchedulerAppConn)) {
+            return null;
+        }
         ImmutablePair<OrchestrationService, AppInstance> orchestrationPair = getOrchestrationService(dssOrchestrator, userName, workspace, dssLabels);
         Long refProjectId, refOrchestrationId;
         if (askProjectSender) {
@@ -205,7 +212,7 @@ public class OrchestratorFrameworkServiceImpl implements OrchestratorFrameworkSe
         dssOrchestratorInfo.setOrchestratorWay(OrchestratorUtils.getModeStr(orchestratorModifyRequest.getOrchestratorWays()));
         dssOrchestratorInfo.setOrchestratorLevel(orchestratorModifyRequest.getOrchestratorLevel());
         dssOrchestratorInfo.setUses(orchestratorModifyRequest.getUses());
-        //1.如果调度系统要求同步创建工作流，向调度系统发送更新工作流的请求
+        //1.如果调度系统要求同步更新工作流，向调度系统发送更新工作流的请求
         tryOrchestrationOperation(dssLabels, false, username, dssProject.getName(), workspace, dssOrchestratorInfo,
                 OrchestrationService::getOrchestrationUpdateOperation,
                 (structureOperation, structureRequestRef) -> ((OrchestrationUpdateOperation) structureOperation)
