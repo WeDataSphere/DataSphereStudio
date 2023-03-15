@@ -5,7 +5,7 @@
         <div class="registerInput" @keyup.enter.stop.prevent="handleSubmit(formValidate)">
           <div class="registerTitle">{{$t('message.register.registerTitle')}}</div>
           <Form ref="formValidate" :model="formValidate" :rules="ruleValidate" :label-width="80">
-            <FormItem :label="$t('message.register.invit')" prop="invitation">
+            <!-- <FormItem :label="$t('message.register.invit')" prop="invitation">
               <Input
                 v-model="formValidate.invitation"
                 :placeholder="$t('message.register.invitation')"
@@ -19,7 +19,7 @@
                 <Icon type="ios-alert-outline" />
                 <p class="tip">{{this.$t('message.register.codeInfo')}}</p>
               </div>
-            </FormItem>
+            </FormItem> -->
             <FormItem :label="$t('message.register.org')" prop="organization" class="orga">
               <Input
                 v-model="formValidate.organization"
@@ -195,15 +195,15 @@ export default {
     Privacy
   },
   data() {
-    const validateInvit = (rule, value, callback) => {
-      if (value === "") {
-        callback(new Error(this.$t("message.register.invitation")));
-      } else if (value.indexOf(" ") > -1 || !/^[A-Za-z0-9]*$/.test(value)) {
-        callback(new Error(this.$t("message.register.errTip.invitation")));
-      } else {
-        callback();
-      }
-    };
+    // const validateInvit = (rule, value, callback) => {
+    //   if (value === "") {
+    //     callback(new Error(this.$t("message.register.invitation")));
+    //   } else if (value.indexOf(" ") > -1 || !/^[A-Za-z0-9]*$/.test(value)) {
+    //     callback(new Error(this.$t("message.register.errTip.invitation")));
+    //   } else {
+    //     callback();
+    //   }
+    // };
     const validateCodeCheck = (rule, value, callback) => {
       if (value === "") {
         callback(new Error(this.$t("message.register.errTip.vericode")));
@@ -257,7 +257,7 @@ export default {
         desc: "",
         code: "",
         pcode: "",
-        invitation: ""
+        // invitation: ""
       },
       isdisabledFn: false,
       isAgree: false,
@@ -265,14 +265,14 @@ export default {
       curType: "",
       isShow: false,
       ruleValidate: {
-        invitation: [
-          {
-            required: true,
-            message: this.$t("message.register.invitation"),
-            trigger: "blur"
-          },
-          { validator: validateInvit, trigger: "blur" }
-        ],
+        // invitation: [
+        //   {
+        //     required: true,
+        //     message: this.$t("message.register.invitation"),
+        //     trigger: "blur"
+        //   },
+        //   { validator: validateInvit, trigger: "blur" }
+        // ],
         organization: [
           {
             required: true,
@@ -420,7 +420,6 @@ export default {
             }
           });
           let discoveryFormat = discoveryIndex.join(",");
-          console.log(discoveryFormat, this.formValidate.discovery)
           const params = {
             phone: this.formValidate.phone.replace(/(^\s*)|(\s*$)/g, ""),
             name: this.formValidate.name.replace(/(^\s*)|(\s*$)/g, ""),
@@ -433,7 +432,7 @@ export default {
               ""
             ),
             from_type: discoveryFormat,
-            code: this.formValidate.invitation.replace(/(^\s*)|(\s*$)/g, "")
+            // code: this.formValidate.invitation.replace(/(^\s*)|(\s*$)/g, "")
           };
           //给后台发送数据
           api
