@@ -2,7 +2,7 @@
   <div style="height: 100%;">
     <Alert type="warning" show-icon closable v-if="!hasShow" @on-close="closeNotice">
       {{$t('message.workspace.topNotice.title')}}
-      <span slot="desc">{{$t('message.workspace.topNotice.content')}}</span>
+      <span slot="desc" style="white-space:pre-wrap">{{$t('message.workspace.topNotice.content')}}</span>
     </Alert>
     <bankHome />
   </div>

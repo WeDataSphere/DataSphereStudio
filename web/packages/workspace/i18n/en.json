@@ -50,7 +50,7 @@
       },
       "topNotice": {
         "title": "Tips",
-        "content": "Dear Sandbox users: The sand environment is an open environment for testing, deploying all the components of the WeDataSphere open source version. Currently, only demos are allowed to run due to security restrictions, and users cannot add or modify test data. Please take care of the use of the sandbox environment."
+        "content": "Dear Sandbox users: The sand environment is an open environment for testing, deploying all the components of the WeDataSphere open source version. Currently, only demos are allowed to run due to security restrictions, and users cannot add or modify test data. Please take care of the use of the sandbox environment.\n If you encounter problems during the installation and deployment process or you need commercial service support, please contact the community assistant (WeChat ID: wedatasphere) for consultation."
       },
       "ALTY": "Demos",
       "KSRM": "Admin",
