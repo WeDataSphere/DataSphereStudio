@@ -3,8 +3,11 @@ package com.webank.wedatasphere.dss.framework.workspace.restful;
 import com.webank.wedatasphere.dss.framework.admin.service.DssAdminUserService;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -16,6 +19,7 @@ import javax.ws.rs.core.MediaType;
 @SpringBootTest(classes=com.webank.wedatasphere.dss.Application.class)
 //@AutoConfigureMockMvc
 class DSSWorkspaceUserRestfulTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DSSWorkspaceUserRestfulTest.class);
 
 //    @Autowired
     private MockMvc mockMvc;
@@ -36,27 +40,29 @@ class DSSWorkspaceUserRestfulTest {
     @SneakyThrows
     @org.junit.jupiter.api.Test
     void revokeUserRole() {
-        String content = mockMvc.perform(MockMvcRequestBuilders.post("/dss/framework/workspace/revokeUserRole")
-                        .content("{\n" +
-                                "  \"userName\": \"v_xiangbiaowu\",\n" +
-                                "  \"workspaceIds\": [224],\n" +
-                                "  \"roleIds\": [1,2,3]\n" +
-                                "}")
+        MockHttpServletResponse response = mockMvc.perform(MockMvcRequestBuilders.post("/dss/framework/workspace/revokeUserRole")
+                .content("{\n" +
+                        "  \"userName\": \"hadoop\",\n" +
+                        "  \"workspaceIds\": [224],\n" +
+                        "  \"roleIds\": [1,2,3]\n" +
+                        "}")
                 .header("Token-Code", "HPMS-KhFGSQkdaaCPBYfE")
                 .contentType(MediaType.APPLICATION_JSON)
-        ).andReturn().getResponse().getContentAsString();
-        System.out.println(content);
+        ).andReturn().getResponse();
+        LOGGER.info(response.getContentAsString());
+        Assertions.assertEquals(200,response.getStatus());
     }
     @Order ( 1 )
     @SneakyThrows
     @Test
     void getWorkspaceUserRole() {
-        String content = mockMvc.perform(MockMvcRequestBuilders.get("/dss/framework/workspace/getUserRole")
+        MockHttpServletResponse response = mockMvc.perform(MockMvcRequestBuilders.get("/dss/framework/workspace/getUserRole")
                 .param("userName", "hadoop")
                 .header("Token-Code", "HPMS-KhFGSQkdaaCPBYfE")
                 .contentType("application/json")
-        ).andReturn().getResponse().getContentAsString();
-        System.out.println(content);
+        ).andReturn().getResponse();
+        LOGGER.info(response.getContentAsString());
+        Assertions.assertEquals(200,response.getStatus());
     }
 
     @Order ( 3 )
