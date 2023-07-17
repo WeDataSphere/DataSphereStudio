@@ -182,6 +182,9 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     @Transactional(rollbackFor = DSSErrorException.class)
     @Override
     public DSSFlow addSubFlow(DSSFlow dssFlow, Long parentFlowID, String contextIDStr, String orcVersion, String schedulerAppConn) throws DSSErrorException {
+        if (checkExistSameSubflow(parentFlowID, dssFlow.getName())){
+            throw new DSSErrorException(90003, "子工作流名不能重复");
+        }
         DSSFlow parentFlow = flowMapper.selectFlowByID(parentFlowID);
         dssFlow.setProjectId(parentFlow.getProjectId());
         DSSFlow subFlow = addFlow(dssFlow, contextIDStr, orcVersion, schedulerAppConn);
@@ -436,7 +439,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     @Override
     public boolean checkExistSameSubflow(Long parentFlowID, String name) {
         List<String> subflowName = flowMapper.getSubflowName(parentFlowID);
-        return subflowName.stream().anyMatch(s -> s.equals(name));
+        return subflowName.stream().anyMatch(s -> s.equalsIgnoreCase(name));
     }
 
     @Override
