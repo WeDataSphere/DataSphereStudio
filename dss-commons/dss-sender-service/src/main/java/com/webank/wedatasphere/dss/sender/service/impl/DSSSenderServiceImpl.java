@@ -17,6 +17,8 @@
 package com.webank.wedatasphere.dss.sender.service.impl;
 
 import com.webank.wedatasphere.dss.common.label.DSSLabel;
+import com.webank.wedatasphere.dss.common.label.EnvDSSLabel;
+import com.webank.wedatasphere.dss.sender.conf.DSSConfiguration;
 import com.webank.wedatasphere.dss.sender.service.DSSSenderService;
 import com.webank.wedatasphere.dss.sender.service.conf.DSSSenderServiceConf;
 import org.apache.linkis.rpc.Sender;
@@ -29,6 +31,11 @@ public class DSSSenderServiceImpl implements DSSSenderService {
     private final Sender workflowSender = Sender.getSender(DSSSenderServiceConf.DSS_WORKFLOW_APPLICATION_NAME_DEV.getValue());
 
     private final Sender projectSender = Sender.getSender(DSSSenderServiceConf.PROJECT_SERVER_NAME.getValue());
+
+    private final Sender orcSenderProd = Sender.getSender(DSSSenderServiceConf.ORCHESTRATOR_SERVER_PROD_NAME.getValue());
+
+    private final Sender workflowSenderProd = Sender.getSender(DSSSenderServiceConf.DSS_WORKFLOW_APPLICATION_NAME_PROD.getValue());
+
     @Override
     public Sender getOrcSender() {
         return orcSender;
@@ -36,17 +43,39 @@ public class DSSSenderServiceImpl implements DSSSenderService {
 
     @Override
     public Sender getOrcSender(List<DSSLabel> dssLabels) {
-        return orcSender;
+        for(DSSLabel dssLabel : dssLabels){
+            String userEnv = null;
+            if(dssLabel instanceof EnvDSSLabel){
+                userEnv = ((EnvDSSLabel)dssLabel).getEnv();
+            }else{
+                userEnv = dssLabel.getValue().get(dssLabel.getLabelKey());
+            }
+            if(DSSConfiguration.ENV_LABEL_VALUE_PROD.equalsIgnoreCase(userEnv)){
+                return orcSenderProd;
+            }
+        }
+        return getOrcSender();
     }
 
     @Override
     public Sender getScheduleOrcSender() {
-        return orcSender;
+        return orcSenderProd;
     }
 
     @Override
     public Sender getWorkflowSender(List<DSSLabel> dssLabels) {
-        return workflowSender;
+        for(DSSLabel dssLabel : dssLabels){
+            String userEnv = null;
+            if(dssLabel instanceof EnvDSSLabel){
+                userEnv = ((EnvDSSLabel)dssLabel).getEnv();
+            }else{
+                userEnv = dssLabel.getValue().get(dssLabel.getLabelKey());
+            }
+            if(DSSConfiguration.ENV_LABEL_VALUE_PROD.equalsIgnoreCase(userEnv)){
+                return workflowSenderProd;
+            }
+        }
+        return getWorkflowSender();
     }
 
     @Override
@@ -56,7 +85,7 @@ public class DSSSenderServiceImpl implements DSSSenderService {
 
     @Override
     public Sender getSchedulerWorkflowSender() {
-        return workflowSender;
+        return workflowSenderProd;
     }
 
     @Override

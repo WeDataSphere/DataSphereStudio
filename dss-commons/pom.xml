@@ -33,6 +33,8 @@
         <module>dss-common</module>
         <module>dss-contextservice</module>
         <module>dss-sender-service</module>
+        <module>dss-common-server</module>
+        <module>dss-error-code</module>
     </modules>
 
 </project>

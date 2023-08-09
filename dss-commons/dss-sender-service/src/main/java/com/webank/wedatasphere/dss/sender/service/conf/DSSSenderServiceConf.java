@@ -38,4 +38,14 @@ public class DSSSenderServiceConf {
     public static final CommonVars<Boolean> USE_DSS_SENDER =
             CommonVars.apply("wds.dss.server.use.dssSender", true);
 
+    //生产中心服务
+    public static final CommonVars<String> ORCHESTRATOR_SERVER_PROD_NAME =
+            CommonVars.apply("wds.dss.orc.server.prod.name", "DSS-Framework-Orchestrator-Server-Prod");
+
+    public static final CommonVars<String> DSS_WORKFLOW_APPLICATION_NAME_PROD =
+            CommonVars.apply("wds.dss.workflow.name.prod", "dss-workflow-server-prod");
+
+    public static final CommonVars<String> DSS_SERVER_NAME_PROD =
+            CommonVars.apply("wds.dss.server.name.prod", "dss-server-prod");
+
 }
