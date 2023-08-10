@@ -35,6 +35,17 @@ public class TokenManagerVo {
     private String token;
     private String applySource;
 
+    //版本号，前端页面展示
+    private String version;
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
     public Long getId() {
         return id;
     }

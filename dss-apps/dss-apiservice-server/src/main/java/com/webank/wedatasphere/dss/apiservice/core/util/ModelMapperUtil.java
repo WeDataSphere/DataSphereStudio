@@ -27,6 +27,7 @@ public class ModelMapperUtil {
     private static ModelMapper modelMapper = new ModelMapper();
 
     public ModelMapperUtil() {
+        // no args constructor
     }
 
     public static <D> D strictMap(Object source, Class<D> destinationType) {
@@ -34,9 +35,9 @@ public class ModelMapperUtil {
     }
 
     public static <D> List<D> strictMapList(Object source, Class<D> componentType) {
-        List<D> list = new ArrayList();
+        List<D> list = new ArrayList<>();
         List<Object> objectList = (List)source;
-        Iterator var4 = objectList.iterator();
+        Iterator<Object> var4 = objectList.iterator();
 
         while(var4.hasNext()) {
             Object obj = var4.next();

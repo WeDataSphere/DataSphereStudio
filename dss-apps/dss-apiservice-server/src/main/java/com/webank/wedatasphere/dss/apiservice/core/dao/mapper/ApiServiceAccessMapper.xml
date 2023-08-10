@@ -17,7 +17,7 @@
 
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.webank.wedatasphere.dss.apiservice.core.dao.ApiServiceAccessDao">
-    <resultMap id="AccessMap" type="ApiAccessVo">
+    <resultMap id="AccessMap" type="com.webank.wedatasphere.dss.apiservice.core.vo.ApiAccessVo">
         <result property="id" column="id"/>
         <result property="user" column="login_user"/>
         <result property="apiServiceName" column="api_name"/>
@@ -36,7 +36,7 @@
         `id`,`login_user`,`api_name`,`api_id`,`api_version_id`, `api_publisher`, `access_time`, `execute_user`
     </sql>
 
-    <insert id="addAccessRecord" useGeneratedKeys="true" keyProperty="id" parameterType="ApiAccessVo">
+    <insert id="addAccessRecord" useGeneratedKeys="true" keyProperty="id" parameterType="com.webank.wedatasphere.dss.apiservice.core.vo.ApiAccessVo">
         <![CDATA[INSERT INTO `dss_apiservice_access_info`(]]>
 
         <include refid="fields"/>

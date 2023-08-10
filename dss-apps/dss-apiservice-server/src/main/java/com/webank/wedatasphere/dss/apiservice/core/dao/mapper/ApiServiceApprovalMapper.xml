@@ -18,7 +18,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.webank.wedatasphere.dss.apiservice.core.dao.ApiServiceApprovalDao">
 
-    <resultMap id="approvalMap" type="ApprovalVo">
+    <resultMap id="approvalMap" type="com.webank.wedatasphere.dss.apiservice.core.vo.ApprovalVo">
         <result property="id" column="id"/>
         <result property="apiId" column="api_id"/>
         <result property="apiVersionId" column="api_version_id"/>
@@ -30,23 +30,31 @@
         <result property="createTime" column="create_time"/>
         <result property="updateTime" column="update_time"/>
         <result property="approvalNo" column="approval_no"/>
+        <result property="duration" column="duration"/>
+        <result property="backgroundDesc" column="background_desc"/>
+        <result property="importance" column="importance"/>
+        <result property="attentionUser" column="attention_user"/>
     </resultMap>
 
     <sql id="fields">
         `api_id`, `api_version_id`, `approval_name`, `apply_user`, `execute_user`, `creator`,
-        `status`, `create_time`, `update_time`, `approval_no`
+        `status`, `create_time`, `update_time`, `approval_no`,
+        `duration`, `background_desc`, `importance`, `attention_user`
     </sql>
 
     <sql id="fields_query">
         `id`, `api_version_id`, `api_id`, `approval_name`, `apply_user`, `execute_user`, `creator`,
-        `status`, `create_time`, `update_time`, `approval_no`
+        `status`, `create_time`, `update_time`, `approval_no`,
+        `duration`, `background_desc`, `importance`, `attention_user`
     </sql>
 
-    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="ApprovalVo">
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.webank.wedatasphere.dss.apiservice.core.vo.ApprovalVo">
         <![CDATA[INSERT INTO `dss_apiservice_approval`(]]>
         <include refid="fields"/>
         <![CDATA[) VALUES(#{apiId}, #{apiVersionId}, #{approvalName}, #{applyUser}, #{executeUser}, #{creator},
-                        #{status}, #{createTime}, #{updateTime}, #{approvalNo})]]>
+                        #{status}, #{createTime}, #{updateTime}, #{approvalNo},
+                        #{duration}, #{backgroundDesc}, #{importance}, #{attentionUser})]]>
     </insert>
 
     <select id="queryByApprovalNo" parameterType="String" resultMap="approvalMap">
@@ -88,10 +96,10 @@
         WHERE `approval_no` = #{approvalNo}
     </update>
 
-    <delete id="deleteApproval" parameterType="String">
+    <delete id="deleteByApiVersionId" parameterType="Long">
         DELETE FROM
         `dss_apiservice_approval`
-        WHERE `approval_no` = #{approvalNo}
+        WHERE `api_version_id` = #{apiVersionId}
     </delete>
 
     <select id="queryByVersionId" parameterType="Long" resultMap="approvalMap">

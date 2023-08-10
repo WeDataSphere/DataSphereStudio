@@ -47,11 +47,14 @@ public interface ApiServiceParamDao {
 
     List<ParamVo> queryByVersionId(@Param("apiVersionId") Long apiVersionId);
 
+    void deleteByApiVersionId(@Param("apiVersionId") Long apiVersionId);
+
     /**
      * query a line by id
+     *
      * @param paramId
      * @return paramVo
-     * */
+     */
     int queryById(@Param("paramId") Long paramId);
 
 }

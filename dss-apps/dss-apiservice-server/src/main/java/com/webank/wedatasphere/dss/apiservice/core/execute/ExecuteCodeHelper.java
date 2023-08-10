@@ -1,19 +1,3 @@
-/*
- * Copyright 2019 WeBank
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
-
 package com.webank.wedatasphere.dss.apiservice.core.execute;
 
 import com.webank.wedatasphere.dss.apiservice.core.action.ApiServiceGetAction;
@@ -23,6 +7,7 @@ import com.webank.wedatasphere.dss.apiservice.core.config.ApiServiceConfiguratio
 import com.webank.wedatasphere.dss.apiservice.core.exception.ApiExecuteException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.common.utils.Utils;
+import org.apache.linkis.governance.common.entity.task.RequestPersistTask;
 import org.apache.linkis.ujes.client.UJESClient;
 import org.apache.linkis.ujes.client.request.ResultSetAction;
 import org.apache.linkis.ujes.client.request.ResultSetListAction;
@@ -38,24 +23,30 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.webank.wedatasphere.dss.apiservice.core.config.ApiServiceConfiguration.DOWNLOAD_MAX_SIZE;
+
 public class ExecuteCodeHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecuteCodeHelper.class);
 
     private static final String RELEASE_SCALA_TEMPLATE  = "import org.apache.spark.sql.DataFrame\n" +
+            "import org.apache.linkis.engineplugin.spark.metadata.MetaDataInfoTool\n" +
             "val sql = %s\n" +
             "val df = sqlContext.sql(sql)\n" +
-            "show(df)\n";
-
-
+            "val inputTables = MetaDataInfoTool.getMetaDataInfo(sqlContext, sql, df.asInstanceOf[DataFrame])\n" +
+            "println(inputTables)";
     private static final String SCALA_MARK = "\"\"\"";
 
     private static final String EXECUTE_SCALA_TEMPLATE = "import org.apache.spark.sql.DataFrame\n" +
+            "import org.apache.linkis.engineplugin.spark.metadata.MetaDataInfoTool\n" +
             "val executeCode = %s\n" +
             "val df = sqlContext.sql(executeCode)\n" +
-            "show(df)\n";
-
-
+            "val realMetaInfo = MetaDataInfoTool.getMetaDataInfo(sqlContext, executeCode, df.asInstanceOf[DataFrame])\n" +
+            "if (realMetaInfo == %s){\n" +
+            "    show(df)\n" +
+            "} else {\n" +
+            "    throw new Exception(\"库表名和发布时的不一致,不能进行执行\")\n" +
+            "}";
 
     public static String packageCodeToRelease(String executeCode){
         String retStr = String.format(RELEASE_SCALA_TEMPLATE, SCALA_MARK + executeCode + SCALA_MARK);
@@ -64,7 +55,7 @@ public class ExecuteCodeHelper {
     }
 
     public static String packageCodeToExecute(String executeCode, String metaDataInfo){
-        String retStr = String.format(EXECUTE_SCALA_TEMPLATE, SCALA_MARK + executeCode + SCALA_MARK);
+        String retStr = String.format(EXECUTE_SCALA_TEMPLATE, SCALA_MARK + executeCode + SCALA_MARK, SCALA_MARK + metaDataInfo + SCALA_MARK);
         LOGGER.info("execute scala code is {}", retStr);
         return retStr;
     }
@@ -72,10 +63,11 @@ public class ExecuteCodeHelper {
 
     public static Map<String,Object>  getMetaDataInfoByExecute(String user,
                                              String executeCode,
-                                             Map<String, Object> params,
+                                             Map<String, Object> Params,
                                              String scriptPath) throws Exception {
+        Map<String, String> props = new HashMap<>();
         Map<String,Object>  resultMap = new HashMap<>();
-        UJESClient client = LinkisJobSubmit.getClient();
+        UJESClient client = LinkisJobSubmit.getClient(props);
         ApiServiceExecuteJob job = new DefaultApiServiceJob();
         //sql代码封装成scala执行
         job.setCode(ExecuteCodeHelper.packageCodeToRelease(executeCode));
@@ -83,22 +75,24 @@ public class ExecuteCodeHelper {
         job.setRunType("scala");
         job.setUser(user);
         job.setParams(null);
-        // pattern注入
-        job.setRuntimeParams((Map<String,Object>) params.get("variable"));
+        job.setRuntimeParams((Map<String,Object>)Params.get("variable"));// pattern注入
         job.setScriptePath(scriptPath);
-        JobExecuteResult jobExecuteResult = LinkisJobSubmit.execute(job, client, "IDE");
+        JobExecuteResult jobExecuteResult = LinkisJobSubmit.execute(job,client, "IDE");
         job.setJobExecuteResult(jobExecuteResult);
         try {
-            waitForComplete(job, client);
-        } catch (Exception e) {
+            waitForComplete(job,client);
+        } catch (ApiExecuteException e){
+            LOGGER.error("Reason for failure: " + e.getMessage(),e);
+            throw e;
+        }catch (Exception e) {
             LOGGER.warn("Failed to execute job", e);
-            String reason = getLog(job, client);
+            String reason = getLog(job,client);
             LOGGER.error("Reason for failure: " + reason);
-            throw new ApiExecuteException(800024,"获取库表信息失败，执行脚本出错！");
+            throw new ApiExecuteException(800024,"数据服务SQL执行出错,请检查SQL后重新执行。"+e.getMessage());
         }
-        int resultSize = getResultSize(job, client);
+        int resultSize = getResultSize(job,client);
         for(int i =0; i < resultSize; i++){
-            String result = getResult(job, i, ApiServiceConfiguration.RESULT_PRINT_SIZE.getValue(),client);
+            String result = getResult(job, i, ApiServiceConfiguration.RESULT_PRINT_SIZE.getValue().intValue(),client);
             LOGGER.info("The content of the " + (i + 1) + "th resultset is :"
                     +  result);
             resultMap.put(Integer.toString(i),result);
@@ -110,21 +104,22 @@ public class ExecuteCodeHelper {
     }
 
 
-    public static  void waitForComplete(ApiServiceExecuteJob job, UJESClient client) throws Exception {
+    public static  void waitForComplete(ApiServiceExecuteJob job,UJESClient client) throws Exception {
         JobInfoResult jobInfo = client.getJobInfo(job.getJobExecuteResult());
         while (!jobInfo.isCompleted()) {
-            LOGGER.info("Update Progress info:" + getProgress(job, client));
+            LOGGER.info("Update Progress info:" + getProgress(job,client));
             LOGGER.info("<----linkis log ---->");
             Utils.sleepQuietly(ApiServiceConfiguration.LINKIS_JOB_REQUEST_STATUS_TIME.getValue(job.getJobProps()));
             jobInfo = client.getJobInfo(job.getJobExecuteResult());
         }
         if (!jobInfo.isSucceed()) {
-            throw new ApiExecuteException(90101, "Failed to execute Job: " + jobInfo.getTask().get("errDesc").toString());
+            RequestPersistTask taskInfo = jobInfo.getRequestPersistTask();
+            throw new ApiExecuteException(taskInfo.getErrCode(),taskInfo.getErrDesc());
         }
     }
 
 
-    public static void cancel(ApiServiceExecuteJob job,UJESClient client) {
+    public static void cancel(ApiServiceExecuteJob job,UJESClient client) throws Exception {
         client.kill(job.getJobExecuteResult());
     }
 
@@ -138,10 +133,10 @@ public class ExecuteCodeHelper {
         return client.getJobInfo(job.getJobExecuteResult()).isCompleted();
     }
 
-    public static  String getResult(ApiServiceExecuteJob job, int index, int maxSize, UJESClient client) {
+    public static  String getResult(ApiServiceExecuteJob job, int index, int maxSize,UJESClient client) {
         String resultContent = null;
         JobInfoResult jobInfo = client.getJobInfo(job.getJobExecuteResult());
-        String[] resultSetList = jobInfo.getResultSetList(client);
+        String[] resultSetList = jobInfo.getResultSetList(LinkisJobSubmit.getClient(job.getJobProps()));
         if (resultSetList != null && resultSetList.length > 0) {
             Object fileContent = client.resultSet(ResultSetAction.builder()
                     .setPath(resultSetList[index])
@@ -158,10 +153,10 @@ public class ExecuteCodeHelper {
     }
 
 
-    public static  int getResultSize(ApiServiceExecuteJob job, UJESClient client) {
+    public static  int getResultSize(ApiServiceExecuteJob job,UJESClient client) {
         JobInfoResult jobInfo = client.getJobInfo(job.getJobExecuteResult());
         if (jobInfo.isSucceed()) {
-            String[] resultSetList = jobInfo.getResultSetList(client);
+            String[] resultSetList = jobInfo.getResultSetList(LinkisJobSubmit.getClient(job.getJobProps()));
             if (resultSetList != null && resultSetList.length > 0) {
                 return resultSetList.length;
             }
@@ -195,11 +190,14 @@ public class ExecuteCodeHelper {
 
 
 
-    public static  String getResultContent(String user, String path, int maxSize, UJESClient client) {
-        return client.resultSet(ResultSetAction.builder()
+    public static  String getResultContent(String user, String path, int maxSize,UJESClient client) {
+
+        String fileContent = client.resultSet(ResultSetAction.builder()
                     .setPath(path)
                     .setUser(user)
                     .setPageSize(maxSize).build()).getResponseBody();
+
+        return fileContent;
     }
 
     public static InputStream downloadResultSet(String user,
@@ -221,6 +219,7 @@ public class ExecuteCodeHelper {
         resultSetDownloadAction.setParameter("outputFileName",outputFileName);
         resultSetDownloadAction.setParameter("sheetName",sheetName);
         resultSetDownloadAction.setParameter("nullValue",nullValue);
+        resultSetDownloadAction.setParameter("limit",DOWNLOAD_MAX_SIZE.getValue());
         client.executeUJESJob(resultSetDownloadAction);
         return resultSetDownloadAction.getInputStream();
     }
@@ -232,7 +231,10 @@ public class ExecuteCodeHelper {
 
 
     public static  Map<String, Object> getTaskInfoById(JobExecuteResult jobExecuteResult, UJESClient client) {
-        return (Map<String, Object>) client.getJobInfo(jobExecuteResult).getTask();
+
+        Map<String, Object> taskInfo = (Map<String, Object>)client.getJobInfo(jobExecuteResult).getTask();
+
+        return taskInfo;
     }
 
 

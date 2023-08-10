@@ -43,6 +43,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Map.Entry;
 
+@SuppressWarnings("all")
 public final class HttpClientUtil {
 	private final static Logger logger = LoggerFactory.getLogger(HttpClientUtil.class);
 	public final static int connectTimeout = 5000;
@@ -50,10 +51,21 @@ public final class HttpClientUtil {
 	private static CloseableHttpClient httpclient = null;
 
 
+
 	static {
 		httpclient = HttpClients.createDefault();
 	}
-
+	
+	
+    /**
+     * 
+     * @param url
+     * @param timeout
+     * @param headerMap
+     * @param paramsList
+     * @param encoding
+     * @return
+     */
     public static String postForm(String url, int timeout, Map<String, Object> headerMap, List<NameValuePair> paramsList, String encoding){
         HttpPost post = new HttpPost(url);
         try {
@@ -97,10 +109,11 @@ public final class HttpClientUtil {
         return "";
     }
 
+
 	public static String postJsonBody(String url, int timeout, Map<String, Object> headerMap,
 			String paraData, String encoding) {
 
-		logger.info("successfully  start post Json Body  url{} ", url);
+		logger.info("successfully start post Json Body url: {} ", url);
 		HttpPost post = new HttpPost(url);
 		try {
 			if (headerMap != null) {
@@ -308,6 +321,7 @@ public final class HttpClientUtil {
 		return sdf.format(date);
 	}
 
+
 	public static String postJsonBody2(String url, int timeout, Map<String, Object> headerMap,
                                        List<NameValuePair> paramsList, String encoding) {
 		logger.info("successfully  start post Json Body  url{} ", url);
@@ -355,6 +369,7 @@ public final class HttpClientUtil {
 		logger.info("successfully  end post Json Body  url{} ", url);
 		return "";
 	}
+
 
 	public static String postJsonBody3(String url, int timeout, Map<String, Object> headerMap,
 			Map<String, Object> paramsList, String encoding) {

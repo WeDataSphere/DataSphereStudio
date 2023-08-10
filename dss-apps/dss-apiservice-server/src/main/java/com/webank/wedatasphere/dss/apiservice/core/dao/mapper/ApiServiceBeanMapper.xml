@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ /*
+  ~  * Copyright 2019 WeBank
+  ~  *
+  ~  * Licensed under the Apache License, Version 2.0 (the "License");
+  ~  *  you may not use this file except in compliance with the License.
+  ~  * You may obtain a copy of the License at
+  ~  *
+  ~  * http://www.apache.org/licenses/LICENSE-2.0
+  ~  *
+  ~  * Unless required by applicable law or agreed to in writing, software
+  ~  * distributed under the License is distributed on an "AS IS" BASIS,
+  ~  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  * See the License for the specific language governing permissions and
+  ~  * limitations under the License.
+  ~  */
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webank.wedatasphere.dss.apiservice.core.dao.ApiServiceBeanDao">
+    <resultMap id="apiServiceBean" type="com.webank.wedatasphere.dss.apiservice.core.bo.ApiServiceBean">
+        <result property="id" column="id"/>
+        <result property="submitUser" column="submit_user"/>
+        <result property="proxyUser" column="proxy_user"/>
+        <result property="taskID" column="task_id"/>
+        <result property="execID" column="exec_id"/>
+        <result property="user" column="user"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <sql id="fields">
+        `submit_user`,`proxy_user`, `task_id`,`exec_id`,`user`,`create_time`
+    </sql>
+
+    <sql id="fields_query">
+        `id`, `submit_user`,`proxy_user`, `task_id`,`exec_id`,`user`,`create_time`
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.webank.wedatasphere.dss.apiservice.core.bo.ApiServiceBean">
+        <![CDATA[INSERT INTO `dss_apiservice_job`(]]>
+        <include refid="fields"/>
+        <![CDATA[) VALUES(#{submitUser}, #{proxyUser}, #{taskID}, #{execID}, #{user}, now())]]>
+    </insert>
+
+    <select id="selectByTaskId" resultMap="apiServiceBean">
+        <![CDATA[SELECT ]]>
+        <include refid="fields_query"/>
+        <![CDATA[ FROM `dss_apiservice_job` ]]>
+        <where>
+            <![CDATA[ `task_id` = #{taskId} ]]>
+        </where>
+    </select>
+
+</mapper>

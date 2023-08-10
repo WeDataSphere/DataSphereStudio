@@ -17,7 +17,7 @@
 
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.webank.wedatasphere.dss.apiservice.core.dao.ApiServiceParamDao">
-    <resultMap id="paramMap" type="ParamVo">
+    <resultMap id="paramMap" type="com.webank.wedatasphere.dss.apiservice.core.vo.ParamVo">
         <result property="id" column="id"/>
         <result property="apiVersionId" column="api_version_id"/>
         <result property="name" column="name"/>
@@ -37,7 +37,7 @@
         `id`, `api_version_id`, `name`,`type`,`required`,`description`, `display_name`, `default_value`, `details`
     </sql>
 
-    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="ParamVo">
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.webank.wedatasphere.dss.apiservice.core.vo.ParamVo">
         <![CDATA[INSERT INTO `dss_apiservice_param`(]]>
 
         <include refid="fields"/>
@@ -90,9 +90,14 @@
         </where>
     </select>
 
+    <delete id="deleteByApiVersionId">
+        DELETE from `dss_apiservice_param` where `api_version_id` = #{apiVersionId}
+    </delete>
+
     <select id="checkDefaultValueIfNull">
         SELECT `defaultValue`
         from `dss_apiservice_param`
         where `id` = `paramId`
     </select>
+
 </mapper>

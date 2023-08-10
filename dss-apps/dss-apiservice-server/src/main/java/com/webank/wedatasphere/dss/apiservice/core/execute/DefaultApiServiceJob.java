@@ -16,7 +16,6 @@
 
 package com.webank.wedatasphere.dss.apiservice.core.execute;
 
-import org.apache.linkis.ujes.client.request.JobExecuteAction;
 import org.apache.linkis.ujes.client.response.JobExecuteResult;
 
 import java.util.Map;

@@ -15,13 +15,15 @@
  */
 package com.webank.wedatasphere.dss.apiservice.core.util;
 
-import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Date;
 
-
+/**
+ * 时间的工具类
+ */
 public class DateUtil {
 
     /**
@@ -249,7 +251,7 @@ public class DateUtil {
         return null;
     }
 
-    public static Timestamp str2Time(String timeStr) {
+    public static LocalDateTime str2Time(String timeStr) {
         if (null == timeStr || "".equals(timeStr)) {
             return null;
         }
@@ -264,19 +266,18 @@ public class DateUtil {
              * 说明符合日期格式 截取tempStr后面的部分与timeStr拼接构成时间
              */
             String lastStr = tempSplitStr.substring(timeStr.length());
-            return Timestamp.valueOf(timeStr + lastStr);
+            return LocalDateTime.parse(timeStr + lastStr);
         }
 
         return null;
     }
 
-    public static Timestamp str2TimeMax(String timeStr) {
+    public static LocalDateTime str2TimeMax(String timeStr) {
         if (null == timeStr || "".equals(timeStr)) {
             return null;
         }
         String str = timeStr;
         str = str.replaceAll("[0-9]", "0");
-
         String tempStr = "0000-00-00 00:00:00";
         String tempSplitStr = "1970-01-01 23:59:59";
         int index = tempStr.indexOf(str);
@@ -285,7 +286,7 @@ public class DateUtil {
              * 说明符合日期格式 截取tempStr后面的部分与timeStr拼接构成时间
              */
             String lastStr = tempSplitStr.substring(timeStr.length());
-            return Timestamp.valueOf(timeStr + lastStr);
+            return LocalDateTime.parse(timeStr + lastStr);
         }
 
         return null;

@@ -17,12 +17,11 @@
 package com.webank.wedatasphere.dss.apiservice.core.bo;
 
 
-import java.util.Date;
-
 public class TokenQuery {
     private Long apiId;
     private String user;
     private Integer status;
+    private String version;
 
     private String startDate;
     private String endDate;
@@ -42,22 +41,33 @@ public class TokenQuery {
     private String creator;
 
 
-    public TokenQuery(Long apiId, String user, Integer status) {
+    public TokenQuery(Long apiId, String user, Integer status, String version) {
         this.apiId = apiId;
         this.user = user;
         this.status = status;
+        this.version = version;
     }
 
-    public TokenQuery(Long apiId, String user, Integer status, String startDate, String endDate) {
+    public TokenQuery(Long apiId, String user, Integer status, String startDate, String endDate, String version) {
         this.apiId = apiId;
         this.user = user;
         this.status = status;
         this.startDate = startDate;
         this.endDate = endDate;
+        this.version = version;
     }
 
     public TokenQuery() {
     }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
 
     public String getStartDate() {
         return startDate;

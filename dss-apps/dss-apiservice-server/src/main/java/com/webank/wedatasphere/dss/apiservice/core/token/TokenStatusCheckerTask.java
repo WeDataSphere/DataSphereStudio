@@ -17,7 +17,6 @@
 package com.webank.wedatasphere.dss.apiservice.core.token;
 
 import com.webank.wedatasphere.dss.apiservice.core.dao.ApiServiceTokenManagerDao;
-import com.webank.wedatasphere.dss.apiservice.core.util.DateUtil;
 import com.webank.wedatasphere.dss.apiservice.core.vo.TokenManagerVo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

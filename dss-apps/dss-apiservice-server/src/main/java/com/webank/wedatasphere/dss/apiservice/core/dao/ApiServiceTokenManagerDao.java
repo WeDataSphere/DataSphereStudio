@@ -27,17 +27,18 @@ public interface ApiServiceTokenManagerDao {
 
     /**
      * insert a token
-     * */
+     */
     void insert(TokenManagerVo tokenManagerVo);
 
     /**
      * insert batch token
-     * */
+     */
     void insertList(List<TokenManagerVo> tokenManagerVos);
 
 
     /**
      * 多条记录需要去重返回最新授权的
+     *
      * @param userName
      * @return
      */
@@ -49,52 +50,52 @@ public interface ApiServiceTokenManagerDao {
     List<TokenManagerVo> queryByApplyUserAndVersionId(@Param("userName") String userName, @Param("apiVersionId") Long apiVersionId);
 
 
-
     /**
      * query
-     * */
+     */
     List<TokenManagerVo> query(TokenQuery tokenQuery);
 
     /**
      * query token by token id
-     * */
+     */
     TokenManagerVo queryTokenById(@Param("id") Long tokenId);
 
     /**
      * query token by api service id
-     * */
+     */
     List<TokenManagerVo> queryTokenByApiServiceId(@Param("api_id") Long apiServiceId);
 
     /**
      * query token avoid submit again
-     * */
-    int queryApprovalNo(@Param("approvalNo") String approvalNo);
+     */
+    int queryApprovalNo(@Param("approvalNo") String approvalNo, @Param("apiVersionId") Long apiVersionId);
 
     /**
      * query tokens according to status
-     * */
+     */
     List<TokenManagerVo> queryTokenByStatus(@Param("status") Integer status);
 
     /**
      * disable token status
-     * */
+     */
     void disableTokenStatus(@Param("id") Long id);
 
 
     /**
      * disable token status
-     * */
+     */
     void disableTokenStatusByVersionId(@Param("apiVersionId") Long apiVersionId);
 
+    void updateTokenStatusBeforeVersionId(@Param("apiVersionId") Long apiVersionId, @Param("apiId") Long apiId, @Param("status") Integer status);
 
     /**
      * disable token status
-     * */
+     */
     void disableTokenStatusByApiId(@Param("apiId") Long apiId);
 
     /**
      * enable token status
-     * */
+     */
     void enableTokenStatus(@Param("id") Long id);
 
     void enableTokenStatusByVersionId(@Param("apiVersionId") Long apiVersionId);
@@ -104,9 +105,9 @@ public interface ApiServiceTokenManagerDao {
 
     /**
      * delete token
-     * */
+     */
     void deleteTokenById(@Param("id") Long tokenId);
-    
+
     /**
      * update token status
      * */
