@@ -18,6 +18,7 @@ package com.webank.wedatasphere.dss.apiservice.core.service.impl;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
+import com.webank.wedatasphere.dss.apiservice.core.bo.ApiServiceBean;
 import com.webank.wedatasphere.dss.apiservice.core.bo.ApiServiceJob;
 import com.webank.wedatasphere.dss.apiservice.core.bo.ApiServiceToken;
 import com.webank.wedatasphere.dss.apiservice.core.bo.LinkisExecuteResult;
@@ -25,21 +26,21 @@ import com.webank.wedatasphere.dss.apiservice.core.config.ApiServiceConfiguratio
 import com.webank.wedatasphere.dss.apiservice.core.constant.ParamType;
 import com.webank.wedatasphere.dss.apiservice.core.constant.RequireEnum;
 import com.webank.wedatasphere.dss.apiservice.core.dao.*;
+import com.webank.wedatasphere.dss.apiservice.core.exception.ApiExecuteException;
 import com.webank.wedatasphere.dss.apiservice.core.exception.ApiServiceQueryException;
+import com.webank.wedatasphere.dss.apiservice.core.exception.ApiServiceRuntimeException;
 import com.webank.wedatasphere.dss.apiservice.core.execute.ApiServiceExecuteJob;
 import com.webank.wedatasphere.dss.apiservice.core.execute.DefaultApiServiceJob;
 import com.webank.wedatasphere.dss.apiservice.core.execute.ExecuteCodeHelper;
 import com.webank.wedatasphere.dss.apiservice.core.execute.LinkisJobSubmit;
 import com.webank.wedatasphere.dss.apiservice.core.jdbc.DatasourceService;
 import com.webank.wedatasphere.dss.apiservice.core.service.ApiService;
-import com.webank.wedatasphere.dss.apiservice.core.util.DateUtil;
-import com.webank.wedatasphere.dss.apiservice.core.util.SQLCheckUtil;
-import com.webank.wedatasphere.dss.apiservice.core.vo.*;
-import com.webank.wedatasphere.dss.apiservice.core.exception.ApiServiceRuntimeException;
 import com.webank.wedatasphere.dss.apiservice.core.service.ApiServiceQueryService;
-import com.webank.wedatasphere.dss.apiservice.core.util.AssertUtil;
-import com.webank.wedatasphere.dss.apiservice.core.util.ModelMapperUtil;
-import com.webank.wedatasphere.dss.apiservice.core.vo.ApiServiceVo;
+import com.webank.wedatasphere.dss.apiservice.core.util.*;
+import com.webank.wedatasphere.dss.apiservice.core.vo.*;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.math3.util.Pair;
 import org.apache.linkis.bml.client.BmlClient;
 import org.apache.linkis.bml.client.BmlClientFactory;
 import org.apache.linkis.bml.protocol.BmlDownloadResponse;
@@ -47,8 +48,6 @@ import org.apache.linkis.common.io.FsPath;
 import org.apache.linkis.storage.source.FileSource;
 import org.apache.linkis.ujes.client.UJESClient;
 import org.apache.linkis.ujes.client.response.JobExecuteResult;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.math3.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,13 +69,13 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 
-
+/**
+ * 接口调用service
+ */
 @Service
 public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
     private static final Logger LOG = LoggerFactory.getLogger(ApiServiceQueryServiceImpl.class);
-
-
-    Map<String, ApiServiceJob> runJobs = new HashMap<>();
+    public static final String API_SUBMIT_USER = "dss_api_submit_user";
 
     /**
      * key:resourceId+version
@@ -133,13 +132,19 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
     private ApiServiceVersionDao apiServiceVersionDao;
 
     @Autowired
+    private ApiServiceApprovalDao apiServiceApprovalDao;
+
+    @Autowired
     private ApiServiceTokenManagerDao apiServiceTokenManagerDao;
 
     @Autowired
     private ApiService apiService;
 
     @Autowired
-    private  ApiServiceAccessDao apiServiceAccessDao;
+    private ApiServiceAccessDao apiServiceAccessDao;
+
+    @Autowired
+    private ApiServiceBeanDao apiServiceBeanDao;
 
     /**
      * Bml client
@@ -159,24 +164,32 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
                                      String moduleName,
                                      String httpMethod,
                                      ApiServiceToken tokenDetail,
-                                     String loginUser) {
+                                     String loginUser) throws ApiServiceQueryException {
         // 根据path查询resourceId和version
         // 得到metadata
         // 执行查询
-        //path 必须唯一
+        //path对于api必须唯一
         ApiServiceVo apiServiceVo = apiServiceDao.queryByPath(path);
-        if(null == apiServiceVo){
+        if (null == apiServiceVo) {
             throw new ApiServiceRuntimeException("根据脚本路径未匹配到数据服务！");
         }
-        if(!apiService.checkUserWorkspace(loginUser,apiServiceVo.getWorkspaceId().intValue())){
+        //增加公共数据服务功能，如代码搜索等，必须由管理员指定。
+        if (!tokenDetail.getApplyUser().equals(loginUser) && !isPublicApiService(tokenDetail, apiServiceVo)) {
+            throw new ApiServiceQueryException(40030, "用户Token检查未通过");
+        }
+        if (!apiService.checkUserWorkspace(loginUser, apiServiceVo.getWorkspaceId().intValue())) {
             throw new ApiServiceRuntimeException("用户工作空间检查不通过！");
         }
-        if(!apiServiceVo.getId().equals(tokenDetail.getApiServiceId())){
+        if (!apiServiceVo.getId().equals(tokenDetail.getApiServiceId())) {
             throw new ApiServiceRuntimeException("用户token中服务ID不匹配！");
         }
-
-        ApiVersionVo maxApiVersionVo =apiService.getMaxVersion(apiServiceVo.getId());
-
+        //创建者使用最新版本，授权用户使用最新审批通过版本
+        ApiVersionVo maxApiVersionVo;
+        if (apiServiceVo.getCreator().equals(loginUser)) {
+            maxApiVersionVo = apiService.getMaxVersion(apiServiceVo.getId());
+        } else {
+            maxApiVersionVo = apiService.getMaxApprovedVersion(apiServiceVo.getId());
+        }
         AssertUtil.notNull(apiServiceVo, "接口不存在，path=" + path);
         AssertUtil.isTrue(StringUtils.equals(httpMethod, apiServiceVo.getMethod().toUpperCase()),
                 "该接口不支持" + httpMethod + "请求，请用" + apiServiceVo.getMethod() + "请求");
@@ -203,44 +216,58 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
                     }
                 });
             }
-
             // 用户请求的参数值注入检查，排除token
-            for(String k: reqParams.keySet()){
-                if(!k.equals(ApiServiceConfiguration.API_SERVICE_TOKEN_KEY.getValue())
-                   && SQLCheckUtil.doParamInjectionCheck(reqParams.get(k).toString())) {
+            for (Map.Entry<String, Object> entry : reqParams.entrySet()) {
+                String k = entry.getKey();
+                if (!k.equals(ApiServiceConfiguration.API_SERVICE_TOKEN_KEY.getValue())
+                        && SQLCheckUtil.doParamInjectionCheck(entry.getValue().toString())) {
                     // 如果注入直接返回null
-                    LOG.warn("用户参数存在非法的关键字{}", reqParams.get(k).toString());
+                    LOG.warn("用户参数存在非法的关键字{}", entry.getValue().toString());
                     return null;
                 }
             }
 
             //数组类型，如果没有加单引号，自动添加
-            reqParams.forEach((k,v) ->{
-                if(ParamType.array.equals(paramTypes.get(k))){
+            reqParams.forEach((k, v) -> {
+                if (ParamType.array.equals(paramTypes.get(k))) {
                     String sourceStr = v.toString();
-                    String targetStr =sourceStr;
-                    sourceStr= sourceStr.replaceAll("(\n\r|\r\n|\r|\n)", ",");
-                    sourceStr= sourceStr.replaceAll(",,", ",");
+                    String targetStr = sourceStr;
+                    sourceStr = sourceStr.replaceAll("(\n\r|\r\n|\r|\n)", ",");
+                    sourceStr = sourceStr.replaceAll(",,", ",");
 
-                    if(!sourceStr.contains("\'")){
-                        targetStr= Arrays.stream(sourceStr.split(",")).map(s -> "\'" + s + "\'").collect(Collectors.joining(","));
+                    if (!sourceStr.contains("\'")) {
+                        targetStr = Arrays.stream(sourceStr.split(",")).map(s -> "\'" + s + "\'").collect(Collectors.joining(","));
                         reqParams.put(k, targetStr);
-                    }else {
+                    } else {
                         reqParams.put(k, sourceStr);
                     }
                 }
             });
 
+//            AssertUtil.isTrue(MapUtils.isNotEmpty((Map) collect.getKey()), "数据源不能为空");
+            //获取代理执行用户
+            String executeUser = maxApiVersionVo.getExecuteUser();
+            //数据服务合并提单后，executeUser字段放到api_version表中了，这里做兼容。
+            if (StringUtils.isEmpty(executeUser)) {
+                ApprovalVo approvalVo = apiServiceApprovalDao.queryByVersionId(maxApiVersionVo.getId());
+                executeUser = approvalVo.getExecuteUser();
+            }
             ApiServiceExecuteJob job = new DefaultApiServiceJob();
             //sql代码封装成scala执行
             job.setCode(ExecuteCodeHelper.packageCodeToExecute(executeCode, maxApiVersionVo.getMetadataInfo()));
             job.setEngineType(apiServiceVo.getType());
             job.setRunType("scala");
-            //不允许创建用户自己随意代理执行，创建用户只能用自己用户执行
-            //如果需要代理执行可以在这里更改用户
+            //todo 不允许创建用户自己随意代理执行，创建用户只能用自己用户执行
             job.setUser(loginUser);
-
+            if (!apiServiceVo.getCreator().equals(loginUser) && StringUtils.isNotEmpty(executeUser)) {
+                if ("hadoop".equalsIgnoreCase(executeUser)) {
+                    throw new ApiExecuteException(80004, "非法使用Hadoop用户作为执行用户");
+                }
+                job.setUser(executeUser);
+            }
             job.setParams(null);
+            //为公共数据服务添加用户限制
+            reqParams.put(API_SUBMIT_USER, loginUser);
             job.setRuntimeParams(reqParams);
             job.setScriptePath(apiServiceVo.getScriptPath());
             UJESClient ujesClient = LinkisJobSubmit.getClient(paramTypes);
@@ -256,29 +283,36 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
             apiAccessVo.setAccessTime(DateUtil.getNow());
             apiServiceAccessDao.addAccessRecord(apiAccessVo);
 
-            JobExecuteResult jobExecuteResult = LinkisJobSubmit.execute(job,ujesClient);
+            JobExecuteResult jobExecuteResult = LinkisJobSubmit.execute(job, ujesClient);
 
             //记录执行任务用户和代理用户关系，没有代理用户的统一设置为登录用户
-            ApiServiceJob apiServiceJob = new ApiServiceJob();
-            apiServiceJob.setSubmitUser(loginUser);
-            apiServiceJob.setProxyUser(job.getUser());
-            apiServiceJob.setJobExecuteResult(jobExecuteResult);
-            runJobs.put(jobExecuteResult.getTaskID(),apiServiceJob);
+            ApiServiceBean apiServiceBean = new ApiServiceBean(loginUser, job.getUser(), jobExecuteResult.getTaskID(), jobExecuteResult.getExecID(), jobExecuteResult.getUser());
 
-            LinkisExecuteResult linkisExecuteResult = new LinkisExecuteResult(jobExecuteResult.getTaskID(), jobExecuteResult.getExecID());
-            return linkisExecuteResult;
-        } catch (IOException e) {
+            apiServiceBeanDao.insert(apiServiceBean);
+
+            return new LinkisExecuteResult(jobExecuteResult.getTaskID(), jobExecuteResult.getExecID());
+        } catch (IOException | ApiExecuteException e) {
             throw new ApiServiceRuntimeException(e.getMessage(), e);
         }
     }
 
+
+    private boolean isPublicApiService(ApiServiceToken tokenDetail, ApiServiceVo apiServiceVo) {
+        if (tokenDetail.getPublisher().equals(apiServiceVo.getCreator()) && ApiUtils.isPublicApiService(apiServiceVo.getId())) {
+            return true;
+        } else {
+            return false;
+        }
+
+    }
+
     @Override
-    public ApiServiceVo queryByVersionId(String userName,Long versionId) throws ApiServiceQueryException {
-        ApiVersionVo apiVersionVo =   apiServiceVersionDao.queryApiVersionByVersionId(versionId);
+    public ApiServiceVo queryByVersionId(String userName, Long versionId) throws ApiServiceQueryException {
+        ApiVersionVo apiVersionVo = apiServiceVersionDao.queryApiVersionByVersionId(versionId);
         ApiServiceVo apiServiceVo = apiServiceDao.queryById(apiVersionVo.getApiId());
-        //授权后才可以查看内容
-        List<TokenManagerVo> userTokenManagerVos = apiServiceTokenManagerDao.queryByApplyUserAndVersionId(userName,versionId);
-        if(userTokenManagerVos.size()>0) {
+        //授权后才可以查看内容，创建者不授权也能查看
+        List<TokenManagerVo> userTokenManagerVos = apiServiceTokenManagerDao.queryByApplyUserAndVersionId(userName, versionId);
+        if (apiServiceVo.getCreator().equals(userName) || userTokenManagerVos.size() > 0) {
             try {
                 Pair<Object, ArrayList<String[]>> collect = queryBml(apiServiceVo.getCreator(), apiVersionVo.getBmlResourceId(),
                         apiVersionVo.getBmlVersion(), apiServiceVo.getScriptPath());
@@ -290,8 +324,7 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
             }
             apiServiceVo.setScriptPath(apiVersionVo.getSource());
             return apiServiceVo;
-        }else {
-
+        } else {
             throw new ApiServiceQueryException(800003, "没有权限查看数据服务API内容，请先提单授权");
         }
     }
@@ -300,19 +333,21 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
     public List<QueryParamVo> queryParamList(String scriptPath, Long versionId) {
         ApiVersionVo targetApiVersionVo = apiServiceVersionDao.queryApiVersionByVersionId(versionId);
 
-        ApiServiceVo apiServiceVo=apiServiceDao.queryById(targetApiVersionVo.getApiId());
+        ApiServiceVo apiServiceVo = apiServiceDao.queryById(targetApiVersionVo.getApiId());
 
         AssertUtil.notNull(apiServiceVo, "接口不存在，path=" + scriptPath);
 
-        AssertUtil.notNull(targetApiVersionVo, "目标参数版本不存在，path=" + scriptPath+",version:"+versionId);
+        AssertUtil.notNull(targetApiVersionVo, "目标参数版本不存在，path=" + scriptPath + ",version:" + versionId);
 
+        // todo~！
         List<ParamVo> paramVoList = apiServiceParamDao.queryByVersionId(targetApiVersionVo.getId());
+
 
         List<QueryParamVo> queryParamVoList = new ArrayList<>();
 
         Map<String, ParamVo> paramMap = paramVoList.stream()
                 .collect(Collectors.toMap(ParamVo::getName, k -> k, (k, v) -> k));
-        Map<String, Object> variableMap = getVariable(apiServiceVo,versionId);
+        Map<String, Object> variableMap = getVariable(apiServiceVo, versionId);
         paramMap.keySet()
                 .forEach(keyItem -> {
                     ParamVo paramVo = paramMap.get(keyItem);
@@ -333,10 +368,10 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
         return apiVersionVoList;
     }
 
-    private Map<String, Object> getVariable(ApiServiceVo apiServiceVo,Long versionId) {
+    private Map<String, Object> getVariable(ApiServiceVo apiServiceVo, Long versionId) {
         Map<String, Object> variableMap = null;
         ApiVersionVo apiVersionVo = apiServiceVersionDao.queryApiVersionByVersionId(versionId);
-        if(null != apiServiceVo) {
+        if (null != apiServiceVo) {
             try {
                 Pair<Object, ArrayList<String[]>> collect = queryBml(apiServiceVo.getCreator(), apiVersionVo.getBmlResourceId(),
                         apiVersionVo.getBmlVersion(), apiServiceVo.getScriptPath());
@@ -395,7 +430,7 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
 
                     collect = apiServiceParamDao.queryByVersionId(apiVersionVo.getId())
                             .stream()
-                            .collect(toMap(ParamVo::getName, ParamVo::getType));
+                            .collect(toMap(ParamVo::getName, ParamVo::getType, (type1, type2) -> type2));
                     configParamCache.put(key, collect);
                 }
             }
@@ -403,6 +438,58 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
 
         return collect;
     }
+
+
+//    private Tuple3 getDatasourceInfo(final Map<String, Object> datasourceMap) {
+//        Tuple3 tuple3 = datasourceCache.getIfPresent(datasourceMap);
+//
+//        if (tuple3 == null) {
+//            synchronized (this) {
+//                tuple3 = datasourceCache.getIfPresent(datasourceMap);
+//                if (tuple3 == null) {
+//                    tuple3 = JdbcUtil.getDatasourceInfo(datasourceMap);
+//                    datasourceCache.put(datasourceMap, tuple3);
+//                }
+//            }
+//        }
+//
+//        return tuple3;
+//    }
+
+//    private List<Map<String, Object>> executeJob(String executeCode,
+//                                                 Object datasourceMap, Map<String, Object> params) {
+//
+////        Tuple3 tuple3 = getDatasourceInfo((Map<String, Object>) datasourceMap);
+////        final String jdbcUrl = tuple3._1().toString();
+////        final String username = tuple3._2().toString();
+////        final String password = tuple3._3().toString();
+//
+////        NamedParameterJdbcTemplate namedParameterJdbcTemplate = datasourceService.getNamedParameterJdbcTemplate(jdbcUrl, username, password);
+//
+//        String namedSql = genNamedSql(executeCode, params);
+//
+////        return namedParameterJdbcTemplate.query(namedSql, new MapSqlParameterSource(params), new ColumnAliasMapRowMapper());
+//
+//    }
+
+    private static String genNamedSql(String executeCode, Map<String, Object> params) {
+        // 没有参数，无需生成namedSql
+        if (MapUtils.isEmpty(params)) {
+            return executeCode;
+        }
+
+        for (String paramName : params.keySet()) {
+            for (String $name : new String[]{"'${" + paramName + "}'", "${" + paramName + "}", "\"${" + paramName + "}\""}) {
+                if (executeCode.contains($name)) {
+                    executeCode = StringUtils.replace(executeCode, $name, ":" + paramName);
+                    break;
+                }
+            }
+        }
+
+        return executeCode;
+    }
+
 
     public static class ColumnAliasMapRowMapper implements RowMapper<Map<String, Object>> {
         @Override
@@ -444,8 +531,36 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
     }
 
     @Override
-    public ApiServiceJob getJobByTaskId(String taskId){
-        return runJobs.get(taskId);
+    public ApiServiceJob getJobByTaskId(String taskId) {
+        ApiServiceBean apiServiceBean = apiServiceBeanDao.selectByTaskId(taskId);
+        ApiServiceJob apiServiceJob = new ApiServiceJob();
+        apiServiceJob.setSubmitUser(apiServiceBean.getSubmitUser());
+        apiServiceJob.setProxyUser(apiServiceBean.getProxyUser());
+        JobExecuteResult jobExecuteResult = new JobExecuteResult();
+        jobExecuteResult.setTaskID(apiServiceBean.getTaskID());
+        jobExecuteResult.setExecID(apiServiceBean.getExecID());
+        jobExecuteResult.setUser(apiServiceBean.getUser());
+        apiServiceJob.setJobExecuteResult(jobExecuteResult);
+        return apiServiceJob;
     }
 
+
+    private static String getRunTypeFromScriptsPath(String scriptsPath) {
+
+        String res;
+        String fileFlag = scriptsPath.substring(scriptsPath.lastIndexOf(".") + 1);
+        switch (fileFlag) {
+            case "sh":
+                res = "shell";
+                break;
+            case "py":
+                res = "pyspark";
+                break;
+            default:
+                res = fileFlag;
+                break;
+        }
+        return res;
+
+    }
 }

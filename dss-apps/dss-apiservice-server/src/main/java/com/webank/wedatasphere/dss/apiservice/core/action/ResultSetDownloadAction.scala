@@ -24,11 +24,10 @@ import scala.tools.nsc.interpreter.InputStream
 
 
 
-class ResultSetDownloadAction extends GetAction with  DownloadAction with UJESJobAction  {
+class ResultSetDownloadAction extends GetAction with DownloadAction with UJESJobAction {
+  private var response: HttpResponse = _
 
   private var inputStream: InputStream = _
-
-  private var response: HttpResponse = _
 
   override def write(inputStream: InputStream): Unit = this.inputStream = inputStream
 
@@ -36,8 +35,7 @@ class ResultSetDownloadAction extends GetAction with  DownloadAction with UJESJo
 
   override def suffixURLs: Array[String] = Array("filesystem", "resultsetToExcel")
 
+  override def getResponse: HttpResponse = response
 
-   def getResponse: HttpResponse = response
-
-   def setResponse(response: HttpResponse): Unit = this.response = response
+  override def setResponse(response: HttpResponse): Unit = this.response = response
 }

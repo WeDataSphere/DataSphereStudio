@@ -80,6 +80,13 @@ public class ApiServiceQuery {
         this.name = name;
     }
 
+    /**
+     * 页面上按照中文名称搜索
+     */
+    public String getAliasName() {
+        return name;
+    }
+
     public String getTag() {
         return tag;
     }

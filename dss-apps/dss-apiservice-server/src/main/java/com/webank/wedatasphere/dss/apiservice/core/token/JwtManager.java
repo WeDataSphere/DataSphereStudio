@@ -16,21 +16,15 @@
 
 package com.webank.wedatasphere.dss.apiservice.core.token;
 
-import com.sun.jersey.core.util.Base64;
-import com.webank.wedatasphere.dss.apiservice.core.config.ApiServiceConfiguration;
 import com.webank.wedatasphere.dss.apiservice.core.bo.ApiServiceToken;
-import org.apache.linkis.common.conf.CommonVars$;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.SignatureException;
-import io.jsonwebtoken.UnsupportedJwtException;
+import com.webank.wedatasphere.dss.apiservice.core.config.ApiServiceConfiguration;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.impl.crypto.MacProvider;
+import org.apache.linkis.common.conf.CommonVars$;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Base64Utils;
+
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.time.Duration;
@@ -68,8 +62,9 @@ public class JwtManager {
     }
 
     public static SecretKey generalKey() {
-        byte[] encodedKey = Base64.decode(JWT_SECERT);
+        byte[] encodedKey = Base64Utils.decodeFromString(JWT_SECERT);
         SecretKey key = new SecretKeySpec(encodedKey, 0, encodedKey.length, "AES");
+        LOG.info("token key str: {}", key);
         return key;
     }
 
@@ -80,7 +75,7 @@ public class JwtManager {
         final String role = "developer";
         final Instant now = Instant.now();
         final Date expiryDate = Date.from(now.plus(Duration.ofDays(duration)));
-        Map<String, Object> tokenDetailMap = new HashMap<String, Object>();
+        Map<String, Object> tokenDetailMap = new HashMap<>();
         tokenDetailMap.put("tokenDetail", apiServiceToken);
         return Jwts.builder()
                 .setSubject(applyUser)

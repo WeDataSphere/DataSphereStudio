@@ -18,15 +18,19 @@ package com.webank.wedatasphere.dss.apiservice.core.service;
 
 import com.webank.wedatasphere.dss.apiservice.core.vo.ApprovalVo;
 
+import java.util.List;
+
 public interface ApprovalService {
 
     /**
      * 根据审批单号，查询对应数据
-     * */
-    ApprovalVo query(String approvalNo);
+     */
+    List<ApprovalVo> query(String approvalNo);
 
     /**
      * 查询DataMap，依据DataMap审批结果更新审批单状态
-     * */
-    ApprovalVo refreshStatus(String approvalNo) throws Exception;
+     */
+    List<ApprovalVo> refreshStatus(String approvalNo) throws Exception;
+
+    void registerApprovalStatusListener(ApprovalStatusListener approvalStatusListener);
 }

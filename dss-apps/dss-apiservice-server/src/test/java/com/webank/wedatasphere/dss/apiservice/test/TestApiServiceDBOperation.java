@@ -29,8 +29,6 @@ import com.webank.wedatasphere.dss.apiservice.core.token.JwtManager;
 import com.webank.wedatasphere.dss.apiservice.core.util.DateUtil;
 import com.webank.wedatasphere.dss.apiservice.core.vo.ApiAccessVo;
 import com.webank.wedatasphere.dss.apiservice.core.vo.ApiServiceVo;
-import com.webank.wedatasphere.dss.apiservice.core.vo.ApiVersionVo;
-import com.webank.wedatasphere.dss.apiservice.core.vo.ApprovalVo;
 import org.apache.linkis.DataWorkCloudApplication;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,18 +41,16 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.sql.DataSource;
 import java.util.Date;
-import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 
-
-//@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringJUnit4ClassRunner.class)
 //@MapperScan(annotationClass = Repository.class, basePackages = "com.webank.wedatasphere.dss.apiservice.dao" )
-//@SpringBootTest(classes = {DataWorkCloudApplication.class})
+@SpringBootTest(classes = {DataWorkCloudApplication.class})
 public class TestApiServiceDBOperation {
-    /*private static DbSetupTracker dbSetupTracker = new DbSetupTracker();
+    private static DbSetupTracker dbSetupTracker = new DbSetupTracker();
     @Autowired
     ApiService apiService;
     @Autowired
@@ -104,8 +100,6 @@ public class TestApiServiceDBOperation {
     public void testApiServiceCommentUpdate() {
         dbSetupTracker.skipNextLaunch();
 
-        ApiServiceVo apiServiceVo01 = apiServiceDao.queryByPath("/test01");
-        Integer actual = apiServiceDao.updateApiServiceComment(apiServiceVo01.getId(), "new comment");
         ApiServiceVo apiServiceVo02 = apiServiceDao.queryByPath("/test01");
 
 
@@ -129,12 +123,29 @@ public class TestApiServiceDBOperation {
 
     }
 
-
+//
+//    @DisplayName("DataMap单库表解析验证")
+//    @Test
+//    public void testDataMapApprovalTableParse() {
+//        System.out.println("DataMap单库表解析验证");
+//        ApprovalVo approvalVo = new ApprovalVo();
+//        approvalVo.setApiId(1L);
+//        ApiServiceVo apiServiceVo = new ApiServiceVo();
+//        apiServiceVo.setApprovalVo(approvalVo);
+//        ApiVersionVo apiVersionVo = new ApiVersionVo();
+//        String metaDtaInfo = "[default1.a1,default2.b]";
+//        List<DataMapApplyContentData> dataMapApplyContentDataList = apiService.genDataMapApplyContentDatas(apiServiceVo, apiVersionVo, metaDtaInfo);
+//        Assertions.assertAll("tableNames",
+//                () -> Assertions.assertEquals(dataMapApplyContentDataList.get(0).getDbName(), "default1"),
+//                () -> Assertions.assertEquals(dataMapApplyContentDataList.get(1).getTableName(), "b")
+//
+//        );
+//
+//    }
 
     @DisplayName("数据服务访问记录验证")
     @Test
     public void testApiServiceAccessInfo() {
-        System.out.println("数据服务访问记录验证");
         ApiAccessVo apiAccessVo = new ApiAccessVo();
         apiAccessVo.setUser("allenlliu");
         apiAccessVo.setApiPublisher("testUser");
@@ -153,5 +164,24 @@ public class TestApiServiceDBOperation {
 
         );
 
-    }*/
+    }
+
+    @DisplayName("Token 解析验证")
+    @Test
+    public void testTokenParse() {
+        final String applyUser = "allenlliu";
+        ApiServiceToken apiServiceToken = new ApiServiceToken();
+        apiServiceToken.setPublisher("allenlliu");
+        apiServiceToken.setApiServiceId(150L);
+        apiServiceToken.setApplyUser("testUser1");
+        apiServiceToken.setApplyTime(new Date());
+        Long duration = 365L;
+        String token = JwtManager.createToken(applyUser, apiServiceToken, duration);
+
+        ApiServiceToken parseToken = JwtManager.parseToken(token);
+
+        Assertions.assertEquals(parseToken.getApiServiceId(), 150L);
+        Assertions.assertEquals(parseToken.getApplyUser(), "testUser1");
+
+    }
 }

@@ -30,25 +30,29 @@
         <result property="status" column="status"/>
         <result property="metadataInfo" column="metadata_info"/>
         <result property="authId" column="auth_id"/>
+        <result property="executeUser" column="execute_user"/>
+        <result property="description" column="description"/>
+        <result property="comment" column="comment"/>
     </resultMap>
 
     <sql id="fields">
         `api_id`,`version`,`bml_resource_id`,`bml_version`,`source`,`creator`,`create_time`,`status`,
-         `metadata_info`, `auth_id`
+        `metadata_info`, `auth_id`, `execute_user`, `description`, `comment`
     </sql>
 
     <sql id="fields_query">
         `id`,`api_id`,`version`,`bml_resource_id`,`bml_version`,`source`,`creator`,`create_time`,`status`,
-        `metadata_info`, `auth_id`
+        `metadata_info`, `auth_id`, `execute_user`, `description`, `comment`
     </sql>
 
-    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.webank.wedatasphere.dss.apiservice.core.vo.ApiVersionVo">
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.webank.wedatasphere.dss.apiservice.core.vo.ApiVersionVo">
         <![CDATA[INSERT INTO
          `dss_apiservice_api_version`(]]>
         <include refid="fields"/>
         <![CDATA[) VALUES
             (#{apiId}, #{version}, #{bmlResourceId}, #{bmlVersion}, #{source}, #{creator}, #{createTime}, #{status}, #{metadataInfo},
-            #{authId}
+            #{authId}, #{executeUser}, #{description}, #{comment}
             )]]>
     </insert>
 
@@ -71,10 +75,29 @@
             api_id = #{api_id}
         ]]>
     </select>
+    <select id="queryApiVersion" resultType="com.webank.wedatasphere.dss.apiservice.core.vo.ApiVersionVo">
+        <![CDATA[SELECT]]>
+        <include refid="fields_query"/>
+        <![CDATA[FROM
+            `dss_apiservice_api_version`
+        ]]>
+    </select>
 
     <update id="updateApiVersionStatusById">
         UPDATE `dss_apiservice_api_version`
         SET `status` = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateApiVersionStatusBeforeId">
+        UPDATE `dss_apiservice_api_version`
+        SET `status` = #{status}
+        WHERE api_id = #{apiId} and id <![CDATA[ < ]]> #{id}
+    </update>
+
+    <update id="updateAuthIdByapiVersionId">
+        UPDATE `dss_apiservice_api_version`
+        SET `auth_id` = #{authId}
         WHERE id = #{id}
     </update>
 
@@ -85,16 +108,54 @@
         api_id = #{api_id}
     </update>
 
-    <update id="updateApiVersionStatus" parameterType="com.webank.wedatasphere.dss.apiservice.core.vo.ApiVersionVo">
-        UPDATE `dss_apiservice_api_version`
-        SET `status` = #{status}
-        WHERE id = #{id}
+    <update id="updateApiVersionInfoById" parameterType="com.webank.wedatasphere.dss.apiservice.core.vo.ApiVersionVo">
+        <![CDATA[UPDATE `dss_apiservice_api_version`]]>
+        <set>
+            <if test="metadataInfo != null and metadataInfo != ''">
+                <![CDATA[ `metadata_info` = #{metadataInfo}, ]]>
+            </if>
+            <if test="version != null and version != ''">
+                <![CDATA[ `version` = #{version}, ]]>
+            </if>
+            <if test="bmlResourceId != null and bmlResourceId != ''">
+                <![CDATA[ `bml_resource_id` = #{bmlResourceId}, ]]>
+            </if>
+            <if test="bmlVersion != null and bmlVersion != ''">
+                <![CDATA[ `bml_version` = #{bmlVersion}, ]]>
+            </if>
+            <if test="createTime != null">
+                <![CDATA[ `create_time` = #{createTime}, ]]>
+            </if>
+            <if test="source != null and source != ''">
+                <![CDATA[ `source` = #{source}, ]]>
+            </if>
+            <if test="executeUser != null and executeUser != ''">
+                <![CDATA[ `execute_user` = #{executeUser}, ]]>
+            </if>
+            <if test="creator != null">
+                <![CDATA[ `creator` = #{creator}, ]]>
+            </if>
+            <if test="creator != null">
+                <![CDATA[ `description` = #{description}, ]]>
+            </if>
+            <if test="creator != null">
+                <![CDATA[ `comment` = #{comment} ]]>
+            </if>
+        </set>
+        <where>
+            `id` = #{id}
+        </where>
     </update>
 
     <update id="updateAllApiVersionStatusByApiServiceId">
         UPDATE `dss_apiservice_api_version`
         SET `status` = #{status}
         WHERE api_id = #{api_id}
+    </update>
+    <update id="updateBmlResourceIdAndBmlVersionById">
+        UPDATE `dss_apiservice_api_version`
+        SET `version` = #{version}, `bml_resource_id` = #{bmlResourceId} , `bml_version` = #{bmlVersion}
+        WHERE id = #{id}
     </update>
 
 

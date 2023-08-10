@@ -17,7 +17,7 @@
 
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.webank.wedatasphere.dss.apiservice.core.dao.ApiServiceDao">
-    <resultMap id="apiServiceMap" type="ApiServiceVo">
+    <resultMap id="apiServiceMap" type="com.webank.wedatasphere.dss.apiservice.core.vo.ApiServiceVo">
         <result property="id" column="id"/>
         <result property="name" column="name"/>
         <result property="aliasName" column="alias_name"/>
@@ -50,14 +50,14 @@
         `modify_time`,`creator`,`modifier`,`script_path`,`workspaceID`,`api_comment`
     </sql>
 
-    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="ApiServiceVo">
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.webank.wedatasphere.dss.apiservice.core.vo.ApiServiceVo">
         <![CDATA[INSERT INTO `dss_apiservice_api`(]]>
         <include refid="fields"/>
         <![CDATA[) VALUES(#{name}, #{aliasName}, #{path}, #{protocol}, #{method}, #{tag}, #{scope}, #{description},
         #{status}, #{type},#{runType}, now(), now(), #{creator}, #{modifier}, #{scriptPath},#{workspaceId},#{comment})]]>
     </insert>
 
-    <update id="update" parameterType="ApiServiceVo">
+    <update id="update" parameterType="com.webank.wedatasphere.dss.apiservice.core.vo.ApiServiceVo">
         <![CDATA[UPDATE `dss_apiservice_api`]]>
         <set>
             <if test="aliasName != null and aliasName != ''">
@@ -109,12 +109,9 @@
         </where>
     </update>
 
-
-
-    <update id="updateToTarget" parameterType="ApiServiceVo">
+    <update id="updateToTarget" parameterType="com.webank.wedatasphere.dss.apiservice.core.vo.ApiServiceVo">
         <![CDATA[UPDATE `dss_apiservice_api`]]>
         <set>
-
             <if test="type != null and type != ''">
                 <![CDATA[ `type` = #{type}, ]]>
             </if>
@@ -130,6 +127,9 @@
             <if test="comment != null">
                 <![CDATA[ `api_comment` = #{comment}, ]]>
             </if>
+            <if test="description != null">
+                <![CDATA[ `description` = #{description}, ]]>
+            </if>
             <![CDATA[ `modify_time` = now() ]]>
         </set>
         <where>
@@ -143,8 +143,8 @@
         <![CDATA[ FROM `dss_apiservice_api` ]]>
         <where>
             <![CDATA[ 1 = 1 ]]>
-            <if test="name != null and name != ''">
-                <![CDATA[AND `name` like concat('%', #{name}, '%')]]>
+            <if test="aliasName != null and aliasName != ''">
+                <![CDATA[AND `alias_name` like concat('%', #{aliasName}, '%')]]>
             </if>
 
             <if test="tag != null and tag != ''">
@@ -164,23 +164,18 @@
         </where>
     </select>
 
-
-
     <select id="queryByWorkspaceId" resultMap="apiServiceMap">
         <![CDATA[SELECT ]]>
         <include refid="fields_query"/>
         <![CDATA[ FROM `dss_apiservice_api` ]]>
         <where>
             <![CDATA[ 1 = 1 ]]>
-
-
             <if test="workspaceId != null">
                 <![CDATA[AND `workspaceID` = #{workspaceId} ]]>
             </if>
             <if test="userName != null and userName != ''">
                 <![CDATA[AND `creator` =#{userName}]]>
             </if>
-
         </where>
     </select>
 

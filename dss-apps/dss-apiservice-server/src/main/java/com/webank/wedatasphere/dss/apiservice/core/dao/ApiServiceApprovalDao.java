@@ -20,6 +20,9 @@ package com.webank.wedatasphere.dss.apiservice.core.dao;
 import com.webank.wedatasphere.dss.apiservice.core.vo.ApprovalVo;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
+
 public interface ApiServiceApprovalDao {
 
     /**
@@ -29,42 +32,38 @@ public interface ApiServiceApprovalDao {
 
     /**
      * 查询审批单
-     * */
-    ApprovalVo queryByApprovalNo(@Param("approvalNo") String approvalNo);
+     */
+    List<ApprovalVo> queryByApprovalNo(@Param("approvalNo") String approvalNo);
 
     /**
      * set status to success
-     * */
+     */
     void setApprovalStatusSuccess(@Param("approvalNo") String approvalNo);
 
     /**
      * set status to failed
-     * */
+     */
     void setApprovalStatusFailed(@Param("approvalNo") String approvalNo);
 
     /**
      * set status to init
-     * */
+     */
     void setApprovalStatusInit(@Param("approvalNo") String approvalNo);
 
     /**
      * set status to applying
-     * */
+     */
     void setApprovalStatusApplying(@Param("approvalNo") String approvalNo);
 
     /**
      * update status
-     * */
+     */
     void updateApprovalStatus(@Param("approvalNo") String approvalNo, @Param("status") Integer status);
 
-
-    /**
-     * delete approval
-     * */
-    void deleteApproval(@Param("approvalNo") String approvalNo);
+    void deleteByApiVersionId(@Param("apiVersionId") Long apiVersionId);
 
     /**
      * 通过版本ID查询审批单
-     * */
+     */
     ApprovalVo queryByVersionId(@Param("apiVersionId") Long apiVersionId);
 }

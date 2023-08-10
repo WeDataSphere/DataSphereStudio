@@ -35,7 +35,7 @@ public interface ApiServiceQueryService {
      * @param httpMethod httpMethod
      * @return 查询接口
      */
-    LinkisExecuteResult query(String path, Map<String, Object> params, String moduleName, String httpMethod, ApiServiceToken tokenDetail, String loginUser);
+    LinkisExecuteResult query(String path, Map<String, Object> params, String moduleName, String httpMethod, ApiServiceToken tokenDetail, String loginUser) throws ApiServiceQueryException;
 
     List<QueryParamVo> queryParamList(String scriptPath, Long versionId);
 

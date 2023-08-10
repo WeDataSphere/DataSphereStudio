@@ -32,6 +32,15 @@ public class ApprovalVo {
     Date updateTime;
     String approvalNo;
 
+    //授权期限，单位天
+    Long duration;
+    //背景描述
+    String backgroundDesc;
+    //重要程度。1：重要
+    Long importance;
+    //关注人，逗号分割
+    String attentionUser;
+
     public String getCreator() {
         return creator;
     }
@@ -118,5 +127,37 @@ public class ApprovalVo {
 
     public void setApprovalNo(String approvalNo) {
         this.approvalNo = approvalNo;
+    }
+
+    public Long getDuration() {
+        return duration;
+    }
+
+    public void setDuration(Long duration) {
+        this.duration = duration;
+    }
+
+    public String getBackgroundDesc() {
+        return backgroundDesc;
+    }
+
+    public void setBackgroundDesc(String backgroundDesc) {
+        this.backgroundDesc = backgroundDesc;
+    }
+
+    public Long getImportance() {
+        return importance;
+    }
+
+    public void setImportance(Long importance) {
+        this.importance = importance;
+    }
+
+    public String getAttentionUser() {
+        return attentionUser;
+    }
+
+    public void setAttentionUser(String attentionUser) {
+        this.attentionUser = attentionUser;
     }
 }

@@ -26,33 +26,41 @@ import java.util.List;
 public interface ApiServiceVersionDao {
 
     /**
-     *  inster apiversionVo
-     * */
+     * inster apiversionVo
+     */
     void insert(ApiVersionVo apiVersionVo);
 
     /**
-     *  query version
-     * */
+     * query version
+     */
     ApiVersionVo queryApiVersionByVersionId(@Param("id") Long apiVersionId);
 
     List<ApiVersionVo> queryApiVersionByApiServiceId(@Param("api_id") Long apiServiceId);
 
+    List<ApiVersionVo> queryApiVersion();
+
     /**
-     *  update api version
-     * */
+     * update api version
+     */
     void updateApiVersionStatusById(@Param("id") Long apiVersionId, @Param("status") int status);
 
-    void updateApiVersionStatus(ApiVersionVo apiVersionVo);
+    void updateApiVersionStatusBeforeId(@Param("id") Long apiVersionId, @Param("apiId") Long apiId, @Param("status") int status);
+
+    void updateApiVersionInfoById(ApiVersionVo apiVersionVo);
+
+    void updateAuthIdByapiVersionId(@Param("id") Long apiVersionId, @Param("authId") String authId);
+
+    void updateBmlResourceIdAndBmlVersionById(ApiVersionVo apiVersionVo);
 
     /**
-     *  update all api version status by service id
-     * */
+     * update all api version status by service id
+     */
     void updateAllApiVersionStatusByApiServiceId(@Param("api_id") Long apiServiceId, @Param("status") int status);
 
     void disableApiVersionStatusByApiId(@Param("api_id") Long apiServiceId);
 
     /**
      * delete api version
-     * */
+     */
     void deleteApiVersionById(@Param("id") Long apiVersionId);
 }

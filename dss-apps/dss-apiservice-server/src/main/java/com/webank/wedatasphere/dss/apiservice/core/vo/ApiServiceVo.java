@@ -16,44 +16,81 @@
 package com.webank.wedatasphere.dss.apiservice.core.vo;
 
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+public class ApiServiceVo implements Serializable {
+    private static final long serialVersionUID = 1L;
 
-public class ApiServiceVo {
     private Long id;
+    //api名称
     private String name;
+    //API中文名称
     private String aliasName;
+    //api路径
     private String path;
+    //协议，1：http，2：https
     private int protocol;
+    //方法：POST、GET等
     private String method;
+    //标签
     private String tag;
+    //可见范围，grantView: 授权可见
     private String scope;
     private String description;
+    //0是停止，1是运行中，2是删除
     private Integer status = 1;
+    //引擎类型，如spark
     private String type;
+    //脚本类型，如sql
     private String runType;
     private Date createTime;
     private Date modifyTime;
     private String creator;
     private String modifier;
+
+    //代理执行用户
+    private String executeUser;
+    //脚本路径
     private String scriptPath;
-    private ApprovalVo approvalVo;
 
     private Long  latestVersionId;
     private String userToken;
-
+    //参数字段详细信息
     private List<ParamVo> params;
-
-    private Map<String, Object> metadata;
+    //参数元信息
+    private transient Map<String, Object> metadata;
+    //脚本内容
     private String content;
 
     private List<ApiVersionVo> versionVos;
 
     private Long  workspaceId = 1L;
+    //更新时的数据服务id
     private  Long targetServiceId;
     private String comment;
+    //是否有新版本，用于前端页面展示
+    private boolean existNewerVersion;
+    //queryById接口返回给前端的审批单信息
+    private ApprovalVo approvalVo;
+
+    public ApprovalVo getApprovalVo() {
+        return approvalVo;
+    }
+
+    public void setApprovalVo(ApprovalVo approvalVo) {
+        this.approvalVo = approvalVo;
+    }
+
+    public boolean isExistNewerVersion() {
+        return existNewerVersion;
+    }
+
+    public void setExistNewerVersion(boolean existNewerVersion) {
+        this.existNewerVersion = existNewerVersion;
+    }
 
     public String getComment() {
         return comment;
@@ -63,7 +100,13 @@ public class ApiServiceVo {
         this.comment = comment;
     }
 
+    public String getExecuteUser() {
+        return executeUser;
+    }
 
+    public void setExecuteUser(String executeUser) {
+        this.executeUser = executeUser;
+    }
 
     public Long getWorkspaceId() {
         return workspaceId;
@@ -73,23 +116,12 @@ public class ApiServiceVo {
         this.workspaceId = workspaceId;
     }
 
-
     public Long getTargetServiceId() {
         return targetServiceId;
     }
 
     public void setTargetServiceId(Long targetServiceId) {
         this.targetServiceId = targetServiceId;
-    }
-
-
-
-    public ApprovalVo getApprovalVo() {
-        return approvalVo;
-    }
-
-    public void setApprovalVo(ApprovalVo approvalVo) {
-        this.approvalVo = approvalVo;
     }
 
     public Long getLatestVersionId() {
@@ -295,8 +327,8 @@ public class ApiServiceVo {
                 ", modifyTime=" + modifyTime +
                 ", creator='" + creator + '\'' +
                 ", modifier='" + modifier + '\'' +
+                ", executeUser='" + executeUser + '\'' +
                 ", scriptPath='" + scriptPath + '\'' +
-                ", approvalVo=" + approvalVo +
                 ", latestVersionId=" + latestVersionId +
                 ", userToken='" + userToken + '\'' +
                 ", params=" + params +

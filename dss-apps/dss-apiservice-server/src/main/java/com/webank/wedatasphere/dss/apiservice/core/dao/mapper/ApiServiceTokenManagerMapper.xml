@@ -17,7 +17,7 @@
 
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.webank.wedatasphere.dss.apiservice.core.dao.ApiServiceTokenManagerDao">
-    <resultMap id="tokenManagerMap" type = "com.webank.wedatasphere.dss.apiservice.core.vo.TokenManagerVo">
+    <resultMap id="tokenManagerMap" type="com.webank.wedatasphere.dss.apiservice.core.vo.TokenManagerVo">
         <result property="id" column="id"/>
         <result property="apiId" column="api_id"/>
         <result property="apiVersionId" column="api_version_id"/>
@@ -49,7 +49,8 @@
         `reason`,`ip_whitelist`,`status`,`caller`,`access_limit`,`apply_source`
     </sql>
 
-    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.webank.wedatasphere.dss.apiservice.core.vo.TokenManagerVo">
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.webank.wedatasphere.dss.apiservice.core.vo.TokenManagerVo">
         <![CDATA[INSERT INTO
          `dss_apiservice_token_manager`(]]>
         <include refid="fields"/>
@@ -75,7 +76,8 @@
     </insert>
 
 
-    <select id="query" parameterType="TokenQuery" resultMap="tokenManagerMap">
+    <select id="query" parameterType="com.webank.wedatasphere.dss.apiservice.core.bo.TokenQuery"
+            resultMap="tokenManagerMap">
         <![CDATA[SELECT]]>
         <include refid="fields_query_safe"/>
         <![CDATA[FROM
@@ -124,7 +126,7 @@
         ]]>
     </select>
 
-    <select id="queryByApplyUserAndServiceId"  resultMap="tokenManagerMap">
+    <select id="queryByApplyUserAndServiceId" resultMap="tokenManagerMap">
         <![CDATA[SELECT]]>
         <include refid="fields_query"/>
         <![CDATA[FROM
@@ -138,7 +140,7 @@
     </select>
 
 
-    <select id="queryByApplyUserAndVersionId"  resultMap="tokenManagerMap">
+    <select id="queryByApplyUserAndVersionId" resultMap="tokenManagerMap">
         <![CDATA[SELECT]]>
         <include refid="fields_query"/>
         <![CDATA[FROM
@@ -156,6 +158,9 @@
         <where>
             <if test="approvalNo != null">
                 <![CDATA[AND `apply_source` = #{approvalNo}]]>
+            </if>
+            <if test="apiVersionId != null">
+                <![CDATA[AND `api_version_id` = #{apiVersionId}]]>
             </if>
         </where>
         <![CDATA[LIMIT 1), 0)]]>
@@ -193,7 +198,6 @@
         ]]>
     </select>
 
-
     <update id="enableTokenStatus">
         UPDATE `dss_apiservice_token_manager`
         SET `status` = 1
@@ -206,12 +210,17 @@
         WHERE `id` = #{id}
     </update>
 
+    <update id="updateTokenStatusBeforeVersionId">
+        UPDATE `dss_apiservice_token_manager`
+        SET `status` = #{status}
+        WHERE api_id = #{apiId} and `api_version_id` <![CDATA[ < ]]> #{apiVersionId}
+    </update>
+
     <update id="disableTokenStatusByVersionId">
         UPDATE `dss_apiservice_token_manager`
         SET `status` = 0
         WHERE `api_version_id` = #{apiVersionId}
     </update>
-
 
     <update id="enableTokenStatusByVersionId">
         UPDATE `dss_apiservice_token_manager`
@@ -219,15 +228,11 @@
         WHERE `api_version_id` = #{apiVersionId}
     </update>
 
-
-
-
     <update id="disableTokenStatusByApiId">
         UPDATE `dss_apiservice_token_manager`
         SET `status` = 0
         WHERE `api_id` = #{apiId}
     </update>
-
 
     <update id="enableTokenStatusByApiId">
         UPDATE `dss_apiservice_token_manager`

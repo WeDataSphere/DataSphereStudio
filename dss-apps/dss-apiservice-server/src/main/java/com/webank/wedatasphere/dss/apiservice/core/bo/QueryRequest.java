@@ -15,10 +15,12 @@
  */
 package com.webank.wedatasphere.dss.apiservice.core.bo;
 
+import java.io.Serializable;
 import java.util.Map;
 
+public class QueryRequest implements Serializable {
+    private static final long serialVersionUID = 1L;
 
-public class QueryRequest {
     /**
      * 模块名，也是登录用户名、密码
      */
@@ -27,7 +29,7 @@ public class QueryRequest {
     /**
      * 调用参数
      */
-    private Map<String, Object> params;
+    private transient Map<String, Object> params;
 
     public Map<String, Object> getParams() {
         return params;

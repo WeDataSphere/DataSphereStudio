@@ -32,6 +32,18 @@ public class ApiVersionVo {
     private String metadataInfo;
     private String authId;
 
+    private String executeUser;
+
+    //0：禁用，1：运行中，2：未提单，3：已提单。更新数据服务时，最新版本状态变化顺序：未提单->已提单->运行中（上一版本从运行中变为禁用）
+    private int status;
+
+    private String description;
+    private String comment;
+
+    /**
+     * one version data corresponds to multiple param data
+     * */
+    private List<ParamVo> paramVos;
 
     public int getStatus() {
         return status;
@@ -41,12 +53,14 @@ public class ApiVersionVo {
         this.status = status;
     }
 
-    private int status;
 
-    /**
-     * one version data corresponds to multiple param data
-     * */
-    private List<ParamVo> paramVos;
+    public String getExecuteUser() {
+        return executeUser;
+    }
+
+    public void setExecuteUser(String executeUser) {
+        this.executeUser = executeUser;
+    }
 
     public List<ParamVo> getParamVos() {
         return paramVos;
@@ -137,4 +151,19 @@ public class ApiVersionVo {
     }
 
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
 }
