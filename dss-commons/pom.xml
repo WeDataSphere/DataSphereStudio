@@ -35,6 +35,7 @@
         <module>dss-sender-service</module>
         <module>dss-common-server</module>
         <module>dss-error-code</module>
+        <module>dss-detectionservice</module>
     </modules>
 
 </project>

@@ -48,6 +48,7 @@ dss-commons/dss-common-server/target
 dss-commons/dss-error-code/dss-error-code-client/target
 dss-commons/dss-error-code/dss-error-code-common/target
 dss-commons/dss-error-code/dss-error-code-server/target
+dss-commons/dss-detectionservice/target
 
 # dss-framework
 dss-framework/dss-appconn-framework/target
