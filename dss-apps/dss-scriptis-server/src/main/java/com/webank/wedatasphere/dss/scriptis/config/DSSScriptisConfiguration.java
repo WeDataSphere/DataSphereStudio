@@ -29,5 +29,6 @@ public class DSSScriptisConfiguration {
     public final static String GLOBAL_LIMITS_PREFIX = "wds.dss.scriptis.global.limits.";
     public final static String GLOBAL_LIMIT_PREFIX = "wds.dss.scriptis.global.limit.";
 
+    public final static CommonVars<String> SUBSCRIBE_SUBSYSTEM_ID = CommonVars.apply("wds.dss.scriptis.subscribe.subsystem.id","5425");
 
 }

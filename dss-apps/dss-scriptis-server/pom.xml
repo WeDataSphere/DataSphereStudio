@@ -46,6 +46,22 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.webank.wedatasphere.dss</groupId>
+            <artifactId>dss-common-server</artifactId>
+            <version>${dss.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.webank.wedatasphere.dss</groupId>
+            <artifactId>dss-error-code-client</artifactId>
+            <version>${dss.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.webank.wedatasphere.dss</groupId>
+            <artifactId>dss-framework-compute-resource-manager</artifactId>
+            <version>${dss.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.linkis</groupId>
             <artifactId>linkis-module</artifactId>
             <version>${linkis.version}</version>
