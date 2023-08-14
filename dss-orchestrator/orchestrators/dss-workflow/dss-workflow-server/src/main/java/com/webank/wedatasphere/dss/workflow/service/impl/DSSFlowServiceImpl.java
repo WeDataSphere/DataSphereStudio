@@ -17,6 +17,8 @@
 package com.webank.wedatasphere.dss.workflow.service.impl;
 
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -35,6 +37,11 @@ import com.webank.wedatasphere.dss.common.utils.IoUtils;
 import com.webank.wedatasphere.dss.common.utils.MapUtils;
 import com.webank.wedatasphere.dss.contextservice.service.ContextService;
 import com.webank.wedatasphere.dss.contextservice.service.impl.ContextServiceImpl;
+import com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorVersion;
+import com.webank.wedatasphere.dss.orchestrator.common.entity.response.ExecutionHistoryVo;
+import com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestExecutionHistory;
+import com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestWorkflowValidNode;
+import com.webank.wedatasphere.dss.orchestrator.common.protocol.ResponseWorkflowValidNode;
 import com.webank.wedatasphere.dss.standard.app.development.utils.DSSJobContentConstant;
 import com.webank.wedatasphere.dss.standard.app.sso.Workspace;
 import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlow;
@@ -48,8 +55,10 @@ import com.webank.wedatasphere.dss.workflow.core.entity.WorkflowWithContextImpl;
 import com.webank.wedatasphere.dss.workflow.core.json2flow.JsonToFlowParser;
 import com.webank.wedatasphere.dss.workflow.dao.FlowMapper;
 import com.webank.wedatasphere.dss.workflow.dao.NodeInfoMapper;
+import com.webank.wedatasphere.dss.workflow.dao.DSSFlowMapper;
 import com.webank.wedatasphere.dss.workflow.entity.CommonAppConnNode;
 import com.webank.wedatasphere.dss.workflow.entity.NodeInfo;
+import com.webank.wedatasphere.dss.workflow.entity.WorkflowTaskVO;
 import com.webank.wedatasphere.dss.workflow.entity.vo.ExtraToolBarsVO;
 import com.webank.wedatasphere.dss.workflow.io.export.NodeExportService;
 import com.webank.wedatasphere.dss.workflow.io.input.NodeInputService;
@@ -57,9 +66,11 @@ import com.webank.wedatasphere.dss.workflow.lock.Lock;
 import com.webank.wedatasphere.dss.common.service.BMLService;
 import com.webank.wedatasphere.dss.workflow.service.DSSFlowService;
 import com.webank.wedatasphere.dss.workflow.service.WorkflowNodeService;
+import com.webank.wedatasphere.dss.workflow.utils.TimeFormater;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.math3.util.Pair;
 import org.apache.linkis.common.conf.CommonVars;
 import org.apache.linkis.common.exception.ErrorException;
 import org.apache.linkis.cs.client.utils.SerializeHelper;
@@ -103,6 +114,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     private NodeExportService nodeExportService;
     @Autowired
     private WorkflowNodeService workflowNodeService;
+    @Autowired
+    DSSFlowMapper DSSFlowMapper;
 
     private static ContextService contextService = ContextServiceImpl.getInstance();
 
@@ -728,6 +741,154 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         DSSFlowRelation relation = flowMapper.selectFlowRelation(flowID, parentFlowID);
         if (relation == null) {
             flowMapper.insertFlowRelation(flowID, parentFlowID);
+        }
+    }
+
+    @Override
+    public Pair<Integer, List<ExecutionHistoryVo>> getExecutionHistory(RequestExecutionHistory requestExecutionHistory) {
+        TimeFormater timeFormater = new TimeFormater();
+        Integer currentPage = requestExecutionHistory.getCurrentPage();
+        Integer pageSize = requestExecutionHistory.getPageSize();
+        List<ExecutionHistoryVo> executionList = null;
+        Long totalPage = 0L;
+        PageHelper.startPage(currentPage, pageSize);
+        try {
+            executionList = DSSFlowMapper.getExecutionHistoryByFlowId(requestExecutionHistory.getAppId());
+            PageInfo pageInfo = new PageInfo(executionList);
+            totalPage = pageInfo.getTotal();
+        } finally {
+            PageHelper.clearPage();
+        }
+        for (ExecutionHistoryVo executionHistoryVo : executionList) {
+            String duration = executionHistoryVo.getDuration();
+            String durationAfterDuration = timeFormater.format(Long.parseLong(duration));
+            executionHistoryVo.setDuration(durationAfterDuration);
+            conversion(executionHistoryVo);
+        }
+        return new Pair<>(totalPage.intValue(), executionList);
+    }
+
+    public List<String> getNodeList(String str) {
+        List<String> tempNodeList = new ArrayList<>();
+        if (StringUtils.isBlank(str)) {
+            return tempNodeList;
+        }
+        String[] nodeListArr = str.split(",");
+        for (int i = 0; i < nodeListArr.length; i++) {
+            String nodeId = nodeListArr[i];
+            if (StringUtils.isBlank(nodeId) || tempNodeList.contains(nodeId)) {
+                continue;
+            }
+            tempNodeList.add(nodeId);
+        }
+        return tempNodeList;
+    }
+
+    @Override
+    public boolean isExecuteSuccess(Long id) {
+        //工作流校验开关
+        String dicValue = DSSFlowMapper.getWorkflowCheckSwitch();
+        if (StringUtils.isNotBlank(dicValue) && "0".equals(dicValue.trim())) {
+            return true;
+        }
+        DSSFlow dssFlow = flowMapper.selectFlowByID(id);
+        //优先采取这个dss_workflow_task表进行判断
+        if (isHaveSuccessWorkflowTask(dssFlow)) {
+            return true;
+        }
+        //然后采取这个dss_workflow_execute_info的成功节点进行判断
+        String nodeListStr = DSSFlowMapper.getNodeListByFlowIdAndVersion(id, dssFlow.getBmlVersion());
+        if (StringUtils.isBlank(nodeListStr)) {
+            return false;
+        }
+
+        String[] tempNodeListArr = nodeListStr.split(";");
+        //执行成功的节点
+        List<String> tempNodeList = getNodeList(tempNodeListArr[0]);
+        //跳过的节点（子节点）
+        List<String> tempSubNodeList = tempNodeListArr.length == 2 ? getNodeList(tempNodeListArr[1]) : new ArrayList<>();
+
+        String userName = dssFlow.getCreator();
+        Map<String, Object> query = bmlService.query(userName, dssFlow.getResourceId(), dssFlow.getBmlVersion());
+        String flowJson = query.get("string").toString();
+        List<DSSNode> nodeJsonList = workFlowParser.getWorkFlowNodes(flowJson);
+        if (CollectionUtils.isEmpty(nodeJsonList)) {
+            return false;
+        }
+
+        for (DSSNode dssNode : nodeJsonList) {
+            String tempNodeId = dssNode.getId();
+            String nodeType = dssNode.getNodeType();
+            if ("workflow.subflow".equalsIgnoreCase(nodeType)) {
+                if (!tempSubNodeList.contains(tempNodeId)) {
+                    return false;
+                }
+            } else {
+                if (!tempNodeList.contains(tempNodeId)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    //优先采取这个dss_workflow_task( flowId version status=succeed executeStrategy=execute)全部对上则返回true
+    public boolean isHaveSuccessWorkflowTask(DSSFlow dssFlow) {
+        try{
+            WorkflowTaskVO workflowTaskVO = DSSFlowMapper.getLastExecutionHistoryByFlowId(dssFlow.getId());
+            if (workflowTaskVO == null
+                    || !"Succeed".equalsIgnoreCase(workflowTaskVO.getStatus())) {
+                return false;
+            }
+            String params = workflowTaskVO.getParams();
+            Map paramsMap = BDPJettyServerHelper.gson().fromJson(params, Map.class);
+            String executeFlag = (String) paramsMap.get("executeStrategy");
+            if(!"execute".equalsIgnoreCase(executeFlag)){
+                return false;
+            }
+            String executionCode = workflowTaskVO.getExecutionCode();
+            if (StringUtils.isBlank(executionCode) || !executionCode.contains("version")) {
+                return false;
+            }
+            Map map = BDPJettyServerHelper.gson().fromJson(executionCode, Map.class);
+            String version = (String) map.get("version");
+            //工作流的bml版本号
+            int flowVersion = Integer.parseInt(dssFlow.getBmlVersion().substring(1));
+            //执行工作流的bml版本号
+            int executeVersion = Integer.parseInt(version.substring(1));
+            if (flowVersion == executeVersion) {
+                return true;
+            }
+        }catch (Exception e){
+            logger.error("isHaveExecetionCodeError:",e);
+        }
+        return false;
+    }
+
+    @Override
+    public ResponseWorkflowValidNode validWorkflowNode(RequestWorkflowValidNode requestWorkflowValidNode) {
+        DSSOrchestratorVersion orchestratorVersion = DSSFlowMapper.getLatestOrcVersionByOrcId(requestWorkflowValidNode.getOrcId());
+        DSSFlow cyFlow = flowMapper.selectFlowByID(orchestratorVersion.getAppId());
+        String userName = cyFlow.getCreator();
+        Map<String, Object> query = bmlService.query(userName, cyFlow.getResourceId(), cyFlow.getBmlVersion());
+        String flowJson = query.get("string").toString();
+        List<String> nodeJsonList = workFlowParser.getWorkFlowNodesJson(flowJson);
+        int nodeCount = 0;
+        if (CollectionUtils.isNotEmpty(nodeJsonList)) {
+            nodeCount = nodeJsonList.size();
+        }
+        return new ResponseWorkflowValidNode(nodeCount, orchestratorVersion.getId());
+    }
+
+    /**
+     * 如果执行成功，错误码为0，转换为 无，错误信息转换为 无
+     * 如果发执行失败，错误码为真实的错误码，错误信息转换为 节点失败导致取消
+     */
+    private void conversion(ExecutionHistoryVo executionHistoryVo) {
+        if (StringUtils.isNotBlank(executionHistoryVo.getErrorCode()) &&
+                executionHistoryVo.getErrorCode().equals("0")) {
+            executionHistoryVo.setErrorCode("无");
+            executionHistoryVo.setErrorMessage("无");
         }
     }
 
