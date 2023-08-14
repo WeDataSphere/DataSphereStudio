@@ -22,6 +22,7 @@ import com.webank.wedatasphere.dss.common.label.DSSLabel;
 import com.webank.wedatasphere.dss.framework.common.exception.DSSFrameworkErrorException;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorInfo;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorVersion;
+import com.webank.wedatasphere.dss.orchestrator.common.entity.OrchestratorDetail;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.OrchestratorVo;
 import com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestOrchestratorInfos;
 import com.webank.wedatasphere.dss.orchestrator.common.protocol.ResponseOrchestratorInfos;
@@ -138,5 +139,19 @@ public interface OrchestratorService {
     ResponseOrchestratorInfos queryOrchestratorInfos(RequestOrchestratorInfos requestOrchestratorInfos);
 
     void batchClearContextId();
+
+    List<OrchestratorDetail> getOrchestratorDetails(String username, Long projectId, String dssLabel);
+
+    String setScheduleFlow(String username, String projectName, int orchestratorId, String scheduleTime, String alarmEmails, String alarmLevel);
+
+    //删除调度设置
+    int deleteScheduleFlow(Long orchestratorId) throws Exception;
+
+    //更新调度设置的调度标示
+    int updateScheduleFlow(Long orchestratorId, String activeFlag)throws Exception;
+
+    void setOrchestratorPriv(String username, int workspaceId, long projectID, String projectName, int orchestratorId, List<String> accessUsers, int priv);
+
+    Long getOrcIsPublishFlag(Long projectId,String uuid);
 
 }

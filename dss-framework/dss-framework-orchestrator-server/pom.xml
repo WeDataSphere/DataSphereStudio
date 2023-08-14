@@ -189,6 +189,12 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>com.webank.wedatasphere.dss</groupId>
+            <artifactId>dss-framework-project-server</artifactId>
+            <version>1.1.2</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <build>
