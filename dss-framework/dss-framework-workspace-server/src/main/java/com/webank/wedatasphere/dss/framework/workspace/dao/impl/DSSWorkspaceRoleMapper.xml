@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ /*
+  ~  * Copyright 2019 WeBank
+  ~  *
+  ~  * Licensed under the Apache License, Version 2.0 (the "License");
+  ~  *  you may not use this file except in compliance with the License.
+  ~  * You may obtain a copy of the License at
+  ~  *
+  ~  * http://www.apache.org/licenses/LICENSE-2.0
+  ~  *
+  ~  * Unless required by applicable law or agreed to in writing, software
+  ~  * distributed under the License is distributed on an "AS IS" BASIS,
+  ~  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  * See the License for the specific language governing permissions and
+  ~  * limitations under the License.
+  ~  */
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.webank.wedatasphere.dss.framework.workspace.dao.DSSWorkspaceRoleMapper">
+    <update id="updateUserNameWithWorkSpaceBatch" parameterType="java.util.List" >
+        update dss_workspace_user_role
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="username =case" suffix="end,">
+                <foreach collection="workspaceIdList" item="item" index="index">
+                    when
+                        workspace_id=#{item}
+                    then
+                        #{recipient}
+                    else
+                        #{transferor}
+                </foreach>
+            </trim>
+        </trim>
+        where
+            username = #{transferor}
+    </update>
+
+    <update id="updateUserNameWithWorkSpace" >
+        update
+            dss_workspace_user_role
+        set
+            username = #{recipient}
+        where
+            username = #{transferor}
+        and
+            workspace_id = #{workspaceId}
+    </update>
+
+    <insert id="insertUserNameWithWorkSpaceBatch" >
+        insert into
+            dss_workspace_user_role(workspace_id,username,role_id,create_time,created_by)
+            (
+                select
+                    #{workspaceId},#{recipient},role_id,now(),#{recipient}
+                from
+                    dss_workspace_user_role
+                where
+                    workspace_id = #{workspaceId}
+                and
+                    username = #{transferor}
+                and
+
+            )
+    </insert>
+
+
+    <delete id="deleteWorkspaceRoleOfUser" >
+        DELETE FROM
+            dss_workspace_user_role
+        WHERE
+            workspace_id = #{workspaceId}
+        AND
+            username = #{userName}
+    </delete>
+
+    <resultMap id="queryUserRoleInWorkSpacesResultMap" type="com.webank.wedatasphere.dss.framework.workspace.bean.DSSWorkspaceUserRole">
+        <id property="id" column="id"/>
+        <id property="workspaceId" column="workspace_id"/>
+        <id property="userName" column="username"/>
+        <id property="roleId" column="role_id"/>
+        <id property="createTime" column="create_time"/>
+        <id property="createBy" column="created_by"/>
+        <id property="userId" column="user_id"/>
+    </resultMap>
+
+    <select id="queryUserRoleInWorkSpaces" resultMap="queryUserRoleInWorkSpacesResultMap">
+        select
+            *
+        from
+            dss_workspace_user_role
+        where
+            username = #{userName}
+        and workspace_id in
+        <foreach collection="workspaceIdList" item="item" index="index" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+
+    <insert id="insertUserRoleList" parameterType="java.util.List">
+        insert into
+            dss_workspace_user_role (workspace_id,username,role_id,create_time,created_by)
+        values
+            <foreach collection="dssWorkspaceUserRoleList" item="item" index= "index" separator =",">
+                (#{item.workspaceId},#{item.userName},#{item.roleId},#{item.createTime},#{item.createBy})
+            </foreach>
+    </insert>
+
+</mapper>

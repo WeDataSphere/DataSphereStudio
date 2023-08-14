@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webank.wedatasphere.dss.framework.workspace.dao.DSSWorkspaceEcKillHistoryMapper">
+
+    <resultMap id="BaseResultMap" type="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECKillHistoryRecordDO">
+            <result property="strategyId" column="strategy_id" jdbcType="VARCHAR"/>
+            <result property="workspaceId" column="workspace_id" jdbcType="BIGINT"/>
+            <result property="instance" column="instance" jdbcType="VARCHAR"/>
+            <result property="engineType" column="engine_type" jdbcType="VARCHAR"/>
+            <result property="queue" column="queue" jdbcType="VARCHAR"/>
+            <result property="driverCore" column="driver_core" jdbcType="INTEGER"/>
+            <result property="driverMemory" column="driver_memory" jdbcType="INTEGER"/>
+            <result property="yarnCore" column="yarn_core" jdbcType="INTEGER"/>
+            <result property="yarnMemory" column="yarn_memory" jdbcType="INTEGER"/>
+            <result property="unlockDuration" column="unlock_duration" jdbcType="INTEGER"/>
+            <result property="owner" column="owner" jdbcType="VARCHAR"/>
+            <result property="killer" column="killer" jdbcType="VARCHAR"/>
+            <result property="ecStartTime" column="ec_start_time" jdbcType="VARCHAR"/>
+            <result property="killTime" column="kill_time" jdbcType="TIMESTAMP"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="executeInstance" column="execute_instance" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        strategy_id,workspace_id,
+        instance,engine_type,queue,
+        driver_core,driver_memory,yarn_core,
+        yarn_memory,unlock_duration,owner,
+        killer,ec_start_time,kill_time,
+        create_time,execute_instance
+    </sql>
+
+    <select id="selectByWorkspaceId"  resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM dss_ec_kill_history
+        WHERE  workspace_id = #{workspaceId}
+        ORDER BY id DESC
+    </select>
+
+
+    <insert id="insert" parameterType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECKillHistoryRecordDO">
+        insert into dss_ec_kill_history
+        (strategy_id
+        ,workspace_id
+        ,instance
+        ,engine_type,queue
+        ,driver_core
+        ,driver_memory
+        ,yarn_core
+        ,yarn_memory
+        ,unlock_duration
+        ,owner
+        ,killer
+        ,ec_start_time
+        ,kill_time
+        ,create_time
+        ,execute_instance)
+        values (#{strategyId}
+               ,#{workspaceId}
+               ,#{instance}
+               ,#{engineType}
+               ,#{queue}
+               ,#{driverCore}
+               ,#{driverMemory}
+               ,#{yarnCore}
+               ,#{yarnMemory}
+               ,#{unlockDuration}
+               ,#{owner}
+               ,#{killer}
+               ,#{ecStartTime}
+               ,now()
+               ,now()
+               ,#{executeInstance,jdbcType=VARCHAR})
+    </insert>
+    <insert id="batchInsert">
+        insert into dss_ec_kill_history
+        (strategy_id
+        ,workspace_id
+        ,instance
+        ,engine_type,queue
+        ,driver_core
+        ,driver_memory
+        ,yarn_core
+        ,yarn_memory
+        ,unlock_duration
+        ,owner
+        ,killer
+        ,ec_start_time
+        ,kill_time
+        ,create_time
+        ,execute_instance)
+        values
+        <foreach collection="recordList" item="item" separator=",">
+            (
+            #{item.strategyId}
+            ,#{item.workspaceId}
+            ,#{item.instance}
+            ,#{item.engineType}
+            ,#{item.queue}
+            ,#{item.driverCore}
+            ,#{item.driverMemory}
+            ,#{item.yarnCore}
+            ,#{item.yarnMemory}
+            ,#{item.unlockDuration}
+            ,#{item.owner}
+            ,#{item.killer}
+            ,#{item.ecStartTime}
+            ,now()
+            ,now()
+            ,#{item.executeInstance,jdbcType=VARCHAR}
+            )
+        </foreach>
+    </insert>
+
+    <resultMap id="SumResultMap" type="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECKillSumHistoryRecordDO">
+        <result property="owner" column="owner" jdbcType="VARCHAR"/>
+        <result property="strategyId" column="strategy_id" jdbcType="VARCHAR"/>
+        <result property="workspaceId" column="workspace_id" jdbcType="BIGINT"/>
+        <result property="queue" column="queue" jdbcType="VARCHAR"/>
+        <result property="instances" column="instances" jdbcType="INTEGER"/>
+        <result property="yarnCores" column="yarn_cores" jdbcType="INTEGER"/>
+        <result property="yarnMemories" column="yarn_memories" jdbcType="BIGINT"/>
+        <result property="unlockDurations" column="unlock_durations" jdbcType="BIGINT"/>
+    </resultMap>
+
+    <select id="sumECKillInfoByStrategyId" resultMap="SumResultMap">
+        select
+            owner,
+            strategy_id,
+            workspace_id,
+            queue,
+            count(instance) instances,
+            sum(yarn_core) yarn_cores,
+            sum(yarn_memory) yarn_Memories,
+            sum(unlock_duration) unlock_durations
+        from
+            dss_ec_kill_history
+        where
+            strategy_id=#{ecStrategyId} and create_time >=  DATE_SUB(NOW(), INTERVAL #{intervalTime} MINUTE)
+        group by owner, workspace_id, queue
+    </select>
+
+</mapper>

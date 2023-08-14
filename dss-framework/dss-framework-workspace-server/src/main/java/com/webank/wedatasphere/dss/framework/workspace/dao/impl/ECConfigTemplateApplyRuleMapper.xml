@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webank.wedatasphere.dss.framework.workspace.dao.ECConfigTemplateApplyRuleMapper">
+
+    <resultMap id="BaseResultMap" type="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECConfigTemplateApplyRuleDO">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="ruleId" column="rule_id" jdbcType="VARCHAR"/>
+            <result property="workspaceId" column="workspace_id" jdbcType="BIGINT"/>
+            <result property="ruleType" column="rule_type" jdbcType="INTEGER"/>
+            <result property="templateId" column="template_id" jdbcType="VARCHAR"/>
+            <result property="templateName" column="template_name" jdbcType="VARCHAR"/>
+            <result property="engineType" column="engine_type" jdbcType="VARCHAR"/>
+            <result property="engineName" column="engine_name" jdbcType="VARCHAR"/>
+            <result property="permissionType" column="permission_type" jdbcType="INTEGER"/>
+            <result property="application" column="application" jdbcType="VARCHAR"/>
+            <result property="status" column="status" jdbcType="INTEGER"/>
+            <result property="creator" column="creator" jdbcType="VARCHAR"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="executeUser" column="execute_user" jdbcType="VARCHAR"/>
+            <result property="executeTime" column="execute_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,rule_id,workspace_id,
+        rule_type,template_id,template_name,
+        engine_type,engine_name,permission_type,application,
+        status,creator,create_time,
+        execute_user,execute_time
+    </sql>
+
+    <select id="selectByRuleId" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from dss_ec_config_template_apply_rule
+        where  rule_id = #{ruleId}
+    </select>
+
+    <select id="getRules" parameterType="com.webank.wedatasphere.dss.framework.workspace.bean.request.ECConfTemplateRuleGetRequest" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from dss_ec_config_template_apply_rule
+        where  workspace_id = #{workspaceId,jdbcType=BIGINT}
+        <if test="engineType != null">
+            and engine_type=#{engineType}
+        </if>
+        <if test="templateName != null">
+            and template_name LIKE concat('%', #{templateName}, '%')
+        </if>
+        <if test="application != null">
+            and application=#{application}
+        </if>
+          <if test ="ruleType!=null">
+            and  rule_type=#{ruleType}
+          </if>
+        <if test="user != null">
+            and
+            (
+                permission_type = 0
+                or
+                rule_id in
+                (
+                select DISTINCT rule_id from dss_ec_config_template_apply_rule_user where user_name = #{user}
+                )
+            )
+        </if>
+
+        <choose>
+            <when test="sortBy == 'modifyTime'">
+                order by execute_time
+            </when>
+            <otherwise >
+                order by id
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="orderBy == 'descend'">
+                desc
+            </when>
+            <otherwise>
+                asc
+            </otherwise>
+        </choose>
+    </select>
+
+    <delete id="deleteByRuleId" parameterType="java.lang.String">
+        delete from dss_ec_config_template_apply_rule
+        where  rule_id = #{ruleId}
+    </delete>
+    <insert id="insert" keyColumn="id" keyProperty="id" parameterType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECConfigTemplateApplyRuleDO" useGeneratedKeys="true">
+        insert into dss_ec_config_template_apply_rule
+        ( id,rule_id,workspace_id
+        ,rule_type,template_id,template_name
+        ,engine_type,engine_name,permission_type,application
+        ,status,creator,create_time
+        ,execute_user,execute_time)
+        values (#{id,jdbcType=BIGINT},#{ruleId,jdbcType=VARCHAR},#{workspaceId,jdbcType=BIGINT}
+        ,#{ruleType,jdbcType=INTEGER},#{templateId,jdbcType=VARCHAR},#{templateName,jdbcType=VARCHAR}
+        ,#{engineType,jdbcType=VARCHAR},#{engineName,jdbcType=VARCHAR},#{permissionType,jdbcType=INTEGER},#{application,jdbcType=VARCHAR}
+        ,#{status,jdbcType=INTEGER},#{creator,jdbcType=VARCHAR},#{createTime,jdbcType=TIMESTAMP}
+        ,#{executeUser,jdbcType=VARCHAR},#{executeTime,jdbcType=TIMESTAMP})
+    </insert>
+
+    <update id="updateStatus">
+        update dss_ec_config_template_apply_rule
+        set status=#{status}
+        ,execute_user=#{executeUser,jdbcType=VARCHAR}
+        ,execute_time=now()
+        where
+        rule_id=#{ruleId}
+    </update>
+
+</mapper>

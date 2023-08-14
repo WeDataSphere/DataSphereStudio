@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webank.wedatasphere.dss.framework.workspace.dao.ECConfigTemplateUserMapper">
+
+    <resultMap id="BaseResultMap"
+               type="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECConfigTemplateUserDO">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="userName" column="user_name" jdbcType="VARCHAR"/>
+        <result property="templateId" column="template_id" jdbcType="VARCHAR"/>
+        <result property="workspaceId" column="workspace_id" jdbcType="BIGINT"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,user_name,template_id,
+        workspace_id,create_time
+    </sql>
+
+
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        insert into dss_ec_config_template_user
+        ( id,user_name,template_id
+        ,workspace_id,create_time)
+        values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.id,jdbcType=BIGINT},#{item.userName,jdbcType=VARCHAR},#{item.templateId,jdbcType=VARCHAR}
+            ,#{item.workspaceId,jdbcType=BIGINT},NOW())
+        </foreach>
+    </insert>
+
+    <select id="selectByTemplateId" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from dss_ec_config_template_user
+        where   template_id = #{templateId,jdbcType=VARCHAR}
+    </select>
+
+    <select id="selectByUsers"  resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from dss_ec_config_template_user
+        where
+            workspace_id =#{workspaceId}
+            and
+            user_name in
+        <foreach collection="userNames" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </select>
+
+    <delete id="deleteByTemplateId" parameterType="java.lang.String">
+        delete from dss_ec_config_template_user
+        where  template_id = #{templateId,jdbcType=VARCHAR}
+    </delete>
+
+    <select id="getPermissionUserCount" parameterType="java.util.List" resultType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.PermissionUserCountDO">
+        select
+        template_id  groupId, count(user_name)  userCount
+        from dss_ec_config_template_user
+        where   template_id in
+        <foreach collection="list" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+        group by groupId
+    </select>
+    <select id="checkTemplateUse" resultType="java.lang.Integer">
+        select
+            count(1)
+        from
+            dss_ec_config_template_workflow
+        where
+            template_id = #{templateId}
+    </select>
+</mapper>

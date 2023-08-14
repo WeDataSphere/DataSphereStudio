@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webank.wedatasphere.dss.framework.workspace.dao.ECConfigTemplateApplyRuleExecuteRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECConfigTemplateApplyRuleExecuteRecordDO">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="userName" column="user_name" jdbcType="VARCHAR"/>
+            <result property="ruleId" column="rule_id" jdbcType="VARCHAR"/>
+            <result property="workspaceId" column="workspace_id" jdbcType="BIGINT"/>
+            <result property="templateName" column="template_name" jdbcType="VARCHAR"/>
+            <result property="engineType" column="engine_type" jdbcType="VARCHAR"/>
+            <result property="application" column="application" jdbcType="VARCHAR"/>
+            <result property="status" column="status" jdbcType="INTEGER"/>
+            <result property="executeUser" column="execute_user" jdbcType="VARCHAR"/>
+            <result property="executeTime" column="execute_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,user_name,rule_id,
+        workspace_id,template_name,engine_type,
+        application,status,execute_user,
+        execute_time
+    </sql>
+
+    <select id="selectRecords" parameterType="com.webank.wedatasphere.dss.framework.workspace.bean.request.ECConfTemplateRuleExecuteRecordGetRequest" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from dss_ec_config_template_apply_rule_execute_record
+        where  workspace_id = #{workspaceId,jdbcType=BIGINT}
+        <if test="engineType != null">
+            and engine_type=#{engineType}
+        </if>
+        <if test="templateName != null">
+            and template_name LIKE concat('%', #{templateName}, '%')
+        </if>
+        <if test="application != null">
+            and application=#{application}
+        </if>
+        <if test="username != null">
+            and user_name=#{username}
+        </if>
+    </select>
+
+    <select id="selectUserCurrentRecordsByTemplate"  resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        FROM dss_ec_config_template_apply_rule_execute_record t1
+        JOIN (
+        SELECT
+        max(id) max_id, application app, user_name uname
+        FROM
+        dss_ec_config_template_apply_rule_execute_record
+        WHERE
+        workspace_id = #{workspaceId,jdbcType=BIGINT}
+        AND status=1
+        <if test="username!=null">
+            AND  user_name LIKE concat('%', #{username}, '%')
+        </if>
+        GROUP BY
+        user_name, application ) t2 ON
+        t1.id = t2.max_id
+        AND t1.application = t2.app
+        AND t1.user_name = t2.uname
+        WHERE t1.template_name = #{templateName}
+    </select>
+
+
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+        delete from dss_ec_config_template_apply_rule_execute_record
+        where  id = #{id,jdbcType=BIGINT} 
+    </delete>
+    <insert id="insert" keyColumn="id" keyProperty="id" parameterType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECConfigTemplateApplyRuleExecuteRecordDO" useGeneratedKeys="true">
+        insert into dss_ec_config_template_apply_rule_execute_record
+        ( id,user_name,rule_id
+        ,workspace_id,template_name,engine_type
+        ,application,status,execute_user
+        ,execute_time)
+        values (#{id,jdbcType=BIGINT},#{userName,jdbcType=VARCHAR},#{ruleId,jdbcType=VARCHAR}
+        ,#{workspaceId,jdbcType=BIGINT},#{templateName,jdbcType=VARCHAR},#{engineType,jdbcType=VARCHAR}
+        ,#{application,jdbcType=VARCHAR},#{status,jdbcType=INTEGER},#{executeUser,jdbcType=VARCHAR}
+        ,#{executeTime,jdbcType=TIMESTAMP})
+    </insert>
+
+    <insert id="insertBatch" keyColumn="id" keyProperty="id" parameterType="java.util.List" useGeneratedKeys="true">
+        insert into dss_ec_config_template_apply_rule_execute_record
+        ( user_name,rule_id
+        ,workspace_id,template_name,engine_type
+        ,application,status,execute_user
+        ,execute_time)
+        values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.userName,jdbcType=VARCHAR},#{item.ruleId,jdbcType=VARCHAR}
+               ,#{item.workspaceId,jdbcType=BIGINT},#{item.templateName,jdbcType=VARCHAR},#{item.engineType,jdbcType=VARCHAR}
+               ,#{item.application,jdbcType=VARCHAR},#{item.status,jdbcType=INTEGER},#{item.executeUser,jdbcType=VARCHAR}
+               ,NOW())
+        </foreach>
+    </insert>
+    <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECConfigTemplateApplyRuleExecuteRecordDO" useGeneratedKeys="true">
+        insert into dss_ec_config_template_apply_rule_execute_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                <if test="id != null">id,</if>
+                <if test="userName != null">user_name,</if>
+                <if test="ruleId != null">rule_id,</if>
+                <if test="workspaceId != null">workspace_id,</if>
+                <if test="templateName != null">template_name,</if>
+                <if test="engineType != null">engine_type,</if>
+                <if test="application != null">application,</if>
+                <if test="status != null">status,</if>
+                <if test="executeUser != null">execute_user,</if>
+                <if test="executeTime != null">execute_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                <if test="id != null">#{id,jdbcType=BIGINT},</if>
+                <if test="userName != null">#{userName,jdbcType=VARCHAR},</if>
+                <if test="ruleId != null">#{ruleId,jdbcType=VARCHAR},</if>
+                <if test="workspaceId != null">#{workspaceId,jdbcType=BIGINT},</if>
+                <if test="templateName != null">#{templateName,jdbcType=VARCHAR},</if>
+                <if test="engineType != null">#{engineType,jdbcType=VARCHAR},</if>
+                <if test="application != null">#{application,jdbcType=VARCHAR},</if>
+                <if test="status != null">#{status,jdbcType=INTEGER},</if>
+                <if test="executeUser != null">#{executeUser,jdbcType=VARCHAR},</if>
+                <if test="executeTime != null">#{executeTime,jdbcType=TIMESTAMP},</if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECConfigTemplateApplyRuleExecuteRecordDO">
+        update dss_ec_config_template_apply_rule_execute_record
+        <set>
+                <if test="userName != null">
+                    user_name = #{userName,jdbcType=VARCHAR},
+                </if>
+                <if test="ruleId != null">
+                    rule_id = #{ruleId,jdbcType=VARCHAR},
+                </if>
+                <if test="workspaceId != null">
+                    workspace_id = #{workspaceId,jdbcType=BIGINT},
+                </if>
+                <if test="templateName != null">
+                    template_name = #{templateName,jdbcType=VARCHAR},
+                </if>
+                <if test="engineType != null">
+                    engine_type = #{engineType,jdbcType=VARCHAR},
+                </if>
+                <if test="application != null">
+                    application = #{application,jdbcType=VARCHAR},
+                </if>
+                <if test="status != null">
+                    status = #{status,jdbcType=INTEGER},
+                </if>
+                <if test="executeUser != null">
+                    execute_user = #{executeUser,jdbcType=VARCHAR},
+                </if>
+                <if test="executeTime != null">
+                    execute_time = #{executeTime,jdbcType=TIMESTAMP},
+                </if>
+        </set>
+        where   id = #{id,jdbcType=BIGINT} 
+    </update>
+    <update id="updateByPrimaryKey" parameterType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECConfigTemplateApplyRuleExecuteRecordDO">
+        update dss_ec_config_template_apply_rule_execute_record
+        set 
+            user_name =  #{userName,jdbcType=VARCHAR},
+            rule_id =  #{ruleId,jdbcType=VARCHAR},
+            workspace_id =  #{workspaceId,jdbcType=BIGINT},
+            template_name =  #{templateName,jdbcType=VARCHAR},
+            engine_type =  #{engineType,jdbcType=VARCHAR},
+            application =  #{application,jdbcType=VARCHAR},
+            status =  #{status,jdbcType=INTEGER},
+            execute_user =  #{executeUser,jdbcType=VARCHAR},
+            execute_time =  #{executeTime,jdbcType=TIMESTAMP}
+        where   id = #{id,jdbcType=BIGINT} 
+    </update>
+</mapper>
