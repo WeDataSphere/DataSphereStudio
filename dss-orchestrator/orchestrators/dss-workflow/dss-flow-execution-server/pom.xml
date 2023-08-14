@@ -196,6 +196,11 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.webank.wedatasphere.dss</groupId>
+            <artifactId>dss-appconn-manager-client</artifactId>
+            <version>${dss.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
