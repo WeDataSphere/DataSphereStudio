@@ -198,6 +198,18 @@
         <result column="last_update_time" property="lastUpdateTime"/>
     </resultMap>
 
+    <resultMap id="orchestrator_detail"
+               type="com.webank.wedatasphere.dss.orchestrator.common.entity.OrchestratorDetail">
+        <result column="orchestrator_id" property="orchestratorId" jdbcType="BIGINT"/>
+        <result column="orchestrator_version_id" property="orchestratorVersionId" jdbcType="BIGINT"/>
+        <result column="name" property="orchestratorName" jdbcType="LONGVARCHAR"/>
+        <result column="latest_version" property="latestVersion" jdbcType="VARCHAR"/>
+        <result column="updater" property="releaseUser" jdbcType="VARCHAR"/>
+        <result column="updater" property="lastUpdater" jdbcType="VARCHAR"/>
+        <result column="creator" property="creator" jdbcType="VARCHAR"/>
+        <result column="update_time" property="publishTime" jdbcType="VARCHAR"/>
+    </resultMap>
+
 
     <select id="getVersionByOrchestratorIdAndVersion" resultMap="orchestrator_version_info_result_map">
         SELECT * FROM dss_orchestrator_version_info
@@ -274,4 +286,68 @@
             #{item.id}
         </foreach>
     </update>
+
+    <select id="getOrchestratorDetails" parameterType="java.lang.Long" resultMap="orchestrator_detail">
+        select
+        `v`.`app_id` as appId,
+        `v`.`id` as `orchestrator_version_id`,
+        `v`.`orchestrator_id`,
+        `v`.`version` as `latest_version`,
+        `v`.comment,
+        `v`.`updater`,
+        `i`.`name`,
+        `i`.`creator`,
+        `v`.update_time
+        from dss_orchestrator_version_info v left join dss_orchestrator_info i on v.`orchestrator_id` = i.`id`
+        where v.project_id = #{projectId} and v.valid_flag = 1 and
+        v.id in (select max(dovi.`id`) from dss_orchestrator_version_info dovi left join dss_orchestrator_info dsi on
+        dovi.`orchestrator_id` = dsi.`id`
+        where dovi.project_id = #{projectId} and dovi.valid_flag = 1 group by dovi.`orchestrator_id`)
+        order by v.update_time desc
+    </select>
+
+    <resultMap id="schedule_info_map"
+               type="com.webank.wedatasphere.dss.orchestrator.common.entity.DSSReleasedFlowVO$ScheduleInfo">
+        <result column="schedule_time" property="scheduleTime" jdbcType="LONGVARCHAR"/>
+        <result column="alarm_user_emails" property="alarmUserEmails" jdbcType="LONGVARCHAR"/>
+        <result column="alarm_level" property="alarmLevel" jdbcType="LONGVARCHAR"/>
+        <result column="active_flag" property="activeFlag" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="getScheduleInfo" resultMap="schedule_info_map" parameterType="java.lang.Long">
+        select
+        `schedule_time`,
+        `alarm_user_emails`,
+        `alarm_level`,
+        `active_flag`
+        from
+        `dss_orchestrator_schedule_info` where `orchestrator_id` = #{orchestratorId}
+    </select>
+
+    <select id="getOrchestratorVersionByParam"
+            parameterType="com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestPublishHistory"
+            resultMap="orchestrator_version_info_result_map">
+        SELECT * from dss_orchestrator_version_info a
+        where a.orchestrator_id = #{orchestratorId}
+        <if test="comment != null and comment != ''">and a.comment like concat('%',#{comment},'%')</if>
+        <if test="releaseUser != null and releaseUser != ''">and a.updater = #{releaseUser}</if>
+        <if test="startTime != null and startTime != '' and endTime != null and endTime != ''">
+            and a.update_time BETWEEN CONCAT(#{startTime},' 00:00:00') AND CONCAT(#{endTime},' 23:59:59')
+        </if>
+        and a.valid_flag = 1
+        order by a.id desc
+    </select>
+
+    <select id="getOrchestratorUserByOrcId" resultMap="orchestrator_user_map" parameterType="java.lang.Long">
+        select * from dss_orchestrator_user where `orchestrator_id` = #{orchestratorId}
+    </select>
+
+    <select id="getAppIdByVersionId" resultMap="orchestrator_version_info_result_map" parameterType="java.lang.Long">
+        select * from `dss_orchestrator_version_info` WHERE valid_flag = 1 and `id` = #{id} limit 1
+    </select>
+
+    <select id="getNextAppIdByVersionId" resultMap="orchestrator_version_info_result_map" parameterType="map">
+        select * from `dss_orchestrator_version_info` WHERE valid_flag = 1 and orchestrator_id = #{orchestratorId} and
+        `id` <![CDATA[ < ]]> #{id} order by id desc limit 1
+    </select>
 </mapper>
