@@ -23,7 +23,6 @@ import com.webank.wedatasphere.dss.common.exception.DSSErrorException;
 import com.webank.wedatasphere.dss.common.label.DSSLabel;
 import com.webank.wedatasphere.dss.common.label.DSSLabelUtil;
 import com.webank.wedatasphere.dss.common.label.EnvDSSLabel;
-import com.webank.wedatasphere.dss.common.protocol.JobStatus;
 import com.webank.wedatasphere.dss.common.protocol.project.ProjectUserAuthRequest;
 import com.webank.wedatasphere.dss.common.protocol.project.ProjectUserAuthResponse;
 import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
@@ -31,9 +30,7 @@ import com.webank.wedatasphere.dss.common.utils.MapUtils;
 import com.webank.wedatasphere.dss.common.utils.RpcAskUtils;
 import com.webank.wedatasphere.dss.contextservice.service.ContextService;
 import com.webank.wedatasphere.dss.framework.common.exception.DSSFrameworkErrorException;
-import com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorInfo;
-import com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorVersion;
-import com.webank.wedatasphere.dss.orchestrator.common.entity.OrchestratorVo;
+import com.webank.wedatasphere.dss.orchestrator.common.entity.*;
 import com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestOrchestratorInfos;
 import com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestProjectUpdateOrcVersion;
 import com.webank.wedatasphere.dss.orchestrator.common.protocol.ResponseOrchestratorInfos;
@@ -538,6 +535,83 @@ public class OrchestratorServiceImpl implements OrchestratorService {
         } catch (Exception e) {
             LOGGER.warn("execute linkis batch clear csId failed", e);
         }
+    }
+
+    @Override
+    public List<OrchestratorDetail> getOrchestratorDetails(String username, Long projectId, String dssLabel) {
+        LOGGER.info("{} ask the orc {} detail for projectId {}", dssLabel,username, projectId);
+        List<OrchestratorDetail> dbList = orchestratorMapper.getOrchestratorDetails(projectId);
+        List<OrchestratorDetail> orchestratorDetails = new ArrayList<>(dbList);
+        LOGGER.info("getOrchestratorDetails.size={}", orchestratorDetails.size());
+        List<OrchestratorDetail> realDetails = new ArrayList<>();
+        for (OrchestratorDetail orchestratorDetail : orchestratorDetails) {
+            orchestratorDetail.setProjectId(projectId);
+            DSSReleasedFlowVO.ScheduleInfo scheduleInfo = orchestratorMapper.getScheduleInfo(orchestratorDetail.getOrchestratorId());
+            orchestratorDetail.setScheduleInfo(scheduleInfo);
+            if (scheduleInfo != null) {
+                orchestratorDetail.setScheduleSettings(scheduleInfo.getScheduleTime());
+                orchestratorDetail.setActiveFlag(new Boolean(scheduleInfo.getActiveFlag()));
+            }else{
+                orchestratorDetail.setActiveFlag(true);
+            }
+            List<OrchestratorUser> orchestratorUserList = orchestratorMapper.getOrchestratorUserByOrcId(orchestratorDetail.getOrchestratorId());
+            Integer privModel = null;
+            List<String> privUsers = null;
+            DSSReleasedFlowVO.FlowPriv flowPriv = new DSSReleasedFlowVO.FlowPriv();
+            if (CollectionUtils.isNotEmpty(orchestratorUserList)) {
+                privUsers = orchestratorUserList.stream().map(OrchestratorUser::getUsername).collect(Collectors.toList());
+                privModel = orchestratorUserList.get(0).getPriv();
+                flowPriv.setPrivModel(privModel);
+                flowPriv.setUsernames(privUsers);
+            } else {
+                flowPriv.setPrivModel(privModel == null ? 1 : privModel);
+                flowPriv.setUsernames(new ArrayList<>());
+            }
+            orchestratorDetail.setFlowPriv(flowPriv);
+            String creator = orchestratorDetail.getCreator();
+            //String lastUpdater = orchestratorDetail.getLastUpdater();
+            if (username.equalsIgnoreCase(creator)) {
+                realDetails.add(orchestratorDetail);
+            } else {
+                //私密
+                if (privModel != null && privModel != 0 && privUsers.contains(username)) {
+                    realDetails.add(orchestratorDetail);
+                }
+            }
+        }
+        LOGGER.info("projectId is {}, retList is {} and class is {}", projectId, realDetails, realDetails.getClass());
+        return realDetails;
+    }
+
+    @Override
+    public String setScheduleFlow(String username, String projectName, int orchestratorId, String scheduleTime, String alarmEmails, String alarmLevel) {
+        orchestratorMapper.deleteScheduleInfo(orchestratorId);
+        orchestratorMapper.setScheduleInfo(projectName, username, scheduleTime, alarmEmails, alarmLevel, orchestratorId);
+        String orchestratorName = orchestratorMapper.getOrchestratorNameById(orchestratorId);
+        return orchestratorName;
+    }
+
+    @Override
+    public int deleteScheduleFlow(Long orchestratorId) throws Exception{
+        return orchestratorMapper.deleteScheduleInfo(orchestratorId.intValue());
+    }
+
+    @Override
+    public int updateScheduleFlow(Long orchestratorId, String activeFlag) throws Exception{
+        return orchestratorMapper.updateScheduleInfoActiveFlag(orchestratorId,activeFlag);
+    }
+
+    @Override
+    public void setOrchestratorPriv(String username, int workspaceId, long projectID, String projectName, int orchestratorId, List<String> accessUsers,int priv) {
+        Date date = new Date(System.currentTimeMillis());
+        orchestratorMapper.deleteAllOrchestratorPriv(workspaceId, projectID, orchestratorId);
+        orchestratorMapper.setOrchestratorPriv(workspaceId, projectID, orchestratorId, accessUsers, priv, date);
+    }
+
+    @Override
+    public Long getOrcIsPublishFlag(Long projectId,String uuid) {
+        Long id = orchestratorMapper.getOrcIsPublishFlag(projectId, uuid);
+        return id == null ? 0L : id;
     }
 
 }

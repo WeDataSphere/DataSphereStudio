@@ -42,6 +42,7 @@ import com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorCop
 import com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorInfo;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorRefOrchestration;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.OrchestratorVo;
+import com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestDeleteOrchestrator;
 import com.webank.wedatasphere.dss.orchestrator.core.DSSOrchestrator;
 import com.webank.wedatasphere.dss.orchestrator.core.exception.DSSOrchestratorErrorException;
 import com.webank.wedatasphere.dss.orchestrator.core.type.DSSOrchestratorRelation;
@@ -283,6 +284,11 @@ public class OrchestratorFrameworkServiceImpl implements OrchestratorFrameworkSe
         CommonOrchestratorVo orchestratorVo = new CommonOrchestratorVo();
         orchestratorVo.setOrchestratorName(orchestratorInfo.getName());
         orchestratorVo.setOrchestratorId(orchestratorInfo.getId());
+
+        RequestDeleteOrchestrator deleteOrchestrator = new RequestDeleteOrchestrator(username, String.valueOf(workspace.getWorkspaceId()),
+                String.valueOf(orchestratorDeleteRequest.getProjectId()), orchestratorDeleteRequest.getId(),orchestratorVo.getOrchestratorName(), new ArrayList<>(0));
+        DSSSenderServiceFactory.getOrCreateServiceInstance().getProjectServerSender().send(deleteOrchestrator);
+
         return orchestratorVo;
     }
 
