@@ -108,4 +108,58 @@ public interface DSSWorkspaceRoleMapper {
             "appconn_id = #{componentId}")
     Integer getPriv(@Param("workspaceId") Integer workspaceId, @Param("roleId") int roleId, @Param("componentId") int componentId);
 
+    /**
+     * @Author: bradyli
+     * @Date: 2021/11/3
+     * @Description: 更新用户在工作空间中的角色信息，由transferor更改为recipient
+     * @Param:
+     * @return:
+     **/
+    void updateUserNameWithWorkSpaceBatch(@Param("workspaceIdList") List<Long> workspaceIdList, @Param("transferor") String transferor, @Param("recipient") String recipient);
+
+    /**
+     * @Author: bradyli
+     * @Date: 2021/11/3
+     * @Description: 更新用户在工作空间中的角色信息，由transferor更改为recipient
+     * @Param:
+     * @return:
+     **/
+    void updateUserNameWithWorkSpace(@Param("workspaceId") Long workspaceId, @Param("transferor") String transferor, @Param("recipient") String recipient);
+
+    /**
+     * @Author: bradyli
+     * @Date: 2021/11/3
+     * @Description: 根据transferor插入recipient的数据
+     * @Param:
+     * @return:
+     **/
+    void insertUserNameWithWorkSpaceBatch(@Param("workspaceId") Long workspaceId, @Param("transferor") String transferor, @Param("recipient") String recipient);
+
+    /**
+     * @Author: bradyli
+     * @Date: 2021/11/3
+     * @Description: 删除用户对应的工作空间的角色信息
+     * @Param:
+     * @return:
+     **/
+    void deleteWorkspaceRoleOfUser(@Param("workspaceId") Long workspaceId, @Param("userName") String userName);
+
+    /**
+     * @Author: bradyli
+     * @Date: 2021/11/4
+     * @Description:
+     * @Param:
+     * @return:
+     **/
+    List<DSSWorkspaceUserRole> queryUserRoleInWorkSpaces(@Param("workspaceIdList") List<Long> workspaceIdList, @Param("userName") String userName);
+
+    /**
+     * @Author: bradyli
+     * @Date: 2021/11/4
+     * @Description:
+     * @Param:
+     * @return:
+     **/
+    void insertUserRoleList(@Param("dssWorkspaceUserRoleList") List<DSSWorkspaceUserRole> dssWorkspaceUserRoleList);
+
 }

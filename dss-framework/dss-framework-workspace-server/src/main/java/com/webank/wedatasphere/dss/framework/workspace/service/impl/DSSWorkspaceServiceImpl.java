@@ -48,8 +48,8 @@ import com.webank.wedatasphere.dss.standard.app.sso.Workspace;
 import com.webank.wedatasphere.dss.standard.app.sso.builder.SSOUrlBuilderOperation;
 import com.webank.wedatasphere.dss.standard.common.desc.AppInstance;
 import com.webank.wedatasphere.dss.standard.sso.utils.SSOHelper;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.common.exception.ErrorException;
 import org.apache.linkis.protocol.util.ImmutablePair;
 import org.slf4j.Logger;
@@ -433,6 +433,12 @@ public class DSSWorkspaceServiceImpl implements DSSWorkspaceService {
     public boolean checkAdminByWorkspace(String username, int workspaceId) {
         List<String> roles = dssWorkspaceRoleService.getRoleInWorkspace(username, workspaceId);
         return roles.stream().anyMatch(role -> role.equalsIgnoreCase("admin"));
+    }
+
+    @Override
+    public List<DSSWorkspace> getUserWorkspaces(String username) throws Exception {
+        List<DSSWorkspace> dssWorkspacesList = dssWorkspaceMapper.getWorkspaces(username);
+        return dssWorkspacesList;
     }
 
     @Override

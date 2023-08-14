@@ -19,20 +19,28 @@ package com.webank.wedatasphere.dss.framework.workspace.restful;
 import com.webank.wedatasphere.dss.common.auditlog.OperateTypeEnum;
 import com.webank.wedatasphere.dss.common.auditlog.TargetTypeEnum;
 import com.webank.wedatasphere.dss.common.exception.DSSErrorException;
+import com.webank.wedatasphere.dss.common.server.beans.NoticeContent;
+import com.webank.wedatasphere.dss.common.server.beans.ReleaseNoteContent;
+import com.webank.wedatasphere.dss.common.server.beans.ReleaseNoteVO;
+import com.webank.wedatasphere.dss.common.server.conf.CommonServerConfiguration;
+import com.webank.wedatasphere.dss.common.server.enums.ReleaseTypeEnum;
+import com.webank.wedatasphere.dss.common.server.service.NoticeService;
+import com.webank.wedatasphere.dss.common.server.service.ReleaseNoteService;
+import com.webank.wedatasphere.dss.common.server.service.UserAccessAuditService;
 import com.webank.wedatasphere.dss.common.utils.AuditLogUtils;
 import com.webank.wedatasphere.dss.common.utils.DSSCommonUtils;
 import com.webank.wedatasphere.dss.framework.admin.service.DssAdminUserService;
+import com.webank.wedatasphere.dss.framework.compute.resource.manager.client.ResourceManageClient;
 import com.webank.wedatasphere.dss.framework.workspace.bean.DSSWorkspace;
-import com.webank.wedatasphere.dss.framework.workspace.bean.NoticeContent;
 import com.webank.wedatasphere.dss.framework.workspace.bean.dto.response.WorkspaceFavoriteVo;
 import com.webank.wedatasphere.dss.framework.workspace.bean.dto.response.WorkspaceMenuVo;
 import com.webank.wedatasphere.dss.framework.workspace.bean.request.CreateWorkspaceRequest;
 import com.webank.wedatasphere.dss.framework.workspace.bean.vo.DSSWorkspaceHomePageVO;
 import com.webank.wedatasphere.dss.framework.workspace.bean.vo.DSSWorkspaceOverviewVO;
 import com.webank.wedatasphere.dss.framework.workspace.bean.vo.DSSWorkspaceVO;
+import com.webank.wedatasphere.dss.framework.workspace.conf.WorkspaceConfiguration;
 import com.webank.wedatasphere.dss.framework.workspace.service.DSSWorkspaceRoleService;
 import com.webank.wedatasphere.dss.framework.workspace.service.DSSWorkspaceService;
-import com.webank.wedatasphere.dss.framework.workspace.service.NoticeService;
 import com.webank.wedatasphere.dss.framework.workspace.util.WorkspaceDBHelper;
 import com.webank.wedatasphere.dss.framework.workspace.util.WorkspaceUtils;
 import com.webank.wedatasphere.dss.standard.app.sso.Workspace;
@@ -51,6 +59,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.webank.wedatasphere.dss.framework.workspace.util.DSSWorkspaceConstant.WORKSPACE_ID_STR;
 
@@ -75,7 +84,16 @@ public class DSSWorkspaceRestful {
     private HttpServletResponse httpServletResponse;
 
     @Autowired
-    private NoticeService noticeService;
+    ReleaseNoteService releaseNoteService;
+    @Autowired
+    UserAccessAuditService userAccessAuditService;
+
+    @Autowired
+    NoticeService noticeService;
+    @Autowired
+    ResourceManageClient resourceManageClient;
+
+    private final String SERVER_NAME="DSS";
 
     @RequestMapping(path = "createWorkspace", method = RequestMethod.POST)
     public Message createWorkspace(@RequestBody CreateWorkspaceRequest createWorkspaceRequest) throws ErrorException {
@@ -158,6 +176,9 @@ public class DSSWorkspaceRestful {
     public Message getWorkspaceHomePage(@RequestParam(required = false, name = "micro_module") String moduleName) throws Exception {
         //如果用户的工作空间大于两个，那么就直接返回/workspace页面
         String username = SecurityFilter.getLoginUsername(httpServletRequest);
+//        if (username != null && username.toLowerCase().startsWith("hduser")) {
+//            return Message.error("Do not allow hduser* accounts to log in DSS system.");
+//        }
         Workspace workspace = new Workspace();
         try {
             LOGGER.info("Put gateway url and cookies into workspace.");
@@ -336,11 +357,46 @@ public class DSSWorkspaceRestful {
         return Message.ok().data("favoriteId", favoriteId);
     }
 
+    @GetMapping("getReleaseNote")
+    public Message getReleaseNote(){
+        List<ReleaseNoteContent> dssContents=releaseNoteService.getReleaseNoteContent(ReleaseTypeEnum.DSS);
+        List<ReleaseNoteContent> scriptiscontents=releaseNoteService.getReleaseNoteContent(ReleaseTypeEnum.SCRIPTIS);
+        List<ReleaseNoteContent> contents= Stream.of(dssContents,scriptiscontents).flatMap(Collection::stream).collect(Collectors.toList());
+
+        String dssVersion = CommonServerConfiguration.DSS_SERVER_RELEASE_VERSION;
+        String releaseTile=String.format("%s%s版本功能介绍",SERVER_NAME, dssVersion);
+        String releaseName=String.format("%s%sReleaseNote",SERVER_NAME, dssVersion);
+        String releaseNoteUrl=String.format("_book/版本动态与公告/%s.html",dssVersion);
+        ReleaseNoteVO noteVO=new ReleaseNoteVO();
+        noteVO.setName(releaseName);
+        noteVO.setTitle(releaseTile);
+        noteVO.setContents(contents);
+        return Message.ok("获取releaseNote成功").data("releaseNote",Collections.singletonList(noteVO))
+                .data("version",dssVersion)
+                .data("releaseNoteUrl",releaseNoteUrl);
+    }
+
     @GetMapping("getNotice")
     public Message getNotice(){
         List<NoticeContent> noticeContent= noticeService.getNoticeContent();
         return Message.ok("公告获取成功").data("notices", noticeContent);
     }
 
+    @GetMapping(path = "getUserStage")
+    public Message getUserStage(@RequestParam("userName") String userName){
+        String stage;
+        try {
+            if(WorkspaceConfiguration.DSS_NEED_INIT_USER_STAGE&&!resourceManageClient.testUserInitiated(userName)){
+                stage = "uninit";
+            }else if (userAccessAuditService.getAndIncreaseLoginCount(userName)==0L) {
+                stage = "new";
+            } else {
+                stage = "senior";
+            }
+        }catch (Exception e){
+            stage = "senior";
+        }
+        return Message.ok().data("stage",stage);
+    }
 }
 

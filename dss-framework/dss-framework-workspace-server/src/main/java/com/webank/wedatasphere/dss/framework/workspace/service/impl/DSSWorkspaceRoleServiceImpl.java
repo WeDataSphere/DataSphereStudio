@@ -18,6 +18,7 @@ package com.webank.wedatasphere.dss.framework.workspace.service.impl;
 
 import com.webank.wedatasphere.dss.framework.workspace.bean.DSSApplicationBean;
 import com.webank.wedatasphere.dss.framework.workspace.bean.DSSWorkspaceRole;
+import com.webank.wedatasphere.dss.framework.workspace.bean.DSSWorkspaceUserRole;
 import com.webank.wedatasphere.dss.framework.workspace.dao.DSSWorkspaceRoleMapper;
 import com.webank.wedatasphere.dss.framework.workspace.service.DSSWorkspaceRoleService;
 import com.webank.wedatasphere.dss.framework.workspace.util.DSSWorkspaceConstant;
@@ -113,5 +114,21 @@ public class DSSWorkspaceRoleServiceImpl implements DSSWorkspaceRoleService {
             Integer tmpPriv = dssWorkspaceRoleMapper.getPriv(-1, roleId, appconnId);
             return tmpPriv != null ? tmpPriv : 0;
         }
+    }
+
+    @Override
+    public void deleteWorkspaceRoleOfUser(Long workspaceId, String userName) throws Exception {
+        dssWorkspaceRoleMapper.deleteWorkspaceRoleOfUser(workspaceId,userName);
+    }
+
+    @Override
+    public List<DSSWorkspaceUserRole> queryUserRoleInWorkSpaces(List<Long> workspaceIdList, String userName) throws Exception {
+        List<DSSWorkspaceUserRole> userRoleList = dssWorkspaceRoleMapper.queryUserRoleInWorkSpaces(workspaceIdList,userName);
+        return userRoleList;
+    }
+
+    @Override
+    public void insertUserRoleList(List<DSSWorkspaceUserRole> dssWorkspaceUserRoleList) throws Exception {
+        dssWorkspaceRoleMapper.insertUserRoleList(dssWorkspaceUserRoleList);
     }
 }
