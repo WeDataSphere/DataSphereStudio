@@ -18,27 +18,25 @@
 
 package com.webank.wedatasphere.dss.framework.release.job;
 
-import com.webank.wedatasphere.dss.common.conf.DSSConfiguration;
+import com.webank.wedatasphere.dss.common.entity.BmlResource;
 import com.webank.wedatasphere.dss.common.label.EnvDSSLabel;
 import com.webank.wedatasphere.dss.framework.release.conf.ReleaseCodeEnum;
 import com.webank.wedatasphere.dss.framework.release.entity.export.ExportResult;
 import com.webank.wedatasphere.dss.framework.release.entity.orchestrator.OrchestratorReleaseInfo;
 import com.webank.wedatasphere.dss.framework.release.entity.project.ProjectInfo;
-import com.webank.wedatasphere.dss.common.entity.BmlResource;
 import com.webank.wedatasphere.dss.framework.release.entity.task.ReleaseTask;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.OrchestratorInfo;
 import com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestFrameworkConvertOrchestration;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestReleaseOrchestration;
+import com.webank.wedatasphere.dss.sender.conf.DSSConfiguration;
 import org.apache.linkis.common.exception.ErrorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * created by cooperyang on 2020/11/17

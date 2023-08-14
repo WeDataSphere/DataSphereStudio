@@ -1,8 +1,8 @@
 package com.webank.wedatasphere.dss.framework.project.service.impl;
 
-import com.webank.wedatasphere.dss.common.conf.DSSConfiguration;
 import com.webank.wedatasphere.dss.framework.project.entity.request.ProjectQueryRequest;
 import com.webank.wedatasphere.dss.framework.project.entity.response.ProjectResponse;
+import com.webank.wedatasphere.dss.sender.conf.DSSConfiguration;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
