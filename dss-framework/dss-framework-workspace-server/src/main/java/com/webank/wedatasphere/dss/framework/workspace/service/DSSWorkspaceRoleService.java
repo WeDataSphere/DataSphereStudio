@@ -17,6 +17,8 @@
 package com.webank.wedatasphere.dss.framework.workspace.service;
 
 import com.webank.wedatasphere.dss.framework.workspace.bean.DSSWorkspaceRole;
+import com.webank.wedatasphere.dss.framework.workspace.bean.DSSWorkspaceUserRole;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -29,4 +31,31 @@ public interface DSSWorkspaceRoleService {
     Integer getWorkspaceIdByUser(String username);
 
     int getApiPriv(String username, Integer workspaceId, String roleName, String appName);
+
+    /**
+     * @Author: bradyli
+     * @Date: 2021/12/7
+     * @Description: 删除用户对应的工作空间的角色信息
+     * @Param:
+     * @return:
+     **/
+    void deleteWorkspaceRoleOfUser(@Param("workspaceId") Long workspaceId, @Param("userName") String userName) throws Exception;
+
+    /**
+     * @Author: bradyli
+     * @Date: 2021/12/7
+     * @Description:
+     * @Param:
+     * @return:
+     **/
+    List<DSSWorkspaceUserRole> queryUserRoleInWorkSpaces(@Param("workspaceIdList") List<Long> workspaceIdList, @Param("userName") String userName) throws Exception;
+
+    /**
+     * @Author: bradyli
+     * @Date: 2021/12/7
+     * @Description:
+     * @Param:
+     * @return:
+     **/
+    void insertUserRoleList(@Param("dssWorkspaceUserRoleList") List<DSSWorkspaceUserRole> dssWorkspaceUserRoleList) throws Exception;
 }

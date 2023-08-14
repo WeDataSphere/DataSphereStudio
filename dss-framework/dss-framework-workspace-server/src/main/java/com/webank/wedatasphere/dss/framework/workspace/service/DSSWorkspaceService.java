@@ -109,4 +109,6 @@ public interface DSSWorkspaceService {
 
     boolean checkAdminByWorkspace(String username, int workspaceId);
 
+    List<DSSWorkspace> getUserWorkspaces(String username) throws Exception;
+
 }

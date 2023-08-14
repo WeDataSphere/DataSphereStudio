@@ -16,6 +16,8 @@
 
 package com.webank.wedatasphere.dss.framework.workspace.service.impl;
 
+import com.github.pagehelper.PageHelper;
+import com.webank.wedatasphere.dss.common.entity.PageInfo;
 import com.webank.wedatasphere.dss.framework.workspace.bean.DSSWorkspaceUser;
 import com.webank.wedatasphere.dss.framework.workspace.bean.StaffInfo;
 import com.webank.wedatasphere.dss.framework.workspace.bean.vo.StaffInfoVO;
@@ -24,12 +26,12 @@ import com.webank.wedatasphere.dss.framework.workspace.service.DSSWorkspaceUserS
 import com.webank.wedatasphere.dss.framework.workspace.service.StaffInfoGetter;
 import com.webank.wedatasphere.dss.framework.workspace.util.WorkspaceDBHelper;
 import com.webank.wedatasphere.dss.framework.workspace.util.WorkspaceServerConstant;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -75,7 +77,7 @@ public class DSSWorkspaceUserServiceImpl implements DSSWorkspaceUserService {
     private StaffInfoVO staffToDSSUser(StaffInfo staffInfo){
         StaffInfoVO staffInfoVO = new StaffInfoVO();
         String orgFullName = staffInfo.getOrgFullName();
-        if (StringUtils.isNotEmpty(orgFullName)){
+        if (!StringUtils.isEmpty(orgFullName)){
             try{
                 String departmentName = orgFullName.split(WorkspaceServerConstant.DEFAULT_STAFF_SPLIT)[0];
                 String officeName = orgFullName.split(WorkspaceServerConstant.DEFAULT_STAFF_SPLIT)[1];
@@ -93,7 +95,7 @@ public class DSSWorkspaceUserServiceImpl implements DSSWorkspaceUserService {
     }
 
     @Override
-    public List<String> getAllWorkspaceUsers(int workspaceId) {
+    public List<String> getAllWorkspaceUsers(long workspaceId) {
         return dssWorkspaceUserMapper.getAllWorkspaceUsers(workspaceId);
     }
 
@@ -116,6 +118,19 @@ public class DSSWorkspaceUserServiceImpl implements DSSWorkspaceUserService {
     @Override
     public Long getCountByUsername(String username,int workspaceId){
         return dssWorkspaceUserMapper.getCountByUsername(username,workspaceId);
+    }
+
+    @Override
+    public Long getUserCount(long workspaceId) {
+        return dssWorkspaceUserMapper.getUserCountByWorkspaceId(workspaceId);
+    }
+
+    @Override
+    public PageInfo<String> getAllWorkspaceUsersPage(long workspaceId, Integer pageNow, Integer pageSize) {
+        PageHelper.startPage(pageNow,pageSize);
+        List<String> dos= dssWorkspaceUserMapper.getAllWorkspaceUsers(workspaceId);
+        com.github.pagehelper.PageInfo<String> doPage = new com.github.pagehelper.PageInfo<>(dos);
+        return new PageInfo<>(doPage.getList(), doPage.getTotal());
     }
 
     @Override
