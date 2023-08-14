@@ -56,6 +56,50 @@
         WHERE a.id = #{id} and a.name is not null and b.name is not null
     </select>
 
+    <select id="getProjectInfoByWorkspaceId" resultType="java.util.HashMap">
+        select
+        name,id
+        from
+        dss_project
+        where
+        workspace_id = #{workspaceId}
+    </select>
+
+    <select id="getProjectUserNames" resultType="java.lang.String">
+        select
+        username
+        from
+        dss_project_user
+        where
+        workspace_id = #{workspaceId}
+        and
+        project_id = #{projectId}
+        and
+        priv = #{priv}
+    </select>
+
+    <select id="countWorkspaceIdOfUser" resultType="java.lang.Long">
+        SELECT
+        count(0)
+        FROM (SELECT
+        GROUP_CONCAT(a.username) pusername
+        FROM
+        dss_project_user a
+        LEFT JOIN
+        dss_project b
+        ON
+        a.project_id = b.id
+        AND
+        a.workspace_id=b.workspace_id
+        WHERE
+        b.workspace_id = #{workspaceId}
+        AND
+        a.priv >=1
+        GROUP BY b.id ) c
+        Where
+        c.pusername like concat('%',#{transferor},'%')
+    </select>
+
     <insert id = "saveProjectRelation" parameterType="java.util.List">
         insert into dss_appconn_project_relation
         (
