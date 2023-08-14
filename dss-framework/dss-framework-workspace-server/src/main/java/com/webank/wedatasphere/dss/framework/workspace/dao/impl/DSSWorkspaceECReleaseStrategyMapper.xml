@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ /*
+  ~  * Copyright 2019 WeBank
+  ~  *
+  ~  * Licensed under the Apache License, Version 2.0 (the "License");
+  ~  *  you may not use this file except in compliance with the License.
+  ~  * You may obtain a copy of the License at
+  ~  *
+  ~  * http://www.apache.org/licenses/LICENSE-2.0
+  ~  *
+  ~  * Unless required by applicable law or agreed to in writing, software
+  ~  * distributed under the License is distributed on an "AS IS" BASIS,
+  ~  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  * See the License for the specific language governing permissions and
+  ~  * limitations under the License.
+  ~  */
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.webank.wedatasphere.dss.framework.workspace.dao.DSSWorkspaceECReleaseStrategyMapper">
+    <sql id="ec_release_strategy_field">
+        strategy_id,
+        workspace_id,
+        name ,
+        description,
+        queue ,
+        trigger_condition_conf,
+        terminate_condition_conf ,
+        ims_conf,
+        status,
+        creator,
+        create_time ,
+        modifier,
+        modify_time
+        ,execute_instance
+        ,execute_time
+    </sql>
+
+
+    <select id="getStrategyListInWorkspace"
+            resultType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECReleaseStrategyDO">
+        SELECT
+        <include refid="ec_release_strategy_field"/>
+        FROM
+        dss_ec_release_strategy
+        WHERE
+        workspace_id=#{workspaceId}
+    </select>
+
+
+
+    <select id="getStrategyByStrategyId"
+            resultType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECReleaseStrategyDO">
+        SELECT
+        <include refid="ec_release_strategy_field"/>
+        FROM
+        dss_ec_release_strategy
+        WHERE
+        strategy_id=#{strategyId}
+    </select>
+
+    <select id="getStrategiesNeedProcessing"
+            resultType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECReleaseStrategyDO">
+        SELECT
+        <include refid="ec_release_strategy_field"/>
+        FROM
+        dss_ec_release_strategy
+        WHERE
+        status=1
+        AND
+        (
+            execute_instance IS NULL
+            OR
+            execute_time <![CDATA[<=]]> DATE_SUB(NOW(),INTERVAL #{secondTimeOut} SECOND)
+        )
+    </select>
+    <select id="getStrategyByQueueName"
+            resultType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECReleaseStrategyDO">
+        SELECT
+        <include refid="ec_release_strategy_field"/>
+        FROM
+        dss_ec_release_strategy
+        WHERE
+        queue=#{queueName,jdbcType=VARCHAR}
+    </select>
+
+    <insert id="insertStrategy"
+            parameterType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECReleaseStrategyDO">
+        INSERT INTO dss_ec_release_strategy
+        (<include refid="ec_release_strategy_field"/>)
+        VALUES (
+        #{strategyId},
+        #{workspaceId},
+        #{name,jdbcType=VARCHAR},
+        #{description,jdbcType=VARCHAR},
+        #{queue},
+        #{triggerConditionConf},
+        #{terminateConditionConf},
+        #{imsConf},
+        #{status},
+        #{creator},
+        now(),
+        #{modifier},
+        now(),
+        null,
+        null
+        )
+    </insert>
+
+    <delete id="deleteStrategy">
+        DELETE
+        FROM dss_ec_release_strategy
+        WHERE strategy_id = #{strategyId}
+    </delete>
+
+    <update id="changeStrategyStatus">
+        UPDATE dss_ec_release_strategy
+        SET status=#{status}
+        WHERE strategy_id = #{strategyId}
+    </update>
+    <update id="updateStrategy"
+            parameterType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECReleaseStrategyDO">
+        UPDATE dss_ec_release_strategy
+        <set>
+            <if test="name != null">
+                name = #{name},
+            </if>
+            <if test="description != null">
+                description = #{description},
+            </if>
+            <if test="queue != null">
+                queue = #{queue},
+            </if>
+            <if test="triggerConditionConf != null">
+                trigger_condition_conf = #{triggerConditionConf},
+            </if>
+            <if test="terminateConditionConf != null">
+                terminate_condition_conf = #{terminateConditionConf},
+            </if>
+            <if test="imsConf != null">
+                ims_conf = #{imsConf},
+            </if>
+            <if test="modifier != null">
+                modifier = #{modifier},
+            </if>
+            modify_time = now(),
+        </set>
+        WHERE strategy_id = #{strategyId}
+    </update>
+    <update id="casSwapExecuteInstance">
+        UPDATE dss_ec_release_strategy
+        SET
+        execute_instance=#{updateInstance},
+        execute_time=now()
+        WHERE
+            strategy_id=#{strategyId}
+        AND
+        <if test="expectInstance !=null">
+            execute_instance=#{expectInstance}
+        </if>
+        <if test="expectInstance ==null">
+            execute_instance is null
+        </if>
+        AND
+        <if test="expectTime!=null">
+            execute_time=#{expectTime}
+        </if>
+        <if test="expectTime==null">
+            execute_time is null
+        </if>
+    </update>
+
+    <update id="cleanExecuteInfo">
+        UPDATE dss_ec_release_strategy
+        SET
+        execute_instance=null,
+        execute_time=null
+        WHERE
+        strategy_id=#{strategyId}
+    </update>
+
+</mapper>

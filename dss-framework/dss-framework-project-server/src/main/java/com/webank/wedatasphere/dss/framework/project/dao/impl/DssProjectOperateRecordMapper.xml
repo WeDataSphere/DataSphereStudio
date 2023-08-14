@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webank.wedatasphere.dss.framework.project.dao.DssProjectOperateRecordMapper">
+
+    <resultMap id="BaseResultMap"
+               type="com.webank.wedatasphere.dss.framework.project.dao.entity.ProjectOperateRecordDO">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="recordId" column="record_id" jdbcType="VARCHAR"/>
+        <result property="workspaceId" column="workspace_id" jdbcType="BIGINT"/>
+        <result property="projectId" column="project_id" jdbcType="BIGINT"/>
+        <result property="operateType" column="operate_type" jdbcType="INTEGER"/>
+        <result property="status" column="status" jdbcType="INTEGER"/>
+        <result property="instanceName" column="instance_name" jdbcType="VARCHAR"/>
+        <result property="content" column="content" jdbcType="VARCHAR"/>
+        <result property="resultResourceUri" column="result_resource_uri" jdbcType="VARCHAR"/>
+        <result property="creator" column="creator" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,record_id,workspace_id,
+        project_id,operate_type,status,instance_name,
+        content,result_resource_uri,creator,
+        create_time
+    </sql>
+    <insert id="insert" parameterType="com.webank.wedatasphere.dss.framework.project.dao.entity.ProjectOperateRecordDO">
+        INSERT INTO
+        dss_project_operate_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            record_id,workspace_id,
+            project_id,operate_type,status,instance_name,
+            content,result_resource_uri,creator,
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            #{recordId},#{workspaceId},
+            #{projectId},#{operateType},#{status},#{instanceName},
+            #{content},#{resultResourceUri},#{creator},
+            #{createTime}
+        </trim>
+    </insert>
+    <update id="updateByRecordId"
+            parameterType="com.webank.wedatasphere.dss.framework.project.dao.entity.ProjectOperateRecordDO">
+        UPDATE
+        dss_project_operate_record
+        <set>
+            <if test="status != null">
+                status=#{status},
+            </if>
+            <if test="content != null">
+                content=#{content},
+            </if>
+            <if test="resultResourceUri != null">
+                result_resource_uri=#{resultResourceUri},
+            </if>
+            <if test="creator != null">
+                creator=#{creator},
+            </if>
+            <if test="createTime != null">
+                create_time=#{createTime},
+            </if>
+        </set>
+        WHERE record_id =#{recordId}
+    </update>
+
+    <update id="batchUpdateRecords" parameterType="java.util.List">
+        UPDATE dss_project_operate_record set content =
+            <foreach collection="operateRecordDOS" item="item" index="index"
+                     separator=" " open="case" close="end,">
+                when id = #{item.id} then #{item.content}
+            </foreach>
+            status =
+            <foreach collection="operateRecordDOS" item="item" index="index"
+                     separator=" " open="case" close="end,">
+                when id = #{item.id} then #{item.status}
+            </foreach>
+            create_time =
+            <foreach collection="operateRecordDOS" item="item" index="index"
+                     separator=" " open="case" close="end">
+                when id = #{item.id} then #{item.createTime}
+            </foreach>
+            WHERE id in
+            <foreach collection="operateRecordDOS" item="item" index="index" separator="," open="(" close=")">
+                #{item.id}
+            </foreach>
+    </update>
+
+    <select id="getRecords" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        FROM
+        dss_project_operate_record
+        WHERE
+        project_id = #{projectId}
+        <if test="operateType != null">
+            AND operate_type=#{operateType}
+        </if>
+        <if test="status != null">
+            AND status=#{status}
+        </if>
+        ORDER BY id DESC
+        LIMIT #{offset},#{limit}
+    </select>
+
+    <select id="getCount" resultType="java.lang.Integer">
+        select
+        count(*)
+        FROM
+        dss_project_operate_record
+        WHERE
+        project_id = #{projectId}
+        <if test="operateType != null">
+            AND operate_type=#{operateType}
+        </if>
+        <if test="status != null">
+            AND status=#{status}
+        </if>
+    </select>
+
+    <select id="getCountByWorkspace" resultType="java.lang.Integer">
+        select
+        count(*)
+        FROM
+        dss_project_operate_record
+        WHERE
+        workspace_id = #{workspaceId}
+        <if test="operateType != null">
+            AND operate_type=#{operateType}
+        </if>
+        <if test="status != null">
+            AND status=#{status}
+        </if>
+    </select>
+
+    <select id="getByRecordId"
+            resultType="com.webank.wedatasphere.dss.framework.project.dao.entity.ProjectOperateRecordDO">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM
+        dss_project_operate_record
+        WHERE record_id=#{recordId}
+    </select>
+    <select id="getRecordProjectName"
+            resultType="java.lang.String">
+        SELECT
+            p.name
+        FROM
+        dss_project_operate_record as pr
+        left join dss_project p on pr.project_id = p.id
+        WHERE pr.record_id=#{recordId}
+    </select>
+
+    <select id="getRecordByStatus"
+            resultType="com.webank.wedatasphere.dss.framework.project.dao.entity.ProjectOperateRecordDO">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM
+        dss_project_operate_record
+        WHERE operate_type in
+        <foreach collection="operateTypes" item="item" index="index" open="(" separator="," close=" )">
+            #{item}
+        </foreach>
+        AND
+        status in
+        <foreach collection="statuses" item="item" index="index" open="(" separator="," close=" )">
+            #{item}
+        </foreach>
+    </select>
+</mapper>

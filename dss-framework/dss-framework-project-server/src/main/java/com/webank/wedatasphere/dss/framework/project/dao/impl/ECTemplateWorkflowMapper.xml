@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webank.wedatasphere.dss.framework.project.dao.ECTemplateWorkflowMapper">
+
+    <resultMap id="BaseResultMap" type="com.webank.wedatasphere.dss.framework.project.dao.entity.ECTemplateWorkflowDO">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="templateId" column="template_id" jdbcType="VARCHAR"/>
+        <result property="workspaceId" column="workspace_id" jdbcType="BIGINT"/>
+        <result property="projectId" column="project_id" jdbcType="BIGINT"/>
+        <result property="projectName" column="project_name" jdbcType="VARCHAR"/>
+        <result property="orchestratorId" column="orchestrator_id" jdbcType="BIGINT"/>
+        <result property="orchestratorName" column="orchestrator_name" jdbcType="VARCHAR"/>
+        <result property="flowId" column="flow_id" jdbcType="BIGINT"/>
+        <result property="workspaceId" column="workspace_id" jdbcType="BIGINT"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,template_id,project_id,orchestrator_id,flow_id,create_time,update_time
+    </sql>
+
+    <insert id="insert" keyColumn="id" keyProperty="id" parameterType="com.webank.wedatasphere.dss.framework.project.dao.entity.ECTemplateWorkflowDO" useGeneratedKeys="true">
+        insert into dss_ec_config_template_workflow
+            (template_id,workspace_id,project_id,orchestrator_id,flow_id,create_time,update_time)
+        values
+            (#{templateId,jdbcType=VARCHAR},#{workspaceId,jdbcType=BIGINT}
+            ,#{projectId,jdbcType=BIGINT},#{orchestratorId,jdbcType=BIGINT},
+            #{flowId,jdbcType=BIGINT},NOW(),NOW())
+    </insert>
+
+    <insert id="batchInsert" keyColumn="id" keyProperty="id" useGeneratedKeys="true">
+        insert into dss_ec_config_template_workflow
+        (template_id,
+        project_id,
+        orchestrator_id,
+        flow_id,
+        create_time,
+        update_time)
+        values
+        <foreach collection="list" item="item" separator=",">
+             (
+            #{item.templateId},
+            #{item.projectId},
+            #{item.orchestratorId},
+            #{item.flowId},
+            now(),
+            now()
+            )
+        </foreach>
+
+    </insert>
+
+    <delete id="deleteWorkflowUse">
+        delete
+        from
+            dss_ec_config_template_workflow
+        where
+            orchestrator_id = #{orchestratorId}
+        <if test="flowId != null and flowId != ''">
+            and flow_id =#{flowId}
+        </if>
+    </delete>
+    <delete id="deleteAllWorkflowUseOfOrc">
+        delete
+        from
+        dss_ec_config_template_workflow
+        where
+        orchestrator_id = #{orchestratorId}
+    </delete>
+
+
+
+    <select id="getTemplateProjectNames" resultType="java.lang.String">
+        select
+            distinct p.name project_name
+        from
+            dss_ec_config_template_workflow t left join dss_project p on p.id = t.project_id
+        where
+            t.template_id = #{templateId}
+    </select>
+
+    <select id="getTemplateOrchestratorNames" resultType="java.lang.String">
+        select
+            distinct o.name orchestrator_name
+        from
+            dss_ec_config_template_workflow t left join dss_orchestrator_info o on t.orchestrator_id = o.id
+        where
+            t.template_id = #{templateId}
+    </select>
+
+    <select id="getAllWorkflowUseTemplates" parameterType="com.webank.wedatasphere.dss.framework.project.request.DSSWorkflowUseTemplateRequest" resultMap="BaseResultMap">
+        select
+            distinct p.id project_id, p.name project_name, o.id orchestrator_id, o.name orchestrator_name, t.template_id, p.workspace_id
+        from
+            dss_ec_config_template_workflow t left join dss_orchestrator_info o on t.orchestrator_id=o.id left join dss_project p on p.id = o.project_id
+        where 1=1
+        <if test="projectName != null and projectName != ''">
+            and p.name = #{projectName}
+        </if>
+        <if test="orchestratorName != null and orchestratorName != ''">
+            and o.name = #{orchestratorName}
+        </if>
+            and t.template_id = #{templateId}
+            and p.visible = 1
+        order by t.id desc
+    </select>
+
+    <update id="updateDefaultTemplate" parameterType="com.webank.wedatasphere.dss.framework.project.dao.entity.ECTemplateWorkflowDO">
+        update dss_ec_config_template_workflow
+        <set>
+            <if test="projectId != null and projectId !=''">
+                project_id = #{projectId},
+            </if>
+            <if test="orchestratorId != null and orchestratorId !=''">
+                orchestrator_id = #{orchestratorId}
+            </if>
+            <if test="flow_id != null and flow_id != ''">
+                flow_id = #{flowId},
+            </if>
+            update_time = now(),
+        </set>
+        where template_id = #{templateId}
+    </update>
+
+</mapper>

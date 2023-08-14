@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webank.wedatasphere.dss.framework.workspace.dao.DSSWorkspaceEcReleaseImsRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECReleaseImsRecordDO">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="recordId" column="record_id" jdbcType="VARCHAR"/>
+        <result property="strategyId" column="strategy_id" jdbcType="VARCHAR"/>
+        <result property="workspaceId" column="workspace_id" jdbcType="BIGINT"/>
+        <result property="content" column="content" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="INTEGER"/>
+        <result property="executeInstance" column="execute_instance" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="modifyTime" column="modify_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        record_id,strategy_id,workspace_id,
+        content,status,execute_instance,
+        create_time,modify_time
+    </sql>
+
+    <insert id="insert" keyColumn="id" keyProperty="id" parameterType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECReleaseImsRecordDO" useGeneratedKeys="true">
+        insert into dss_ec_release_ims_record
+        (record_id,strategy_id,workspace_id
+        ,content,status,execute_instance
+        ,create_time,modify_time)
+        values (#{recordId,jdbcType=VARCHAR},#{strategyId,jdbcType=VARCHAR},#{workspaceId,jdbcType=BIGINT}
+        ,#{content,jdbcType=VARCHAR},#{status,jdbcType=INTEGER},#{executeInstance,jdbcType=VARCHAR}
+        ,now(),now())
+    </insert>
+
+    <update id="updateImsRecordStatus"
+            parameterType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECReleaseImsRecordDO">
+        UPDATE dss_ec_release_ims_record set status = #{status}, modify_time = now() WHERE record_id = #{recordId}
+    </update>
+
+</mapper>

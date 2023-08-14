@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webank.wedatasphere.dss.framework.workspace.dao.ECConfigTemplateMapper">
+
+    <resultMap id="BaseResultMap" type="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECConfigTemplateDO">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="templateId" column="template_id" jdbcType="VARCHAR"/>
+            <result property="workspaceId" column="workspace_id" jdbcType="BIGINT"/>
+            <result property="name" column="name" jdbcType="VARCHAR"/>
+            <result property="description" column="description" jdbcType="VARCHAR"/>
+            <result property="engineType" column="engine_type" jdbcType="VARCHAR"/>
+            <result property="permissionType" column="permission_type" jdbcType="INTEGER"/>
+            <result property="creator" column="creator" jdbcType="VARCHAR"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="modifier" column="modifier" jdbcType="VARCHAR"/>
+            <result property="modifyTime" column="modify_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,template_id,workspace_id,
+        name,description,engine_type,
+        permission_type,creator,create_time,
+        modifier,modify_time
+    </sql>
+
+    <select id="getByTemplateId" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from dss_ec_config_template
+        where  template_id = #{templateId,jdbcType=VARCHAR}
+    </select>
+
+    <select id="getTemplatesList" parameterType="com.webank.wedatasphere.dss.framework.workspace.bean.request.ECConfTemplateGetRequest" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from dss_ec_config_template
+        where  workspace_id = #{workspaceId,jdbcType=BIGINT}
+        <if test="engineType != null">
+            and engine_type=#{engineType}
+        </if>
+        <if test="name != null">
+            and name LIKE concat('%', #{name}, '%')
+        </if>
+        <if test="user != null">
+            and(
+                permission_type = 0
+                or
+                template_id in
+                (
+                select DISTINCT template_id from dss_ec_config_template_user where user_name = #{user}
+                )
+            )
+        </if>
+
+        <choose>
+            <when test="sortBy == 'modifyTime'">
+                order by modify_time
+            </when>
+            <otherwise >
+                order by id
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="orderBy == 'descend'">
+                desc
+            </when>
+            <otherwise>
+                asc
+            </otherwise>
+        </choose>
+
+    </select>
+
+
+    <select id="getTemplatesByWorkspaceId"  resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from dss_ec_config_template
+        where
+        workspace_id = #{workspaceId}
+    </select>
+
+
+    <select id="getTemplatesListByUids"  resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from dss_ec_config_template
+        where
+        template_id in
+        <foreach collection="templateIds" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </select>
+
+
+    <select id="getByName" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from dss_ec_config_template
+        where  name = #{name,jdbcType=VARCHAR}
+    </select>
+
+    <delete id="deleteByTemplateId" parameterType="java.lang.String">
+        delete from dss_ec_config_template
+        where  template_id = #{templateId,jdbcType=VARCHAR}
+    </delete>
+    <insert id="insert" keyColumn="id" keyProperty="id" parameterType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECConfigTemplateDO" useGeneratedKeys="true">
+        insert into dss_ec_config_template
+        ( id,template_id,workspace_id
+        ,name,description,engine_type
+        ,permission_type,creator,create_time
+        ,modifier,modify_time)
+        values (#{id,jdbcType=BIGINT},#{templateId,jdbcType=VARCHAR},#{workspaceId,jdbcType=BIGINT}
+        ,#{name,jdbcType=VARCHAR},#{description,jdbcType=VARCHAR},#{engineType,jdbcType=VARCHAR}
+        ,#{permissionType,jdbcType=INTEGER},#{creator,jdbcType=VARCHAR},NOW()
+        ,#{modifier,jdbcType=VARCHAR},NOW())
+    </insert>
+    <update id="update" parameterType="com.webank.wedatasphere.dss.framework.workspace.dao.entity.ECConfigTemplateDO">
+        update dss_ec_config_template
+        <set>
+
+                <if test="description != null">
+                    description = #{description,jdbcType=VARCHAR},
+                </if>
+
+                <if test="permissionType != null">
+                    permission_type = #{permissionType,jdbcType=INTEGER},
+                </if>
+
+                <if test="modifier != null">
+                    modifier = #{modifier,jdbcType=VARCHAR},
+                </if>
+                    modify_time = NOW(),
+        </set>
+        where   template_id = #{templateId,jdbcType=VARCHAR}
+    </update>
+
+</mapper>
