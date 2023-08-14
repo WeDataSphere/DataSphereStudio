@@ -17,8 +17,10 @@
 package com.webank.wedatasphere.dss.orchestrator.db.dao;
 
 import com.webank.wedatasphere.dss.orchestrator.common.entity.*;
+import com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestPublishHistory;
 import org.apache.ibatis.annotations.*;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -126,4 +128,60 @@ public interface OrchestratorMapper {
     List<DSSOrchestratorVersion> getHistoryOrcVersion(@Param("remainVersion") int remainVersion);
 
     void batchUpdateOrcInfo(@Param("list") List<DSSOrchestratorVersion> historyOrcVersion);
+
+    /**
+     * 查询项目下所有编排的最新版本。
+     * @param projectId 项目id
+     */
+    List<OrchestratorDetail> getOrchestratorDetails(@Param("projectId") Long projectId);
+
+    @Delete("delete from `dss_orchestrator_schedule_info` where `orchestrator_id` = #{orchestratorId}")
+    int deleteScheduleInfo(@Param("orchestratorId") Integer orchestratorId);
+
+    @Update("update dss_orchestrator_schedule_info set active_flag = #{activeFlag}  where `orchestrator_id` = #{orchestratorId}")
+    int updateScheduleInfoActiveFlag(@Param("orchestratorId") Long orchestratorId, @Param("activeFlag") String activeFlag);
+
+    @Insert("insert into `dss_orchestrator_schedule_info`" +
+            "(`orchestrator_id`, `project_name`, `schedule_user`, `schedule_time`, `alarm_user_emails`, `alarm_level`, `last_update_time`) " +
+            "values(#{orchestratorId}, #{projectName}, #{scheduleUser}, #{scheduleTime}, #{alarmEmails}, #{alarmLevel}, now())")
+    void setScheduleInfo(@Param("projectName") String projectName, @Param("scheduleUser") String scheduleUser,
+                         @Param("scheduleTime") String scheduleTime, @Param("alarmEmails") String alarmEmails,
+                         @Param("alarmLevel") String alarmLevel, @Param("orchestratorId") Integer orchestratorId);
+
+    DSSReleasedFlowVO.ScheduleInfo getScheduleInfo(@Param("orchestratorId") Long orchestratorId);
+
+    @Insert({
+            "<script>",
+            "insert into `dss_orchestrator_user`",
+            "(`workspace_id`, `project_id`, `orchestrator_id`, `username`, `priv`, `last_update_time`)",
+            "values",
+            "<foreach collection='accessUsers' item='accessUser' open='(' separator='),(' close=')'>",
+            " #{workspaceId}, #{projectId}, #{orchestratorId}, #{accessUser}, #{priv}, #{updateTime}",
+            "</foreach>",
+            "</script>"
+    })
+    void setOrchestratorPriv(@Param("workspaceId") int workspaceId,
+                             @Param("projectId") Long projectId, @Param("orchestratorId") int orchestratorId,
+                             @Param("accessUsers") List<String> accessUsers, @Param("priv") int priv, @Param("updateTime") Date date);
+
+    @Delete("delete from `dss_orchestrator_user` " +
+            "where `workspace_id` = #{workspaceId} " +
+            "and `project_id` = #{projectId} " +
+            "and `orchestrator_id` = #{orchestratorId}")
+    void deleteAllOrchestratorPriv(@Param("workspaceId") int workspaceId, @Param("projectId") Long projectId, @Param("orchestratorId") int orchestratorId);
+
+    List<OrchestratorUser> getOrchestratorUserByOrcId(@Param("orchestratorId") Long orchestratorId);
+
+    //生產的编排Id
+    @Select("select id from `dss_orchestrator_info` where `project_id` = #{projectId} and uuid = #{uuid} ")
+    Long getOrcIsPublishFlag(@Param("projectId")Long projectId,@Param("uuid")String uuid);
+
+    DSSOrchestratorVersion getAppIdByVersionId(@Param("id")Long id);
+
+    DSSOrchestratorVersion getNextAppIdByVersionId(@Param("orchestratorId")Long orchestratorId,@Param("id")Long secondId);
+
+    @Select("SELECT DISTINCT(updater) FROM dss_orchestrator_version_info WHERE orchestrator_id = #{id} AND valid_flag =  #{validFlag} and updater is not null")
+    List<String> getOrchestratorVersionUserList(@Param("id")Long id,@Param("validFlag")int validFlag);
+
+    List<DSSOrchestratorVersion> getOrchestratorVersionByParam(RequestPublishHistory requestPublishHistory);
 }
