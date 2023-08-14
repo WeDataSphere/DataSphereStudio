@@ -32,5 +32,6 @@ public interface OrchestratorRefConstant {
 
     //workflow node suffix input by the user during workflow replication.
     String ORCHESTRATION_NODE_SUFFIX = "nodeSuffix";
+    String ORCHESTRATION_FLOWID_PARAMCONF_TEMPLATEID_TUPLES_KEY = "orchestrationFlowIdParamConfTemplateIdTuples";
 
 }
