@@ -52,6 +52,7 @@ public class AppConnResourceServiceImpl implements AppConnResourceService {
     private final Map<String, Boolean> appConnIsLoaded = new HashMap<>();
 
     private BmlClient bmlClient = BmlClientFactory.createBmlClient();
+    private static final String HADOOP_USER = "hadoop";
 
     @Override
     public String getAppConnHome(AppConnInfo appConnInfo) {
@@ -109,7 +110,7 @@ public class AppConnResourceServiceImpl implements AppConnResourceService {
         LOGGER.info("First, download latest resource {} in version {} from BML for AppConn {}, and write it into file {}.", resource.getResourceId(),
             resource.getVersion(), appConnName, zipFilePath);
         // At first, Download AppConn files from bml.
-        bmlClient.downloadResource(Utils.getJvmUser(), resource.getResourceId(), resource.getVersion(),
+        bmlClient.downloadResource(HADOOP_USER, resource.getResourceId(), resource.getVersion(),
             "file://" + zipFilePath.getPath(), true);
         // Then, try to unzip it.
         if(appConnPath.exists()) {
