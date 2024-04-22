@@ -327,7 +327,7 @@ public class OrchestratorFrameworkServiceImpl implements OrchestratorFrameworkSe
         }
         OrchestratorCopyVo orchestratorCopyVo = new OrchestratorCopyVo.Builder(username, sourceProject.getId(), sourceProject.getName(), targetProject.getId(),
                 targetProject.getName(), sourceOrchestratorInfo, orchestratorCopyRequest.getTargetOrchestratorName(),
-                orchestratorCopyRequest.getWorkflowNodeSuffix(), new EnvDSSLabel(DSSCommonUtils.ENV_LABEL_VALUE_DEV),
+                orchestratorCopyRequest.getWorkflowNodeSuffix(), new EnvDSSLabel(orchestratorCopyRequest.getLabels().getRoute()),
                 workspace, Sender.getThisInstance()).setCopyTaskId(null).build();
         OrchestratorCopyJob orchestratorCopyJob = new OrchestratorCopyJob();
         orchestratorCopyJob.setOrchestratorCopyVo(orchestratorCopyVo);
