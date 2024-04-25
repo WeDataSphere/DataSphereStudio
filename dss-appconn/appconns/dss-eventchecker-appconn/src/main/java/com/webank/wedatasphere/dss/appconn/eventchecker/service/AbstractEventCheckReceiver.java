@@ -59,7 +59,7 @@ public class AbstractEventCheckReceiver extends AbstractEventCheck{
     /**
      * Update consumption status
      */
-    boolean updateMsgOffset(int jobId, Properties props, Logger log, String[] consumedMsgInfo,String lastMsgId){
+    boolean updateMsgOffset(int jobId, Properties props, Logger log, String[] consumedMsgInfo,String lastMsgId,String type){
         boolean result = false;
         String vNewMsgID = "-1";
         PreparedStatement updatePstmt = null;
@@ -71,7 +71,7 @@ public class AbstractEventCheckReceiver extends AbstractEventCheck{
                 if(msgConn == null) return false;
                 int vProcessID = jobId;
                 String vReceiveTime = DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss");;
-                String sqlForUpdateMsg = "INSERT INTO event_status(receiver,topic,msg_name,receive_time,msg_id) VALUES(?,?,?,?,?) ON DUPLICATE KEY UPDATE receive_time=VALUES(receive_time),msg_id= CASE WHEN msg_id= " + lastMsgId + " THEN VALUES(msg_id) ELSE msg_id END";
+                String sqlForUpdateMsg = "INSERT INTO event_status(receiver,topic,msg_name,receive_time,msg_id,type) VALUES(?,?,?,?,?,?) ON DUPLICATE KEY UPDATE receive_time=VALUES(receive_time),msg_id= CASE WHEN msg_id= " + lastMsgId + " THEN VALUES(msg_id) ELSE msg_id END";
                 log.info("last message offset {} is:" + lastMsgId);
                 updatePstmt = msgConn.prepareCall(sqlForUpdateMsg);
                 updatePstmt.setString(1, receiver);
@@ -79,6 +79,7 @@ public class AbstractEventCheckReceiver extends AbstractEventCheck{
                 updatePstmt.setString(3, msgName);
                 updatePstmt.setString(4, vReceiveTime);
                 updatePstmt.setString(5, vNewMsgID);
+                updatePstmt.setString(6, type);
                 int updaters = updatePstmt.executeUpdate();
                 log.info("updateMsgOffset successful {} update result is:" + updaters);
                 if(updaters != 0){
@@ -105,8 +106,8 @@ public class AbstractEventCheckReceiver extends AbstractEventCheck{
     /**
      * get consumption progress
      */
-    String getOffset(int jobId, Properties props, Logger log){
-        String sqlForReadMsgID = "SELECT msg_id FROM event_status WHERE receiver=? AND topic=? AND msg_name=?";
+    String getOffset( Properties props, Logger log,String type){
+        String sqlForReadMsgID = "SELECT msg_id FROM event_status WHERE receiver=? AND topic=? AND msg_name=? AND type=?";
         PreparedStatement pstmtForGetID = null;
         Connection msgConn = null;
         ResultSet rs = null;
@@ -118,6 +119,7 @@ public class AbstractEventCheckReceiver extends AbstractEventCheck{
             pstmtForGetID.setString(1, receiver);
             pstmtForGetID.setString(2, topic);
             pstmtForGetID.setString(3, msgName);
+            pstmtForGetID.setString(4, type);
             rs = pstmtForGetID.executeQuery();
             while (rs.next()) {
                 lastMsgId = rs.getString("msg_id");
@@ -132,6 +134,51 @@ public class AbstractEventCheckReceiver extends AbstractEventCheck{
         }
         log.info("The last record id was " + lastMsgId);
         return lastMsgId;
+    }
+
+    /**
+     * 从schedulis的信号队列中获取信号
+     * @return
+     */
+    String[] getSchedulisMsg(Properties props, Logger log,String ... params){
+        String sqlForReadTMsg;
+        sqlForReadTMsg="SELECT * FROM event_queue WHERE topic=? AND msg_name=? AND send_time >=? AND send_time <=? AND msg_id >? ORDER BY msg_id ASC LIMIT 1";
+        PreparedStatement pstmt = null;
+        Connection msgConn = null;
+        ResultSet rs = null;
+        String[] consumedMsgInfo = null;
+        try {
+            msgConn = getSchedulisEventCheckerConnection(props,log);
+            pstmt = msgConn.prepareCall(sqlForReadTMsg);
+            pstmt.setString(1, topic);
+            pstmt.setString(2, msgName);
+            pstmt.setString(3, params[0]);
+            pstmt.setString(4, params[1]);
+            pstmt.setString(5, params[2]);
+            log.info("param {} StartTime: " + params[0] + ", EndTime: " + params[1]
+                    + ", Topic: " + topic + ", MessageName: " + msgName + ", LastMessageID: " + params[2]);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                consumedMsgInfo = new String[4];
+                String[] msgKey = new String[]{"msg_id", "msg_name", "sender", "msg"};
+                for (int i = 0; i < msgKey.length; i++) {
+                    try {
+                        consumedMsgInfo[i] = rs.getString(msgKey[i]);
+                    } catch (SQLException e) {
+                        throw new RuntimeException("Error while reading data from ResultSet", e);
+                    }
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("EventChecker failed to receive message" + e);
+        } finally {
+            closeQueryStmt(pstmt, log);
+            closeConnection(msgConn, log);
+            closeQueryRef(rs, log);
+        }
+        return consumedMsgInfo;
     }
 
     /**
