@@ -50,15 +50,23 @@ public class DefaultEventcheckReceiver extends AbstractEventCheckReceiver {
 
     @Override
     public boolean reciveMsg(int jobId, Properties props, Logger log) {
+        boolean success = reciveDSSMsg(jobId, props, log);
+        if("SchedulisMsg".equals(props.getProperty("schedulis.msg.eventchecker.jdo.option.name"))){
+            success = success || reciveSchdulisMsg(jobId, props, log);
+        }
+        return success;
+    }
+
+    private boolean reciveDSSMsg(int jobId, Properties props, Logger log) {
         boolean result = false;
         try{
-            String lastMsgId = getOffset(jobId,props,log);
-            String[] executeType = createExecuteType(jobId,props,log,lastMsgId);
+            String lastMsgId = getOffset( props, log,"Msg");
+            String[] executeType = createExecuteType(jobId, props, log,lastMsgId);
             log.info("event receiver executeType[]:{},{},{},{},{}",executeType[0],executeType[1],executeType[2],executeType[3],executeType[4]);
             if(executeType!=null && executeType.length ==5){
                 String[] consumedMsgInfo = getMsg(props, log,executeType);
                 if(consumedMsgInfo!=null && consumedMsgInfo.length == 4){
-                    result = updateMsgOffset(jobId,props,log,consumedMsgInfo,lastMsgId);
+                    result = updateMsgOffset(jobId, props, log,consumedMsgInfo,lastMsgId,"Msg");
                 }
             }else{
                 log.error("executeType error {} " + Arrays.toString(executeType));
@@ -70,6 +78,29 @@ public class DefaultEventcheckReceiver extends AbstractEventCheckReceiver {
         }
         return result;
     }
+
+    private boolean reciveSchdulisMsg(int jobId, Properties props, Logger log) {
+        boolean result = false;
+        try{
+            String lastMsgId = getOffset( props, log,"SchedulisMsg");
+            String[] executeType = createExecuteType(jobId, props, log,lastMsgId);
+            log.info("event receiver executeType[]:{},{},{},{},{}",executeType[0],executeType[1],executeType[2],executeType[3],executeType[4]);
+            if(executeType!=null && executeType.length ==5){
+                String[] consumedMsgInfo = getSchedulisMsg(props, log,executeType);
+                if(consumedMsgInfo!=null && consumedMsgInfo.length == 4){
+                    result = updateMsgOffset(jobId, props, log,consumedMsgInfo,lastMsgId,"SchedulisMsg");
+                }
+            }else{
+                log.error("executeType error {} " + Arrays.toString(executeType));
+                return result;
+            }
+        }catch (Exception e){
+            log.error("EventChecker failed to receive the message {}" + e);
+            return result;
+        }
+        return result;
+    }
+
 
     private String[] createExecuteType(int jobId, Properties props, Logger log,String lastMsgId){
         boolean receiveTodayFlag = (null != receiveToday && "true".equals(receiveToday.trim().toLowerCase()));

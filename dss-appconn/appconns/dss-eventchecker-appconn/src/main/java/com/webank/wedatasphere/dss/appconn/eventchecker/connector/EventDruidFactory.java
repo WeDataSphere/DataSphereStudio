@@ -29,7 +29,28 @@ public class EventDruidFactory {
 	private static ConcurrentHashMap<String, DruidDataSource> instanceMap = new ConcurrentHashMap<>();
 	private static final String EVENT_DRUID_USERNAME = "msg.eventchecker.jdo.option.username";
 	private static final String EVENT_DRUID_URL = "msg.eventchecker.jdo.option.url";
+	private static final String SCHEDULIS_EVENT_DRUID_USERNAME = "schedulis.msg.eventchecker.jdo.option.username";
+	private static final String SCHEDULIS_EVENT_DRUID_URL = "schedulis.msg.eventchecker.jdo.option.url";
 
+	public static DruidDataSource getSchedulisMsgInstance(Properties props, Logger log) {
+		String eventDruidUsername =props.getProperty(SCHEDULIS_EVENT_DRUID_USERNAME);
+		String eventDruidUrl = props.getProperty(SCHEDULIS_EVENT_DRUID_URL);
+		log.info("SCHEDULIS_EVENT_DRUID_USERNAME：" + eventDruidUsername+ "");
+		log.info("SCHEDULIS_EVENT_DRUID_URL：" + eventDruidUrl + "");
+		String key = eventDruidUsername + eventDruidUrl;
+		if (instanceMap.containsKey(key)) {
+			return instanceMap.get(key);
+		} else {
+			synchronized (EventDruidFactory.class) {
+				if (instanceMap.containsKey(key)) {
+					return instanceMap.get(key);
+				}
+				DruidDataSource msgInstance = createDataSource(props, log, "SchedulisMsg");
+				instanceMap.put(key, msgInstance);
+				return instanceMap.get(key);
+			}
+		}
+	}
 	public static DruidDataSource getMsgInstance(Properties props, Logger log) {
 		String eventDruidUsername =props.getProperty(EVENT_DRUID_USERNAME);
 		String eventDruidUrl = props.getProperty(EVENT_DRUID_URL);
@@ -67,6 +88,22 @@ public class EventDruidFactory {
 					password = new String(Base64.getDecoder().decode(props.getProperty("msg.eventchecker.jdo.option.password").getBytes()), "UTF-8");
 				}else{
 					password = props.getProperty("msg.eventchecker.jdo.option.password");
+				}
+			} catch (Exception e){
+				log.error("password decore failed" + e);
+			}
+		}
+
+		else if(type.equals("SchedulisMsg")){
+			name = props.getProperty("schedulis.msg.eventchecker.jdo.option.name");
+			url = props.getProperty("schedulis.msg.eventchecker.jdo.option.url");
+			username = props.getProperty("schedulis.msg.eventchecker.jdo.option.username");
+			loginType = props.getProperty("schedulis.msg.eventchecker.jdo.option.login.type");
+			try {
+				if("base64".equals(loginType)) {
+					password = new String(Base64.getDecoder().decode(props.getProperty("schedulis.msg.eventchecker.jdo.option.password").getBytes()), "UTF-8");
+				}else{
+					password = props.getProperty("schedulis.msg.eventchecker.jdo.option.password");
 				}
 			} catch (Exception e){
 				log.error("password decore failed" + e);

@@ -50,7 +50,13 @@ public abstract class AbstractEventCheck implements EventCheckAdapter {
     String wait_for_time;
     String msg;
     String afterSend;
-
+    DataSource getScheulisMsgDS(Properties props, Logger log) {
+        msgDS = EventDruidFactory.getSchedulisMsgInstance(props, log);
+        if (msgDS == null) {
+            log.error("Error getting Druid DataSource instance");
+        }
+        return msgDS;
+    }
     DataSource getMsgDS(Properties props, Logger log) {
         msgDS = EventDruidFactory.getMsgInstance(props, log);
         if (msgDS == null) {
@@ -72,6 +78,15 @@ public abstract class AbstractEventCheck implements EventCheckAdapter {
         waitTime = props.getProperty(EventChecker.WAIT_TIME, "1");
         query_frequency = props.getProperty(EventChecker.QUERY_FREQUENCY, "30000");
         afterSend = props.getProperty(EventChecker.AFTERSEND);
+    }
+    Connection getSchedulisEventCheckerConnection(Properties props, Logger log){
+        Connection connection = null;
+        try {
+            connection =  getScheulisMsgDS(props,log).getConnection();
+        } catch (SQLException e) {
+            throw new RuntimeException("Error getting DB Connection instance {} " + e);
+        }
+        return connection;
     }
 
     Connection getEventCheckerConnection(Properties props, Logger log){
