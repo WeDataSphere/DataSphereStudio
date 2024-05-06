@@ -27,7 +27,7 @@ import org.apache.linkis.manager.engineplugin.appconn.conf.AppConnEngineConnConf
 import org.apache.linkis.rpc.Sender
 import org.apache.linkis.storage.FSFactory
 import org.apache.linkis.storage.fs.FileSystem
-import org.apache.linkis.storage.resultset.{ResultSetFactory, ResultSetReaderFactory}
+import org.apache.linkis.storage.resultset.{ResultSetFactory, ResultSetReader}
 
 abstract class AbstractExecutionRequestRefContext(engineExecutorContext: EngineExecutionContext,
                                                   user: String,
@@ -70,7 +70,7 @@ abstract class AbstractExecutionRequestRefContext(engineExecutorContext: EngineE
     engineExecutorContext.createResultSetWriter(resultSet, resultSetAlias).asInstanceOf[ResultSetWriter[M, R]]
 
   override def getResultSetReader[M <: MetaData, R <: Record](fsPath: FsPath): ResultSetReader[M, R] =
-    ResultSetReaderFactory.getResultSetReader(fsPath.getSchemaPath).asInstanceOf[ResultSetReader[M, R]]
+    ResultSetReader.getResultSetReader(fsPath.getSchemaPath).asInstanceOf[ResultSetReader[M, R]]
 
   private def createResultSetWriter[M <: MetaData, R <: Record](resultSetType: String, resultSetAlias: String): ResultSetWriter[M, R] =
     engineExecutorContext.createResultSetWriter(resultSetType, resultSetAlias).asInstanceOf[ResultSetWriter[M, R]]
