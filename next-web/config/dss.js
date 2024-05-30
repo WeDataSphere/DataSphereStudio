@@ -8,6 +8,10 @@ export default {
         'zh-CN': 'workspace/i18n/zh.json',
       },
     },
+    appconn: {
+      routes: 'appconn/router',
+      module: 'appconn/module',
+    },
   },
   exts: {},
   conf: {

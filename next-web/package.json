@@ -73,6 +73,7 @@
     "packages/cyeditor",
     "packages/dss",
     "packages/shared",
+    "packages/appconn",
     "packages/workspace"
   ]
 }
