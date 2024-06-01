@@ -49,12 +49,12 @@ public interface AppConnMapper {
 
     void updateResourceByName(AppConnBean appConnBean);
 
-    List<AppConnBean> getAppConns(String appConnName, String className, RowBounds rowBounds);
+    List<AppConnBean> getAppConns(@Param("appConnName") String appConnName, @Param("className") String className, RowBounds rowBounds);
 
     AppConnBean addAppConn(AppConnBean appConnBean); // Return type changed to int to handle the result of insert operation
 
     AppConnBean updateAppConn(AppConnBean appConnBean); // Return type changed to int to handle the result of update operation
 
-    int deleteAppConn(Long id);
+    int deleteAppConn(@Param("id") Long id);
 
 }
