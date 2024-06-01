@@ -36,9 +36,9 @@ public class AppConnMenuService {
             throw new IllegalArgumentException("菜单分类不存在,请指定正确的menuId");
         }
 
-        if (menu.getIsActive() == null || (menu.getIsActive() != 0 && menu.getIsActive() != 1)) {
-            throw new IllegalArgumentException("isActive不能为空且只能是0或1");
-        }
+//        if (menu.getIsActive() == null || (menu.getIsActive() != 0 && menu.getIsActive() != 1)) {
+//            throw new IllegalArgumentException("isActive不能为空且只能是0或1");
+//        }
 
         if (menu.getTitleCn() == null || menu.getTitleCn().length() > 64) {
             throw new IllegalArgumentException("titleCn不能为空且长度不超过64");
