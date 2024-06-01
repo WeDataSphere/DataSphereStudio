@@ -2,6 +2,7 @@ package com.webank.wedatasphere.dss.framework.appconn.dao;
 
 import org.apache.ibatis.annotations.Mapper;
 import com.webank.wedatasphere.dss.framework.appconn.entity.NodeToUi;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -40,7 +41,7 @@ public interface DssWorkflowNodeToUiDAO{
     /**
      * 根据NodeId和UiId删除
      */
-    int deleteByNodeIdAndUiId(Integer workflowNodeId, Integer uiId);
+    int deleteByNodeIdAndUiId(@Param("workflowNodeId") Integer workflowNodeId, @Param("uiId") Integer uiId);
 
     /**
     * 根据主键删除

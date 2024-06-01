@@ -2,6 +2,7 @@ package com.webank.wedatasphere.dss.framework.appconn.dao;
 
 import org.apache.ibatis.annotations.Mapper;
 import com.webank.wedatasphere.dss.framework.appconn.entity.UiToValidate;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -31,7 +32,7 @@ public interface DssWorkflowNodeUiToValidateDAO{
     */
     UiToValidate findByPrimaryKey(Integer id);
 
-    int deleteByUiIdAndValidateId(Integer uiId, Integer validateId);
+    int deleteByUiIdAndValidateId(@Param(value = "uiId") Integer uiId, @Param(value = "validateId") Integer validateId);
 
     List<UiToValidate> findByUiId(Integer uiId);
 

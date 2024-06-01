@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Author: xlinliu
@@ -253,9 +254,13 @@ public class WorkflowNodeManagerRestful {
     @RequestMapping(value = "deletenode", method=RequestMethod.POST)
     public Message removeNode(
             @RequestParam(value = "nodeId", required = false) String nodeId,
+            @RequestBody(required = false) Map<String, Object> payload,
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
+        if(payload.containsKey("nodeId")){
+            nodeId = payload.get("nodeId").toString();
+        }
         //如果节点关联了ui，则不允许删除
         if(!nodeUiService.getNodeUisByNodeId(Integer.parseInt(nodeId)).isEmpty()){
             return Message.error("节点关联了UI，不允许删除");
@@ -277,12 +282,15 @@ public class WorkflowNodeManagerRestful {
     @RequestMapping(value = "deleteui", method=RequestMethod.POST)
     public Message removeAttribute(
             @RequestParam(value = "uiId", required = false) String uiId,
+            @RequestBody(required = false) Map<String, Object> payload,
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-
+        if(payload.containsKey("uiId")){
+            uiId=payload.get("uiId").toString();
+        }
         //uiId必须是一个整数
-        if(StringUtils.isBlank(uiId) || !StringUtils.isNumeric(uiId)){
+        if( StringUtils.isBlank(uiId) || !StringUtils.isNumeric(uiId)){
             return Message.error("属性id不能为空且必须是整数");
         }
         //关联检验，属性不能被任何节点关联。
@@ -338,9 +346,13 @@ public class WorkflowNodeManagerRestful {
     @RequestMapping(value = "deletemenuappconn", method=RequestMethod.POST)
     public Message deleteAppconnMenu(
             @RequestParam("appconnId") String appconnId,
+            @RequestBody(required = false) Map<String, Object> payload,
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
+        if(payload.containsKey("appconnId")){
+            appconnId = payload.get("appconnId").toString();
+        }
         //appconnId必须是一个整数
         if(StringUtils.isBlank(appconnId)&&StringUtils.isNumeric(appconnId)){
             return Message.error("appconnId必须是一个整数");

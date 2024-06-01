@@ -2,6 +2,7 @@ package com.webank.wedatasphere.dss.framework.appconn.dao;
 
 import org.apache.ibatis.annotations.Mapper;
 import com.webank.wedatasphere.dss.framework.appconn.entity.Node;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -35,7 +36,7 @@ public interface DssWorkflowNodeDAO{
      * 根据name或nodeType查询
      * @return {@link Node}
      */
-    List<Node> findByNameOrNodeType(String name, String nodeType);
+    List<Node> findByNameOrNodeType(@Param(value = "name") String name, @Param(value = "nodeType") String nodeType);
 
     /**
      * 根据appconnName查询
