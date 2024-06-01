@@ -16,17 +16,23 @@
 
 package com.webank.wedatasphere.dss.framework.appconn.service.impl;
 
+import com.webank.wedatasphere.dss.appconn.core.AppConn;
+import com.webank.wedatasphere.dss.appconn.manager.AppConnManager;
 import com.webank.wedatasphere.dss.appconn.manager.entity.AppConnInfo;
 import com.webank.wedatasphere.dss.appconn.manager.entity.AppInstanceInfo;
 import com.webank.wedatasphere.dss.appconn.manager.service.AppConnInfoService;
+import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
 import com.webank.wedatasphere.dss.framework.appconn.conf.AppConnConf;
 import com.webank.wedatasphere.dss.framework.appconn.dao.AppConnMapper;
 import com.webank.wedatasphere.dss.framework.appconn.dao.AppInstanceMapper;
 import com.webank.wedatasphere.dss.framework.appconn.entity.AppConnBean;
+import com.webank.wedatasphere.dss.framework.appconn.service.AppConnQualityChecker;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnService;
 import com.webank.wedatasphere.dss.framework.appconn.utils.AppConnServiceUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.session.RowBounds;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
@@ -36,10 +42,13 @@ import java.util.stream.Collectors;
 
 @Component
 public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AppConnInfoServiceImpl.class);
     @Autowired
     private AppConnMapper appConnMapper;
     @Autowired
     private AppInstanceMapper appInstanceMapper;
+    @Autowired
+    private List<AppConnQualityChecker> appConnQualityCheckers;
 
     @Override
     public List<? extends AppConnInfo> getAppConnInfos() {
@@ -85,26 +94,49 @@ public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnServic
 
     @Override
     public AppConnBean addAppConn(AppConnBean appConnBean) {
-        AppConnBean addedBean = appConnMapper.addAppConn(appConnBean);
-        if (addedBean != null) {
-            return addedBean;
-        } else {
-            throw new RuntimeException("Failed to add AppConnBean");
-        }
+        LOGGER.info("Try to reload AppConn {}.", appConnBean.getAppConnName());
+        LOGGER.info("First, reload AppConn {}.", appConnBean.getAppConnName());
+        AppConnManager.getAppConnManager().reloadAppConn(appConnBean);
+        AppConn appConn = AppConnManager.getAppConnManager().getAppConn(appConnBean.getAppConnName());
+        LOGGER.info("Second, check the quality of AppConn {}.", appConnBean.getAppConnName());
+        appConnQualityCheckers.forEach(DSSExceptionUtils.handling(checker -> checker.checkQuality(appConn)));
+        LOGGER.info("Last, add AppConn {} to db.", appConnBean.getAppConnName());
+        appConnMapper.addAppConn(appConnBean);
+        AppConnBean appConnBeanById = appConnMapper.getAppConnBeanById(appConnBean.getId());
+        appConnBeanById.setResourceFetchMethod(appConnBeanById.getResourceFetchMethod());
+        return appConnBeanById;
     }
 
     @Override
     public AppConnBean updateAppConn(AppConnBean appConnBean) {
-        appConnMapper.updateAppConn(appConnBean);
-        return appConnBean;
-
+        //查看resource是否发生变化，获取该appConn在数据库信息，如果resource为空且新上传的appConnBean的resource也为空，那么就只需要更新数据库，
+        //如果二者的resource都不为空且不相同，那么就需要reload appconn，否则不用reload
+        AppConnBean appConnBeanById = appConnMapper.getAppConnBeanById(appConnBean.getId());
+        if (appConnBeanById.getResource() == null && appConnBean.getResource() == null) {
+            appConnMapper.updateAppConn(appConnBean);
+            return appConnMapper.getAppConnBeanById(appConnBean.getId());
+        } else if (appConnBeanById.getResource() != null && appConnBean.getResource() != null && !appConnBeanById.getResource().equals(appConnBean.getResource())) {
+            AppConnManager.getAppConnManager().reloadAppConn(appConnBean);
+            appConnMapper.updateAppConn(appConnBean);
+            return appConnMapper.getAppConnBeanById(appConnBean.getId());
+        } else {
+            appConnMapper.updateAppConn(appConnBean);
+            return appConnMapper.getAppConnBeanById(appConnBean.getId());
+        }
     }
 
     @Override
     public void deleteAppConn(Long appConnId) {
-        if (appConnMapper.deleteAppConn(appConnId) == 0) {
-            throw new RuntimeException("Failed to delete AppConn with ID: " + appConnId);
+        //校验该AppConn是否存在关键的实例和节点，如果存在就不允许删除
+        //不存在就删除该AppConn和其菜单
+
+        if (appInstanceService.getAppInstancesByAppConnId(appConnId) != null || appConnNodeMapper.getAppConnNodeByAppConnId(appConnId) != null) {
+            throw new AppConnDeleteErrorException(20353, "该AppConn存在关键实例或节点，不允许删除");
         }
+        //删除AppConn菜单
+        appConnMenuMapper.deleteAppConnMenuByAppConnId(appConnId);
+        //删除AppConn
+        appConnMapper.deleteAppConn(appConnId);
     }
 
     @Override
