@@ -45,4 +45,31 @@
         FROM `dss_appconn_instance`
         WHERE `appconn_id` = #{appConnId} AND `label` = #{label}
     </select>
+
+
+    <insert id="addAppInstance" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO
+        `dss_appconn_instance` (`appconn_id`, `label`, `url`, `enhance_json`, `homepage_uri`)
+        VALUES (#{appConnId}, #{label}, #{url}, #{enhanceJson}, #{homepageUri})
+    </insert>
+
+    <update id="updateAppInstance">
+        UPDATE `dss_appconn_instance`
+        SET `label` = #{label},
+        url = #{url},
+        enhance_json = #{enhanceJson}
+        homepage_uri = #{homepageUri}
+    </update>
+
+    <delete id="deleteAppInstance">
+        DELETE FROM `dss_appconn_instance` WHERE id = #{id}
+    </delete>
+
+    <select id="getAppInstanceById" resultMap="AppInstanceMap">
+        <![CDATA[SELECT]]>
+        <include refid="fields_query"/>
+        FROM `dss_appconn_instance`
+        WHERE `id` = #{id}
+    </select>
+
 </mapper>

@@ -37,4 +37,13 @@ public interface AppInstanceMapper {
      * */
     List<AppInstanceBean> getAppInstance(@Param("appConnId") Long appConnId,
                                          @Param("label") String label);
+
+
+    void deleteAppInstance(Long appInstanceId);
+
+    AppInstanceBean addAppInstance(AppInstanceBean appInstanceBean);
+
+    AppInstanceBean getAppInstanceById(Long appInstanceId);
+
+    AppInstanceBean updateAppInstance(AppInstanceBean appInstanceBean);
 }
