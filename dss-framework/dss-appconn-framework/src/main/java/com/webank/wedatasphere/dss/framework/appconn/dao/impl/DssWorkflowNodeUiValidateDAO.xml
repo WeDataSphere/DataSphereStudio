@@ -12,30 +12,30 @@
 
     <insert id="insert" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.Validate"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO dss_workflow_node_ui_validate(id,validate_type,validate_range,error_msg,error_msg_en,trigger)
+        INSERT INTO dss_workflow_node_ui_validate(id,validate_type,validate_range,error_msg,error_msg_en,`trigger`)
         VALUES (#{id},#{validateType},#{validateRange},#{errorMsg},#{errorMsgEn},#{trigger})
     </insert>
 
     <update id="update" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.Validate">
         UPDATE dss_workflow_node_ui_validate
-        SET validate_type=#{validateType},validate_range=#{validateRange},error_msg=#{errorMsg},error_msg_en=#{errorMsgEn},trigger=#{trigger}
+        SET validate_type=#{validateType},validate_range=#{validateRange},error_msg=#{errorMsg},error_msg_en=#{errorMsgEn},`trigger`=#{trigger}
         WHERE id=#{id}
     </update>
 
     <select id="findByPrimaryKey" resultMap="BaseResultMap">
-        SELECT id,validate_type,validate_range,error_msg,error_msg_en,trigger FROM dss_workflow_node_ui_validate
+        SELECT id,validate_type,validate_range,error_msg,error_msg_en,`trigger` FROM dss_workflow_node_ui_validate
         WHERE id=#{id}
     </select>
 
     <select id="findByIds" resultMap="BaseResultMap" parameterType="java.util.List">
-        SELECT id,validate_type,validate_range,error_msg,error_msg_en,trigger FROM dss_workflow_node_ui_validate
+        SELECT id,validate_type,validate_range,error_msg,error_msg_en,`trigger` FROM dss_workflow_node_ui_validate
         WHERE id IN
         <foreach item="item" index="index" collection="list" open="(" separator="," close=")">
         #{item}
         </foreach>
     </select>
     <select id="findAll" resultMap="BaseResultMap">
-        SELECT id,validate_type,validate_range,error_msg,error_msg_en,trigger FROM dss_workflow_node_ui_validate
+        SELECT id,validate_type,validate_range,error_msg,error_msg_en,`trigger` FROM dss_workflow_node_ui_validate
     </select>
     <delete id="deleteByPrimaryKey">
         DELETE FROM dss_workflow_node_ui_validate

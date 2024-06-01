@@ -23,24 +23,24 @@
 
     <insert id="insert" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.NodeUi"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO dss_workflow_node_ui(id,key,description,description_en,lable_name,lable_name_en,ui_type,required,value,default_value,is_hidden,condition,is_advanced,order,node_menu_type,is_base_info,position)
+        INSERT INTO dss_workflow_node_ui(id,`key`,description,description_en,lable_name,lable_name_en,ui_type,required,`value`,default_value,is_hidden,`condition`,is_advanced,`order`,node_menu_type,is_base_info,`position`)
         VALUES (#{id},#{key},#{description},#{descriptionEn},#{lableName},#{lableNameEn},#{uiType},#{required},#{value},#{defaultValue},#{isHidden},#{condition},#{isAdvanced},#{order},#{nodeMenuType},#{isBaseInfo},#{position})
     </insert>
 
     <update id="update" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.NodeUi">
         UPDATE dss_workflow_node_ui
-        SET key=#{key},description=#{description},description_en=#{descriptionEn},lable_name=#{lableName},lable_name_en=#{lableNameEn},ui_type=#{uiType},required=#{required},value=#{value},default_value=#{defaultValue},is_hidden=#{isHidden},condition=#{condition},is_advanced=#{isAdvanced},order=#{order},node_menu_type=#{nodeMenuType},is_base_info=#{isBaseInfo},position=#{position}
+        SET `key`=#{key},description=#{description},description_en=#{descriptionEn},lable_name=#{lableName},lable_name_en=#{lableNameEn},ui_type=#{uiType},required=#{required},`value`=#{value},default_value=#{defaultValue},is_hidden=#{isHidden},`condition`=#{condition},is_advanced=#{isAdvanced},`order`=#{order},node_menu_type=#{nodeMenuType},is_base_info=#{isBaseInfo},`position`=#{position}
         WHERE id=#{id}
     </update>
 
     <select id="findByPrimaryKey" resultMap="BaseResultMap">
-        SELECT id,key,description,description_en,lable_name,lable_name_en,ui_type,required,value,default_value,is_hidden,condition,is_advanced,order,node_menu_type,is_base_info,position FROM dss_workflow_node_ui
+        SELECT id,`key`,description,description_en,lable_name,lable_name_en,ui_type,required,`value`,default_value,is_hidden,`condition`,is_advanced,`order`,node_menu_type,is_base_info,`position` FROM dss_workflow_node_ui
         WHERE id=#{id}
     </select>
 
 
     <select id="findByIds" resultMap="BaseResultMap" parameterType="java.util.List">
-        SELECT id,key,description,description_en,lable_name,lable_name_en,ui_type,required,value,default_value,is_hidden,condition,is_advanced,order,node_menu_type,is_base_info,position FROM dss_workflow_node_ui
+        SELECT id,`key`,description,description_en,lable_name,lable_name_en,ui_type,required,`value`,default_value,is_hidden,`condition`,is_advanced,`order`,node_menu_type,is_base_info,`position` FROM dss_workflow_node_ui
         WHERE id IN
         <foreach collection="ids" item="item" index="index" open="(" separator="," close=")">
         #{item}
@@ -48,7 +48,7 @@
     </select>
 
     <select id="findAll" resultMap="BaseResultMap">
-      SELECT id,key,description,description_en,lable_name,lable_name_en,ui_type,required,value,default_value,is_hidden,condition,is_advanced,order,node_menu_type,is_base_info,position FROM dss_workflow_node_ui
+      SELECT id,`key`,description,description_en,lable_name,lable_name_en,ui_type,required,`value`,default_value,is_hidden,`condition`,is_advanced,`order`,node_menu_type,is_base_info,`position` FROM dss_workflow_node_ui
     </select>
 
     <delete id="deleteByPrimaryKey">

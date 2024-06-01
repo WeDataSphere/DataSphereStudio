@@ -28,24 +28,24 @@
 
     <insert id="insert" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.AppConnMenu"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO dss_workspace_menu_appconn(id,appconn_id,menu_id,title_en,title_cn,desc_en,desc_cn,labels_en,labels_cn,is_active,access_button_en,access_button_cn,manual_button_en,manual_button_cn,manual_button_url,icon,order,create_by,create_time,last_update_time,last_update_user,image)
+        INSERT INTO dss_workspace_menu_appconn(id,appconn_id,menu_id,title_en,title_cn,desc_en,desc_cn,labels_en,labels_cn,is_active,access_button_en,access_button_cn,manual_button_en,manual_button_cn,manual_button_url,icon,`order`,create_by,create_time,last_update_time,last_update_user,image)
         VALUES (#{id},#{appconnId},#{menuId},#{titleEn},#{titleCn},#{descEn},#{descCn},#{labelsEn},#{labelsCn},#{isActive},#{accessButtonEn},#{accessButtonCn},#{manualButtonEn},#{manualButtonCn},#{manualButtonUrl},#{icon},#{order},#{createBy},#{createTime},#{lastUpdateTime},#{lastUpdateUser},#{image})
     </insert>
 
     <update id="update" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.AppConnMenu">
         UPDATE dss_workspace_menu_appconn
-        SET appconn_id=#{appconnId},menu_id=#{menuId},title_en=#{titleEn},title_cn=#{titleCn},desc_en=#{descEn},desc_cn=#{descCn},labels_en=#{labelsEn},labels_cn=#{labelsCn},is_active=#{isActive},access_button_en=#{accessButtonEn},access_button_cn=#{accessButtonCn},manual_button_en=#{manualButtonEn},manual_button_cn=#{manualButtonCn},manual_button_url=#{manualButtonUrl},icon=#{icon},order=#{order},create_by=#{createBy},create_time=#{createTime},last_update_time=#{lastUpdateTime},last_update_user=#{lastUpdateUser},image=#{image}
+        SET appconn_id=#{appconnId},menu_id=#{menuId},title_en=#{titleEn},title_cn=#{titleCn},desc_en=#{descEn},desc_cn=#{descCn},labels_en=#{labelsEn},labels_cn=#{labelsCn},is_active=#{isActive},access_button_en=#{accessButtonEn},access_button_cn=#{accessButtonCn},manual_button_en=#{manualButtonEn},manual_button_cn=#{manualButtonCn},manual_button_url=#{manualButtonUrl},icon=#{icon},`order`=#{order},create_by=#{createBy},create_time=#{createTime},last_update_time=#{lastUpdateTime},last_update_user=#{lastUpdateUser},image=#{image}
         WHERE id=#{id}
     </update>
 
     <select id="findByPrimaryKey" resultMap="BaseResultMap">
-        SELECT id,appconn_id,menu_id,title_en,title_cn,desc_en,desc_cn,labels_en,labels_cn,is_active,access_button_en,access_button_cn,manual_button_en,manual_button_cn,manual_button_url,icon,order,create_by,create_time,last_update_time,last_update_user,image FROM dss_workspace_menu_appconn
+        SELECT id,appconn_id,menu_id,title_en,title_cn,desc_en,desc_cn,labels_en,labels_cn,is_active,access_button_en,access_button_cn,manual_button_en,manual_button_cn,manual_button_url,icon,`order`,create_by,create_time,last_update_time,last_update_user,image FROM dss_workspace_menu_appconn
         WHERE id=#{id}
     </select>
 
 
     <select id="findByAppconnId" resultMap="BaseResultMap">
-        SELECT id,appconn_id,menu_id,title_en,title_cn,desc_en,desc_cn,labels_en,labels_cn,is_active,access_button_en,access_button_cn,manual_button_en,manual_button_cn,manual_button_url,icon,order,create_by,create_time,last_update_time,last_update_user,image FROM dss_workspace_menu_appconn
+        SELECT id,appconn_id,menu_id,title_en,title_cn,desc_en,desc_cn,labels_en,labels_cn,is_active,access_button_en,access_button_cn,manual_button_en,manual_button_cn,manual_button_url,icon,`order`,create_by,create_time,last_update_time,last_update_user,image FROM dss_workspace_menu_appconn
         WHERE appconn_id=#{appconnId}
     </select>
 
