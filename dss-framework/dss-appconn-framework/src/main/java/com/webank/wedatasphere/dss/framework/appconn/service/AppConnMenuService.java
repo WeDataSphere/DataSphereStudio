@@ -78,8 +78,8 @@ public class AppConnMenuService {
      */
     @Transactional
     public void deleteMenusByAppconnId(Integer appconnId)   {
-        if(appconnId == null || appConnMapper.getAppConnBeanById(appconnId.longValue()) == null) {
-            throw new IllegalArgumentException("关联的appconnId不能为空且必须存在");
+        if(appconnId == null ) {
+            throw new IllegalArgumentException("关联的appconnId不能为空");
         }
         int rowsDeleted = menuAppconnDao.deleteByAppconnId(appconnId);
         if (rowsDeleted <= 0) {

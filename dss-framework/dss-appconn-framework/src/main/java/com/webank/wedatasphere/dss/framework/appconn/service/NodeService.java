@@ -106,7 +106,7 @@ public class NodeService {
         if(node.getName()==null){
             throw new IllegalArgumentException( "Node name can't be null");
         }
-        if (!isUpdateNode && !nodeDao.findByNameOrNodeType(node.getName(), node.getNodeType()).isEmpty()) {
+        if (!isUpdateNode && !nodeDao.findByName(node.getName()).isEmpty()) {
             throw new IllegalArgumentException("Node name is already exist");
         }
 
