@@ -1,9 +1,12 @@
 package com.webank.wedatasphere.dss.framework.appconn.entity;
 
 
+import org.apache.ibatis.type.Alias;
+
 /**
  * UI属性
  */
+@Alias("appconnFrameworkNodeUi")
 public class NodeUi {
     private Integer id;
 

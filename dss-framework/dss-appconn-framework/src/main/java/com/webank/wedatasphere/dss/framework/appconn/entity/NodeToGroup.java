@@ -1,8 +1,11 @@
 package com.webank.wedatasphere.dss.framework.appconn.entity;
 
+import org.apache.ibatis.type.Alias;
+
 /**
  * 保存节点所属类型
  */
+@Alias("appconnFrameworkNodeToGroup")
 public class NodeToGroup {
 
     private Integer id;

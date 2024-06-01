@@ -1,8 +1,11 @@
 package com.webank.wedatasphere.dss.framework.appconn.entity;
 
+import org.apache.ibatis.type.Alias;
+
 /**
  * 保存节点关联的UI属性
  */
+@Alias("appconnFrameworkNodeToUi")
 public class NodeToUi {
     /**
      * 
