@@ -134,13 +134,11 @@ public class AppConnManagerRestfulApi {
     }
 
     @RequestMapping(path = "/getAppConns", method = RequestMethod.GET)
-    public Message getAppConns(@RequestParam(defaultValue = "1") int page,
-                               @RequestParam(defaultValue = "10") int size,
-                               @RequestParam(required = false) String appConnName,
+    public Message getAppConns(@RequestParam(required = false) String appConnName,
                                @RequestParam(required = false) String className) {
         List<AppConnBean> appConnInfos;
         try {
-            appConnInfos = appConnService.getAppConns(appConnName, className, page, size);
+            appConnInfos = appConnService.getAppConns(appConnName, className);
         } catch (Exception e) {
             LOGGER.error("Get AppConn list failed.", e);
             return Message.error("Get AppConn list failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
