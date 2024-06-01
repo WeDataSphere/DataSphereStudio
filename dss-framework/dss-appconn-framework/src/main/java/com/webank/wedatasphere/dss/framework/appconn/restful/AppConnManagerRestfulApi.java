@@ -23,20 +23,21 @@ import com.webank.wedatasphere.dss.appconn.manager.entity.AppConnInfo;
 import com.webank.wedatasphere.dss.appconn.manager.entity.AppInstanceInfo;
 import com.webank.wedatasphere.dss.appconn.manager.service.AppConnInfoService;
 import com.webank.wedatasphere.dss.appconn.manager.utils.AppConnManagerUtils;
+import com.webank.wedatasphere.dss.common.utils.AuditLogUtils;
 import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
+import com.webank.wedatasphere.dss.framework.appconn.entity.AppConnBean;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnQualityChecker;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnResourceUploadService;
+import com.webank.wedatasphere.dss.framework.appconn.service.AppConnService;
 import com.webank.wedatasphere.dss.sender.service.conf.DSSSenderServiceConf;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.ibatis.session.RowBounds;
 import org.apache.linkis.common.utils.Utils;
 import org.apache.linkis.server.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
@@ -56,6 +57,8 @@ public class AppConnManagerRestfulApi {
     private AppConnResourceUploadService appConnResourceUploadService;
     @Autowired
     private List<AppConnQualityChecker> appConnQualityCheckers;
+    @Autowired
+    private AppConnService appConnService;
 
     private ExecutorService uploadThreadPool = Utils.newFixedThreadPool(APPCONN_UPLOAD_THREAD_NUM.getValue(), "Upload-Appconn-Thread-", false);
 
@@ -122,5 +125,37 @@ public class AppConnManagerRestfulApi {
         }
         return Message.ok("Load AppConn " + appConnName + " succeed.");
     }
+
+
+    @RequestMapping(path = "/getAppConns", method = RequestMethod.GET)
+    public List<AppConnBean> getAppConns(@RequestParam(value = "appConnName", required = false) String appConnName,
+                                         @RequestParam(value = "className", required = false) String className,
+                                         @RequestParam(value = "page", defaultValue = "0") int page,
+                                         @RequestParam(value = "size", defaultValue = "10") int size) {
+        RowBounds rowBounds = new RowBounds(page * size, size); // 修正RowBounds的使用，确保正确计算偏移量
+        return appConnService.getAppConns(appConnName, className, rowBounds);
+    }
+
+    @RequestMapping(path = "/deleteAppConn", method = RequestMethod.POST)
+    public void deleteAppConn(@RequestParam Long id) {
+        appConnService.deleteAppConn(id);
+    }
+
+    @RequestMapping(path = "/addAppConn", method = RequestMethod.POST)
+    public void addAppConn(@RequestBody AppConnBean appConnBean) {
+        appConnService.addAppConn(appConnBean);
+    }
+
+    @RequestMapping(path = "/editAppConn", method = RequestMethod.POST)
+    public void editAppConn(@RequestBody AppConnBean appConnBean) {
+        appConnService.updateAppConn(appConnBean);
+
+    }
+
+    @RequestMapping(path = "/getAppConnsName", method = RequestMethod.GET)
+    public List<String> getAppConnsName() {
+        return appConnService.getAppConnsName();
+    }
+
 
 }

@@ -77,4 +77,50 @@
         </trim>
         where appconn_name=#{appConnName}
     </update>
+
+    <select id="getAppConns" resultType="AppConnBean">
+        <![CDATA[SELECT]]>
+        <include refid="fields_query"/>
+        FROM `dss_appconn`
+        <where>
+            1 = 1
+            <if test="appConnName != null and name != ''">
+                AND `appconn_name` LIKE CONCAT('%', #{appConnName}, '%')
+            </if>
+            <if test="className != null and className != ''">
+                AND `class_name` LIKE CONCAT('%', #{className}, '%')
+            </if>
+        </where>
+        LIMIT #{rowBounds.offset}, #{rowBounds.limit}
+    </select>
+
+    <insert id="addAppConn">
+        INSERT INTO
+        `dss_appconn` (`appconn_name`, `is_user_need_init`, `level`, `if_iframe`, `is_external`,`is_micro_app`, `reference`, `class_name`, `resource`)
+        VALUES (#{appconnName}, #{isUserNeedInit}, #{level}, #{ifIframe}, #{isExternal}, #{isMicroApp}, #{reference}, #{className}, #{resource})
+    </insert>
+
+    <update id="updateAppConn">
+        UPDATE `dss_appconn`
+        SET appconn_name = #{appConnName},
+        is_user_need_init = #{isUserNeedInit},
+        level = #{level},
+        if_iframe = #{ifIframe},
+        is_external = #{isExternal},
+        is_micro_app = #{isMicroApp},
+        reference = #{reference},
+        class_name = #{className},
+        resource = #{resource}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteAppConnById">
+        DELETE FROM `dss_appconn` WHERE `id` = #{id}
+    </delete>
+
+    <select id="getAllAppConnsName" resultType="List">
+        SELECT `appconn_name`
+        FROM `dss_appconn`
+    </select>
+
 </mapper>
