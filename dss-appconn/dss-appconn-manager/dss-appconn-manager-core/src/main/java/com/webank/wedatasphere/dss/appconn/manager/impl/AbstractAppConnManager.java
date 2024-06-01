@@ -17,12 +17,10 @@
 package com.webank.wedatasphere.dss.appconn.manager.impl;
 
 import com.webank.wedatasphere.dss.appconn.core.AppConn;
-import com.webank.wedatasphere.dss.appconn.core.exception.AppConnErrorException;
 import com.webank.wedatasphere.dss.appconn.core.exception.AppConnWarnException;
 import com.webank.wedatasphere.dss.appconn.loader.loader.AppConnLoader;
 import com.webank.wedatasphere.dss.appconn.loader.loader.AppConnLoaderFactory;
 import com.webank.wedatasphere.dss.appconn.manager.AppConnManager;
-import com.webank.wedatasphere.dss.appconn.manager.conf.AppConnManagerCoreConf;
 import com.webank.wedatasphere.dss.appconn.manager.entity.AppConnInfo;
 import com.webank.wedatasphere.dss.appconn.manager.entity.AppInstanceInfo;
 import com.webank.wedatasphere.dss.appconn.manager.service.AppConnInfoService;
@@ -63,11 +61,6 @@ public abstract class AbstractAppConnManager implements AppConnManager {
     private static volatile AppConnManager appConnManager;
 
     private static volatile boolean appConnManagerInited = false;
-    private static boolean lazyLoad = false;
-
-    public static void setLazyLoad() {
-        lazyLoad = true;
-    }
 
     public static AppConnManager getAppConnManager() {
         if (appConnManagerInited) {
@@ -76,17 +69,13 @@ public abstract class AbstractAppConnManager implements AppConnManager {
         synchronized (AbstractAppConnManager.class) {
             if (!appConnManagerInited) {
                 //appconn-manager-core包无法引入manager-client包，会有maven循环依赖，这里通过反射获取client的实现类
-                //ismanager=false时，获取client端的AppConnManager实现类，ismanager=true时，获取appconn-framework端的AppConnManager实现类。
-                if (Objects.equals(AppConnManagerCoreConf.IS_APPCONN_MANAGER.getValue(), AppConnManagerCoreConf.hostname)
-                        && "dss-server-dev".equals(DSSSenderServiceConf.CURRENT_DSS_SERVER_NAME.getValue())) {
+                //DEV服务获取appconn-framework端的AppConnManager实现类，其他服务获取client端的AppConnManager实现类，
+                if ("dss-server-dev".equals(DSSSenderServiceConf.CURRENT_DSS_SERVER_NAME.getValue())) {
                     //通过包名过滤
                     appConnManager = ClassUtils.getInstanceOrDefault(AppConnManager.class, c -> c.getPackage().getName().contains("com.webank.wedatasphere.dss.framework.appconn"), new AppConnManagerImpl());
                 } else {
                     appConnManager = ClassUtils.getInstanceOrWarn(AppConnManagerImpl.class);
                 }
-//                appConnManager = !AppConnManagerCoreConf.IS_APPCONN_MANAGER.getValue() ? ClassUtils.getInstanceOrWarn(AppConnManagerImpl.class) :
-//                        //通过包名过滤
-//                        ClassUtils.getInstanceOrDefault(AppConnManager.class, c -> c.getPackage().getName().contains("com.webank.wedatasphere.dss.framework.appconn"), new AppConnManagerImpl());
                 LOGGER.info("The instance of AppConnManager is {}.", appConnManager.getClass().getName());
                 appConnManager.init();
             }
@@ -101,7 +90,7 @@ public abstract class AbstractAppConnManager implements AppConnManager {
         LOGGER.info("The instance of AppConnInfoService is {}.", appConnInfoService.getClass().getName());
         appConnResourceService = createAppConnResourceService();
         LOGGER.info("The instance of AppConnResourceService is {}.", appConnResourceService.getClass().getName());
-        if (!lazyLoad && !isLoaded) {
+        if (!isLoaded) {
             loadAppConns();
             isLoaded = true;
         }
@@ -224,22 +213,8 @@ public abstract class AbstractAppConnManager implements AppConnManager {
         appInstance.setId(appInstanceInfo.getId());
     }
 
-    private void lazyLoadAppConns() {
-        if(lazyLoad){
-            LOGGER.info("lazyLoad set to true,isLoaded={}",isLoaded);
-        }
-        if (lazyLoad && !isLoaded) {
-            synchronized (this.appConns) {
-                if (lazyLoad && !isLoaded) {
-                    loadAppConns();
-                }
-            }
-        }
-    }
-
     @Override
     public List<AppConn> listAppConns() {
-        lazyLoadAppConns();
         if(appConnList==null){
             throw new AppConnWarnException(25344,"appconn list has not been loaded,please try again later.");
         }
@@ -249,7 +224,6 @@ public abstract class AbstractAppConnManager implements AppConnManager {
 
     @Override
     public AppConn getAppConn(String appConnName) {
-        lazyLoadAppConns();
         if(appConns.isEmpty()){
             throw new AppConnWarnException(25344,"appconn list has not been loaded,please try again later.");
         }
@@ -269,11 +243,10 @@ public abstract class AbstractAppConnManager implements AppConnManager {
     public String getAppConnHomePath(String appConnName) {
         AppConnInfo appConnInfo = appConnRefreshThread.getAppConnInfos().stream().filter(info -> info.getAppConnName().equals(appConnName))
                 .findAny().orElseThrow(() -> new DSSRuntimeException("Not exists AppConn " + appConnName));
-        return appConnResourceService.getAppConnHome(appConnInfo);
+        return appConnResourceService.getAppConnForIcon(appConnInfo);
     }
 
     public void reloadAppConn(AppConnInfo appConnInfo) {
-        lazyLoadAppConns();
         AppConn appConn;
         try {
             if (StringUtils.isNotBlank(appConnInfo.getReference())) {
@@ -305,7 +278,6 @@ public abstract class AbstractAppConnManager implements AppConnManager {
     }
 
     void deleteAppConn(AppConnInfo appConnInfo) {
-        lazyLoadAppConns();
         if (this.appConns.containsKey(appConnInfo.getAppConnName())) {
             synchronized (this.appConns) {
                 if (this.appConns.containsKey(appConnInfo.getAppConnName())) {

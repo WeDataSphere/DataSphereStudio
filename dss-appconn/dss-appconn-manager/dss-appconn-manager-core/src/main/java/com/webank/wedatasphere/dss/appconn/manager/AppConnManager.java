@@ -59,10 +59,6 @@ public interface AppConnManager {
 
     String getAppConnHomePath(String appConnName);
 
-    static void setLazyLoad() {
-        AbstractAppConnManager.setLazyLoad();
-    }
-
     static AppConnManager getAppConnManager() {
         return AbstractAppConnManager.getAppConnManager();
     }

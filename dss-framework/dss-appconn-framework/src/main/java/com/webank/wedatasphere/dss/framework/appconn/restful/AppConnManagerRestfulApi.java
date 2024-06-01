@@ -23,7 +23,6 @@ import com.webank.wedatasphere.dss.appconn.manager.entity.AppConnInfo;
 import com.webank.wedatasphere.dss.appconn.manager.entity.AppInstanceInfo;
 import com.webank.wedatasphere.dss.appconn.manager.service.AppConnInfoService;
 import com.webank.wedatasphere.dss.appconn.manager.utils.AppConnManagerUtils;
-import com.webank.wedatasphere.dss.common.exception.DSSRuntimeException;
 import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnQualityChecker;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnResourceUploadService;
@@ -42,9 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.webank.wedatasphere.dss.framework.appconn.conf.AppConnConf.APPCONN_UPLOAD_THREAD_NUM;
 
@@ -66,36 +63,13 @@ public class AppConnManagerRestfulApi {
     @PostConstruct
     public void init() throws InterruptedException {
         //仅dss-server-dev的其中一个服务需要作为appconn-manager节点上传appconn包，其他服务都是client端
-        if (Objects.equals(AppConnManagerCoreConf.IS_APPCONN_MANAGER.getValue(), AppConnManagerCoreConf.hostname)
-                && "dss-server-dev".equals(DSSSenderServiceConf.CURRENT_DSS_SERVER_NAME.getValue())) {
+        if ("dss-server-dev".equals(DSSSenderServiceConf.CURRENT_DSS_SERVER_NAME.getValue())) {
             LOGGER.info("First, try to load all AppConn...");
             AppConnManager.getAppConnManager().listAppConns().forEach(appConn -> {
                 LOGGER.info("Try to check the quality of AppConn {}.", appConn.getAppDesc().getAppName());
                 appConnQualityCheckers.forEach(DSSExceptionUtils.handling(checker -> checker.checkQuality(appConn)));
             });
             LOGGER.info("All AppConn have loaded successfully.");
-            LOGGER.info("Last, try to scan AppConn plugins and upload AppConn resources...");
-            List<? extends AppConnInfo> uploadList = appConnInfoService.getAppConnInfos();
-            CountDownLatch cdl = new CountDownLatch(uploadList.size());
-            AtomicInteger failedCnt = new AtomicInteger(0);
-            uploadList.forEach(appConnInfo -> {
-                uploadThreadPool.submit(() -> {
-                    LOGGER.info("Try to scan AppConn {}.", appConnInfo.getAppConnName());
-                    try {
-                        appConnResourceUploadService.upload(appConnInfo.getAppConnName());
-                    } catch (Exception e) {
-                        LOGGER.error("Error happened when uploading appconn:{}, error:", appConnInfo.getAppConnName(), e);
-                        failedCnt.getAndIncrement();
-                    }
-                    cdl.countDown();
-                });
-            });
-            cdl.await();
-            if (failedCnt.get() > 0) {
-                throw new DSSRuntimeException("Error happened when uploading appconn, service startup terminated.");
-            }
-            LOGGER.info("All AppConn plugins has scanned.");
-            uploadThreadPool.shutdown();
         } else {
             LOGGER.info("Not appConn manager, will not scan plugins.");
             AppConnManagerUtils.autoLoadAppConnManager();

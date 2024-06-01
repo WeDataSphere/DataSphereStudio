@@ -155,6 +155,11 @@ public class AppConnResourceServiceImpl implements AppConnResourceService {
         return appConnPath.getPath();
     }
 
+    @Override
+    public String getAppConnForIcon(AppConnInfo appConnInfo) {
+        return Paths.get(AppConnUtils.getAppConnHomePath(), appConnInfo.getAppConnName()).toFile().getPath();
+    }
+
     private void deleteFile(File file, String errorMsg) {
         try {
             LOGGER.info("delete appconn file:{}", file.getAbsolutePath());
