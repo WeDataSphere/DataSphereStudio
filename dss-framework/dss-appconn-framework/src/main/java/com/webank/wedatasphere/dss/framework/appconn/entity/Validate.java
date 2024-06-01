@@ -1,8 +1,11 @@
 package com.webank.wedatasphere.dss.framework.appconn.entity;
 
+import org.apache.ibatis.type.Alias;
+
 /**
  * 校验规则
  */
+@Alias("appconnFrameworkValidate")
 public class Validate {
 
     /**

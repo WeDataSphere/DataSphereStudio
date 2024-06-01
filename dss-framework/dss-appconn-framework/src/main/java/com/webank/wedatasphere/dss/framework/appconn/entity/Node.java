@@ -1,14 +1,14 @@
 package com.webank.wedatasphere.dss.framework.appconn.entity;
 
 
-
+import org.apache.ibatis.type.Alias;
 
 /**
  * 工作流节点
  * @author arionliu
  * 该对象由如意研发插件生成，对应APIDesign文档信息为(项目名:[5425]DSS-IDE，接口ID:292843，接口标题:保存节点)
  */
-
+@Alias("appconnFrameworkNode")
 public class Node {
 
     private Integer id;

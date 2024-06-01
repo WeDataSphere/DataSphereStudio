@@ -1,8 +1,11 @@
 package com.webank.wedatasphere.dss.framework.appconn.entity;
 
+import org.apache.ibatis.type.Alias;
+
 /**
  * UI属性关联的校验规则
  */
+@Alias("appconnFrameworkUiToValidate")
 public class UiToValidate {
     /**
      * 

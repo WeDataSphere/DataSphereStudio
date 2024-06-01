@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.dss.framework.appconn.dao;
 
-import org.apache.ibatis.annotations.Mapper;
 import com.webank.wedatasphere.dss.framework.appconn.entity.NodeGroup;
+import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
 
