@@ -23,6 +23,9 @@ import com.webank.wedatasphere.dss.appconn.manager.entity.AppConnInfo;
 import com.webank.wedatasphere.dss.appconn.manager.entity.AppInstanceInfo;
 import com.webank.wedatasphere.dss.appconn.manager.service.AppConnInfoService;
 import com.webank.wedatasphere.dss.appconn.manager.utils.AppConnManagerUtils;
+import com.webank.wedatasphere.dss.common.auditlog.OperateTypeEnum;
+import com.webank.wedatasphere.dss.common.auditlog.TargetTypeEnum;
+import com.webank.wedatasphere.dss.common.utils.AuditLogUtils;
 import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
 import com.webank.wedatasphere.dss.framework.appconn.common.ResourceTypeEnum;
 import com.webank.wedatasphere.dss.framework.appconn.entity.AppConnBean;
@@ -169,36 +172,39 @@ public class AppConnManagerRestfulApi {
             LOGGER.error("Delete AppConn failed.", e);
             return Message.error("Delete AppConn failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
         }
+        AuditLogUtils.printLog(null ,null, null, TargetTypeEnum.APPCONN, id.toString(), "AppConn", OperateTypeEnum.DELETE, id);
         return Message.ok("Delete AppConn succeed.");
     }
 
     @RequestMapping(path = "/addAppConn", method = RequestMethod.POST)
     public Message addAppConn(@RequestBody AppConnBean appConnBean) {
         checkParams(appConnBean);
-        AppConnBean rerurnAppConnBean;
+        AppConnBean returnAppConnBean;
         try {
-            rerurnAppConnBean = appConnService.addAppConn(appConnBean);
+            returnAppConnBean = appConnService.addAppConn(appConnBean);
         } catch (Exception e) {
             LOGGER.error("Add AppConn failed.", e);
             return Message.error("Add AppConn failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
         }
+        AuditLogUtils.printLog(null ,null, null, TargetTypeEnum.APPCONN, returnAppConnBean.getId().toString(), "AppConn", OperateTypeEnum.CREATE, appConnBean);
         Message message = Message.ok("Add AppConn succeed.");
-        message.data("appConnInfo", rerurnAppConnBean);
+        message.data("appConnInfo", returnAppConnBean);
         return message;
     }
 
     @RequestMapping(path = "/editAppConn", method = RequestMethod.POST)
     public Message editAppConn(@RequestBody AppConnBean appConnBean) {
         checkParams(appConnBean);
-        AppConnBean rerurnAppConnBean;
+        AppConnBean returnAppConnBean;
         try {
-            rerurnAppConnBean = appConnService.updateAppConn(appConnBean);
+            returnAppConnBean = appConnService.updateAppConn(appConnBean);
         } catch (Exception e) {
             LOGGER.error("Update AppConn failed.", e);
             return Message.error("Update AppConn failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
         }
+        AuditLogUtils.printLog(null ,null, null, TargetTypeEnum.APPCONN, returnAppConnBean.getId().toString(), "AppConn", OperateTypeEnum.UPDATE, appConnBean);
         Message message = Message.ok("Update AppConn succeed.");
-        message.data("appConnInfo", rerurnAppConnBean);
+        message.data("appConnInfo", returnAppConnBean);
         return message;
     }
 
@@ -222,30 +228,32 @@ public class AppConnManagerRestfulApi {
     @RequestMapping(path = "/addAppConnInstance", method = RequestMethod.POST)
     public Message addAppConnInstance(@RequestBody AppInstanceBean appInstanceBean) {
         checkInstanceParams(appInstanceBean);
-        AppInstanceBean appConnInstance;
+        AppInstanceBean returnAppConnInstance;
         try {
-            appConnInstance = appInstanceService.addAppInstance(appInstanceBean);
+            returnAppConnInstance = appInstanceService.addAppInstance(appInstanceBean);
         } catch (Exception e) {
             LOGGER.error("Add AppConn instance failed.", e);
             return Message.error("Add AppConn instance failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
         }
+        AuditLogUtils.printLog(null ,null, null, TargetTypeEnum.APPCONN, returnAppConnInstance.getId().toString(), "AppConnInstance", OperateTypeEnum.CREATE, returnAppConnInstance);
         Message message = Message.ok("Add AppConn instance succeed.");
-        message.data("appConnInstance", appConnInstance);
+        message.data("appConnInstance", returnAppConnInstance);
         return message;
     }
 
     @RequestMapping(path = "/editAppConnInstances", method = RequestMethod.POST)
     public Message editAppConnInstances(@RequestBody AppInstanceBean appInstanceBean) {
         checkInstanceParams(appInstanceBean);
-        AppInstanceBean appConnInstance;
+        AppInstanceBean returnAppConnInstance;
         try {
-            appConnInstance = appInstanceService.updateAppInstance(appInstanceBean);
+            returnAppConnInstance = appInstanceService.updateAppInstance(appInstanceBean);
         } catch (Exception e) {
             LOGGER.error("Update AppConn instance failed.", e);
             return Message.error("Update AppConn instance failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
         }
+        AuditLogUtils.printLog(null ,null, null, TargetTypeEnum.APPCONN, returnAppConnInstance.getId().toString(), "AppConnInstance", OperateTypeEnum.UPDATE, returnAppConnInstance);
         Message message = Message.ok("Update AppConn instance succeed.");
-        message.data("appConnInstance", appConnInstance);
+        message.data("appConnInstance", returnAppConnInstance);
         return message;
     }
 
@@ -257,6 +265,7 @@ public class AppConnManagerRestfulApi {
             LOGGER.error("Delete AppConn instance failed.", e);
             return Message.error("Delete AppConn instance failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
         }
+        AuditLogUtils.printLog(null ,null, null, TargetTypeEnum.APPCONN, id.toString(), "AppConnInstance", OperateTypeEnum.DELETE, id);
         return Message.ok("Delete AppConn instance succeed.");
     }
 

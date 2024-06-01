@@ -69,6 +69,10 @@ public enum TargetTypeEnum {
      * 工作流引用默认模板
      */
      DSS_EC_CONFIG_TEMPLATE_WORKFLOW("dss_ec_config_template_workflow"),
+    /**
+     * 对APPCONN的管理
+     */
+    APPCONN("appconn")
     ;
     private String name;
 
