@@ -274,8 +274,7 @@ public class AppConnManagerRestfulApi {
         return message;
     }
 
-
-    private Void checkParams (AppConnBean appConnBean) {
+    private Message checkParams (AppConnBean appConnBean) {
 
         if (appConnBean.getAppConnName() == null || appConnBean.getAppConnName().isEmpty()) {
             return Message.error("AppConn name can not be empty.");
@@ -299,6 +298,27 @@ public class AppConnManagerRestfulApi {
             if (appConnBean.getReference() != null) {
                 return Message.error("Reference can not be set when resource fetch method is upload.");
             }
+        }
+        return Message.ok();
+    }
+
+    private Message checkInstanceParams (AppInstanceBean appInstanceBean) {
+        //需要对appInstanceBean进行校验，属性url不能为空，且格式必须是http://ip:port
+        if (appInstanceBean.getUrl() == null) {
+            return Message.error("Url can not be null.");
+        }
+        if (!appInstanceBean.getUrl().matches("http://\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d{1,5}")) {
+            return Message.error("Url format is incorrect.");
+        }
+
+        //属性label只能是DEV或者PROD
+        if (!appInstanceBean.getLabel().equals("DEV") && !appInstanceBean.getLabel().equals("PROD")) {
+            return Message.error("Label can only be DEV or PROD.");
+        }
+
+        //属性enhanceJson可以为空，如果不为空就必须是JSON格式字符串
+        if (appInstanceBean.getEnhanceJson() != null && !appInstanceBean.getEnhanceJson().matches("\\{.*\\}")) {
+            return Message.error("EnhanceJson format is incorrect.");
         }
         return Message.ok();
     }
