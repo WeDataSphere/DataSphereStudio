@@ -31,7 +31,7 @@ public interface DssWorkflowNodeUiDAO{
     */
     NodeUi findByPrimaryKey(Integer id);
 
-    List<NodeUi> findByIds(List<Integer> ids);
+    List<NodeUi> findByIds(List<Integer> list);
 
     List<NodeUi>  findAll();
 

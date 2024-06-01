@@ -42,7 +42,7 @@
     <select id="findByIds" resultMap="BaseResultMap" parameterType="java.util.List">
         SELECT id,`key`,description,description_en,lable_name,lable_name_en,ui_type,required,`value`,default_value,is_hidden,`condition`,is_advanced,`order`,node_menu_type,is_base_info,`position` FROM dss_workflow_node_ui
         WHERE id IN
-        <foreach collection="ids" item="item" index="index" open="(" separator="," close=")">
+        <foreach collection="list" item="item" index="index" open="(" separator="," close=")">
         #{item}
         </foreach>
     </select>
