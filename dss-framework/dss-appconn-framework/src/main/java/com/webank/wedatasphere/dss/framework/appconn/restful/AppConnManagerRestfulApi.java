@@ -23,15 +23,14 @@ import com.webank.wedatasphere.dss.appconn.manager.entity.AppConnInfo;
 import com.webank.wedatasphere.dss.appconn.manager.entity.AppInstanceInfo;
 import com.webank.wedatasphere.dss.appconn.manager.service.AppConnInfoService;
 import com.webank.wedatasphere.dss.appconn.manager.utils.AppConnManagerUtils;
-import com.webank.wedatasphere.dss.common.utils.AuditLogUtils;
 import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
 import com.webank.wedatasphere.dss.framework.appconn.entity.AppConnBean;
+import com.webank.wedatasphere.dss.framework.appconn.entity.AppInstanceBean;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnQualityChecker;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnResourceUploadService;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnService;
 import com.webank.wedatasphere.dss.sender.service.conf.DSSSenderServiceConf;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.ibatis.session.RowBounds;
 import org.apache.linkis.common.utils.Utils;
 import org.apache.linkis.server.Message;
 import org.slf4j.Logger;
@@ -128,34 +127,79 @@ public class AppConnManagerRestfulApi {
 
 
     @RequestMapping(path = "/getAppConns", method = RequestMethod.GET)
-    public List<AppConnBean> getAppConns(@RequestParam(value = "appConnName", required = false) String appConnName,
-                                         @RequestParam(value = "className", required = false) String className,
-                                         @RequestParam(value = "page", defaultValue = "0") int page,
-                                         @RequestParam(value = "size", defaultValue = "10") int size) {
-        RowBounds rowBounds = new RowBounds(page * size, size); // 修正RowBounds的使用，确保正确计算偏移量
-        return appConnService.getAppConns(appConnName, className, rowBounds);
-    }
+    public Message getAppConns(@RequestParam(defaultValue = "1") int page,
+                               @RequestParam(defaultValue = "10") int size,
+                               @RequestParam(required = false) String appConnName,
+                               @RequestParam(required = false) String className) {
+        List<AppConnBean> appConnInfos;
+        try {
 
-    @RequestMapping(path = "/deleteAppConn", method = RequestMethod.POST)
-    public void deleteAppConn(@RequestParam Long id) {
-        appConnService.deleteAppConn(id);
-    }
-
-    @RequestMapping(path = "/addAppConn", method = RequestMethod.POST)
-    public void addAppConn(@RequestBody AppConnBean appConnBean) {
-        appConnService.addAppConn(appConnBean);
-    }
-
-    @RequestMapping(path = "/editAppConn", method = RequestMethod.POST)
-    public void editAppConn(@RequestBody AppConnBean appConnBean) {
-        appConnService.updateAppConn(appConnBean);
-
+            appConnInfos = appConnService.getAppConns(appConnName, className, page, size);
+        } catch (Exception e) {
+            LOGGER.error("Get AppConn list failed.", e);
+            return Message.error("Get AppConn list failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
+        }
+        Message message = Message.ok("Get AppConn list succeed.");
+        message.data("appConnInfos", appConnInfos);
+        return message;
     }
 
     @RequestMapping(path = "/getAppConnsName", method = RequestMethod.GET)
-    public List<String> getAppConnsName() {
-        return appConnService.getAppConnsName();
+    public Message getAppConnsName() {
+        List<String> appConnsName;
+        try {
+            appConnsName = appConnService.getAppConnsName();
+        } catch (Exception e) {
+            LOGGER.error("Get all AppConn name failed.", e);
+            return Message.error("Get all AppConn namefailed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
+        }
+        Message message = Message.ok("Get all AppConn name succeed.");
+        message.data("appConnsName", appConnsName);
+        return message;
+    }
+    @RequestMapping(path = "/deleteAppConn", method = RequestMethod.POST)
+    public Message deleteAppConn(@RequestParam Long id) {
+        try {
+            appConnService.deleteAppConn(id);
+        } catch (Exception e) {
+            LOGGER.error("Delete AppConn failed.", e);
+            return Message.error("Delete AppConn failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
+        }
+        return Message.ok("Delete AppConn succeed.");
     }
 
+    @RequestMapping(path = "/addAppConn", method = RequestMethod.POST)
+    public Message addAppConn(@RequestBody AppConnBean appConnBean) {
+        checkParams(appConnBean);
+        AppConnBean rerurnAppConnBean;
+        try {
+            rerurnAppConnBean = appConnService.addAppConn(appConnBean);
+        } catch (Exception e) {
+            LOGGER.error("Add AppConn failed.", e);
+            return Message.error("Add AppConn failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
+        }
+        Message message = Message.ok("Add AppConn succeed.");
+        message.data("appConnInfo", rerurnAppConnBean);
+        return message;
+    }
+
+    @RequestMapping(path = "/editAppConn", method = RequestMethod.POST)
+    public Message editAppConn(@RequestBody AppConnBean appConnBean) {
+        checkParams(appConnBean);
+        AppConnBean rerurnAppConnBean;
+        try {
+            rerurnAppConnBean = appConnService.updateAppConn(appConnBean);
+        } catch (Exception e) {
+            LOGGER.error("Update AppConn failed.", e);
+            return Message.error("Update AppConn failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
+        }
+        Message message = Message.ok("Update AppConn succeed.");
+        message.data("appConnInfo", rerurnAppConnBean);
+        return message;
+    }
+
+    private Message checkParams (AppConnBean appConnBean) {
+
+    }
 
 }
