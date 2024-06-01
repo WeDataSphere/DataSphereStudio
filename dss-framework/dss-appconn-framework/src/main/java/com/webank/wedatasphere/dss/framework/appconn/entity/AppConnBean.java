@@ -43,7 +43,15 @@ public class AppConnBean implements AppConnInfo, Serializable {
     private String className;
 
     private List<AppInstanceBean> appInstanceBeans;
+    private String resourceFetchMethod;
 
+    public String getResourceFetchMethod() {
+        return resourceFetchMethod;
+    }
+
+    public void setResourceFetchMethod(String resourceFetchMethod) {
+        this.resourceFetchMethod = resourceFetchMethod;
+    }
 
     public Long getId() {
         return id;
