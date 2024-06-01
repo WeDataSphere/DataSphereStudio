@@ -96,7 +96,7 @@
     <insert id="addAppConn">
         INSERT INTO
         `dss_appconn` (`appconn_name`, `is_user_need_init`, `level`, `if_iframe`, `is_external`,`is_micro_app`, `reference`, `class_name`, `resource`)
-        VALUES (#{appconnName}, #{isUserNeedInit}, #{level}, #{ifIframe}, #{isExternal}, #{isMicroApp}, #{reference}, #{className}, #{resource})
+        VALUES (#{appConnName}, #{isUserNeedInit}, #{level}, #{ifIframe}, #{isExternal}, #{isMicroApp}, #{reference}, #{className}, #{resource})
     </insert>
 
     <update id="updateAppConn">

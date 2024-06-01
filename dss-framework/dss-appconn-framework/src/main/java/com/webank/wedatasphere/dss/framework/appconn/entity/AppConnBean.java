@@ -105,12 +105,12 @@ public class AppConnBean implements AppConnInfo, Serializable {
         this.ifIframe = ifIframe;
     }
 
-    public Boolean getExternal() {
+    public Boolean getIsExternal() {
         return isExternal;
     }
 
-    public void setExternal(Boolean external) {
-        isExternal = external;
+    public void setIsExternal(Boolean external) {
+        this.isExternal = isExternal;
     }
 
     public Boolean getIsMicroApp() {
