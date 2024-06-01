@@ -43,6 +43,8 @@ public interface DssWorkflowNodeDAO{
      */
     List<Node> findByAppconnName(String appconnName);
 
+    List<Node> findByName(String name);
+
     /**
      * 查询所有
      * @return {@link List<Node>}
