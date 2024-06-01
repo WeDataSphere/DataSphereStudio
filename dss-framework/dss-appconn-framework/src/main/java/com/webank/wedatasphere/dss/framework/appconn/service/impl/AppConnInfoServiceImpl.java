@@ -25,12 +25,9 @@ import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
 import com.webank.wedatasphere.dss.framework.appconn.common.ResourceTypeEnum;
 import com.webank.wedatasphere.dss.framework.appconn.conf.AppConnConf;
 import com.webank.wedatasphere.dss.framework.appconn.dao.AppConnMapper;
-import com.webank.wedatasphere.dss.framework.appconn.dao.AppInstanceMapper;
 import com.webank.wedatasphere.dss.framework.appconn.entity.AppConnBean;
 import com.webank.wedatasphere.dss.framework.appconn.exception.AppConnDeleteErrorException;
-import com.webank.wedatasphere.dss.framework.appconn.service.AppConnQualityChecker;
-import com.webank.wedatasphere.dss.framework.appconn.service.AppConnService;
-import com.webank.wedatasphere.dss.framework.appconn.service.AppInstanceService;
+import com.webank.wedatasphere.dss.framework.appconn.service.*;
 import com.webank.wedatasphere.dss.framework.appconn.utils.AppConnServiceUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.session.RowBounds;
@@ -51,6 +48,10 @@ public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnServic
     private List<AppConnQualityChecker> appConnQualityCheckers;
     @Autowired
     private AppInstanceService appInstanceService;
+    @Autowired
+    private NodeService nodeService;
+    @Autowired
+    private AppConnMenuService appConnMenuService;
 
     @Override
     public List<? extends AppConnInfo> getAppConnInfos() {
@@ -136,15 +137,16 @@ public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnServic
     }
 
     @Override
-    public void deleteAppConn(Long appConnId) {
+    public void deleteAppConn(Long appConnId) throws Exception{
         //校验该AppConn是否存在关键的实例和节点，如果存在就不允许删除
         //不存在就删除该AppConn和其菜单
-
-        if (appInstanceService.getAppInstancesByAppConnId(appConnId) != null || appConnNodeMapper.getAppConnNodeByAppConnId(appConnId) != null) {
+        AppConnBean appConnBeanById = appConnMapper.getAppConnBeanById(appConnId);
+        String appConnName = appConnBeanById.getAppConnName();
+        if (appInstanceService.getAppInstancesByAppConnId(appConnId) != null || nodeService.getNodesByAppconnName(appConnName) != null) {
             throw new AppConnDeleteErrorException(20353, "该AppConn存在关键实例或节点，不允许删除");
         }
         //删除AppConn菜单
-        appConnMenuMapper.deleteAppConnMenuByAppConnId(appConnId);
+        appConnMenuService.deleteMenusByAppconnId(appConnId.intValue());
         //删除AppConn
         appConnMapper.deleteAppConn(appConnId);
     }
