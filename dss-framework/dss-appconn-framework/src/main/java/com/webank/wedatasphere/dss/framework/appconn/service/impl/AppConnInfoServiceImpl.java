@@ -22,10 +22,12 @@ import com.webank.wedatasphere.dss.appconn.manager.entity.AppConnInfo;
 import com.webank.wedatasphere.dss.appconn.manager.entity.AppInstanceInfo;
 import com.webank.wedatasphere.dss.appconn.manager.service.AppConnInfoService;
 import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
+import com.webank.wedatasphere.dss.framework.appconn.common.ResourceTypeEnum;
 import com.webank.wedatasphere.dss.framework.appconn.conf.AppConnConf;
 import com.webank.wedatasphere.dss.framework.appconn.dao.AppConnMapper;
 import com.webank.wedatasphere.dss.framework.appconn.dao.AppInstanceMapper;
 import com.webank.wedatasphere.dss.framework.appconn.entity.AppConnBean;
+import com.webank.wedatasphere.dss.framework.appconn.exception.AppConnDeleteErrorException;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnQualityChecker;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnService;
 import com.webank.wedatasphere.dss.framework.appconn.utils.AppConnServiceUtils;
@@ -34,7 +36,6 @@ import org.apache.ibatis.session.RowBounds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -84,12 +85,20 @@ public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnServic
     @Override
     public List<AppConnBean> getAppConns(String appConnName, String className, int page, int size) {
         int offset = (page - 1) * size;
-        try {
-            return appConnMapper.getAppConns(appConnName, className, new RowBounds(offset, size));
-        } catch (DataAccessException e) {
+        List<AppConnBean> appConnBeanList =  appConnMapper.getAppConns(appConnName, className,new RowBounds(offset, size));
+        appConnBeanList.forEach(appConnBean -> {
+            String resource = appConnBean.getResource();
+            if(StringUtils.isNotBlank(resource)) {
+                appConnBean.setAppConnResource(AppConnServiceUtils.stringToResource(resource).getResource());
+            }
+            if (StringUtils.isNotBlank(appConnBean.getReference())) {
+                appConnBean.setResourceFetchMethod(ResourceTypeEnum.RELATED.getName());
+            } else {
+                appConnBean.setResourceFetchMethod(ResourceTypeEnum.UPLOAD.getName());
+            }
+        });
 
-            throw new RuntimeException("Error fetching AppConns", e);
-        }
+        return appConnBeanList;
     }
 
     @Override

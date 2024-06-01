@@ -18,6 +18,7 @@ package com.webank.wedatasphere.dss.appconn.manager;
 
 import com.webank.wedatasphere.dss.appconn.core.AppConn;
 import com.webank.wedatasphere.dss.appconn.core.exception.AppConnWarnException;
+import com.webank.wedatasphere.dss.appconn.manager.entity.AppConnInfo;
 import com.webank.wedatasphere.dss.appconn.manager.impl.AbstractAppConnManager;
 
 import java.util.List;
@@ -55,7 +56,7 @@ public interface AppConnManager {
         return (T) appConns.get(0);
     }
 
-    void reloadAppConn(String appConnName);
+    void reloadAppConn(AppConnInfo appConnInfo);
 
     String getAppConnHomePath(String appConnName);
 

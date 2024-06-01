@@ -231,21 +231,13 @@ public abstract class AbstractAppConnManager implements AppConnManager {
     }
 
     @Override
-    public void reloadAppConn(String appConnName) {
-        AppConnInfo appConnInfo = appConnInfoService.getAppConnInfo(appConnName);
-        if (appConnInfo == null) {
-            throw new DSSRuntimeException("Cannot get any info about AppConn " + appConnName);
-        }
-        reloadAppConn(appConnInfo);
-    }
-
-    @Override
     public String getAppConnHomePath(String appConnName) {
         AppConnInfo appConnInfo = appConnRefreshThread.getAppConnInfos().stream().filter(info -> info.getAppConnName().equals(appConnName))
                 .findAny().orElseThrow(() -> new DSSRuntimeException("Not exists AppConn " + appConnName));
         return appConnResourceService.getAppConnForIcon(appConnInfo);
     }
 
+    @Override
     public void reloadAppConn(AppConnInfo appConnInfo) {
         AppConn appConn;
         try {
