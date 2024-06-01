@@ -18,24 +18,24 @@
 
     <insert id="insert" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.MenuType"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO dss_workspace_menu(id,name,title_en,title_cn,description,is_active,icon,order,create_by,create_time,last_update_time,last_update_user)
+        INSERT INTO dss_workspace_menu(id,name,title_en,title_cn,description,is_active,icon,`order`,create_by,create_time,last_update_time,last_update_user)
         VALUES (#{id},#{name},#{titleEn},#{titleCn},#{description},#{isActive},#{icon},#{order},#{createBy},#{createTime},#{lastUpdateTime},#{lastUpdateUser})
     </insert>
 
     <update id="update" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.MenuType">
         UPDATE dss_workspace_menu
-        SET name=#{name},title_en=#{titleEn},title_cn=#{titleCn},description=#{description},is_active=#{isActive},icon=#{icon},order=#{order},create_by=#{createBy},create_time=#{createTime},last_update_time=#{lastUpdateTime},last_update_user=#{lastUpdateUser}
+        SET name=#{name},title_en=#{titleEn},title_cn=#{titleCn},description=#{description},is_active=#{isActive},icon=#{icon},`order`=#{order},create_by=#{createBy},create_time=#{createTime},last_update_time=#{lastUpdateTime},last_update_user=#{lastUpdateUser}
         WHERE id=#{id}
     </update>
 
     <select id="findByPrimaryKey" resultMap="BaseResultMap">
-        SELECT id,name,title_en,title_cn,description,is_active,icon,order,create_by,create_time,last_update_time,last_update_user FROM dss_workspace_menu
+        SELECT id,name,title_en,title_cn,description,is_active,icon,`order`,create_by,create_time,last_update_time,last_update_user FROM dss_workspace_menu
         WHERE id=#{id}
     </select>
 
 
     <select id="getAllMenu" resultMap="BaseResultMap">
-        SELECT id,name,title_en,title_cn,description,is_active,icon,order,create_by,create_time,last_update_time,last_update_user FROM dss_workspace_menu
+        SELECT id,name,title_en,title_cn,description,is_active,icon,`order`,create_by,create_time,last_update_time,last_update_user FROM dss_workspace_menu
     </select>
     <delete id="deleteByPrimaryKey">
         DELETE FROM dss_workspace_menu

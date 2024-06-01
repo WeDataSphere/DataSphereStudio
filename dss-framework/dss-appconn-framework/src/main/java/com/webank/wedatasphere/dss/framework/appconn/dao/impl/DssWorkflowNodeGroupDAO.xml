@@ -11,23 +11,23 @@
 
     <insert id="insert" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.NodeGroup"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO dss_workflow_node_group(id,name,name_en,description,order)
+        INSERT INTO dss_workflow_node_group(id,name,name_en,description,`order`)
         VALUES (#{id},#{name},#{nameEn},#{description},#{order})
     </insert>
 
     <update id="update" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.NodeGroup">
         UPDATE dss_workflow_node_group
-        SET name=#{name},name_en=#{nameEn},description=#{description},order=#{order}
+        SET name=#{name},name_en=#{nameEn},description=#{description},`order`=#{order}
         WHERE id=#{id}
     </update>
 
     <select id="findByPrimaryKey" resultMap="BaseResultMap">
-        SELECT id,name,name_en,description,order FROM dss_workflow_node_group
+        SELECT id,name,name_en,description,`order` FROM dss_workflow_node_group
         WHERE id=#{id}
     </select>
 
     <select id="findAll" resultMap="BaseResultMap">
-        SELECT id,name,name_en,description,order FROM dss_workflow_node_group
+        SELECT id,name,name_en,description,`order` FROM dss_workflow_node_group
     </select>
     <delete id="deleteByPrimaryKey">
         DELETE FROM dss_workflow_node_group
