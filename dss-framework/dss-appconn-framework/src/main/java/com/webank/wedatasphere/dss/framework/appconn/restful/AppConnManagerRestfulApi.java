@@ -26,9 +26,11 @@ import com.webank.wedatasphere.dss.appconn.manager.utils.AppConnManagerUtils;
 import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
 import com.webank.wedatasphere.dss.framework.appconn.common.ResourceTypeEnum;
 import com.webank.wedatasphere.dss.framework.appconn.entity.AppConnBean;
+import com.webank.wedatasphere.dss.framework.appconn.entity.AppInstanceBean;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnQualityChecker;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnResourceUploadService;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnService;
+import com.webank.wedatasphere.dss.framework.appconn.service.AppInstanceService;
 import com.webank.wedatasphere.dss.sender.service.conf.DSSSenderServiceConf;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.linkis.common.utils.Utils;
@@ -59,6 +61,8 @@ public class AppConnManagerRestfulApi {
     private List<AppConnQualityChecker> appConnQualityCheckers;
     @Autowired
     private AppConnService appConnService;
+    @Autowired
+    private AppInstanceService appInstanceService;
 
     private ExecutorService uploadThreadPool = Utils.newFixedThreadPool(APPCONN_UPLOAD_THREAD_NUM.getValue(), "Upload-Appconn-Thread-", false);
 
@@ -215,8 +219,28 @@ public class AppConnManagerRestfulApi {
         return message;
     }
 
+    @RequestMapping(path = "/addAppConnInstance", method = RequestMethod.POST)
+    public void addAppConnInstance(@RequestBody AppInstanceBean appInstanceBean) {
+        appInstanceService.addAppInstance(appInstanceBean);
+    }
 
-    private Message checkParams (AppConnBean appConnBean) {
+    @RequestMapping(path = "/editAppConnInstances", method = RequestMethod.POST)
+    public void editAppConnInstances(@RequestBody AppInstanceBean appInstanceBean) {
+            appInstanceService.updateAppInstance(appInstanceBean);
+    }
+
+    @RequestMapping(path = "/deleteAppConnInstance", method = RequestMethod.POST)
+    public void deleteAppConnInstance(@RequestParam Long id) {
+            appInstanceService.deleteAppInstance(id);
+    }
+
+    @RequestMapping(path = "/getAppConnInstances", method = RequestMethod.GET)
+    public void getAppConnInstances(@RequestParam Long appConnId) {
+        appInstanceService.getAppInstancesByAppConnId(appConnId);
+    }
+
+
+    private Void checkParams (AppConnBean appConnBean) {
 
         if (appConnBean.getAppConnName() == null || appConnBean.getAppConnName().isEmpty()) {
             return Message.error("AppConn name can not be empty.");

@@ -30,6 +30,7 @@ import com.webank.wedatasphere.dss.framework.appconn.entity.AppConnBean;
 import com.webank.wedatasphere.dss.framework.appconn.exception.AppConnDeleteErrorException;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnQualityChecker;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnService;
+import com.webank.wedatasphere.dss.framework.appconn.service.AppInstanceService;
 import com.webank.wedatasphere.dss.framework.appconn.utils.AppConnServiceUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.session.RowBounds;
@@ -47,9 +48,9 @@ public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnServic
     @Autowired
     private AppConnMapper appConnMapper;
     @Autowired
-    private AppInstanceMapper appInstanceMapper;
-    @Autowired
     private List<AppConnQualityChecker> appConnQualityCheckers;
+    @Autowired
+    private AppInstanceService appInstanceService;
 
     @Override
     public List<? extends AppConnInfo> getAppConnInfos() {
@@ -73,7 +74,7 @@ public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnServic
     @Override
     public List<? extends AppInstanceInfo> getAppInstancesByAppConnInfo(AppConnInfo appConnInfo) {
         Long id = ((AppConnBean) appConnInfo).getId();
-        return appInstanceMapper.getAppInstancesByAppConnId(id);
+        return appInstanceService.getAppInstancesByAppConnId(id);
     }
 
     @Override
