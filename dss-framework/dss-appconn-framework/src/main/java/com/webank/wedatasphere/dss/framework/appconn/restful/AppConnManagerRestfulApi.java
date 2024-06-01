@@ -208,8 +208,9 @@ public class AppConnManagerRestfulApi {
 
     @RequestMapping(path = "/uploadAppConnResource", method = RequestMethod.POST)
     public Message uploadAppConnResource(@RequestParam MultipartFile file) {
-        if(!file.getContentType().equals("application/zip")) {
-            return Message.error("The file type must be zip.");
+        String fileName = file.getOriginalFilename();
+        if (fileName == null || !fileName.endsWith(".zip")) {
+            return Message.error("The file extension must be .zip.");
         }
         String resource;
         try {
