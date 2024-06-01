@@ -17,10 +17,11 @@
 package com.webank.wedatasphere.dss.appconn.manager.service;
 
 import com.webank.wedatasphere.dss.appconn.manager.entity.AppConnInfo;
+import com.webank.wedatasphere.dss.common.exception.DSSErrorException;
 
 public interface AppConnResourceService{
 
-    String getAppConnHome(AppConnInfo appConnInfo);
+    String getAppConnHome(AppConnInfo appConnInfo) throws DSSErrorException;
 
     String getAppConnForIcon(AppConnInfo appConnInfo);
 }
