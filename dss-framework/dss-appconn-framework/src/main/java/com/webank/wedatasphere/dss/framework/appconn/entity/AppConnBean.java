@@ -45,6 +45,17 @@ public class AppConnBean implements AppConnInfo, Serializable {
     private List<AppInstanceBean> appInstanceBeans;
     private String resourceFetchMethod;
 
+    public AppConnBean() {
+    }
+
+    public Boolean getMicroApp() {
+        return isMicroApp;
+    }
+
+    public void setMicroApp(Boolean microApp) {
+        isMicroApp = microApp;
+    }
+
     public String getResourceFetchMethod() {
         return resourceFetchMethod;
     }
