@@ -24,8 +24,8 @@ import com.webank.wedatasphere.dss.appconn.manager.entity.AppInstanceInfo;
 import com.webank.wedatasphere.dss.appconn.manager.service.AppConnInfoService;
 import com.webank.wedatasphere.dss.appconn.manager.utils.AppConnManagerUtils;
 import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
+import com.webank.wedatasphere.dss.framework.appconn.common.ResourceTypeEnum;
 import com.webank.wedatasphere.dss.framework.appconn.entity.AppConnBean;
-import com.webank.wedatasphere.dss.framework.appconn.entity.AppInstanceBean;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnQualityChecker;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnResourceUploadService;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnService;
@@ -125,7 +125,6 @@ public class AppConnManagerRestfulApi {
         return Message.ok("Load AppConn " + appConnName + " succeed.");
     }
 
-
     @RequestMapping(path = "/getAppConns", method = RequestMethod.GET)
     public Message getAppConns(@RequestParam(defaultValue = "1") int page,
                                @RequestParam(defaultValue = "10") int size,
@@ -133,7 +132,6 @@ public class AppConnManagerRestfulApi {
                                @RequestParam(required = false) String className) {
         List<AppConnBean> appConnInfos;
         try {
-
             appConnInfos = appConnService.getAppConns(appConnName, className, page, size);
         } catch (Exception e) {
             LOGGER.error("Get AppConn list failed.", e);
@@ -157,6 +155,7 @@ public class AppConnManagerRestfulApi {
         message.data("appConnsName", appConnsName);
         return message;
     }
+
     @RequestMapping(path = "/deleteAppConn", method = RequestMethod.POST)
     public Message deleteAppConn(@RequestParam Long id) {
         try {
@@ -200,6 +199,30 @@ public class AppConnManagerRestfulApi {
 
     private Message checkParams (AppConnBean appConnBean) {
 
+        if (appConnBean.getAppConnName() == null || appConnBean.getAppConnName().isEmpty()) {
+            return Message.error("AppConn name can not be empty.");
+        }
+        if (!appConnBean.getAppConnName().matches("^[a-zA-Z]+$")) {
+            return Message.error("AppConn name can only contain letters.");
+        }
+
+        if (appConnBean.getResourceFetchMethod().equals(ResourceTypeEnum.RELATED.getName())) {
+            if (appConnBean.getResource() != null) {
+                return Message.error("Resource can not be set when resource fetch method is related.");
+            }
+            if (appConnBean.getReference() == null) {
+                return Message.error("Reference can not be null when resource fetch method is related.");
+            }
+        }
+        if (appConnBean.getResourceFetchMethod().equals(ResourceTypeEnum.UPLOAD.getName())) {
+            if (appConnBean.getResource() == null) {
+                return Message.error("Resource can not be null when resource fetch method is upload.");
+            }
+            if (appConnBean.getReference() != null) {
+                return Message.error("Reference can not be set when resource fetch method is upload.");
+            }
+        }
+        return Message.ok();
     }
 
 }
