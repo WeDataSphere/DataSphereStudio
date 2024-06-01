@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
@@ -112,7 +113,7 @@ public class AppConnManagerRestfulApi {
         LOGGER.info("Try to reload AppConn {}.", appConnName);
         try {
             LOGGER.info("First, reload AppConn {}.", appConnName);
-            AppConnManager.getAppConnManager().reloadAppConn(appConnName);
+//            AppConnManager.getAppConnManager().reloadAppConn(appConnName);
             AppConn appConn = AppConnManager.getAppConnManager().getAppConn(appConnName);
             LOGGER.info("Second, check the quality of AppConn {}.", appConnName);
             appConnQualityCheckers.forEach(DSSExceptionUtils.handling(checker -> checker.checkQuality(appConn)));
@@ -196,6 +197,24 @@ public class AppConnManagerRestfulApi {
         message.data("appConnInfo", rerurnAppConnBean);
         return message;
     }
+
+    @RequestMapping(path = "/uploadAppConnResource", method = RequestMethod.POST)
+    public Message uploadAppConnResource(@RequestParam MultipartFile file) {
+        if(!file.getContentType().equals("application/zip")) {
+            return Message.error("The file type must be zip.");
+        }
+        String resource;
+        try {
+            resource = appConnResourceUploadService.upload(file);
+        } catch (Exception e) {
+            LOGGER.error("Upload AppConn resource failed.", e);
+            return Message.error("Upload AppConn resource failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
+        }
+        Message message = Message.ok("Upload AppConn resource succeed.");
+        message.data("resource", resource);
+        return message;
+    }
+
 
     private Message checkParams (AppConnBean appConnBean) {
 

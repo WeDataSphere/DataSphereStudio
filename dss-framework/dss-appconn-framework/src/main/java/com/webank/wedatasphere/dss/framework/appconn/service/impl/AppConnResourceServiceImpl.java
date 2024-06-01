@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -185,6 +186,26 @@ public class AppConnResourceServiceImpl implements AppConnResourceService, AppCo
         appConnBeanReLoad.setClassName(appConnBean.getClassName());
         appConnMapper.updateResourceByName(appConnBeanReLoad);
         LOGGER.info("AppConn {} has updated resource to {}.", appConnName, resourceStr);
+    }
+
+    @Override
+    public String upload(MultipartFile file) throws DSSErrorException {
+        Resource resource = new Resource();
+        try {
+            InputStream inputStream = file.getInputStream();
+            String originalFilename = file.getOriginalFilename();
+            BmlUploadResponse response = bmlClient.uploadResource(Utils.getJvmUser(), originalFilename, inputStream);
+            resource.setResourceId(response.resourceId());
+            resource.setVersion(response.version());
+            resource.setFileName(originalFilename);
+        } catch (IOException e) {
+            throw new DSSErrorException(20352, "AppConn upload to bml failed" + e.getMessage());
+        }
+        AppConnResource appConnResource = new AppConnResource();
+        appConnResource.setResource(resource);
+        appConnResource.setLastModifiedTime(System.currentTimeMillis());
+        appConnResource.setSize(file.getSize());
+        return AppConnServiceUtils.resourceToString(appConnResource);
     }
 
     @PreDestroy

@@ -14,16 +14,19 @@
  *
  */
 
-package com.webank.wedatasphere.dss.framework.appconn.service;
+package com.webank.wedatasphere.dss.framework.appconn.exception;
 
 import com.webank.wedatasphere.dss.common.exception.DSSErrorException;
-import org.springframework.web.multipart.MultipartFile;
 
 
-public interface AppConnResourceUploadService {
+public class AppConnDeleteErrorException extends DSSErrorException {
 
-    void upload(String appConnName) throws DSSErrorException;
+    public AppConnDeleteErrorException(int errCode, String desc) {
+        super(errCode, desc);
+    }
 
-    String upload(MultipartFile file) throws DSSErrorException;
-
+    public AppConnDeleteErrorException(int errCode, String desc, Throwable cause) {
+        super(errCode, desc);
+        initCause(cause);
+    }
 }
