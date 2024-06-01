@@ -66,7 +66,7 @@ public class AppConnResourceServiceImpl implements AppConnResourceService, AppCo
     }
 
     @Override
-    public String getAppConnHome(AppConnInfo appConnInfo) {
+    public String getAppConnHome(AppConnInfo appConnInfo) throws DSSErrorException{
         //不管是保存还是更新都从BML下载最新的AppConn物料，如果定时线程需要重新reload AppConn，那么说明当前节点保存的AppConn信息与数据库中不一致
         // 也就是其他节点对AppConn进行了更新，也就需要下载最新的物料
         File zipFilePath = new File(AppConnUtils.getAppConnHomePath(), appConnInfo.getAppConnName() + ".zip");
