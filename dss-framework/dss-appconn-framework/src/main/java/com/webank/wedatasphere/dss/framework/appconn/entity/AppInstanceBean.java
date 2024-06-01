@@ -32,6 +32,9 @@ public class AppInstanceBean implements AppInstanceInfo, Serializable {
     private String enhanceJson;
     private String homepageUri;
 
+    public AppInstanceBean() {
+    }
+
     @Override
     public Long getId() {
         return id;

@@ -30,7 +30,6 @@ import com.webank.wedatasphere.dss.framework.appconn.exception.AppConnDeleteErro
 import com.webank.wedatasphere.dss.framework.appconn.service.*;
 import com.webank.wedatasphere.dss.framework.appconn.utils.AppConnServiceUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.ibatis.session.RowBounds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
