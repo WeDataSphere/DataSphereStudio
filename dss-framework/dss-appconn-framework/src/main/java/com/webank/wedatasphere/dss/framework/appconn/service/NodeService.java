@@ -42,10 +42,7 @@ public class NodeService {
             }
         } else {
             // Update existing node
-            int rowsUpdated = nodeDao.update(node);
-            if (rowsUpdated <= 0) {
-                throw new DSSRuntimeException("Failed to update existing node");
-            }
+            nodeDao.update(node);
         }
         //处理节点分类关系
         List<NodeToGroup> oldRef =nodeToGroupDao.findByNodeId(node.getId());
@@ -88,7 +85,7 @@ public class NodeService {
 
     public List<Node> getNodesByName(String name) {
         // You may need to add a method in your DAO to handle this
-        return nodeDao.findByAppconnName(name);
+        return nodeDao.findByName(name);
     }
 
     public List<Node> getAllNodes() {
@@ -110,27 +107,26 @@ public class NodeService {
             throw new IllegalArgumentException("Node name is already exist");
         }
 
-
-        //jumpType只能是0、1、2
-        if(node.getSupportJump()==0|| (node.getJumpType()!=1&&node.getJumpType()!=2)){
-            throw new IllegalArgumentException("JumpType is invalid");
-        }
-
         //supportJump只能是0或1
-        if(node.getSupportJump()!=0&&node.getSupportJump()!=1){
+        if(node.getSupportJump()==null || node.getSupportJump()!=0&&node.getSupportJump()!=1){
             throw new IllegalArgumentException("SupportJump is invalid");
         }
 
+        //jumpType只能是0、1、2
+        if(node.getJumpType()==null ||  node.getSupportJump()==1&& node.getJumpType()!=1&&node.getJumpType()!=2){
+            throw new IllegalArgumentException("JumpType is invalid");
+        }
+
         //submitToScheduler只能是0或1
-        if(node.getSubmitToScheduler()!=0&&node.getSubmitToScheduler()!=1){
+        if(node.getSubmitToScheduler()==null|| node.getSubmitToScheduler()!=0&&node.getSubmitToScheduler()!=1){
             throw new IllegalArgumentException("SubmitToScheduler is invalid");
         }
         //enableCopy只能是0或1
-        if(node.getEnableCopy()!=0&&node.getEnableCopy()!=1){
+        if(node.getEnableCopy()==null|| node.getEnableCopy()!=0&&node.getEnableCopy()!=1){
             throw new IllegalArgumentException("EnableCopy is invalid");
         }
         //shouldCreationBeforeNode只能是0或1
-        if(node.getShouldCreationBeforeNode()!=0&&node.getShouldCreationBeforeNode()!=1){
+        if(node.getShouldCreationBeforeNode()==null|| node.getShouldCreationBeforeNode()!=0&&node.getShouldCreationBeforeNode()!=1){
             throw new IllegalArgumentException("ShouldCreationBeforeNode is invalid");
         }
 

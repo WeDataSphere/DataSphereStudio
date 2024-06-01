@@ -33,7 +33,7 @@ public interface DssWorkflowNodeToUiDAO{
     NodeToUi findByPrimaryKey(Integer id);
 
 
-    List<NodeToUi> findByNodeId(Integer workflowNodeId);
+    List<NodeToUi> findByNodeId(Integer nodeId);
 
     List<NodeToUi> findByUiId(Integer uiId);
 
@@ -41,7 +41,7 @@ public interface DssWorkflowNodeToUiDAO{
     /**
      * 根据NodeId和UiId删除
      */
-    int deleteByNodeIdAndUiId(@Param("workflowNodeId") Integer workflowNodeId, @Param("uiId") Integer uiId);
+    int deleteByNodeIdAndUiId(@Param("nodeId") Integer nodeId, @Param("uiId") Integer uiId);
 
     /**
     * 根据主键删除

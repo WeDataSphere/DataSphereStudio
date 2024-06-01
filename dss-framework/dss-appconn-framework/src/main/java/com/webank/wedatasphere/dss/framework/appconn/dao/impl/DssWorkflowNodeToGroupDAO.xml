@@ -26,7 +26,7 @@
 
     <select id="findByNodeId" resultMap="BaseResultMap">
         SELECT id,node_id,group_id FROM dss_workflow_node_to_group
-        wher node_id = #{nodeId}
+        WHERE node_id = #{nodeId}
     </select>
 
     <delete id="deleteByNodeId" parameterType="java.util.List">

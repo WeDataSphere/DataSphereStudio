@@ -10,12 +10,12 @@
     <insert id="insert" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.NodeToUi"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO dss_workflow_node_to_ui(id,workflow_node_id,ui_id)
-        VALUES (#{id},#{workflowNodeId},#{uiId})
+        VALUES (#{id},#{nodeId},#{uiId})
     </insert>
 
     <update id="update" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.NodeToUi">
         UPDATE dss_workflow_node_to_ui
-        SET workflow_node_id=#{workflowNodeId},ui_id=#{uiId}
+        SET workflow_node_id=#{nodeId},ui_id=#{uiId}
         WHERE id=#{id}
     </update>
 
@@ -26,7 +26,7 @@
 
     <select id="findByNodeId" resultMap="BaseResultMap">
             SELECT id,workflow_node_id,ui_id FROM dss_workflow_node_to_ui
-    WHERE workflow_node_id=#{workflowNodeId}
+    WHERE workflow_node_id=#{nodeId}
     </select>
 
     <select id="findByUiId" resultMap="BaseResultMap">
@@ -36,7 +36,7 @@
 
   <delete id="deleteByNodeIdAndUiId">
       DELETE FROM dss_workflow_node_to_ui
-      WHERE workflow_node_id = #{workflowNodeId} AND ui_id = #{uiId}
+      WHERE workflow_node_id = #{nodeId} AND ui_id = #{uiId}
   </delete>
 
     <delete id="deleteByPrimaryKey">
