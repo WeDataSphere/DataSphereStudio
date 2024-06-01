@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkflowNodeToUiDAO">
+    <resultMap id="BaseResultMap" type="com.webank.wedatasphere.dss.framework.appconn.entity.NodeToUi">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="workflow_node_id" jdbcType="INTEGER" property="nodeId"/>
+        <result column="ui_id" jdbcType="INTEGER" property="uiId"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.NodeToUi"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dss_workflow_node_to_ui(id,workflow_node_id,ui_id)
+        VALUES (#{id},#{workflowNodeId},#{uiId})
+    </insert>
+
+    <update id="update" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.NodeToUi">
+        UPDATE dss_workflow_node_to_ui
+        SET workflow_node_id=#{workflowNodeId},ui_id=#{uiId}
+        WHERE id=#{id}
+    </update>
+
+    <select id="findByPrimaryKey" resultMap="BaseResultMap">
+        SELECT id,workflow_node_id,ui_id FROM dss_workflow_node_to_ui
+        WHERE id=#{id}
+    </select>
+
+    <select id="findByNodeId" resultMap="BaseResultMap">
+            SELECT id,workflow_node_id,ui_id FROM dss_workflow_node_to_ui
+    WHERE workflow_node_id=#{workflowNodeId}
+    </select>
+
+  <delete id="deleteByNodeIdAndUiId">
+      DELETE FROM dss_workflow_node_to_ui
+      WHERE workflow_node_id = #{workflowNodeId} AND ui_id = #{uiId}
+  </delete>
+
+    <delete id="deleteByPrimaryKey">
+        DELETE FROM dss_workflow_node_to_ui
+        WHERE id=#{id}
+    </delete>
+
+</mapper>

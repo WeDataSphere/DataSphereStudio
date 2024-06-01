@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkflowNodeUiToValidateDAO">
+    <resultMap id="BaseResultMap" type="com.webank.wedatasphere.dss.framework.appconn.entity.UiToValidate">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="ui_id" jdbcType="INTEGER" property="uiId"/>
+        <result column="validate_id" jdbcType="INTEGER" property="validateId"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.UiToValidate"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dss_workflow_node_ui_to_validate(id,ui_id,validate_id)
+        VALUES (#{id},#{uiId},#{validateId})
+    </insert>
+
+    <update id="update" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.UiToValidate">
+        UPDATE dss_workflow_node_ui_to_validate
+        SET ui_id=#{uiId},validate_id=#{validateId}
+        WHERE id=#{id}
+    </update>
+
+    <select id="findByPrimaryKey" resultMap="BaseResultMap">
+        SELECT id,ui_id,validate_id FROM dss_workflow_node_ui_to_validate
+        WHERE id=#{id}
+    </select>
+
+    <select id="findByUiId" resultMap="BaseResultMap">
+        SELECT id,ui_id,validate_id FROM dss_workflow_node_ui_to_validate
+        WHERE ui_id=#{uiId}
+    </select>
+
+    <delete id="deleteByUiIdAndValidateId">
+        DELETE FROM dss_workflow_node_ui_to_validate
+        WHERE ui_id = #{uiId} AND validate_id = #{validateId}
+    </delete>
+
+
+
+    <delete id="deleteByPrimaryKey">
+        DELETE FROM dss_workflow_node_ui_to_validate
+        WHERE id=#{id}
+    </delete>
+
+</mapper>

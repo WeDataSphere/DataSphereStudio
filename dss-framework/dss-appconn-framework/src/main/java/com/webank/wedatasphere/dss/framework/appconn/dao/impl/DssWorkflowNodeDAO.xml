@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkflowNodeDAO">
+    <resultMap id="BaseResultMap" type="com.webank.wedatasphere.dss.framework.appconn.entity.Node">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="name" jdbcType="VARCHAR" property="name"/>
+        <result column="appconn_name" jdbcType="VARCHAR" property="appconnName"/>
+        <result column="node_type" jdbcType="VARCHAR" property="nodeType"/>
+        <result column="jump_type" jdbcType="INTEGER" property="jumpType"/>
+        <result column="support_jump" jdbcType="BIT" property="supportJump"/>
+        <result column="submit_to_scheduler" jdbcType="BIT" property="submitToScheduler"/>
+        <result column="enable_copy" jdbcType="BIT" property="enableCopy"/>
+        <result column="should_creation_before_node" jdbcType="BIT" property="shouldCreationBeforeNode"/>
+        <result column="icon_path" jdbcType="LONGVARCHAR" property="iconPath"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.Node"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dss_workflow_node(id,name,appconn_name,node_type,jump_type,support_jump,submit_to_scheduler,enable_copy,should_creation_before_node,icon_path)
+        VALUES (#{id},#{name},#{appconnName},#{nodeType},#{jumpType},#{supportJump},#{submitToScheduler},#{enableCopy},#{shouldCreationBeforeNode},#{iconPath})
+    </insert>
+
+
+    <update id="update" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.Node">
+        UPDATE dss_workflow_node
+        SET name=#{name},appconn_name=#{appconnName},node_type=#{nodeType},jump_type=#{jumpType},support_jump=#{supportJump},submit_to_scheduler=#{submitToScheduler},enable_copy=#{enableCopy},should_creation_before_node=#{shouldCreationBeforeNode},icon_path=#{iconPath}
+        WHERE id=#{id}
+    </update>
+
+    <select id="findByPrimaryKey" resultMap="BaseResultMap">
+        SELECT id,name,appconn_name,node_type,jump_type,support_jump,submit_to_scheduler,enable_copy,should_creation_before_node,icon_path FROM dss_workflow_node
+        WHERE id=#{id}
+    </select>
+
+    <select id="findByNameOrNodeType" resultMap="BaseResultMap">
+        SELECT id,name,appconn_name,node_type,jump_type,support_jump,submit_to_scheduler,enable_copy,should_creation_before_node,icon_path FROM dss_workflow_node
+        WHERE name=#{name} OR node_type=#{nodeType}
+    </select>
+
+    <select id="findByAppconnName" resultMap="BaseResultMap">
+        SELECT id,name,appconn_name,node_type,jump_type,support_jump,submit_to_scheduler,enable_copy,should_creation_before_node,icon_path FROM dss_workflow_node
+        wher appconn_name = #{appconnName}
+    </select>
+
+
+    <select id="findAll" resultMap="BaseResultMap">
+        SELECT id,name,appconn_name,node_type,jump_type,support_jump,submit_to_scheduler,enable_copy,should_creation_before_node,icon_path FROM dss_workflow_node
+    </select>
+
+     <delete id="deleteByPrimaryKey">
+        DELETE FROM dss_workflow_node
+        WHERE id=#{id}
+    </delete>
+
+</mapper>

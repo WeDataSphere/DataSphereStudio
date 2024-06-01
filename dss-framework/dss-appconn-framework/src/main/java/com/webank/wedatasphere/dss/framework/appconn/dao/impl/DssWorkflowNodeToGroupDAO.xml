@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkflowNodeToGroupDAO">
+    <resultMap id="BaseResultMap" type="com.webank.wedatasphere.dss.framework.appconn.entity.NodeToGroup">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="node_id" jdbcType="INTEGER" property="nodeId"/>
+        <result column="group_id" jdbcType="INTEGER" property="groupId"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.NodeToGroup"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dss_workflow_node_to_group(id,node_id,group_id)
+        VALUES (#{id},#{nodeId},#{groupId})
+    </insert>
+
+    <update id="update" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.NodeToGroup">
+        UPDATE dss_workflow_node_to_group
+        SET node_id=#{nodeId},group_id=#{groupId}
+        WHERE id=#{id}
+    </update>
+
+    <select id="findByPrimaryKey" resultMap="BaseResultMap">
+        SELECT id,node_id,group_id FROM dss_workflow_node_to_group
+        WHERE id=#{id}
+    </select>
+
+    <select id="findByNodeId" resultMap="BaseResultMap">
+        SELECT id,node_id,group_id FROM dss_workflow_node_to_group
+        wher node_id = #{nodeId}
+    </select>
+
+    <delete id="deleteByNodeId" parameterType="java.util.List">
+        DELETE FROM dss_workflow_node_to_group
+               WHERE node_id =#{nodeId}
+
+    </delete>
+
+    <delete id="deleteByPrimaryKey">
+        DELETE FROM dss_workflow_node_to_group
+        WHERE id=#{id}
+    </delete>
+
+</mapper>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkspaceMenuDAO">
+    <resultMap id="BaseResultMap" type="com.webank.wedatasphere.dss.framework.appconn.entity.MenuType">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="name" jdbcType="VARCHAR" property="name"/>
+        <result column="title_en" jdbcType="VARCHAR" property="titleEn"/>
+        <result column="title_cn" jdbcType="VARCHAR" property="titleCn"/>
+        <result column="description" jdbcType="VARCHAR" property="description"/>
+        <result column="is_active" jdbcType="BIT" property="isActive"/>
+        <result column="icon" jdbcType="VARCHAR" property="icon"/>
+        <result column="order" jdbcType="INTEGER" property="order"/>
+        <result column="create_by" jdbcType="VARCHAR" property="createBy"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="last_update_time" jdbcType="TIMESTAMP" property="lastUpdateTime"/>
+        <result column="last_update_user" jdbcType="VARCHAR" property="lastUpdateUser"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.MenuType"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dss_workspace_menu(id,name,title_en,title_cn,description,is_active,icon,order,create_by,create_time,last_update_time,last_update_user)
+        VALUES (#{id},#{name},#{titleEn},#{titleCn},#{description},#{isActive},#{icon},#{order},#{createBy},#{createTime},#{lastUpdateTime},#{lastUpdateUser})
+    </insert>
+
+    <update id="update" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.MenuType">
+        UPDATE dss_workspace_menu
+        SET name=#{name},title_en=#{titleEn},title_cn=#{titleCn},description=#{description},is_active=#{isActive},icon=#{icon},order=#{order},create_by=#{createBy},create_time=#{createTime},last_update_time=#{lastUpdateTime},last_update_user=#{lastUpdateUser}
+        WHERE id=#{id}
+    </update>
+
+    <select id="findByPrimaryKey" resultMap="BaseResultMap">
+        SELECT id,name,title_en,title_cn,description,is_active,icon,order,create_by,create_time,last_update_time,last_update_user FROM dss_workspace_menu
+        WHERE id=#{id}
+    </select>
+
+
+    <select id="getAllMenu" resultMap="BaseResultMap">
+        SELECT id,name,title_en,title_cn,description,is_active,icon,order,create_by,create_time,last_update_time,last_update_user FROM dss_workspace_menu
+    </select>
+    <delete id="deleteByPrimaryKey">
+        DELETE FROM dss_workspace_menu
+        WHERE id=#{id}
+    </delete>
+
+</mapper>

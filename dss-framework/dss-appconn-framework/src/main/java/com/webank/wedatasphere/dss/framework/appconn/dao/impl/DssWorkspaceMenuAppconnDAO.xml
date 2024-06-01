@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkspaceMenuAppconnDAO">
+    <resultMap id="BaseResultMap" type="com.webank.wedatasphere.dss.framework.appconn.entity.AppConnMenu">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="appconn_id" jdbcType="INTEGER" property="appconnId"/>
+        <result column="menu_id" jdbcType="INTEGER" property="menuId"/>
+        <result column="title_en" jdbcType="VARCHAR" property="titleEn"/>
+        <result column="title_cn" jdbcType="VARCHAR" property="titleCn"/>
+        <result column="desc_en" jdbcType="VARCHAR" property="descEn"/>
+        <result column="desc_cn" jdbcType="VARCHAR" property="descCn"/>
+        <result column="labels_en" jdbcType="VARCHAR" property="labelsEn"/>
+        <result column="labels_cn" jdbcType="VARCHAR" property="labelsCn"/>
+        <result column="is_active" jdbcType="BIT" property="isActive"/>
+        <result column="access_button_en" jdbcType="VARCHAR" property="accessButtonEn"/>
+        <result column="access_button_cn" jdbcType="VARCHAR" property="accessButtonCn"/>
+        <result column="manual_button_en" jdbcType="VARCHAR" property="manualButtonEn"/>
+        <result column="manual_button_cn" jdbcType="VARCHAR" property="manualButtonCn"/>
+        <result column="manual_button_url" jdbcType="VARCHAR" property="manualButtonUrl"/>
+        <result column="icon" jdbcType="VARCHAR" property="icon"/>
+        <result column="order" jdbcType="INTEGER" property="order"/>
+        <result column="create_by" jdbcType="VARCHAR" property="createBy"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="last_update_time" jdbcType="TIMESTAMP" property="lastUpdateTime"/>
+        <result column="last_update_user" jdbcType="VARCHAR" property="lastUpdateUser"/>
+        <result column="image" jdbcType="VARCHAR" property="image"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.AppConnMenu"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dss_workspace_menu_appconn(id,appconn_id,menu_id,title_en,title_cn,desc_en,desc_cn,labels_en,labels_cn,is_active,access_button_en,access_button_cn,manual_button_en,manual_button_cn,manual_button_url,icon,order,create_by,create_time,last_update_time,last_update_user,image)
+        VALUES (#{id},#{appconnId},#{menuId},#{titleEn},#{titleCn},#{descEn},#{descCn},#{labelsEn},#{labelsCn},#{isActive},#{accessButtonEn},#{accessButtonCn},#{manualButtonEn},#{manualButtonCn},#{manualButtonUrl},#{icon},#{order},#{createBy},#{createTime},#{lastUpdateTime},#{lastUpdateUser},#{image})
+    </insert>
+
+    <update id="update" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.AppConnMenu">
+        UPDATE dss_workspace_menu_appconn
+        SET appconn_id=#{appconnId},menu_id=#{menuId},title_en=#{titleEn},title_cn=#{titleCn},desc_en=#{descEn},desc_cn=#{descCn},labels_en=#{labelsEn},labels_cn=#{labelsCn},is_active=#{isActive},access_button_en=#{accessButtonEn},access_button_cn=#{accessButtonCn},manual_button_en=#{manualButtonEn},manual_button_cn=#{manualButtonCn},manual_button_url=#{manualButtonUrl},icon=#{icon},order=#{order},create_by=#{createBy},create_time=#{createTime},last_update_time=#{lastUpdateTime},last_update_user=#{lastUpdateUser},image=#{image}
+        WHERE id=#{id}
+    </update>
+
+    <select id="findByPrimaryKey" resultMap="BaseResultMap">
+        SELECT id,appconn_id,menu_id,title_en,title_cn,desc_en,desc_cn,labels_en,labels_cn,is_active,access_button_en,access_button_cn,manual_button_en,manual_button_cn,manual_button_url,icon,order,create_by,create_time,last_update_time,last_update_user,image FROM dss_workspace_menu_appconn
+        WHERE id=#{id}
+    </select>
+
+
+    <select id="findByAppconnId" resultMap="BaseResultMap">
+        SELECT id,appconn_id,menu_id,title_en,title_cn,desc_en,desc_cn,labels_en,labels_cn,is_active,access_button_en,access_button_cn,manual_button_en,manual_button_cn,manual_button_url,icon,order,create_by,create_time,last_update_time,last_update_user,image FROM dss_workspace_menu_appconn
+        WHERE appconn_id=#{appconnId}
+    </select>
+
+    <delete id="deleteByAppconnId">
+        DELETE FROM dss_workspace_menu_appconn
+        WHERE appconn_id=#{appconnId}
+    </delete>
+
+</mapper>
