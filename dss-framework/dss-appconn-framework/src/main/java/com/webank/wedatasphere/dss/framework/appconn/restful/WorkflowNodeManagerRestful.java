@@ -115,12 +115,12 @@ public class WorkflowNodeManagerRestful {
             HttpServletResponse httpResp
     ){
         //nodeId必须为空或者是整数
-        if(nodeId!=null && !StringUtils.isNumeric(nodeId))
+        if(StringUtils.isNotBlank(nodeId) && !StringUtils.isNumeric(nodeId))
         {
             return Message.error("nodeId必须为空或者是整数");
         }
         //uiId必须为空或者是整数
-        if(uiId!=null && !StringUtils.isNumeric(uiId)){
+        if(StringUtils.isNotBlank(uiId) && !StringUtils.isNumeric(uiId)){
             return Message.error("uiId必须为空或者是整数");
         }
 
@@ -198,11 +198,11 @@ public class WorkflowNodeManagerRestful {
             HttpServletResponse httpResp
     ){
         //uiId必须为空或者是整数
-        if(uiId!=null && !StringUtils.isNumeric(uiId)){
+        if(StringUtils.isNotBlank(uiId)  && !StringUtils.isNumeric(uiId)){
             return Message.error("uiId必须为空或者是整数");
         }
         //validateId必须为空或者是整数
-        if(validateId!=null && !StringUtils.isNumeric(validateId)){
+        if(StringUtils.isNotBlank(validateId) && !StringUtils.isNumeric(validateId)){
             return Message.error("validateId必须为空或者是整数");
         }
 
