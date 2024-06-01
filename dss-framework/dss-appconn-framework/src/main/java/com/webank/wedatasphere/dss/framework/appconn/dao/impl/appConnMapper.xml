@@ -84,7 +84,7 @@
         FROM `dss_appconn`
         <where>
             1 = 1
-            <if test="appConnName != null and name != ''">
+            <if test="appConnName != null and appConnName != ''">
                 AND `appconn_name` LIKE CONCAT('%', #{appConnName}, '%')
             </if>
             <if test="className != null and className != ''">
