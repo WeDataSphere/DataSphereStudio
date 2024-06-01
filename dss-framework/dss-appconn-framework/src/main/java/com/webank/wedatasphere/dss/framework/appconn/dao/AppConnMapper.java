@@ -51,9 +51,9 @@ public interface AppConnMapper {
 
     List<AppConnBean> getAppConns(@Param("appConnName") String appConnName, @Param("className") String className);
 
-    AppConnBean addAppConn(AppConnBean appConnBean); // Return type changed to int to handle the result of insert operation
+    void addAppConn(AppConnBean appConnBean); // Return type changed to int to handle the result of insert operation
 
-    AppConnBean updateAppConn(AppConnBean appConnBean); // Return type changed to int to handle the result of update operation
+    void updateAppConn(AppConnBean appConnBean); // Return type changed to int to handle the result of update operation
 
     int deleteAppConn(@Param("id") Long id);
 

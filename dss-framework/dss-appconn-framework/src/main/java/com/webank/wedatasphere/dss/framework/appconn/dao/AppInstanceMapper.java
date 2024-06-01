@@ -41,9 +41,9 @@ public interface AppInstanceMapper {
 
     void deleteAppInstance(@Param("appInstanceId") Long appInstanceId);
 
-    AppInstanceBean addAppInstance(AppInstanceBean appInstanceBean);
+    void addAppInstance(AppInstanceBean appInstanceBean);
 
     AppInstanceBean getAppInstanceById(@Param("appInstanceId") Long appInstanceId);
 
-    AppInstanceBean updateAppInstance(AppInstanceBean appInstanceBean);
+    void updateAppInstance(AppInstanceBean appInstanceBean);
 }
