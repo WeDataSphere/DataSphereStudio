@@ -91,7 +91,6 @@
                 AND `class_name` LIKE CONCAT('%', #{className}, '%')
             </if>
         </where>
-        LIMIT #{rowBounds.offset}, #{rowBounds.limit}
     </select>
 
     <insert id="addAppConn">

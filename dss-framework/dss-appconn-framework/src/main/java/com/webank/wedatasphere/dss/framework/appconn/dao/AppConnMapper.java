@@ -18,8 +18,8 @@ package com.webank.wedatasphere.dss.framework.appconn.dao;
 
 
 import com.webank.wedatasphere.dss.framework.appconn.entity.AppConnBean;
-import org.apache.ibatis.annotations.*;
-import org.apache.ibatis.session.RowBounds;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -49,7 +49,7 @@ public interface AppConnMapper {
 
     void updateResourceByName(AppConnBean appConnBean);
 
-    List<AppConnBean> getAppConns(@Param("appConnName") String appConnName, @Param("className") String className, RowBounds rowBounds);
+    List<AppConnBean> getAppConns(@Param("appConnName") String appConnName, @Param("className") String className);
 
     AppConnBean addAppConn(AppConnBean appConnBean); // Return type changed to int to handle the result of insert operation
 

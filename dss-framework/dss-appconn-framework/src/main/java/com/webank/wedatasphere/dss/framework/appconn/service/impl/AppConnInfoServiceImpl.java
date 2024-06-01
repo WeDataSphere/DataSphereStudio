@@ -85,9 +85,8 @@ public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnServic
     }
 
     @Override
-    public List<AppConnBean> getAppConns(String appConnName, String className, int page, int size) {
-        int offset = (page - 1) * size;
-        List<AppConnBean> appConnBeanList =  appConnMapper.getAppConns(appConnName, className,new RowBounds(offset, size));
+    public List<AppConnBean> getAppConns(String appConnName, String className) {
+        List<AppConnBean> appConnBeanList =  appConnMapper.getAppConns(appConnName, className);
         appConnBeanList.forEach(appConnBean -> {
             String resource = appConnBean.getResource();
             if(StringUtils.isNotBlank(resource)) {
