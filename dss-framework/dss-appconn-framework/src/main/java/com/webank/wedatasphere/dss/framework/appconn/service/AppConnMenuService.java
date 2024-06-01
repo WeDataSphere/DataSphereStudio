@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.dss.framework.appconn.service;
 
+import com.webank.wedatasphere.dss.common.exception.DSSRuntimeException;
 import com.webank.wedatasphere.dss.framework.appconn.dao.AppConnMapper;
 import com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkspaceMenuAppconnDAO;
 import com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkspaceMenuDAO;
@@ -65,7 +66,7 @@ public class AppConnMenuService {
     /**
      * 通过appconnId查询顶部菜单
      */
-    public List<AppConnMenu> getMenusByAppconnId(Integer appconnId) throws Exception {
+    public List<AppConnMenu> getMenusByAppconnId(Integer appconnId)  {
         if(appconnId == null || appConnMapper.getAppConnBeanById(appconnId.longValue()) == null) {
             throw new IllegalArgumentException("关联的appconnId不能为空且必须存在");
         }
@@ -76,15 +77,13 @@ public class AppConnMenuService {
      * 根据appconnId删除顶部菜单
      */
     @Transactional
-    public String deleteMenusByAppconnId(Integer appconnId) {
+    public void deleteMenusByAppconnId(Integer appconnId)   {
         if(appconnId == null || appConnMapper.getAppConnBeanById(appconnId.longValue()) == null) {
             throw new IllegalArgumentException("关联的appconnId不能为空且必须存在");
         }
         int rowsDeleted = menuAppconnDao.deleteByAppconnId(appconnId);
-        if (rowsDeleted > 0) {
-            return "删除成功";
-        } else {
-            return "删除失败，没有找到匹配的菜单";
+        if (rowsDeleted <= 0) {
+            throw new DSSRuntimeException( "删除失败，没有找到匹配的菜单");
         }
     }
 }

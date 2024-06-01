@@ -34,6 +34,8 @@ public interface DssWorkflowNodeToUiDAO{
 
     List<NodeToUi> findByNodeId(Integer workflowNodeId);
 
+    List<NodeToUi> findByUiId(Integer uiId);
+
 
     /**
      * 根据NodeId和UiId删除

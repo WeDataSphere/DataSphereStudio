@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class RuleValidationService {
+public class ValidateService {
 
     private final DssWorkflowNodeUiValidateDAO ruleValidationDao;
 
@@ -20,11 +20,11 @@ public class RuleValidationService {
     private DssWorkflowNodeUiToValidateDAO ruleValidationToValidateDao;
 
     @Autowired
-    public RuleValidationService(DssWorkflowNodeUiValidateDAO ruleValidationDao) {
+    public ValidateService(DssWorkflowNodeUiValidateDAO ruleValidationDao) {
         this.ruleValidationDao = ruleValidationDao;
     }
 
-    public Validate saveRuleValidation(Validate ruleValidation) throws IllegalArgumentException {
+    public Validate saveValidation(Validate ruleValidation) throws IllegalArgumentException {
         validateRuleValidation(ruleValidation);
         if (ruleValidation.getId() == null) {
             int rowsInserted = ruleValidationDao.insert(ruleValidation);
@@ -40,11 +40,11 @@ public class RuleValidationService {
         return ruleValidation;
     }
 
-    public Validate getRuleValidationById(Integer id) {
+    public Validate getValidationById(Integer id) {
         return ruleValidationDao.findByPrimaryKey(id);
     }
 
-    public List<Validate> getRuleValidationsByUiId(Integer uiId) {
+    public List<Validate> getValidationsByUiId(Integer uiId) {
         List<Integer> validateIds = ruleValidationToValidateDao.findByUiId(uiId).stream().map(UiToValidate::getValidateId).collect(Collectors.toList());// You need to create this method in your DAO
         if(validateIds.isEmpty()) {
             return Collections.emptyList();
@@ -53,7 +53,7 @@ public class RuleValidationService {
 
     }
 
-    public List<Validate> getAllRuleValidations() {
+    public List<Validate> getAllValidations() {
         return ruleValidationDao.findAll();
     }
 

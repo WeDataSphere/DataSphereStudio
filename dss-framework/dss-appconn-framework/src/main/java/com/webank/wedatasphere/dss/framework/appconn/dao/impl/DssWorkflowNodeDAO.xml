@@ -39,9 +39,12 @@
 
     <select id="findByAppconnName" resultMap="BaseResultMap">
         SELECT id,name,appconn_name,node_type,jump_type,support_jump,submit_to_scheduler,enable_copy,should_creation_before_node,icon_path FROM dss_workflow_node
-        wher appconn_name = #{appconnName}
+        WHERE appconn_name = #{appconnName}
     </select>
-
+    <select id="findByName" resultMap="BaseResultMap">
+        SELECT id,name,appconn_name,node_type,jump_type,support_jump,submit_to_scheduler,enable_copy,should_creation_before_node,icon_path FROM dss_workflow_node
+        WHERE name = #{name}
+    </select>
 
     <select id="findAll" resultMap="BaseResultMap">
         SELECT id,name,appconn_name,node_type,jump_type,support_jump,submit_to_scheduler,enable_copy,should_creation_before_node,icon_path FROM dss_workflow_node

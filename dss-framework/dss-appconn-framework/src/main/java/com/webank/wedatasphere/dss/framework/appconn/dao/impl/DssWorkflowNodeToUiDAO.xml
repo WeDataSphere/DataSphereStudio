@@ -29,6 +29,11 @@
     WHERE workflow_node_id=#{workflowNodeId}
     </select>
 
+    <select id="findByUiId" resultMap="BaseResultMap">
+        SELECT id,workflow_node_id,ui_id FROM dss_workflow_node_to_ui
+        WHERE ui_id=#{uiId}
+    </select>
+
   <delete id="deleteByNodeIdAndUiId">
       DELETE FROM dss_workflow_node_to_ui
       WHERE workflow_node_id = #{workflowNodeId} AND ui_id = #{uiId}

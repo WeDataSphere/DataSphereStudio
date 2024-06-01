@@ -1,11 +1,16 @@
 package com.webank.wedatasphere.dss.framework.appconn.restful;
 
 import com.webank.wedatasphere.dss.framework.appconn.entity.*;
+import com.webank.wedatasphere.dss.framework.appconn.service.*;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.server.Message;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Author: xlinliu
@@ -13,6 +18,22 @@ import javax.servlet.http.HttpServletResponse;
 @RestController
 @RequestMapping(path = "/dss/framework/appconnmanager", produces = {"application/json"})
 public class WorkflowNodeManagerRestful {
+    @Autowired
+    AppConnMenuService appConnMenuService;
+    @Autowired
+    MenuTypeService menuTypeService;
+    @Autowired
+    NodeGroupService nodeGroupService;
+    @Autowired
+    NodeService nodeService;
+    @Autowired
+    NodeToUiService nodeToUiService;
+    @Autowired
+    NodeUiService nodeUiService;
+    @Autowired
+    ValidateService validateService;
+    @Autowired
+    UiToValidateService uiToValidateService;
 
     /**
      *  保存工作流节点
@@ -26,7 +47,10 @@ public class WorkflowNodeManagerRestful {
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+        // 保存节点
+        node = nodeService.saveNode(node);
+        // 返回保存后的节点信息
+        return Message.ok("保存成功").data("node",node);
     }
 
     /**
@@ -42,7 +66,23 @@ public class WorkflowNodeManagerRestful {
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+        //nodeId必须为空或者是整数
+        if (StringUtils.isNotBlank(nodeId) && !StringUtils.isNumeric(nodeId)){
+            return Message.error("nodeId必须为整数");
+        }
+
+        List<Node> nodeList = new ArrayList<>();
+        // 获取节点
+        if(StringUtils.isNotBlank(nodeId)){
+            Node node = nodeService.getNodeById(Integer.parseInt(nodeId));
+            nodeList.add(node);
+        }else if(StringUtils.isNotBlank(nodeName)){
+            nodeList = nodeService.getNodesByName(nodeName);
+        }else{
+           nodeList = nodeService.getAllNodes();
+        }
+        // 返回节点信息
+        return Message.ok("获取成功").data("nodeList",nodeList).data("total",nodeList.size());
     }
 
 
@@ -52,11 +92,12 @@ public class WorkflowNodeManagerRestful {
      */
     @RequestMapping(value = "addui", method=RequestMethod.POST)
     public Message addUi(
-            @RequestBody NodeUi request,
+            @RequestBody NodeUi nodeUi,
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+        nodeUi=nodeUiService.saveNodeUi(nodeUi);
+        return Message.ok("添加成功").data("ui",nodeUi);
     }
 
     /**
@@ -72,7 +113,28 @@ public class WorkflowNodeManagerRestful {
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+        //nodeId必须为空或者是整数
+        if(nodeId!=null && !StringUtils.isNumeric(nodeId))
+        {
+            return Message.error("nodeId必须为空或者是整数");
+        }
+        //uiId必须为空或者是整数
+        if(uiId!=null && !StringUtils.isNumeric(uiId)){
+            return Message.error("uiId必须为空或者是整数");
+        }
+
+        List<NodeUi> uiList = new ArrayList<>();
+
+        if(StringUtils.isNotBlank(uiId)){
+            NodeUi nodeUi = nodeUiService.getNodeUiById(Integer.parseInt(uiId));
+            uiList.add(nodeUi);
+        }else if(StringUtils.isNotBlank(nodeId)){
+             uiList = nodeUiService.getNodeUisByNodeId(Integer.parseInt(nodeId));
+
+        }else {
+            uiList = nodeUiService.getAllNodeUis();
+        }
+        return Message.ok("查询成功").data("uiList",uiList).data("total",uiList.size());
     }
 
 
@@ -82,11 +144,12 @@ public class WorkflowNodeManagerRestful {
      */
     @RequestMapping(value = "nodeaddui", method=RequestMethod.POST)
     public Message nodeUiAssociation(
-            @RequestBody NodeToUi request,
+            @RequestBody NodeToUi nodeToUi,
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+        nodeToUiService.addNodeToUi(nodeToUi);
+        return Message.ok("添加成功");
     }
 
     /**
@@ -95,11 +158,12 @@ public class WorkflowNodeManagerRestful {
      */
     @RequestMapping(value = "nodedeleteui", method=RequestMethod.POST)
     public Message removeAttributeFromNode(
-            @RequestBody NodeToUi request,
+            @RequestBody NodeToUi nodeToUi,
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+        nodeToUiService.removeNodeFromUi(nodeToUi.getNodeId(),nodeToUi.getUiId());
+        return Message.ok("删除成功");
     }
 
 
@@ -115,7 +179,8 @@ public class WorkflowNodeManagerRestful {
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+        validate= validateService.saveValidation(validate);
+        return Message.ok("保存成功").data("validate",validate);
     }
 
     /**
@@ -131,7 +196,24 @@ public class WorkflowNodeManagerRestful {
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+        //uiId必须为空或者是整数
+        if(uiId!=null && !StringUtils.isNumeric(uiId)){
+            return Message.error("uiId必须为空或者是整数");
+        }
+        //validateId必须为空或者是整数
+        if(validateId!=null && !StringUtils.isNumeric(validateId)){
+            return Message.error("validateId必须为空或者是整数");
+        }
+
+        List<Validate> validateList = new ArrayList<>();
+         if(validateId!=null){
+            validateList.add(validateService.getValidationById(Integer.parseInt(validateId)));
+        }else if(uiId!=null){
+            validateList = validateService.getValidationsByUiId(Integer.parseInt(uiId));
+        }else{
+            validateList = validateService.getAllValidations();
+        }
+        return Message.ok("查询成功").data("validateList",validateList).data("total",validateList.size());
     }
 
 
@@ -141,11 +223,12 @@ public class WorkflowNodeManagerRestful {
      */
     @RequestMapping(value = "uiaddvalidate", method=RequestMethod.POST)
     public Message attributeAssociationRule(
-            @RequestBody UiToValidate request,
+            @RequestBody UiToValidate uiToValidate,
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+        uiToValidateService.addUiToValidate(uiToValidate);
+        return Message.ok("添加成功");
     }
 
     /**
@@ -154,11 +237,12 @@ public class WorkflowNodeManagerRestful {
      */
     @RequestMapping(value = "uideletevalidate", method=RequestMethod.POST)
     public Message unbindAttributeRule(
-            @RequestBody UiToValidate request,
+            @RequestBody UiToValidate uiToValidate,
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+        uiToValidateService.removeUiFromValidate(uiToValidate.getUiId(), uiToValidate.getValidateId());
+        return Message.ok("删除成功");
     }
 
     /**
@@ -172,7 +256,17 @@ public class WorkflowNodeManagerRestful {
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+        //如果节点关联了ui，则不允许删除
+        if(!nodeUiService.getNodeUisByNodeId(Integer.parseInt(nodeId)).isEmpty()){
+            return Message.error("节点关联了UI，不允许删除");
+        }
+
+        //nodeId不能为空且必须是整数
+        if (StringUtils.isBlank(nodeId) || !StringUtils.isNumeric(nodeId)){
+            return Message.error("节点id不能为空且必须是整数");
+        }
+        nodeService.deleteNode(Integer.parseInt(nodeId));
+        return Message.ok("删除成功");
     }
 
     /**
@@ -186,7 +280,18 @@ public class WorkflowNodeManagerRestful {
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+
+        //uiId必须是一个整数
+        if(StringUtils.isBlank(uiId) || !StringUtils.isNumeric(uiId)){
+            return Message.error("属性id不能为空且必须是整数");
+        }
+        //关联检验，属性不能被任何节点关联。
+        if(nodeUiService.isUsed(Integer.parseInt(uiId))){
+            return Message.error("该属性已被节点关联，不能删除");
+        }
+        nodeUiService.deleteNodeUi(Integer.parseInt(uiId));
+        return Message.ok("删除成功");
+
     }
 
 
@@ -196,11 +301,12 @@ public class WorkflowNodeManagerRestful {
      */
     @RequestMapping(value = "savemenuappconn", method=RequestMethod.POST)
     public Message saveMenu(
-            @RequestBody AppConnMenu request,
+            @RequestBody AppConnMenu appConnMenu,
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+        appConnMenu= appConnMenuService.saveMenu(appConnMenu);
+        return Message.ok("保存成功").data("menu",appConnMenu);
     }
     /**
      * 查询appconn的菜单
@@ -213,7 +319,15 @@ public class WorkflowNodeManagerRestful {
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+        //appconnId必须是一个整数
+        if(StringUtils.isBlank(appconnId)&&StringUtils.isNumeric(appconnId)){
+            return Message.error("appconnId必须是一个整数");
+        }
+        List<AppConnMenu> menus = appConnMenuService.getMenusByAppconnId(Integer.parseInt(appconnId));
+        AppConnMenu menu = menus.isEmpty() ? null : menus.get(0);
+        return Message.ok("查询成功").data("menu",menu);
+
+
     }
 
     /**
@@ -227,7 +341,14 @@ public class WorkflowNodeManagerRestful {
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+        //appconnId必须是一个整数
+        if(StringUtils.isBlank(appconnId)&&StringUtils.isNumeric(appconnId)){
+            return Message.error("appconnId必须是一个整数");
+        }
+        //删除appconn的菜单
+        appConnMenuService.deleteMenusByAppconnId(Integer.parseInt(appconnId));
+        return Message.ok("删除appconn的菜单成功");
+
     }
 
 
@@ -240,7 +361,8 @@ public class WorkflowNodeManagerRestful {
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+        List<MenuType> menuTypes = menuTypeService.getAllMenuTypes();
+        return Message.ok().data("menuType", menuTypes).data("total", menuTypes.size());
     }
     /**
      * 查询节点分类枚举值
@@ -251,7 +373,8 @@ public class WorkflowNodeManagerRestful {
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        return null;
+       List<NodeGroup> nodeGroups=nodeGroupService.getAllNodeGroups();
+        return Message.ok().data("nodeGroup", nodeGroups).data("total", nodeGroups.size());
     }
 
 

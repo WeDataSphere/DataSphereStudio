@@ -66,6 +66,11 @@ public class NodeUiService {
         return nodeUiDao.findAll();
     }
 
+
+    public boolean isUsed(Integer uiId){
+        return !nodeToUiDao.findByUiId(uiId).isEmpty();
+    }
+
     private void validateNodeUi(NodeUi nodeUi) throws IllegalArgumentException {
         //todo Implement your validation logic here
     }

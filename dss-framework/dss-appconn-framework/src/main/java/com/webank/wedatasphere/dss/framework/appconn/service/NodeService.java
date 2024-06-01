@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.dss.framework.appconn.service;
 
+import com.webank.wedatasphere.dss.common.exception.DSSRuntimeException;
 import com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkflowNodeDAO;
 import com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkflowNodeGroupDAO;
 import com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkflowNodeToGroupDAO;
@@ -31,19 +32,19 @@ public class NodeService {
      * @return
      * @throws Exception
      */
-    public Node saveNode(Node node) throws Exception {
+    public Node saveNode(Node node)   {
         validateNode(node,node.getId() != null);
         if (node.getId() == null) {
             // Insert new node
             int rowsInserted = nodeDao.insert(node);
             if (rowsInserted <= 0)  {
-                throw new Exception("Failed to insert new node");
+                throw new DSSRuntimeException("Failed to insert new node");
             }
         } else {
             // Update existing node
             int rowsUpdated = nodeDao.update(node);
             if (rowsUpdated <= 0) {
-                throw new Exception("Failed to update existing node");
+                throw new DSSRuntimeException("Failed to update existing node");
             }
         }
         //处理节点分类关系
@@ -67,11 +68,11 @@ public class NodeService {
         return node;
     }
 
-    public void deleteNode(Integer id) throws Exception {
+    public void deleteNode(Integer id) {
         // Here you might want to check for any linked attributes and handle accordingly
         int rowsDeleted = nodeDao.deleteByPrimaryKey(id);
         if (rowsDeleted <= 0) {
-            throw new Exception("Failed to delete node with id: " + id);
+            throw new DSSRuntimeException("Failed to delete node with id: " + id);
         }
         nodeToGroupDao.deleteByNodeId(id);
     }
@@ -85,12 +86,17 @@ public class NodeService {
          return nodeDao.findByAppconnName(appconnName);
     }
 
+    public List<Node> getNodesByName(String name) {
+        // You may need to add a method in your DAO to handle this
+        return nodeDao.findByAppconnName(name);
+    }
+
     public List<Node> getAllNodes() {
         // You may need to add a method in your DAO to handle this
          return nodeDao.findAll();
     }
 
-    private void validateNode(Node node,boolean isUpdateNode) throws Exception {
+    private void validateNode(Node node,boolean isUpdateNode) {
     //nodeGroup必须是已有的分类。
         if(node.getNodeGroup()==null|| nodeGroupDao.findByPrimaryKey(node.getNodeGroup())==null){
             throw new IllegalArgumentException("NodeGroup is not exist");
