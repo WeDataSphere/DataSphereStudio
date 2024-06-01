@@ -162,7 +162,7 @@ public class AppConnManagerRestfulApi {
     }
 
     @RequestMapping(path = "/deleteAppConn", method = RequestMethod.POST)
-    public Message deleteAppConn(@RequestParam Long id) {
+    public Message deleteAppConn(@RequestParam Long id) throws Exception{
         try {
             appConnService.deleteAppConn(id);
         } catch (Exception e) {
@@ -220,23 +220,58 @@ public class AppConnManagerRestfulApi {
     }
 
     @RequestMapping(path = "/addAppConnInstance", method = RequestMethod.POST)
-    public void addAppConnInstance(@RequestBody AppInstanceBean appInstanceBean) {
-        appInstanceService.addAppInstance(appInstanceBean);
+    public Message addAppConnInstance(@RequestBody AppInstanceBean appInstanceBean) {
+        checkInstanceParams(appInstanceBean);
+        AppInstanceBean appConnInstance;
+        try {
+            appConnInstance = appInstanceService.addAppInstance(appInstanceBean);
+        } catch (Exception e) {
+            LOGGER.error("Add AppConn instance failed.", e);
+            return Message.error("Add AppConn instance failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
+        }
+        Message message = Message.ok("Add AppConn instance succeed.");
+        message.data("appConnInstance", appConnInstance);
+        return message;
     }
 
     @RequestMapping(path = "/editAppConnInstances", method = RequestMethod.POST)
-    public void editAppConnInstances(@RequestBody AppInstanceBean appInstanceBean) {
-            appInstanceService.updateAppInstance(appInstanceBean);
+    public Message editAppConnInstances(@RequestBody AppInstanceBean appInstanceBean) {
+        checkInstanceParams(appInstanceBean);
+        AppInstanceBean appConnInstance;
+        try {
+            appConnInstance = appInstanceService.updateAppInstance(appInstanceBean);
+        } catch (Exception e) {
+            LOGGER.error("Update AppConn instance failed.", e);
+            return Message.error("Update AppConn instance failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
+        }
+        Message message = Message.ok("Update AppConn instance succeed.");
+        message.data("appConnInstance", appConnInstance);
+        return message;
     }
 
     @RequestMapping(path = "/deleteAppConnInstance", method = RequestMethod.POST)
-    public void deleteAppConnInstance(@RequestParam Long id) {
+    public Message deleteAppConnInstance(@RequestParam Long id) {
+        try {
             appInstanceService.deleteAppInstance(id);
+        } catch (Exception e) {
+            LOGGER.error("Delete AppConn instance failed.", e);
+            return Message.error("Delete AppConn instance failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
+        }
+        return Message.ok("Delete AppConn instance succeed.");
     }
 
     @RequestMapping(path = "/getAppConnInstances", method = RequestMethod.GET)
-    public void getAppConnInstances(@RequestParam Long appConnId) {
-        appInstanceService.getAppInstancesByAppConnId(appConnId);
+    public Message getAppConnInstances(@RequestParam Long appConnId) {
+        List<AppInstanceBean> appConnInstances;
+        try {
+            appConnInstances = appInstanceService.getAppInstancesByAppConnId(appConnId);
+        } catch (Exception e) {
+            LOGGER.error("Get AppConn instance list failed.", e);
+            return Message.error("Get AppConn instance list failed. Reason: " + ExceptionUtils.getRootCauseMessage(e));
+        }
+        Message message = Message.ok("Get AppConn instance list succeed.");
+        message.data("appConnInstances", appConnInstances);
+        return message;
     }
 
 

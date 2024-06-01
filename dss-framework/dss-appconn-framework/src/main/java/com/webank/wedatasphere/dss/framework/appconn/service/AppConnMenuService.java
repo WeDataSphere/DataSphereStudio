@@ -76,7 +76,7 @@ public class AppConnMenuService {
      * 根据appconnId删除顶部菜单
      */
     @Transactional
-    public String deleteMenusByAppconnId(Integer appconnId) throws Exception {
+    public String deleteMenusByAppconnId(Integer appconnId) {
         if(appconnId == null || appConnMapper.getAppConnBeanById(appconnId.longValue()) == null) {
             throw new IllegalArgumentException("关联的appconnId不能为空且必须存在");
         }

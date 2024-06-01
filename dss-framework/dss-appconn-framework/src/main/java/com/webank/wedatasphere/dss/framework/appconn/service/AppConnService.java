@@ -10,7 +10,7 @@ public interface AppConnService {
 
     AppConnBean updateAppConn(AppConnBean appConnBean);
 
-    void deleteAppConn(Long appConnId);
+    void deleteAppConn(Long appConnId) throws Exception;
     List<AppConnBean> getAppConns(String appConnName, String className, int page, int size);
 
     List<String> getAppConnsName();
