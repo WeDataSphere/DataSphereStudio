@@ -30,6 +30,7 @@ import com.webank.wedatasphere.dss.framework.appconn.entity.AppConnResource;
 import com.webank.wedatasphere.dss.framework.appconn.exception.AppConnNotExistsErrorException;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnResourceUploadService;
 import com.webank.wedatasphere.dss.framework.appconn.utils.AppConnServiceUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.bml.client.BmlClient;
@@ -65,8 +66,34 @@ public class AppConnResourceServiceImpl implements AppConnResourceService, AppCo
 
     @Override
     public String getAppConnHome(AppConnInfo appConnInfo) {
+        //不管是保存还是更新都从BML下载最新的AppConn物料，如果定时线程需要重新reload AppConn，那么说明当前节点保存的AppConn信息与数据库中不一致
+        // 也就是其他节点对AppConn进行了更新，也就需要下载最新的物料
+        File zipFilePath = new File(AppConnUtils.getAppConnHomePath(), appConnInfo.getAppConnName() + ".zip");
+        File appConnPath = new File(AppConnUtils.getAppConnHomePath(), appConnInfo.getAppConnName());
+        LOGGER.info("The path of AppConn {} is {}.", appConnInfo.getAppConnName(), appConnPath);
+        Resource resource = appConnInfo.getAppConnResource();
+        bmlClient.downloadResource(Utils.getJvmUser(), resource.getResourceId(), resource.getVersion(),"file://" + zipFilePath.getPath(), true);
+        if(appConnPath.exists()) {
+            try {
+                FileUtils.deleteDirectory(appConnPath);
+            } catch (IOException e) {
+                throw new AppConnNotExistsErrorException(20350, "Cannot delete dir " + appConnPath.getPath() + " for AppConn " + appConnInfo.getAppConnName());
+            }
+        }
+        LOGGER.info("Then, unzip the latest resource file {}.", zipFilePath);
+        try {
+            ZipHelper.unzip(zipFilePath.getPath());
+        } catch (DSSErrorException e) {
+            throw new AppConnNotExistsErrorException(20350, "Unzip " + zipFilePath + " failed, AppConn is " + appConnInfo.getAppConnName());
+        }
+        return appConnPath.getPath();
+    }
+
+    @Override
+    public String getAppConnForIcon(AppConnInfo appConnInfo) {
         return Paths.get(AppConnUtils.getAppConnHomePath(), appConnInfo.getAppConnName()).toFile().getPath();
     }
+
 
     @Override
     public void upload(String appConnName) throws DSSErrorException {
