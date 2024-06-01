@@ -29,13 +29,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.session.RowBounds;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -78,11 +73,12 @@ public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnServic
     }
 
     @Override
-    public List<AppConnBean> getAppConns(String appConnName, String className, RowBounds rowBounds) {
+    public List<AppConnBean> getAppConns(String appConnName, String className, int page, int size) {
+        int offset = (page - 1) * size;
         try {
-            return appConnMapper.getAppConns(appConnName, className, rowBounds.getOffset(), rowBounds.getLimit());
+            return appConnMapper.getAppConns(appConnName, className, new RowBounds(offset, size));
         } catch (DataAccessException e) {
-            // Handle data access exceptions, log, and possibly rethrow
+
             throw new RuntimeException("Error fetching AppConns", e);
         }
     }
@@ -99,11 +95,9 @@ public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnServic
 
     @Override
     public AppConnBean updateAppConn(AppConnBean appConnBean) {
-        if (appConnMapper.updateAppConn(appConnBean) > 0) {
-            return appConnBean;
-        } else {
-            throw new RuntimeException("Failed to update AppConnBean");
-        }
+        appConnMapper.updateAppConn(appConnBean);
+        return appConnBean;
+
     }
 
     @Override
@@ -118,35 +112,4 @@ public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnServic
         return appConnMapper.getAllAppConnsName();
     }
 
-    @Override
-    @Async
-    public void uploadMaterial(MultipartFile file) {
-        try {
-            String md5Hash = calculateMD5(file);
-            // Assuming there's a method to save the file and its MD5 hash
-            saveFileAndHash(file, md5Hash);
-        } catch (IOException | NoSuchAlgorithmException e) {
-            // Handle exceptions related to file upload or MD5 calculation
-            throw new RuntimeException("Error uploading material", e);
-        }
-    }
-
-    private String calculateMD5(MultipartFile file) throws IOException, NoSuchAlgorithmException {
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] fileBytes = file.getBytes();
-        md.update(fileBytes);
-        byte[] digest = md.digest();
-        StringBuilder sb = new StringBuilder();
-        for (byte b : digest) {
-            sb.append(String.format("%02x", b));
-        }
-        return sb.toString();
-    }
-
-    // Placeholder for actual file saving logic and MD5 storage
-    private void saveFileAndHash(MultipartFile file, String md5Hash) {
-        // Implement the logic to save the file and its MD5 hash to the storage
-        // This could involve saving to a database or file system, and associating the hash
-        throw new UnsupportedOperationException("File saving and MD5 storage not implemented");
-    }
 }

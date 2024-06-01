@@ -78,7 +78,7 @@
         where appconn_name=#{appConnName}
     </update>
 
-    <select id="getAppConns" resultType="AppConnBean">
+    <select id="getAppConns" resultMap="AppConnBeanMap">
         <![CDATA[SELECT]]>
         <include refid="fields_query"/>
         FROM `dss_appconn`
@@ -114,13 +114,8 @@
         WHERE id = #{id}
     </update>
 
-    <delete id="deleteAppConnById">
+    <delete id="deleteAppConn">
         DELETE FROM `dss_appconn` WHERE `id` = #{id}
     </delete>
-
-    <select id="getAllAppConnsName" resultType="List">
-        SELECT `appconn_name`
-        FROM `dss_appconn`
-    </select>
 
 </mapper>
