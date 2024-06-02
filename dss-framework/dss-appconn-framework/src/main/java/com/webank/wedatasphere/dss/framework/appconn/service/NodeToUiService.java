@@ -5,9 +5,6 @@ import com.webank.wedatasphere.dss.framework.appconn.entity.NodeToUi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Service
 public class NodeToUiService {
 
@@ -20,12 +17,9 @@ public class NodeToUiService {
 
     public NodeToUi addNodeToUi(NodeToUi nodeToUi){
         validateNodeToUi(nodeToUi);
-        int rowsInserted = nodeToUiDao.insert(nodeToUi);
-        if (rowsInserted > 0) {
-            return nodeToUi;
-        } else {
-            throw new IllegalArgumentException("Failed to insert new NodeToUi");
-        }
+        nodeToUiDao.insert(nodeToUi);
+        return nodeToUi;
+
     }
 
     public void removeNodeFromUi(Integer nodeId, Integer uiId) throws IllegalArgumentException {

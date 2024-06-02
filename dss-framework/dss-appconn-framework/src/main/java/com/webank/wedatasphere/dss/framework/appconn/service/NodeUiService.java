@@ -29,16 +29,12 @@ public class NodeUiService {
         validateNodeUi(nodeUi);
         if (nodeUi.getId() == null) {
             // Insert new ui property
-            int rowsInserted = nodeUiDao.insert(nodeUi);
-            if (rowsInserted <= 0) {
-                throw new IllegalArgumentException("Failed to insert new NodeUi");
-            }
+            nodeUiDao.insert(nodeUi);
+
         } else {
             // Update existing ui property
-            int rowsUpdated = nodeUiDao.update(nodeUi);
-            if (rowsUpdated <= 0) {
-                throw new IllegalArgumentException("Failed to update existing NodeUi");
-            }
+            nodeUiDao.update(nodeUi);
+
         }
         return nodeUi;
     }
