@@ -34,6 +34,7 @@ public interface DssWorkflowNodeToUiDAO{
 
 
     List<NodeToUi> findByNodeId(Integer nodeId);
+    List<NodeToUi> findByNodeIdAndUiId(NodeToUi nodeToUi);
 
     List<NodeToUi> findByUiId(Integer uiId);
 

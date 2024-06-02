@@ -22,11 +22,18 @@ public class UiToValidateService {
 
     }
 
-    public void removeUiFromValidate(Integer uiId, Integer validateId) throws IllegalArgumentException {
-        uiToValidateDao.deleteByUiIdAndValidateId(uiId, validateId); // You need to create this method in your DAO
+    public void removeUiFromValidate(UiToValidate uiToValidate) throws IllegalArgumentException {
+        uiToValidateDao.deleteByUiIdAndValidateId(uiToValidate); // You need to create this method in your DAO
     }
 
     private void validateUiToValidate(UiToValidate uiToValidate) throws IllegalArgumentException {
         // Implement the validation logic here
+        if(uiToValidate.getUiId() == null || uiToValidate.getValidateId() == null) {
+            throw new IllegalArgumentException("uiId and validateId cannot be null");
+        }
+        if(!uiToValidateDao.findByUiIdAndValidateId(uiToValidate).isEmpty()){
+            throw new IllegalArgumentException("关联关系已经存在，请勿重复添加");
+        }
+
     }
 }

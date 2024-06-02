@@ -29,10 +29,14 @@
         WHERE ui_id=#{uiId}
     </select>
 
-    <delete id="deleteByUiIdAndValidateId">
+    <delete id="deleteByUiIdAndValidateId" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.UiToValidate">
         DELETE FROM dss_workflow_node_ui_to_validate
         WHERE ui_id = #{uiId} AND validate_id = #{validateId}
     </delete>
+    <select id="findByUiIdAndValidateId" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.UiToValidate">
+        SELECT id,ui_id,validate_id FROM dss_workflow_node_ui_to_validate
+        WHERE ui_id = #{uiId} AND validate_id = #{validateId}
+    </select>
 
 
 

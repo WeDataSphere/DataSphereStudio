@@ -32,9 +32,12 @@ public interface DssWorkflowNodeUiToValidateDAO{
     */
     UiToValidate findByPrimaryKey(Integer id);
 
-    int deleteByUiIdAndValidateId(@Param(value = "uiId") Integer uiId, @Param(value = "validateId") Integer validateId);
+    int deleteByUiIdAndValidateId(UiToValidate uiToValidate);
+
 
     List<UiToValidate> findByUiId(Integer uiId);
+
+    List<UiToValidate> findByUiIdAndValidateId(UiToValidate uiToValidate);
 
 //    List<UiToValidate> findByValidateId(Integer validateId);
 //

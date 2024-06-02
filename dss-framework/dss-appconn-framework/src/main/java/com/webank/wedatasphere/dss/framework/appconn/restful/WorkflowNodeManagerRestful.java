@@ -261,7 +261,7 @@ public class WorkflowNodeManagerRestful {
             HttpServletRequest httpReq,
             HttpServletResponse httpResp
     ){
-        uiToValidateService.removeUiFromValidate(uiToValidate.getUiId(), uiToValidate.getValidateId());
+        uiToValidateService.removeUiFromValidate(uiToValidate);
         return Message.ok("删除成功");
     }
 
