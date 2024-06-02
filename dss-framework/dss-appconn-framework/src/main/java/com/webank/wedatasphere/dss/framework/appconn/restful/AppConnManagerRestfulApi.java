@@ -244,6 +244,11 @@ public class AppConnManagerRestfulApi {
         }
         AppInstanceBean returnAppConnInstance;
         try {
+            List<AppInstanceBean> appInstancesByAppConnId = appInstanceService.getAppInstancesByAppConnId(appInstanceBean.getAppConnId());
+            boolean b = appInstancesByAppConnId.stream().map(AppInstanceBean::getLabel).anyMatch(appInstanceBean.getLabel()::equals);
+            if (b) {
+                return Message.error("There have same label of AppInstance, please modify.");
+            }
             returnAppConnInstance = appInstanceService.addAppInstance(appInstanceBean);
         } catch (Exception e) {
             LOGGER.error("Add AppConn instance failed.", e);
@@ -305,33 +310,64 @@ public class AppConnManagerRestfulApi {
         if (StringUtils.isBlank(appConnBean.getAppConnName())) {
             message.setStatus(1);
             message.setMessage("AppConn name can not be empty.");
+            return message;
         }
         if (appConnBean.getAppConnName().length() > 64) {
             message.setStatus(1);
             message.setMessage("AppConn name cannot exceed 64 characters.");
+            return message;
         }
         if (!appConnBean.getAppConnName().matches("^[a-zA-Z]+$")) {
             message.setStatus(1);
             message.setMessage("AppConn name can only contain letters.");
+            return message;
         }
+        if (StringUtils.isBlank(appConnBean.getIsUserNeedInit())) {
+            message.setStatus(1);
+            message.setMessage("AppConn isUserNeedInit can not be empty.");
+            return message;
+        }
+
+        if (appConnBean.getIfIframe() == null) {
+            message.setStatus(1);
+            message.setMessage("AppConn ifIframe can not be empty.");
+            return message;
+        }
+
+        if (appConnBean.getIsMicroApp() == null) {
+            message.setStatus(1);
+            message.setMessage("AppConn isMicroApp can not be empty.");
+            return message;
+        }
+
+        if (appConnBean.getIsExternal() == null) {
+            message.setStatus(1);
+            message.setMessage("AppConn isExternal can not be empty.");
+            return message;
+        }
+
         if (appConnBean.getResourceFetchMethod().equals(ResourceTypeEnum.RELATED.getName())) {
             if (StringUtils.isNotBlank(appConnBean.getResource())) {
                 message.setStatus(1);
                 message.setMessage("Resource can not be set when resource fetch method is related.");
+                return message;
             }
             if (StringUtils.isBlank(appConnBean.getReference())) {
                 message.setStatus(1);
                 message.setMessage("Reference can not be null when resource fetch method is related.");
+                return message;
             }
         }
         if (appConnBean.getResourceFetchMethod().equals(ResourceTypeEnum.UPLOAD.getName())) {
             if (StringUtils.isBlank(appConnBean.getResource())) {
                 message.setStatus(1);
                 message.setMessage("Resource can not be null when resource fetch method is upload.");
+                return message;
             }
             if (StringUtils.isNotBlank(appConnBean.getReference())) {
                 message.setStatus(1);
                 message.setMessage("Reference can not be set when resource fetch method is upload.");
+                return message;
             }
         }
         return message;
