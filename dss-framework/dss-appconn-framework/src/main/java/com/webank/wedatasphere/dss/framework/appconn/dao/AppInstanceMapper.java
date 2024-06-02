@@ -39,11 +39,11 @@ public interface AppInstanceMapper {
                                          @Param("label") String label);
 
 
-    void deleteAppInstance(@Param("appInstanceId") Long appInstanceId);
+    void deleteAppInstance(@Param("id") Long appInstanceId);
 
     void addAppInstance(AppInstanceBean appInstanceBean);
 
-    AppInstanceBean getAppInstanceById(@Param("appInstanceId") Long appInstanceId);
+    AppInstanceBean getAppInstanceById(@Param("id") Long appInstanceId);
 
     void updateAppInstance(AppInstanceBean appInstanceBean);
 }
