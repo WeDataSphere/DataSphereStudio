@@ -76,6 +76,9 @@ public class WorkflowNodeManagerRestful {
         // 获取节点
         if(StringUtils.isNotBlank(nodeId)){
             Node node = nodeService.getNodeById(Integer.parseInt(nodeId));
+            if(node == null){
+                return Message.error("对应id的节点不存在");
+            }
             nodeList.add(node);
         }else if(StringUtils.isNotBlank(nodeName)){
             nodeList = nodeService.getNodesByName(nodeName);
@@ -128,6 +131,9 @@ public class WorkflowNodeManagerRestful {
 
         if(StringUtils.isNotBlank(uiId)){
             NodeUi nodeUi = nodeUiService.getNodeUiById(Integer.parseInt(uiId));
+            if(nodeUi == null){
+                return Message.error("未找到对应id的UI");
+            }
             uiList.add(nodeUi);
         }else if(StringUtils.isNotBlank(nodeId)){
              uiList = nodeUiService.getNodeUisByNodeId(Integer.parseInt(nodeId));
@@ -208,7 +214,11 @@ public class WorkflowNodeManagerRestful {
 
         List<Validate> validateList = new ArrayList<>();
          if(validateId!=null){
-            validateList.add(validateService.getValidationById(Integer.parseInt(validateId)));
+             Validate validate = validateService.getValidationById(Integer.parseInt(validateId));
+             if(validate==null){
+                 return Message.error("对应id的校验规则不存在");
+             }
+             validateList.add(validate);
         }else if(uiId!=null){
             validateList = validateService.getValidationsByUiId(Integer.parseInt(uiId));
         }else{

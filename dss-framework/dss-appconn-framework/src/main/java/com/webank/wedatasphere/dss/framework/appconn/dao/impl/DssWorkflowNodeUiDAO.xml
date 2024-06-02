@@ -9,15 +9,15 @@
         <result column="lable_name" jdbcType="VARCHAR" property="lableName"/>
         <result column="lable_name_en" jdbcType="VARCHAR" property="lableNameEn"/>
         <result column="ui_type" jdbcType="VARCHAR" property="uiType"/>
-        <result column="required" jdbcType="BIT" property="required"/>
+        <result column="required"  property="required"/>
         <result column="value" jdbcType="VARCHAR" property="value"/>
         <result column="default_value" jdbcType="VARCHAR" property="defaultValue"/>
-        <result column="is_hidden" jdbcType="BIT" property="isHidden"/>
+        <result column="is_hidden"  property="isHidden"/>
         <result column="condition" jdbcType="VARCHAR" property="condition"/>
-        <result column="is_advanced" jdbcType="BIT" property="isAdvanced"/>
+        <result column="is_advanced"  property="isAdvanced"/>
         <result column="order" jdbcType="TINYINT" property="order"/>
-        <result column="node_menu_type" jdbcType="BIT" property="nodeMenuType"/>
-        <result column="is_base_info" jdbcType="BIT" property="isBaseInfo"/>
+        <result column="node_menu_type"  property="nodeMenuType"/>
+        <result column="is_base_info"  property="isBaseInfo"/>
         <result column="position" jdbcType="VARCHAR" property="position"/>
     </resultMap>
 

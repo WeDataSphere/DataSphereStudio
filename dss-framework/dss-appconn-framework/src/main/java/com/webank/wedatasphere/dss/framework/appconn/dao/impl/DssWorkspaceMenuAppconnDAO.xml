@@ -11,7 +11,7 @@
         <result column="desc_cn" jdbcType="VARCHAR" property="descCn"/>
         <result column="labels_en" jdbcType="VARCHAR" property="labelsEn"/>
         <result column="labels_cn" jdbcType="VARCHAR" property="labelsCn"/>
-        <result column="is_active" jdbcType="BIT" property="isActive"/>
+        <result column="is_active"  property="isActive"/>
         <result column="access_button_en" jdbcType="VARCHAR" property="accessButtonEn"/>
         <result column="access_button_cn" jdbcType="VARCHAR" property="accessButtonCn"/>
         <result column="manual_button_en" jdbcType="VARCHAR" property="manualButtonEn"/>
