@@ -161,7 +161,15 @@ public class AppConnBean implements AppConnInfo, Serializable {
         return "AppConnBean{" +
                 "id=" + id +
                 ", appConnName='" + appConnName + '\'' +
+                ", isUserNeedInit='" + isUserNeedInit + '\'' +
+                ", level='" + level + '\'' +
+                ", ifIframe=" + ifIframe +
+                ", isExternal=" + isExternal +
+                ", isMicroApp=" + isMicroApp +
+                ", reference='" + reference + '\'' +
+                ", resource='" + resource + '\'' +
                 ", className='" + className + '\'' +
+                ", resourceFetchMethod='" + resourceFetchMethod + '\'' +
                 '}';
     }
 }
