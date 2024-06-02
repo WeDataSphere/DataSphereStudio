@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.dss.framework.appconn.restful;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.wedatasphere.dss.appconn.core.AppConn;
 import com.webank.wedatasphere.dss.appconn.manager.AppConnManager;
 import com.webank.wedatasphere.dss.appconn.manager.conf.AppConnManagerCoreConf;
@@ -334,10 +335,19 @@ public class AppConnManagerRestfulApi {
         }
 
         //属性enhanceJson可以为空，如果不为空就必须是JSON格式字符串
-        if (StringUtils.isNotBlank(appInstanceBean.getEnhanceJson()) && !appInstanceBean.getEnhanceJson().matches("\\{.*\\}")) {
+        if (StringUtils.isNotBlank(appInstanceBean.getEnhanceJson()) && !isValidJson(appInstanceBean.getEnhanceJson())) {
             return Message.error("EnhanceJson format is incorrect.");
         }
         return Message.ok();
     }
 
+    private boolean isValidJson(String jsonInString) {
+        try {
+            final ObjectMapper mapper = new ObjectMapper();
+            mapper.readTree(jsonInString);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }
