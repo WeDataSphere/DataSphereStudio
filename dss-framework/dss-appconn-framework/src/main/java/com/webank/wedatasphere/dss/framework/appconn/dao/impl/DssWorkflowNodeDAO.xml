@@ -7,10 +7,10 @@
         <result column="appconn_name" jdbcType="VARCHAR" property="appconnName"/>
         <result column="node_type" jdbcType="VARCHAR" property="nodeType"/>
         <result column="jump_type" jdbcType="INTEGER" property="jumpType"/>
-        <result column="support_jump" jdbcType="BIT" property="supportJump"/>
-        <result column="submit_to_scheduler" jdbcType="BIT" property="submitToScheduler"/>
-        <result column="enable_copy" jdbcType="BIT" property="enableCopy"/>
-        <result column="should_creation_before_node" jdbcType="BIT" property="shouldCreationBeforeNode"/>
+        <result column="support_jump"  property="supportJump"/>
+        <result column="submit_to_scheduler"  property="submitToScheduler"/>
+        <result column="enable_copy"  property="enableCopy"/>
+        <result column="should_creation_before_node"  property="shouldCreationBeforeNode"/>
         <result column="icon_path" jdbcType="LONGVARCHAR" property="iconPath"/>
     </resultMap>
 
