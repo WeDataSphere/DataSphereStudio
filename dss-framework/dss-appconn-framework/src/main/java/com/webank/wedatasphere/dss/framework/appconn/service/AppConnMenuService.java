@@ -1,6 +1,5 @@
 package com.webank.wedatasphere.dss.framework.appconn.service;
 
-import com.webank.wedatasphere.dss.common.exception.DSSRuntimeException;
 import com.webank.wedatasphere.dss.framework.appconn.dao.AppConnMapper;
 import com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkspaceMenuAppconnDAO;
 import com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkspaceMenuDAO;

@@ -17,12 +17,9 @@ public class UiToValidateService {
 
     public UiToValidate addUiToValidate(UiToValidate uiToValidate) throws IllegalArgumentException {
         validateUiToValidate(uiToValidate);
-        int rowsInserted = uiToValidateDao.insert(uiToValidate);
-        if (rowsInserted > 0) {
-            return uiToValidate;
-        } else {
-            throw new IllegalArgumentException("Failed to insert new UiToValidate");
-        }
+        uiToValidateDao.insert(uiToValidate);
+        return uiToValidate;
+
     }
 
     public void removeUiFromValidate(Integer uiId, Integer validateId) throws IllegalArgumentException {

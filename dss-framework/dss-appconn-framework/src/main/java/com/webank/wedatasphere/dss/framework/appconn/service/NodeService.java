@@ -1,16 +1,13 @@
 package com.webank.wedatasphere.dss.framework.appconn.service;
 
-import com.webank.wedatasphere.dss.common.exception.DSSRuntimeException;
 import com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkflowNodeDAO;
 import com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkflowNodeGroupDAO;
 import com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkflowNodeToGroupDAO;
 import com.webank.wedatasphere.dss.framework.appconn.entity.Node;
 import com.webank.wedatasphere.dss.framework.appconn.entity.NodeToGroup;
-import com.webank.wedatasphere.dss.framework.appconn.entity.NodeToUi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -40,10 +37,8 @@ public class NodeService {
         validateNode(node,node.getId() != null);
         if (node.getId() == null) {
             // Insert new node
-            int rowsInserted = nodeDao.insert(node);
-            if (rowsInserted <= 0)  {
-                throw new DSSRuntimeException("Failed to insert new node");
-            }
+            nodeDao.insert(node);
+
         } else {
             // Update existing node
             nodeDao.update(node);

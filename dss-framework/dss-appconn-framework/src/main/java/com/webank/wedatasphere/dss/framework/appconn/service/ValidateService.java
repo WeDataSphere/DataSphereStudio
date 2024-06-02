@@ -27,15 +27,11 @@ public class ValidateService {
     public Validate saveValidation(Validate ruleValidation) throws IllegalArgumentException {
         validateRuleValidation(ruleValidation);
         if (ruleValidation.getId() == null) {
-            int rowsInserted = ruleValidationDao.insert(ruleValidation);
-            if (rowsInserted <= 0) {
-                throw new IllegalArgumentException("Failed to insert new RuleValidation");
-            }
+            ruleValidationDao.insert(ruleValidation);
+
         } else {
-            int rowsUpdated = ruleValidationDao.update(ruleValidation);
-            if (rowsUpdated <= 0) {
-                throw new IllegalArgumentException("Failed to update existing RuleValidation");
-            }
+            ruleValidationDao.update(ruleValidation);
+
         }
         return ruleValidation;
     }
