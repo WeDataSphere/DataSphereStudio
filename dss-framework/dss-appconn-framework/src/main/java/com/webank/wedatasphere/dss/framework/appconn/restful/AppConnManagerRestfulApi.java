@@ -317,11 +317,11 @@ public class AppConnManagerRestfulApi {
             message.setMessage("AppConn name cannot exceed 64 characters.");
             return message;
         }
-        if (!appConnBean.getAppConnName().matches("^[a-zA-Z]+$")) {
-            message.setStatus(1);
-            message.setMessage("AppConn name can only contain letters.");
-            return message;
-        }
+//        if (!appConnBean.getAppConnName().matches("^[a-zA-Z]+$")) {
+//            message.setStatus(1);
+//            message.setMessage("AppConn name can only contain letters.");
+//            return message;
+//        }
         if (StringUtils.isBlank(appConnBean.getIsUserNeedInit())) {
             message.setStatus(1);
             message.setMessage("AppConn isUserNeedInit can not be empty.");
