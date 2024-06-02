@@ -71,10 +71,7 @@ public class NodeService {
 
     public void deleteNode(Integer id) {
         // Here you might want to check for any linked attributes and handle accordingly
-        int rowsDeleted = nodeDao.deleteByPrimaryKey(id);
-        if (rowsDeleted <= 0) {
-            throw new DSSRuntimeException("Failed to delete node with id: " + id);
-        }
+        nodeDao.deleteByPrimaryKey(id);
         nodeToGroupDao.deleteByNodeId(id);
     }
 
