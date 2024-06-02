@@ -77,7 +77,11 @@ public class AppConnManagerRestfulApi {
             LOGGER.info("First, try to load all AppConn...");
             AppConnManager.getAppConnManager().listAppConns().forEach(appConn -> {
                 LOGGER.info("Try to check the quality of AppConn {}.", appConn.getAppDesc().getAppName());
-                appConnQualityCheckers.forEach(DSSExceptionUtils.handling(checker -> checker.checkQuality(appConn)));
+                try {
+                    appConnQualityCheckers.forEach(DSSExceptionUtils.handling(checker -> checker.checkQuality(appConn)));
+                } catch (Exception e) {
+                    LOGGER.error("Failed to check the quality of AppConn {}.", appConn.getAppDesc().getAppName(), e);
+                }
             });
             LOGGER.info("All AppConn have loaded successfully.");
         } else {
@@ -315,9 +319,9 @@ public class AppConnManagerRestfulApi {
         if (appInstanceBean.getUrl() == null) {
             return Message.error("Url can not be null.");
         }
-        if (!appInstanceBean.getUrl().matches("http://\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d{1,5}")) {
-            return Message.error("Url format is incorrect.");
-        }
+//        if (!appInstanceBean.getUrl().matches("http://\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d{1,5}")) {
+//            return Message.error("Url format is incorrect.");
+//        }
 
         //属性label只能是DEV或者PROD
         if (!appInstanceBean.getLabel().equals("DEV") && !appInstanceBean.getLabel().equals("PROD")) {
