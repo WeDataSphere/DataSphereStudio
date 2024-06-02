@@ -378,27 +378,26 @@ public class AppConnManagerRestfulApi {
         if (StringUtils.isBlank(appInstanceBean.getUrl())) {
             message.setStatus(1);
             message.setMessage("Url can not be null.");
-        }
-
-        if (!appInstanceBean.getUrl().matches("^[a-zA-Z]+$")) {
-            message.setStatus(1);
-            message.setMessage("AppConn name can only contain letters.");
+            return message;
         }
 
         if (StringUtils.isBlank(appInstanceBean.getLabel())) {
             message.setStatus(1);
             message.setMessage("Label can not be null.");
+            return message;
         }
         //属性label只能是DEV或者PROD
         if (!"DEV".equals(appInstanceBean.getLabel()) && !"PROD".equals(appInstanceBean.getLabel())) {
             message.setStatus(1);
             message.setMessage("Label can only be DEV or PROD.");
+            return message;
         }
 
         //属性enhanceJson可以为空，如果不为空就必须是JSON格式字符串
         if (StringUtils.isNotBlank(appInstanceBean.getEnhanceJson()) && !isValidJson(appInstanceBean.getEnhanceJson())) {
             message.setStatus(1);
             message.setMessage("EnhanceJson format is incorrect.");
+            return message;
         }
         return message;
     }
