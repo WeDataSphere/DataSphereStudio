@@ -29,5 +29,11 @@ public class NodeToUiService {
 
     private void validateNodeToUi(NodeToUi nodeToUi) throws IllegalArgumentException {
         //todo Implement your validation logic here
+        if(nodeToUi.getNodeId() == null || nodeToUi.getUiId() == null){
+            throw new IllegalArgumentException("nodeId and uiId must not be null");
+        }
+        if(! nodeToUiDao.findByNodeIdAndUiId(nodeToUi).isEmpty()){
+            throw new IllegalArgumentException("关联已经存在，请勿重复添加");
+        }
     }
 }

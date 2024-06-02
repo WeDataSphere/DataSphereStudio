@@ -28,6 +28,12 @@
             SELECT id,workflow_node_id,ui_id FROM dss_workflow_node_to_ui
     WHERE workflow_node_id=#{nodeId}
     </select>
+    <select id="findByNodeIdAndUiId" resultMap="BaseResultMap" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.NodeToUi">
+            SELECT id,workflow_node_id,ui_id FROM dss_workflow_node_to_ui
+    WHERE workflow_node_id=#{nodeId}
+            AND
+        ui_id=#{uiId}
+    </select>
 
     <select id="findByUiId" resultMap="BaseResultMap">
         SELECT id,workflow_node_id,ui_id FROM dss_workflow_node_to_ui
