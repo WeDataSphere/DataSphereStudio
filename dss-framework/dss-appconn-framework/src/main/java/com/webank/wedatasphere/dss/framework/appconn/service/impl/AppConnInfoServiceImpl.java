@@ -120,17 +120,26 @@ public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnServic
         //查看resource是否发生变化，获取该appConn在数据库信息，如果resource为空且新上传的appConnBean的resource也为空，那么就只需要更新数据库，
         //如果二者的resource都不为空且不相同，那么就需要reload appconn，否则不用reload
         AppConnBean appConnBeanById = appConnMapper.getAppConnBeanById(appConnBean.getId());
-        if (appConnBeanById.getResource() == null && appConnBean.getResource() == null) {
-            appConnMapper.updateAppConn(appConnBean);
-            return appConnMapper.getAppConnBeanById(appConnBean.getId());
-        } else if (appConnBeanById.getResource() != null && appConnBean.getResource() != null && !appConnBeanById.getResource().equals(appConnBean.getResource())) {
-            AppConnManager.getAppConnManager().reloadAppConn(appConnBean);
-            appConnMapper.updateAppConn(appConnBean);
-            return appConnMapper.getAppConnBeanById(appConnBean.getId());
+        if (StringUtils.isEmpty(appConnBeanById.getResource())) {
+            if (StringUtils.isNotEmpty(appConnBean.getResource())) {
+                AppConnManager.getAppConnManager().reloadAppConn(appConnBean);
+                appConnMapper.updateAppConn(appConnBean);
+                appConnBean.setResourceFetchMethod(ResourceTypeEnum.UPLOAD.getName());
+            } else {
+                appConnMapper.updateAppConn(appConnBean);
+            }
         } else {
-            appConnMapper.updateAppConn(appConnBean);
-            return appConnMapper.getAppConnBeanById(appConnBean.getId());
+            if (StringUtils.isNotEmpty(appConnBean.getResource())) {
+                if (!appConnBeanById.getResource().equals(appConnBean.getResource())) {
+                    AppConnManager.getAppConnManager().reloadAppConn(appConnBean);
+                }
+                appConnMapper.updateAppConn(appConnBean);
+            } else {
+                appConnMapper.updateAppConn(appConnBean);
+                appConnBean.setResourceFetchMethod(ResourceTypeEnum.RELATED.getName());
+            }
         }
+        return appConnBean;
     }
 
     @Override
