@@ -182,7 +182,10 @@ public class AppConnManagerRestfulApi {
 
     @RequestMapping(path = "/addAppConn", method = RequestMethod.POST)
     public Message addAppConn(@RequestBody AppConnBean appConnBean) {
-        checkParams(appConnBean);
+        Message checkMessage = checkParams(appConnBean);
+        if (checkMessage.getStatus() == 1) {
+            return Message.error(checkMessage.getMessage());
+        }
         AppConnBean returnAppConnBean;
         try {
             returnAppConnBean = appConnService.addAppConn(appConnBean);
@@ -198,7 +201,10 @@ public class AppConnManagerRestfulApi {
 
     @RequestMapping(path = "/editAppConn", method = RequestMethod.POST)
     public Message editAppConn(@RequestBody AppConnBean appConnBean) {
-        checkParams(appConnBean);
+        Message checkMessage = checkParams(appConnBean);
+        if (checkMessage.getStatus() == 1) {
+            return Message.error(checkMessage.getMessage());
+        }
         AppConnBean returnAppConnBean;
         try {
             returnAppConnBean = appConnService.updateAppConn(appConnBean);
@@ -232,7 +238,10 @@ public class AppConnManagerRestfulApi {
 
     @RequestMapping(path = "/addAppConnInstance", method = RequestMethod.POST)
     public Message addAppConnInstance(@RequestBody AppInstanceBean appInstanceBean) {
-        checkInstanceParams(appInstanceBean);
+        Message checkMessage = checkInstanceParams(appInstanceBean);
+        if (checkMessage.getStatus() == 1) {
+            return Message.error(checkMessage.getMessage());
+        }
         AppInstanceBean returnAppConnInstance;
         try {
             returnAppConnInstance = appInstanceService.addAppInstance(appInstanceBean);
@@ -248,7 +257,10 @@ public class AppConnManagerRestfulApi {
 
     @RequestMapping(path = "/editAppConnInstance", method = RequestMethod.POST)
     public Message editAppConnInstance(@RequestBody AppInstanceBean appInstanceBean) {
-        checkInstanceParams(appInstanceBean);
+        Message checkMessage = checkInstanceParams(appInstanceBean);
+        if (checkMessage.getStatus() == 1) {
+            return Message.error(checkMessage.getMessage());
+        }
         AppInstanceBean returnAppConnInstance;
         try {
             returnAppConnInstance = appInstanceService.updateAppInstance(appInstanceBean);
@@ -289,61 +301,70 @@ public class AppConnManagerRestfulApi {
     }
 
     private Message checkParams (AppConnBean appConnBean) {
-
+        Message message = new Message();
         if (StringUtils.isBlank(appConnBean.getAppConnName())) {
-            return Message.error("AppConn name can not be empty.");
+            message.setStatus(1);
+            message.setMessage("AppConn name can not be empty.");
         }
-
         if (appConnBean.getAppConnName().length() > 64) {
-            return Message.error("AppConn name cannot exceed 64 characters.");
+            message.setStatus(1);
+            message.setMessage("AppConn name cannot exceed 64 characters.");
         }
-
         if (!appConnBean.getAppConnName().matches("^[a-zA-Z]+$")) {
-            return Message.error("AppConn name can only contain letters.");
+            message.setStatus(1);
+            message.setMessage("AppConn name can only contain letters.");
         }
-
         if (appConnBean.getResourceFetchMethod().equals(ResourceTypeEnum.RELATED.getName())) {
             if (StringUtils.isNotBlank(appConnBean.getResource())) {
-                return Message.error("Resource can not be set when resource fetch method is related.");
+                message.setStatus(1);
+                message.setMessage("Resource can not be set when resource fetch method is related.");
             }
             if (StringUtils.isBlank(appConnBean.getReference())) {
-                return Message.error("Reference can not be null when resource fetch method is related.");
+                message.setStatus(1);
+                message.setMessage("Reference can not be null when resource fetch method is related.");
             }
         }
         if (appConnBean.getResourceFetchMethod().equals(ResourceTypeEnum.UPLOAD.getName())) {
             if (StringUtils.isBlank(appConnBean.getResource())) {
-                return Message.error("Resource can not be null when resource fetch method is upload.");
+                message.setStatus(1);
+                message.setMessage("Resource can not be null when resource fetch method is upload.");
             }
             if (StringUtils.isNotBlank(appConnBean.getReference())) {
-                return Message.error("Reference can not be set when resource fetch method is upload.");
+                message.setStatus(1);
+                message.setMessage("Reference can not be set when resource fetch method is upload.");
             }
         }
-        return Message.ok();
+        return message;
     }
 
     private Message checkInstanceParams (AppInstanceBean appInstanceBean) {
-        //需要对appInstanceBean进行校验，属性url不能为空，且格式必须是http://ip:port
+        Message message = new Message();
         if (StringUtils.isBlank(appInstanceBean.getUrl())) {
-            return Message.error("Url can not be null.");
+            message.setStatus(1);
+            message.setMessage("Url can not be null.");
         }
 
         if (!appInstanceBean.getUrl().matches("^[a-zA-Z]+$")) {
-            return Message.error("AppConn name can only contain letters.");
+            message.setStatus(1);
+            message.setMessage("AppConn name can only contain letters.");
         }
 
         if (StringUtils.isBlank(appInstanceBean.getLabel())) {
-            return Message.error("Label can not be null.");
+            message.setStatus(1);
+            message.setMessage("Label can not be null.");
         }
         //属性label只能是DEV或者PROD
         if (!"DEV".equals(appInstanceBean.getLabel()) && !"PROD".equals(appInstanceBean.getLabel())) {
-            return Message.error("Label can only be DEV or PROD.");
+            message.setStatus(1);
+            message.setMessage("Label can only be DEV or PROD.");
         }
 
         //属性enhanceJson可以为空，如果不为空就必须是JSON格式字符串
         if (StringUtils.isNotBlank(appInstanceBean.getEnhanceJson()) && !isValidJson(appInstanceBean.getEnhanceJson())) {
-            return Message.error("EnhanceJson format is incorrect.");
+            message.setStatus(1);
+            message.setMessage("EnhanceJson format is incorrect.");
         }
-        return Message.ok();
+        return message;
     }
 
     private boolean isValidJson(String jsonInString) {
