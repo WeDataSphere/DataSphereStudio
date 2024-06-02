@@ -36,6 +36,8 @@ public interface DssWorkflowNodeToGroupDAO{
     * @return {@link NodeToGroup}
     */
     List<NodeToGroup> findByNodeId(Integer nodeId);
+
+    List<NodeToGroup> findByNodeIds(List<Integer> list);
     /**
      * 批量删除
      */

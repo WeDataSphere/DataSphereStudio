@@ -6,10 +6,14 @@ import com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkflowNodeGroupDAO
 import com.webank.wedatasphere.dss.framework.appconn.dao.DssWorkflowNodeToGroupDAO;
 import com.webank.wedatasphere.dss.framework.appconn.entity.Node;
 import com.webank.wedatasphere.dss.framework.appconn.entity.NodeToGroup;
+import com.webank.wedatasphere.dss.framework.appconn.entity.NodeToUi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -91,6 +95,13 @@ public class NodeService {
     public List<Node> getAllNodes() {
         // You may need to add a method in your DAO to handle this
          return nodeDao.findAll();
+    }
+
+    public Map<Integer,Integer> getGroupInfo(List<Integer> nodeIds){
+        if(nodeIds.isEmpty()){
+            return Collections.emptyMap();
+        }
+        return nodeToGroupDao.findByNodeIds(nodeIds).stream().collect(Collectors.toMap(NodeToGroup::getNodeId,NodeToGroup::getGroupId,(e1,e2)->e1));
     }
 
     private void validateNode(Node node,boolean isUpdateNode) {
