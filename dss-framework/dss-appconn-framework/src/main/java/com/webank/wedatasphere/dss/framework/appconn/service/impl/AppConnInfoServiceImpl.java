@@ -16,12 +16,10 @@
 
 package com.webank.wedatasphere.dss.framework.appconn.service.impl;
 
-import com.webank.wedatasphere.dss.appconn.core.AppConn;
 import com.webank.wedatasphere.dss.appconn.manager.AppConnManager;
 import com.webank.wedatasphere.dss.appconn.manager.entity.AppConnInfo;
 import com.webank.wedatasphere.dss.appconn.manager.entity.AppInstanceInfo;
 import com.webank.wedatasphere.dss.appconn.manager.service.AppConnInfoService;
-import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
 import com.webank.wedatasphere.dss.framework.appconn.common.ResourceTypeEnum;
 import com.webank.wedatasphere.dss.framework.appconn.conf.AppConnConf;
 import com.webank.wedatasphere.dss.framework.appconn.dao.AppConnMapper;
@@ -106,9 +104,9 @@ public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnServic
         LOGGER.info("Try to reload AppConn {}.", appConnBean.getAppConnName());
         LOGGER.info("First, reload AppConn {}.", appConnBean.getAppConnName());
         AppConnManager.getAppConnManager().reloadAppConn(appConnBean);
-        AppConn appConn = AppConnManager.getAppConnManager().getAppConn(appConnBean.getAppConnName());
-        LOGGER.info("Second, check the quality of AppConn {}.", appConnBean.getAppConnName());
-        appConnQualityCheckers.forEach(DSSExceptionUtils.handling(checker -> checker.checkQuality(appConn)));
+//        AppConn appConn = AppConnManager.getAppConnManager().getAppConn(appConnBean.getAppConnName());
+//        LOGGER.info("Second, check the quality of AppConn {}.", appConnBean.getAppConnName());
+//        appConnQualityCheckers.forEach(DSSExceptionUtils.handling(checker -> checker.checkQuality(appConn)));
         LOGGER.info("Last, add AppConn {} to db.", appConnBean.getAppConnName());
         appConnMapper.addAppConn(appConnBean);
         AppConnBean appConnBeanById = appConnMapper.getAppConnBeanById(appConnBean.getId());
