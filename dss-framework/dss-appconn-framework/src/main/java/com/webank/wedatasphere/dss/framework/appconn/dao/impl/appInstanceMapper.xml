@@ -59,6 +59,7 @@
         url = #{url},
         enhance_json = #{enhanceJson},
         homepage_uri = #{homepageUri}
+        WHRER `id` = #{id}
     </update>
 
     <delete id="deleteAppInstance">
