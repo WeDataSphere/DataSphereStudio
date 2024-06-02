@@ -101,7 +101,7 @@ public class MenuType {
     }
 
     public void setIsActive(Integer isActive) {
-        isActive = isActive;
+        this.isActive = isActive;
     }
 
     public String getIcon() {

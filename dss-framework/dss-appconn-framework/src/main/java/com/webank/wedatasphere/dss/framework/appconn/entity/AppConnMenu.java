@@ -172,7 +172,7 @@ public class AppConnMenu {
     }
 
     public void setIsActive(Integer isActive) {
-        isActive = isActive;
+        this.isActive = isActive;
     }
 
     public String getAccessButtonEn() {
