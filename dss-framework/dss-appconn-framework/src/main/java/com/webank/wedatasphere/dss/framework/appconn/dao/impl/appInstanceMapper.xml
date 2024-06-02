@@ -57,7 +57,7 @@
         UPDATE `dss_appconn_instance`
         SET `label` = #{label},
         url = #{url},
-        enhance_json = #{enhanceJson}
+        enhance_json = #{enhanceJson},
         homepage_uri = #{homepageUri}
     </update>
 
