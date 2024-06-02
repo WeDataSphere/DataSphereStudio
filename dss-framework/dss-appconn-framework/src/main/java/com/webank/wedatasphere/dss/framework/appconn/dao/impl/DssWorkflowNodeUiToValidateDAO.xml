@@ -33,7 +33,7 @@
         DELETE FROM dss_workflow_node_ui_to_validate
         WHERE ui_id = #{uiId} AND validate_id = #{validateId}
     </delete>
-    <select id="findByUiIdAndValidateId" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.UiToValidate">
+    <select id="findByUiIdAndValidateId" parameterType="com.webank.wedatasphere.dss.framework.appconn.entity.UiToValidate" resultMap="BaseResultMap">
         SELECT id,ui_id,validate_id FROM dss_workflow_node_ui_to_validate
         WHERE ui_id = #{uiId} AND validate_id = #{validateId}
     </select>
