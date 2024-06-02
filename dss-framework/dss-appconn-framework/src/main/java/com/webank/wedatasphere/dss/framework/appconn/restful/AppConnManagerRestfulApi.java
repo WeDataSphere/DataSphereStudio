@@ -246,8 +246,8 @@ public class AppConnManagerRestfulApi {
         return message;
     }
 
-    @RequestMapping(path = "/editAppConnInstances", method = RequestMethod.POST)
-    public Message editAppConnInstances(@RequestBody AppInstanceBean appInstanceBean) {
+    @RequestMapping(path = "/editAppConnInstance", method = RequestMethod.POST)
+    public Message editAppConnInstance(@RequestBody AppInstanceBean appInstanceBean) {
         checkInstanceParams(appInstanceBean);
         AppInstanceBean returnAppConnInstance;
         try {
