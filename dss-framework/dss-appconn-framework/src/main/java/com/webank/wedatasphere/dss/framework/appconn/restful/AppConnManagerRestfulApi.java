@@ -77,14 +77,14 @@ public class AppConnManagerRestfulApi {
         //仅dss-server-dev的其中一个服务需要作为appconn-manager节点上传appconn包，其他服务都是client端
         if ("dss-server-dev".equals(DSSSenderServiceConf.CURRENT_DSS_SERVER_NAME.getValue())) {
             LOGGER.info("First, try to load all AppConn...");
-            try {
-                AppConnManager.getAppConnManager().listAppConns().forEach(appConn -> {
-                    LOGGER.info("Try to check the quality of AppConn {}.", appConn.getAppDesc().getAppName());
+            AppConnManager.getAppConnManager().listAppConns().forEach(appConn -> {
+                LOGGER.info("Try to check the quality of AppConn {}.", appConn.getAppDesc().getAppName());
+                try {
                     appConnQualityCheckers.forEach(DSSExceptionUtils.handling(checker -> checker.checkQuality(appConn)));
-                });
-            } catch (Exception e) {
-                LOGGER.error("There have appconn exist exception:{}", e.getMessage());
-            }
+                } catch (Exception e) {
+                    LOGGER.error("Failed to check the quality of AppConn {}.", appConn.getAppDesc().getAppName(), e);
+                }
+            });
             LOGGER.info("All AppConn have loaded successfully.");
         } else {
             LOGGER.info("Not appConn manager, will not scan plugins.");
