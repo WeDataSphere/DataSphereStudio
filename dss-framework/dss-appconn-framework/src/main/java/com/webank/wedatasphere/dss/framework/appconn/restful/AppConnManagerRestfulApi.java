@@ -268,6 +268,11 @@ public class AppConnManagerRestfulApi {
         }
         AppInstanceBean returnAppConnInstance;
         try {
+            List<AppInstanceBean> appInstancesByAppConnId = appInstanceService.getAppInstancesByAppConnId(appInstanceBean.getAppConnId());
+            boolean b = appInstancesByAppConnId.stream().map(AppInstanceBean::getLabel).anyMatch(appInstanceBean.getLabel()::equals);
+            if (b) {
+                return Message.error("There have same label of AppInstance, please modify.");
+            }
             returnAppConnInstance = appInstanceService.updateAppInstance(appInstanceBean);
         } catch (Exception e) {
             LOGGER.error("Update AppConn instance failed.", e);
