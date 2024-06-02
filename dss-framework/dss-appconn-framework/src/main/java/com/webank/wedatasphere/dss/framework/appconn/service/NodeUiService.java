@@ -44,10 +44,7 @@ public class NodeUiService {
     }
 
     public void deleteNodeUi(Integer id) throws IllegalArgumentException {
-        int rowsDeleted = nodeUiDao.deleteByPrimaryKey(id);
-        if (rowsDeleted <= 0) {
-            throw new IllegalArgumentException("Failed to delete NodeUi with id: " + id);
-        }
+         nodeUiDao.deleteByPrimaryKey(id);
     }
 
     public NodeUi getNodeUiById(Integer id) {

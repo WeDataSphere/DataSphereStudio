@@ -84,9 +84,6 @@ public class AppConnMenuService {
         if(appconnId == null ) {
             throw new IllegalArgumentException("关联的appconnId不能为空");
         }
-        int rowsDeleted = menuAppconnDao.deleteByAppconnId(appconnId);
-        if (rowsDeleted <= 0) {
-            throw new DSSRuntimeException( "删除失败，没有找到匹配的菜单");
-        }
+        menuAppconnDao.deleteByAppconnId(appconnId);
     }
 }

@@ -30,10 +30,7 @@ public class NodeToUiService {
 
     public void removeNodeFromUi(Integer nodeId, Integer uiId) throws IllegalArgumentException {
         // Here you might want to check for valid nodeId and uiId
-        int rowsDeleted = nodeToUiDao.deleteByNodeIdAndUiId(nodeId, uiId); // You need to create this method in your DAO
-        if (rowsDeleted <= 0) {
-            throw new IllegalArgumentException("Failed to delete NodeToUi with nodeId: " + nodeId + ", uiId: " + uiId);
-        }
+        nodeToUiDao.deleteByNodeIdAndUiId(nodeId, uiId); // You need to create this method in your DAO
     }
 
     private void validateNodeToUi(NodeToUi nodeToUi) throws IllegalArgumentException {

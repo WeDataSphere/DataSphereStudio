@@ -26,10 +26,7 @@ public class UiToValidateService {
     }
 
     public void removeUiFromValidate(Integer uiId, Integer validateId) throws IllegalArgumentException {
-        int rowsDeleted = uiToValidateDao.deleteByUiIdAndValidateId(uiId, validateId); // You need to create this method in your DAO
-        if (rowsDeleted <= 0) {
-            throw new IllegalArgumentException("Failed to delete UiToValidate with uiId: " + uiId + ", validateId: " + validateId);
-        }
+        uiToValidateDao.deleteByUiIdAndValidateId(uiId, validateId); // You need to create this method in your DAO
     }
 
     private void validateUiToValidate(UiToValidate uiToValidate) throws IllegalArgumentException {
