@@ -115,7 +115,7 @@ public class NodeService {
             throw new IllegalArgumentException( "Node name can't be null");
         }
         if (!isUpdateNode && !nodeDao.findByNameOrNodeType(node.getName(), node.getNodeType()).isEmpty()) {
-            throw new IllegalArgumentException("Node name is already exist");
+            throw new IllegalArgumentException("Node name or node type is already exist");
         }
 
         //supportJump只能是0或1
