@@ -72,8 +72,12 @@ public class AppConnResourceServiceImpl implements AppConnResourceService, AppCo
         File zipFilePath = new File(AppConnUtils.getAppConnHomePath(), appConnInfo.getAppConnName() + ".zip");
         File appConnPath = new File(AppConnUtils.getAppConnHomePath(), appConnInfo.getAppConnName());
         LOGGER.info("The path of AppConn {} is {}.", appConnInfo.getAppConnName(), appConnPath);
-        Resource resource = appConnInfo.getAppConnResource();
-        bmlClient.downloadResource(Utils.getJvmUser(), resource.getResourceId(), resource.getVersion(),"file://" + zipFilePath.getPath(), true);
+        AppConnBean appConnBean = (AppConnBean) appConnInfo;
+        LOGGER.info("appConnBean is {}", appConnBean);
+        String resourceString = appConnBean.getResource();
+        AppConnResource resource = AppConnServiceUtils.stringToResource(resourceString);
+        LOGGER.info("resource is {}", resource);
+        bmlClient.downloadResource(Utils.getJvmUser(), resource.getResource().getResourceId(), resource.getResource().getVersion(),"file://" + zipFilePath.getPath(), true);
         if(appConnPath.exists()) {
             try {
                 FileUtils.deleteDirectory(appConnPath);
