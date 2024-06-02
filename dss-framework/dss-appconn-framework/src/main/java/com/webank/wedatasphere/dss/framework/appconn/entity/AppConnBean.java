@@ -101,7 +101,7 @@ public class AppConnBean implements AppConnInfo, Serializable {
         return isExternal;
     }
 
-    public void setIsExternal(Boolean external) {
+    public void setIsExternal(Boolean isExternal) {
         this.isExternal = isExternal;
     }
 
