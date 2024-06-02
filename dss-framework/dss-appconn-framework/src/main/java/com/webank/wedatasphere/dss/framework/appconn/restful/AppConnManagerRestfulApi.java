@@ -293,6 +293,11 @@ public class AppConnManagerRestfulApi {
         if (appConnBean.getAppConnName() == null || appConnBean.getAppConnName().isEmpty()) {
             return Message.error("AppConn name can not be empty.");
         }
+
+        if (appConnBean.getAppConnName().length() > 64) {
+            return Message.error("AppConn name cannot exceed 64 characters.");
+        }
+
         if (!appConnBean.getAppConnName().matches("^[a-zA-Z]+$")) {
             return Message.error("AppConn name can only contain letters.");
         }
