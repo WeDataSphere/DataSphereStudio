@@ -35,6 +35,7 @@ import com.webank.wedatasphere.dss.framework.appconn.service.AppConnResourceUplo
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnService;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppInstanceService;
 import com.webank.wedatasphere.dss.sender.service.conf.DSSSenderServiceConf;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.linkis.common.utils.Utils;
 import org.apache.linkis.server.Message;
@@ -316,20 +317,24 @@ public class AppConnManagerRestfulApi {
 
     private Message checkInstanceParams (AppInstanceBean appInstanceBean) {
         //需要对appInstanceBean进行校验，属性url不能为空，且格式必须是http://ip:port
-        if (appInstanceBean.getUrl() == null) {
+        if (StringUtils.isBlank(appInstanceBean.getUrl())) {
             return Message.error("Url can not be null.");
         }
-//        if (!appInstanceBean.getUrl().matches("http://\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d{1,5}")) {
-//            return Message.error("Url format is incorrect.");
-//        }
 
+        if (!appInstanceBean.getUrl().matches("^[a-zA-Z]+$")) {
+            return Message.error("AppConn name can only contain letters.");
+        }
+
+        if (StringUtils.isBlank(appInstanceBean.getLabel())) {
+            return Message.error("Label can not be null.");
+        }
         //属性label只能是DEV或者PROD
-        if (!appInstanceBean.getLabel().equals("DEV") && !appInstanceBean.getLabel().equals("PROD")) {
+        if (!"DEV".equals(appInstanceBean.getLabel()) && !"PROD".equals(appInstanceBean.getLabel())) {
             return Message.error("Label can only be DEV or PROD.");
         }
 
         //属性enhanceJson可以为空，如果不为空就必须是JSON格式字符串
-        if (appInstanceBean.getEnhanceJson() != null && !appInstanceBean.getEnhanceJson().matches("\\{.*\\}")) {
+        if (StringUtils.isNotBlank(appInstanceBean.getEnhanceJson()) && !appInstanceBean.getEnhanceJson().matches("\\{.*\\}")) {
             return Message.error("EnhanceJson format is incorrect.");
         }
         return Message.ok();

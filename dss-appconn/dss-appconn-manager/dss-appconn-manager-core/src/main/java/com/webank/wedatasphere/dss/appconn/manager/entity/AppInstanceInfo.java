@@ -24,7 +24,7 @@ public interface AppInstanceInfo {
 
     String getHomepageUri();
 
-    String getLabels();
+    String getLabel();
 
     String getEnhanceJson();
 

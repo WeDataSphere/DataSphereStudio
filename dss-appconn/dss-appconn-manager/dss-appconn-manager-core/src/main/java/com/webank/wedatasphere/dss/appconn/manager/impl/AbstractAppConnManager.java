@@ -207,7 +207,7 @@ public abstract class AbstractAppConnManager implements AppConnManager {
             appInstance.setHomepageUri(appInstanceInfo.getHomepageUri());
         }
         //TODO should use Linkis labelFactory to new labels.
-        List<DSSLabel> labels = Arrays.stream(appInstanceInfo.getLabels().split(",")).map(EnvDSSLabel::new)
+        List<DSSLabel> labels = Arrays.stream(appInstanceInfo.getLabel().split(",")).map(EnvDSSLabel::new)
                 .collect(Collectors.toList());
         appInstance.setLabels(labels);
         appInstance.setId(appInstanceInfo.getId());
