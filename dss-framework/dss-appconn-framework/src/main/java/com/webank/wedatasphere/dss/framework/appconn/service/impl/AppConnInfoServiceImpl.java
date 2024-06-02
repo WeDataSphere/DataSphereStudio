@@ -27,6 +27,7 @@ import com.webank.wedatasphere.dss.framework.appconn.entity.AppConnBean;
 import com.webank.wedatasphere.dss.framework.appconn.exception.AppConnDeleteErrorException;
 import com.webank.wedatasphere.dss.framework.appconn.service.*;
 import com.webank.wedatasphere.dss.framework.appconn.utils.AppConnServiceUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,8 +139,11 @@ public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnServic
         //不存在就删除该AppConn和其菜单
         AppConnBean appConnBeanById = appConnMapper.getAppConnBeanById(appConnId);
         String appConnName = appConnBeanById.getAppConnName();
-        if (appInstanceService.getAppInstancesByAppConnId(appConnId) != null || nodeService.getNodesByAppconnName(appConnName) != null) {
-            throw new AppConnDeleteErrorException(20353, "该AppConn存在关键实例或节点，不允许删除");
+        if (CollectionUtils.isNotEmpty(appInstanceService.getAppInstancesByAppConnId(appConnId))) {
+            throw new AppConnDeleteErrorException(20353, "该AppConn存在关键实例，不允许删除");
+        }
+        if (CollectionUtils.isNotEmpty(nodeService.getNodesByAppconnName(appConnName))) {
+            throw new AppConnDeleteErrorException(20353, "该AppConn存在关键节点，不允许删除");
         }
         //删除AppConn菜单
         appConnMenuService.deleteMenusByAppconnId(appConnId.intValue());

@@ -52,6 +52,7 @@ public class AppInstanceBean implements AppInstanceInfo, Serializable {
         this.appConnId = appConnId;
     }
 
+    @Override
     public String getLabel() {
         return label;
     }
@@ -85,11 +86,6 @@ public class AppInstanceBean implements AppInstanceInfo, Serializable {
 
     public void setHomepageUri(String homepageUri) {
         this.homepageUri = homepageUri;
-    }
-
-    @Override
-    public String getLabels() {
-        return label;
     }
 
     @Override

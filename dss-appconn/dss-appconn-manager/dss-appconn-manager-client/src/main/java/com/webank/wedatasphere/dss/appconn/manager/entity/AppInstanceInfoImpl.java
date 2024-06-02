@@ -21,7 +21,7 @@ public class AppInstanceInfoImpl implements AppInstanceInfo {
     private Long id;
     private String url;
     private String homepageUri;
-    private String labels;
+    private String label;
     private String enhanceJson;
 
     @Override
@@ -52,12 +52,12 @@ public class AppInstanceInfoImpl implements AppInstanceInfo {
     }
 
     @Override
-    public String getLabels() {
-        return labels;
+    public String getLabel() {
+        return label;
     }
 
-    public void setLabels(String labels) {
-        this.labels = labels;
+    public void setLabel(String label) {
+        this.label = label;
     }
 
     @Override
@@ -75,7 +75,7 @@ public class AppInstanceInfoImpl implements AppInstanceInfo {
                 "id=" + id +
                 ", url='" + url + '\'' +
                 ", homepageUrl='" + homepageUri + '\'' +
-                ", labels='" + labels + '\'' +
+                ", labels='" + label + '\'' +
                 ", enhanceJson='" + enhanceJson + '\'' +
                 '}';
     }
