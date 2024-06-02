@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Author: xlinliu
@@ -85,6 +86,14 @@ public class WorkflowNodeManagerRestful {
         }else{
            nodeList = nodeService.getAllNodes();
         }
+        if(!nodeList.isEmpty()){
+            List<Integer> nodeIds = nodeList.stream().map(Node::getId).collect(Collectors.toList());
+            Map<Integer,Integer> nodeIdGroupIdMap= nodeService.getGroupInfo(nodeIds);
+            for (Node node : nodeList) {
+                node.setNodeGroup(nodeIdGroupIdMap.get(node.getId()));
+            }
+        }
+
         // 返回节点信息
         return Message.ok("获取成功").data("nodeList",nodeList).data("total",nodeList.size());
     }

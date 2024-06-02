@@ -29,6 +29,15 @@
         WHERE node_id = #{nodeId}
     </select>
 
+
+    <select id="findByNodeIds" resultMap="BaseResultMap">
+        SELECT id,node_id,group_id FROM dss_workflow_node_to_group
+        WHERE node_id  IN
+        <foreach collection="list" item="item" index="index" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+
     <delete id="deleteByNodeId" parameterType="java.util.List">
         DELETE FROM dss_workflow_node_to_group
                WHERE node_id =#{nodeId}
