@@ -120,8 +120,8 @@ public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnServic
         //查看resource是否发生变化，获取该appConn在数据库信息，如果resource为空且新上传的appConnBean的resource也为空，那么就只需要更新数据库，
         //如果二者的resource都不为空且不相同，那么就需要reload appconn，否则不用reload
         AppConnBean appConnBeanById = appConnMapper.getAppConnBeanById(appConnBean.getId());
-        if (StringUtils.isEmpty(appConnBeanById.getResource())) {
-            if (StringUtils.isNotEmpty(appConnBean.getResource())) {
+        if (StringUtils.isBlank(appConnBeanById.getResource())) {
+            if (StringUtils.isNotBlank(appConnBean.getResource())) {
                 AppConnManager.getAppConnManager().reloadAppConn(appConnBean);
                 appConnMapper.updateAppConn(appConnBean);
                 appConnBean.setResourceFetchMethod(ResourceTypeEnum.UPLOAD.getName());
@@ -129,7 +129,7 @@ public class AppConnInfoServiceImpl implements AppConnInfoService, AppConnServic
                 appConnMapper.updateAppConn(appConnBean);
             }
         } else {
-            if (StringUtils.isNotEmpty(appConnBean.getResource())) {
+            if (StringUtils.isNotBlank(appConnBean.getResource())) {
                 if (!appConnBeanById.getResource().equals(appConnBean.getResource())) {
                     AppConnManager.getAppConnManager().reloadAppConn(appConnBean);
                 }

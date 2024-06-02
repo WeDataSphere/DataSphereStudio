@@ -36,7 +36,7 @@ import com.webank.wedatasphere.dss.framework.appconn.service.AppConnResourceUplo
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnService;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppInstanceService;
 import com.webank.wedatasphere.dss.sender.service.conf.DSSSenderServiceConf;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.linkis.common.utils.Utils;
 import org.apache.linkis.server.Message;
@@ -290,7 +290,7 @@ public class AppConnManagerRestfulApi {
 
     private Message checkParams (AppConnBean appConnBean) {
 
-        if (appConnBean.getAppConnName() == null || appConnBean.getAppConnName().isEmpty()) {
+        if (StringUtils.isBlank(appConnBean.getAppConnName())) {
             return Message.error("AppConn name can not be empty.");
         }
 
@@ -303,18 +303,18 @@ public class AppConnManagerRestfulApi {
         }
 
         if (appConnBean.getResourceFetchMethod().equals(ResourceTypeEnum.RELATED.getName())) {
-            if (appConnBean.getResource() != null) {
+            if (StringUtils.isNotBlank(appConnBean.getResource())) {
                 return Message.error("Resource can not be set when resource fetch method is related.");
             }
-            if (appConnBean.getReference() == null) {
+            if (StringUtils.isBlank(appConnBean.getReference())) {
                 return Message.error("Reference can not be null when resource fetch method is related.");
             }
         }
         if (appConnBean.getResourceFetchMethod().equals(ResourceTypeEnum.UPLOAD.getName())) {
-            if (appConnBean.getResource() == null) {
+            if (StringUtils.isBlank(appConnBean.getResource())) {
                 return Message.error("Resource can not be null when resource fetch method is upload.");
             }
-            if (appConnBean.getReference() != null) {
+            if (StringUtils.isNotBlank(appConnBean.getReference())) {
                 return Message.error("Reference can not be set when resource fetch method is upload.");
             }
         }
