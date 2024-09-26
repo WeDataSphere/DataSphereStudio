@@ -223,6 +223,8 @@ public class BuildJobActionImpl implements BuildJobAction {
             startupMap.remove("spark.executor.instances");
             startupMap.remove("wds.linkis.engineconn.java.driver.memory");
             startupMap.remove("spark.conf");
+            startupMap.remove("mapreduce.job.running.map.limit");
+            startupMap.remove("mapreduce.job.running.reduce.limit");
             logger.info("after remove startup map:{}",startupMap.keySet());
         }
         Map<String, Object> configurationMap = TaskUtils.getMap(paramMapCopy, TaskConstant.PARAMS_CONFIGURATION);
