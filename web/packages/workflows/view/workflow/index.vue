@@ -357,8 +357,10 @@ export default {
     tabList(val) {
       this.updateTabList(val)
     },
-    "$route.query"(v) {
-      this.tabList = [];
+    "$route.query"(v, oldVal) {
+      if (v.projectID != oldVal.projectID) {
+        this.tabList = []
+      }
       this.getAreaMap();
       this.getProjectData(()=>{
         this.updateBread();
@@ -758,6 +760,7 @@ export default {
           return
         }
         this.currentTreeId = node.id;
+        console.log(node, this.$route.query)
         if (node.orchestratorId != this.$route.query.flowId) {
           const query = {
             workspaceId: this.$route.query.workspaceId,

@@ -621,10 +621,37 @@ export default {
       this.isShowFieldDetailTab = true;
       this.showPanelTab('fieldDetail');
     },
+    showDiyParamsInfo(executionCode, variableData) {
+      // 步骤 1: 提取代码中的变量
+      const regex = /\$\{([\w.]+)\}/g; // 匹配 ${变量名} 的正则表达式
+      let match;
+      const variablesInCode = new Set();
+
+      while ((match = regex.exec(executionCode)) !== null) {
+        variablesInCode.add(match[1]); // 添加匹配到的变量名
+      }
+      // 执行代码中无变量,返回 false
+      if(variablesInCode.size === 0) {
+        return false
+      }
+      // console.log('validDiyParams-variablesInCode', variablesInCode)
+      // 步骤 2: 检查变量是否存在
+      for (let variable of variablesInCode) {
+        const found = variableData.some(data => data.key === variable);
+        if (!found) {
+        // 如果执行代码中存在某变量，但在参数列表中不存在，则返回 false
+          // console.log('不存在的变量', variable)
+          return false; 
+        }
+      }
+
+      return true; // 所有变量都存在，则返回 true
+    },
     async run(option, cb) {
       this.scriptViewState.columnPageNow = 1;
       this.handleLines = {}
       this.script.codePrecheckRes = {};
+      this.script.validParamsInfoRes = {};
       this.isShowFieldDetailTab = false;
       if (option && option.id === this.script.id) {
         if (window.$Wa) window.$Wa.clickStat('run',this.script.fileName);
@@ -1068,6 +1095,23 @@ export default {
               }
             }
           }, 150)
+        setTimeout(()=>{
+          // 如果当前执行代码中配置的参数都在配置参数中,做提示
+          // console.log('this.script.executionCode', this.script.executionCode)
+          const diyParamsInfoValidRes = this.showDiyParamsInfo(this.script.executionCode, this.script.params.variable)
+          let paramsRes = {
+              content: '',
+              isShow: false
+            }
+          if(diyParamsInfoValidRes) {
+            paramsRes = {
+              content: '脚本存在已配置的自定义参数,请知悉',
+              isShow:true
+            }
+          }
+          this.script.validParamsInfoRes = paramsRes;
+          this.$refs.progressTab.updateParamsInfo(paramsRes);
+        } , 150)
         }
       }
     },
@@ -1094,7 +1138,7 @@ export default {
       };
     },
     stop(cb) {
-      if (this.execute && this.execute.id) {
+      const killAct = () => {
         api.fetch(`/entrance/${this.execute.id}/kill`, {taskID: this.execute.taskID}, 'get').then(() => {
           this.execute.trigger('stop');
           this.execute.trigger('error');
@@ -1123,7 +1167,13 @@ export default {
           this.execute.queryStatusaAfterKill = 0
           cb();
         });
+      }
+      if (this.execute && this.execute.id) {
+        killAct()
       } else {
+        setTimeout(() => {
+          killAct()
+        }, 1000)
         cb();
         this.script.steps = []; // socket downgrade事件之前点击运行，终止运行loading后恢复
         this.script.running = false;
@@ -1586,7 +1636,7 @@ export default {
         // 当前激活脚本
         if (taskId && errCode) {
           storage.remove(`cache_needfix_${this.script.id}`)
-          api.fetch('/dss/copilot/executeCode', { 
+          api.fetch('/copilot/executeCode', { 
             // taskId, 
             errCode 
           }, 'get').then(res => {
@@ -1596,7 +1646,14 @@ export default {
                 content: res.message,
                 onOk: () => {
                   const message = `请检查并修改如下代码中的语法错误: ${code}，执行错误信息如下: ${errMessage}`;
-                  plugin.emit('copilot_web_open_change', { type: 'CodeCorrection', message })
+                  plugin.emit('copilot_web_open_change', { 
+                    type: 'CodeCorrection', 
+                    message, 
+                    params: {
+                      code,
+                      errMessage
+                    } 
+                  })
                 }
               });
             }
@@ -1678,20 +1735,6 @@ export default {
           @include bg-color($light-base-color, $dark-base-color);
           width: calc(100% - 45px);
           overflow: hidden;
-          &.work-list-tab {
-            overflow-x: auto;
-            overflow-y: hidden;
-            &::-webkit-scrollbar {
-              width: 0;
-              height: 0;
-              background-color: transparent;
-            }
-            .list-group>span {
-              white-space: nowrap;
-              display: block;
-              height: 0;
-            }
-          }
           .workbench-tab-item {
             text-align: center;
             border-top: none;

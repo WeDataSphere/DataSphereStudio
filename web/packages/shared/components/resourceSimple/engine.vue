@@ -29,7 +29,8 @@
             v-for="(subitem, index) in ideEngineList">
             <li
               class="engine-li"
-              :class="[{'active': subitem.isActive}, supportColor(subitem.engineStatus)]"
+              :title="subitem.fixedEngineConn"
+              :class="[{'fixed-engine': subitem.fixedEngineConn}, {'active': subitem.isActive}, supportColor(subitem.engineStatus)]"
               v-if="shouldRender(subitem, item)"
               :key="index"
               @click="subitem.isActive = !subitem.isActive">
@@ -69,7 +70,8 @@
             v-for="(subitem, index) in boardEngineList">
             <li
               class="engine-li"
-              :class="[{'active': subitem.isActive}, supportColor(subitem.engineStatus)]"
+              :title="subitem.fixedEngineConn"
+              :class="[{'fixed-engine': subitem.fixedEngineConn}, {'active': subitem.isActive}, supportColor(subitem.engineStatus)]"
               v-if="shouldRender(subitem, item)"
               :key="index"
               @click="subitem.isActive = !subitem.isActive">
@@ -109,7 +111,8 @@
             v-for="(subitem, index) in otherEngineList">
             <li
               class="engine-li"
-              :class="[{'active': subitem.isActive}, supportColor(subitem.engineStatus)]"
+              :title="subitem.fixedEngineConn"
+              :class="[{'fixed-engine': subitem.fixedEngineConn}, {'active': subitem.isActive}, supportColor(subitem.engineStatus)]"
               v-if="shouldRender(subitem, item)"
               :key="index"
               @click="subitem.isActive = !subitem.isActive">
@@ -286,6 +289,15 @@ export default {
           item.isActive = false;
           if (item.engineType === 'pipeline') {
             item.engineType = 'pipeLine';
+          }
+          try {
+            item.labels =  typeof item.labels == 'string' ? JSON.parse(item.labels) : item.labels;
+            if (Array.isArray(item.labels)) {
+              const labelItem = item.labels.find(item => item.labelKey === 'fixedEngineConn')
+              item.fixedEngineConn = labelItem ? labelItem.stringValue || '' : ''; 
+            }
+          } catch (error) {
+            
           }
           if (item.creator === 'IDE') {
             this.ideEngineList.push(item);
