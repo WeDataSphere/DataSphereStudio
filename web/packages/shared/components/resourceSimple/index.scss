@@ -414,6 +414,9 @@
                     border: $border-width-base $border-style-base $primary-color;
                     @include bg-color($background-color-base, $dark-active-menu-item);
                 }
+                &.fixed-engine {
+                    border-color: #ff00006b;
+                }
                 .engine-icon {
                     &::before {
                         font-size: 40px;

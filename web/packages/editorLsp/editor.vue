@@ -59,14 +59,12 @@ export default {
     filePath: String,
   },
   data() {
-    const closeSuggest = storage.get('close_db_table_suggest')
     const autobreak = storage.get('editor_auto_breakline', 'local')
     return {
       editor: null,
       editorModel: null,
       decorations: null,
       isParserClose: true, // 默认关闭语法验证
-      dbtbsuggest: closeSuggest, // 默认打开库表联想
       autobreak: autobreak, // 默认关闭自动换行
       closeParser: null,
       openParser: null,
@@ -239,9 +237,8 @@ export default {
         }
         if (this.openDbTbSuggest && this.closeDbTbSuggest) {
           const closeSuggest = storage.get('close_db_table_suggest')
-          this.dbtbsuggest = !closeSuggest
-          this.openDbTbSuggest.set(closeSuggest);
           this.closeDbTbSuggest.set(!closeSuggest);
+          this.openDbTbSuggest.set(closeSuggest);
         }
       }), 100)
     },
@@ -408,10 +405,10 @@ export default {
           editor.trigger('gotoLine', 'editor.action.gotoLine');
         },
       });
-
+      const closeSuggest = storage.get('close_db_table_suggest');
       // 打开、关闭库表联想
-      this.closeDbTbSuggest = this.editor.createContextKey('closeDbTbSuggest', !this.dbtbsuggest);
-      this.openDbTbSuggest = this.editor.createContextKey('openDbTbSuggest', this.dbtbsuggest);
+      this.closeDbTbSuggest = this.editor.createContextKey('closeDbTbSuggest', !closeSuggest);
+      this.openDbTbSuggest = this.editor.createContextKey('openDbTbSuggest', closeSuggest);
       const action_6 = this.editor.addAction({
         id: 'closeDbTbSuggest',
         label: this.$t('message.common.monacoMenu.GBKBTS'),
@@ -422,7 +419,6 @@ export default {
         contextMenuGroupId: 'control',
         contextMenuOrder: 2.2,
         run() {
-          vm.dbtbsuggest = false;
           // 控制右键菜单的显示
           vm.openDbTbSuggest.set(true);
           vm.closeDbTbSuggest.set(false);
@@ -440,7 +436,6 @@ export default {
         contextMenuGroupId: 'control',
         contextMenuOrder: 2.3,
         run() {
-          vm.dbtbsuggest = true;
           vm.openDbTbSuggest.set(false);
           vm.closeDbTbSuggest.set(true);
           changeAssociation(vm.currentConfig.language, true)
@@ -551,7 +546,14 @@ export default {
           run() {
             const code = vm.getValueInRange() || vm.getValue();
             const message = `请解释以下${typeMap[vm.ext]||vm.application}代码：\n\`\`\`\n${code}\n\`\`\``;
-            plugin.emit('copilot_web_open_change', { type: 'codeExplain', message })
+            plugin.emit('copilot_web_open_change', { 
+              type: 'codeExplain', 
+              message,
+              params: {
+                code,
+                type: typeMap[vm.ext] || vm.application,
+              }
+            })
           },
         });
         
@@ -590,7 +592,15 @@ export default {
             onOk: () => {
               const code = vm.getValueInRange() || vm.getValue();
               const message = `请将以下${typeMap[vm.ext]||vm.application}代码转换为${type}类型：\n\`\`\`\n${code}\n\`\`\``;
-              plugin.emit('copilot_web_open_change', { type: 'codeConvert', message })
+              plugin.emit('copilot_web_open_change', { 
+                type: 'codeConvert', 
+                message , 
+                params: {
+                  code,
+                  origin: typeMap[vm.ext]||vm.application,
+                  target: type
+                }
+              })
             }
           });
         }

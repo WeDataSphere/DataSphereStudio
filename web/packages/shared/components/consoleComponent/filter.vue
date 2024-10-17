@@ -229,7 +229,7 @@ export default {
   @include bg-color(#fff, $dark-menu-base-color);
   border: 1px solid #dcdee2;
   @include border-color($border-color-base, #525354);
-  border-left: none;
+  // border-left: none;
   padding: 10px;
   z-index: 2;
   .select-panel {

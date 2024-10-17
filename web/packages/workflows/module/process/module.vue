@@ -491,7 +491,6 @@ export default {
     }
   },
   data() {
-    const username = this.getUserName()
     return {
       // 提交
       showSubmit: false,
@@ -509,8 +508,9 @@ export default {
       json: null,
       // 工作流级别的参数
       props: [
-        {'user.to.proxy': username}
+        {'user.to.proxy': ''}
       ],
+      flowProxyUser: '',
       // 调度设置参数
       scheduleParams: {},
       // 工作流级别的资源
@@ -649,7 +649,7 @@ export default {
           }
           if (!this.workflowIsExecutor&& !this.myReadonly) {
             if (type === 'node') {
-              if ([NODETYPE.SPARKSQL, NODETYPE.HQL, NODETYPE.SPARKPY, NODETYPE.SCALA, NODETYPE.PYTHON].includes(node.type)) {
+              if ([NODETYPE.SPARKSQL, NODETYPE.HQL, NODETYPE.SPARKPY, NODETYPE.SCALA, NODETYPE.NEBULA].includes(node.type)) {
                 arr.push({
                   text: this.$t('message.workflow.process.associate'),
                   value: 'associate',
@@ -965,6 +965,7 @@ export default {
         this.originalData = this.json = JSON.parse(JSON.stringify(json));
         this.resources = json.resources;
         this.props = json.props;
+        this.flowProxyUser = (json.props[0] || {})['user.to.proxy'];
         this.scheduleParams = json.scheduleParams || {};
       }
       if (json.config && json.config.type != 'table') {
@@ -1380,7 +1381,8 @@ export default {
             desc: this.$t('message.workflow.process.autoSaveWorkflow'),
           });
         }        
-        this.jsonChange = false;
+        this.jsonChange = false; 
+        this.flowProxyUser = this.props[0]['user.to.proxy'];
         // 保存成功后去更新tab的工作流数据
         this.$emit('updateWorkflowList');
         if(!this.isFlowSubmit && !this.isFlowPubulish) {
@@ -1552,6 +1554,7 @@ export default {
         };
       });
       this.jsonChange = true;
+      this.autoSave('更新资源文件', false)
     },
     async nodeDelete(node) {
       // 正在执行中的节点不能被删除
@@ -1769,7 +1772,7 @@ export default {
     },
     checkAssociated(node) {
       if (this.myReadonly) return this.$Message.warning(this.$t('message.workflow.process.readonlyNoAssociated'));
-      if ([NODETYPE.SPARKSQL, NODETYPE.HQL, NODETYPE.SPARKPY, NODETYPE.SCALA, NODETYPE.PYTHON].indexOf(node.type) === -1) {
+      if ([NODETYPE.SPARKSQL, NODETYPE.HQL, NODETYPE.SPARKPY, NODETYPE.SCALA, NODETYPE.PYTHON, NODETYPE.NEBULA].indexOf(node.type) === -1) {
         return this.$Notice.warning({
           desc: this.$t('message.workflow.process.noAssociated'),
         });
@@ -2024,6 +2027,7 @@ export default {
       });
       this.json.nodes.push(JSON.parse(JSON.stringify(this.cacheNode)));
       this.originalData = { ...this.json };
+      this.autoSave(this.$t('message.workflow.Saving'), false);
       this.click(this.cacheNode)
     },
     // 由于插件的selected不是响应式，所以得手动改变
@@ -2531,6 +2535,22 @@ export default {
           return;
         }  
       }
+      if (this.flowProxyUser) {
+        let isPassed = true;
+        try {
+          const rst = await api.fetch('/dss/framework/workspace/isDismissed', {usernames: [this.flowProxyUser]}, 'post');
+          if (rst && (rst.isDismissed || []).some(item => Object.values(item)[0])) {
+            this.$Message.warning(`${this.name}工作流的代理用户已离职，请确认是否修改代理用户`);
+            isPassed = false;
+          }
+        } catch (e) {
+          isPassed = false;
+        }
+        if (!isPassed) {
+          this.saveingComment = false;
+          return;
+        }
+      }
       // 调用发布接口
       const params = {
         orchestratorId: this.orchestratorId,
@@ -2854,7 +2874,7 @@ export default {
         }
         this.originalData = this.json;
         // 切换模式后保存数据，确保模式也被更新
-		    if (isSave) {
+		    if (isSave && !this.product) {
           this.autoSave(this.$t('message.workflow.Save'), false);
         }
       }

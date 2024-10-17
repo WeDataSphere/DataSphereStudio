@@ -517,7 +517,7 @@ export default {
       }
       if ('dss/apiservice' == this.getResultUrl) {
         // 数据服务
-        let columnPageNow = type == 'changeColumnPage' ? this.scriptViewState.columnPageNow : result.columnPageNow || 1;
+        let columnPageNow = type == 'changeColumnPage' ? this.scriptViewState.columnPageNow : 1;
         this.getResultData(columnPageNow)
       } else if (this.script.nodeId) {
         // 工作流
