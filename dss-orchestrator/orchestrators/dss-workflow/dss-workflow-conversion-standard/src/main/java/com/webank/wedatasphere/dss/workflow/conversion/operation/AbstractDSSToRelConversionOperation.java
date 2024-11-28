@@ -1,5 +1,7 @@
 package com.webank.wedatasphere.dss.workflow.conversion.operation;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.webank.wedatasphere.dss.orchestrator.converter.standard.operation.DSSToRelConversionOperation;
 import com.webank.wedatasphere.dss.orchestrator.converter.standard.ref.DSSToRelConversionRequestRef;
 import com.webank.wedatasphere.dss.standard.common.entity.ref.ResponseRef;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 public abstract class AbstractDSSToRelConversionOperation<K extends DSSToRelConversionRequestRef<K>>
         extends DSSToRelConversionOperation<K, ResponseRef> {
 
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
     private List<WorkflowToRelConverter> workflowToRelConverters;
     private WorkflowToRelSynchronizer workflowToRelSynchronizer;
 
@@ -69,6 +72,7 @@ public abstract class AbstractDSSToRelConversionOperation<K extends DSSToRelConv
      */
     protected ConvertedRel tryConvert(PreConversionRel rel) {
         ConvertedRel convertedRel = null;
+        long startTime = System.currentTimeMillis();
         for (WorkflowToRelConverter workflowToRelConverter : workflowToRelConverters) {
             if (convertedRel == null) {
                 convertedRel = workflowToRelConverter.convertToRel(rel);
@@ -76,6 +80,8 @@ public abstract class AbstractDSSToRelConversionOperation<K extends DSSToRelConv
                 convertedRel = workflowToRelConverter.convertToRel(convertedRel);
             }
         }
+        long endTime = System.currentTimeMillis();
+        logger.info("add flows files cost {}ms", endTime-startTime);
         return convertedRel;
     }
 

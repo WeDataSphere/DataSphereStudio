@@ -394,9 +394,12 @@ public class DefaultWorkFlowManager implements WorkFlowManager {
                 requestConversionWorkflow.getOrchestrationIdMap().keySet(), requestConversionWorkflow.getProject().getName());
         //第一步：从db、bml中获取所有的所有的工作流和子工作流的元信息
         //TODO try to optimize it by select db in batch.
+        long startTime = System.currentTimeMillis();
         List<ImmutablePair<DSSFlow, Long>> flowInfos = requestConversionWorkflow.getOrchestrationIdMap().entrySet()
                 .stream().map(entry -> new ImmutablePair<>(flowService.getFlowWithJsonAndSubFlowsByID(entry.getKey()), entry.getValue()))
                 .collect(Collectors.toList());
+        long endTime = System.currentTimeMillis();
+        logger.info("download flows info from bml cost {}ms", endTime-startTime);
         List<DSSFlow> flows = flowInfos.stream().map(ImmutablePair::getKey).collect(Collectors.toList());
         // 区分各个工作流所归属的调度系统
         List<ResponseOperateOrchestrator> responseList = new ArrayList<>();
