@@ -849,6 +849,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                                 String description, List<DSSLabel> dssLabels, String nodeSuffix,
                                 String newFlowName, Long newProjectId) throws DSSErrorException, IOException {
         DSSFlow dssFlow = flowMapper.selectFlowByID(rootFlowId);
+        long startTime = System.currentTimeMillis();
         Sender orcSender = DSSSenderServiceFactory.getOrCreateServiceInstance().getOrcSender(dssLabels);
         OrchestratorVo orchestratorVo = RpcAskUtils.processAskException(orcSender.ask(new RequestQuertByAppIdOrchestrator(dssFlow.getId())),
                 OrchestratorVo.class, RequestQueryByIdOrchestrator.class);
@@ -859,6 +860,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 contextIdStr, workspace, dssLabels, nodeSuffix, orchestratorId);
         DSSFlow copyFlow = flowMapper.selectFlowByID(rootFlowWithSubFlows.getId());
         copyFlow.setFlowIdParamConfTemplateIdTuples(rootFlowWithSubFlows.getFlowIdParamConfTemplateIdTuples());
+        long endTime = System.currentTimeMillis();
+        logger.info("copy root flow cost {}ms", endTime-startTime);
         return copyFlow;
     }
 

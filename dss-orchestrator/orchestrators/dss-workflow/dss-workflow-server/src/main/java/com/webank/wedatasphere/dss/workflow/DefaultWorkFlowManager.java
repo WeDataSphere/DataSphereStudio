@@ -18,6 +18,7 @@ package com.webank.wedatasphere.dss.workflow;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.gson.Gson;
 import com.webank.wedatasphere.dss.appconn.manager.AppConnManager;
 import com.webank.wedatasphere.dss.appconn.scheduler.SchedulerAppConn;
 import com.webank.wedatasphere.dss.common.entity.BmlResource;
@@ -295,7 +296,10 @@ public class DefaultWorkFlowManager implements WorkFlowManager {
         String tempPath = IoUtils.generateTempIOPath(userName);
         // /appcom/tmp/dss/yyyyMMddHHmmssSSS/arionliu/projectxxx.zip
         String inputZipPath = IoUtils.addFileSeparator(tempPath, projectName + ".zip");
+        long startTime = System.currentTimeMillis();
         bmlService.downloadToLocalPath(userName, resourceId, bmlVersion, inputZipPath);
+        long endTime = System.currentTimeMillis();
+        logger.info("download to local path cost {}ms", endTime-startTime);
         try{
             String  originProjectName=readImportZipProjectName(inputZipPath);
             if(!projectName.equals(originProjectName)){
@@ -322,6 +326,8 @@ public class DefaultWorkFlowManager implements WorkFlowManager {
                 dwsFlowRelations);
         //这里其实只会有1个元素
         List<DSSFlow> rootFlows = dwsFlowRelationList.stream().filter(DSSFlow::getRootFlow).collect(Collectors.toList());
+        logger.info("rootFlows:{} .",new Gson().toJson(rootFlows));
+        long startTime1 = System.currentTimeMillis();
         for (DSSFlow rootFlow : rootFlows) {
             String flowCodePath0=IoUtils.addFileSeparator(projectPath,  flowName);
             String flowMetaPath0=IoUtils.addFileSeparator(projectPath, FLOW_META_DIRECTORY_NAME, flowName);
@@ -332,6 +338,8 @@ public class DefaultWorkFlowManager implements WorkFlowManager {
                     flowMetaPath0,null, dssFlowImportParam.getWorkspace(), dssFlowImportParam.getOrcVersion(),
                     dssFlowImportParam.getContextId(), dssLabels);
         }
+        long endTime1 = System.currentTimeMillis();
+        logger.info("inputWorkFlow cost {}ms", endTime1-startTime1);
         logger.info("import workflow success.orcVersion:{},context Id:{}", dssFlowImportParam.getOrcVersion(), dssFlowImportParam.getContextId());
         return  rootFlows;
     }

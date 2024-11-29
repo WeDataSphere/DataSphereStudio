@@ -91,6 +91,7 @@ public class ImportDSSOrchestratorPluginImpl extends AbstractDSSOrchestratorPlug
 
     @Override
     public DSSOrchestratorVersion importOrchestratorNew(RequestImportOrchestrator requestImportOrchestrator) throws Exception {
+        LOGGER.info("begin to import orchestrator");
         String userName = requestImportOrchestrator.getUserName();
         String projectName = requestImportOrchestrator.getProjectName();
         Long projectId = requestImportOrchestrator.getProjectId();
@@ -104,7 +105,10 @@ public class ImportDSSOrchestratorPluginImpl extends AbstractDSSOrchestratorPlug
         String tempPath = IoUtils.generateTempIOPath(userName);
         // /appcom/tmp/dss/yyyyMMddHHmmssSSS/arionliu/projectxxx.zip
         String inputZipPath = IoUtils.addFileSeparator(tempPath, projectName + ".zip");
+        long startTime = System.currentTimeMillis();
         bmlService.downloadToLocalPath(userName, resourceId, version, inputZipPath);
+        long endTime = System.currentTimeMillis();
+        logger.info("download to local path cost {}ms", endTime-startTime);
         // /appcom/tmp/dss/yyyyMMddHHmmssSSS/arionliu/projectxxx
         String projectPath = ZipHelper.unzip(inputZipPath,true);
         String flowName = IoUtils.getSubdirectoriesNames(projectPath).stream().filter(name -> !name.startsWith("."))
