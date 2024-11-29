@@ -16,6 +16,8 @@
 
 package com.webank.wedatasphere.dss.orchestrator.publish.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.webank.wedatasphere.dss.common.entity.BmlResource;
 import com.webank.wedatasphere.dss.common.entity.project.DSSProject;
 import com.webank.wedatasphere.dss.common.exception.DSSErrorException;
@@ -67,7 +69,7 @@ import static com.webank.wedatasphere.dss.orchestrator.publish.impl.ExportDSSOrc
 
 @Component
 public class ImportDSSOrchestratorPluginImpl extends AbstractDSSOrchestratorPlugin implements ImportDSSOrchestratorPlugin {
-
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
     @Autowired
     @Qualifier("orcMetaInputService")
     private MetaInputService metaInputService;
