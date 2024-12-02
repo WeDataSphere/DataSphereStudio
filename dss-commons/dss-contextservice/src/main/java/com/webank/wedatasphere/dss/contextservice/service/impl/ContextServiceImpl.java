@@ -156,10 +156,13 @@ public class ContextServiceImpl implements ContextService {
                 csWorkService.initContextServiceInfo(contextIDStr, workTypes);
 
                 // 保存flow的资源
+                long startTime = System.currentTimeMillis();
                 if (flowObject.has(DSSCommonUtils.FLOW_RESOURCE_NAME)) {
                     JsonArray flowRes = flowObject.get(DSSCommonUtils.FLOW_RESOURCE_NAME).getAsJsonArray();
                     saveContextResource(contextIDStr, flowRes, contextClient, CSCommonUtils.FLOW_RESOURCE_PREFIX, null);
                 }
+                long endTime = System.currentTimeMillis();
+                logger.info("保存flow的资源 cost{}" ,endTime-startTime);
                 if (flowObject.has(DSSCommonUtils.FLOW_PROP_NAME)) {
                     JsonElement flowProp = flowObject.get(DSSCommonUtils.FLOW_PROP_NAME);
                     saveContextVariable(contextIDStr, flowProp, contextClient, CSCommonUtils.FLOW_VARIABLE_PREFIX, null);
@@ -167,6 +170,7 @@ public class ContextServiceImpl implements ContextService {
                 // todo udf
 
                 // 保存节点的资源
+                long startTime1 = System.currentTimeMillis();
                 if (flowObject.has(DSSCommonUtils.FLOW_NODE_NAME)) {
                     JsonArray nodes = flowObject.get(DSSCommonUtils.FLOW_NODE_NAME).getAsJsonArray();
                     for (JsonElement node : nodes) {
@@ -183,6 +187,8 @@ public class ContextServiceImpl implements ContextService {
 //                        }
                     }
                 }
+                long endTime1 = System.currentTimeMillis();
+                logger.info("保存保存节点的资源 cost{}" ,endTime1-startTime1);
                 // 保存info信息
                 saveFlowInfo(contextIDStr, parentFlowID, jsonFlow);
             }
