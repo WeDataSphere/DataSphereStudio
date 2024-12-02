@@ -63,6 +63,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.webank.wedatasphere.dss.common.utils.ZipHelper.unzip;
 import static com.webank.wedatasphere.dss.common.utils.ZipHelper.zip;
@@ -70,6 +72,7 @@ import static com.webank.wedatasphere.dss.common.utils.ZipHelper.zip;
 
 @Component
 public class ExportDSSOrchestratorPluginImpl extends AbstractDSSOrchestratorPlugin implements ExportDSSOrchestratorPlugin {
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     static final String DEFAULT_ORC_NAME = "default_orc";
 
