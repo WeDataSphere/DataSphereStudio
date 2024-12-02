@@ -975,7 +975,10 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                                 String version, Long parentFlowId, String contextIdStr,
                                 Workspace workspace, List<DSSLabel> dssLabels, String nodeSuffix,
                                 Long orchestratorId) throws DSSErrorException, IOException {
+        long startTime2 = System.currentTimeMillis();
         String flowJson = bmlService.readTextFromBML(userName, rootFlow.getResourceId(), rootFlow.getBmlVersion());
+        long endTime2 = System.currentTimeMillis();
+        logger.info("read text from BML cost {}ms", endTime2-startTime2);
         //如果包含subflow,需要一同导入subflow内容，并更新parrentflow的json内容
         // TODO: 2020/7/31 优化update方法里面的saveContent
         //copy subflow need new contextID
@@ -988,10 +991,16 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             updateFlowJson = addFLowNodeSuffix(updateFlowJson, nodeSuffix);
         }
         //重新上传工作流资源
+        long startTime = System.currentTimeMillis();
         updateFlowJson = uploadFlowResourceToBml(userName, updateFlowJson, projectName, rootFlow);
+        long endTime = System.currentTimeMillis();
+        logger.info("重新上传工作流资源 cost {}ms", endTime-startTime);
         //上传节点的资源或调用appconn的copyRef
+        long startTime1 = System.currentTimeMillis();
         updateFlowJson = updateWorkFlowNodeJson(userName, projectName, updateFlowJson, rootFlow,
                 version, workspace, dssLabels);
+        long endTime1 = System.currentTimeMillis();
+        logger.info("上传节点的资源或调用appconn的copyRef cost {}ms", endTime1-startTime1);
         // 更新对应节点的FlowJson
         saveFlowMetaData(rootFlow.getId(), updateFlowJson, orchestratorId);
         List<? extends DSSFlow> subFlows = rootFlow.getChildren();
@@ -1004,7 +1013,10 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             }
         }
 
+        long startTime3 = System.currentTimeMillis();
         DSSFlow updateDssFlow = uploadFlowJsonToBml(userName, projectName, rootFlow, updateFlowJson);
+        long end3 = System.currentTimeMillis();
+        logger.info("upload Flow Json To Bml cost {}ms", endTime3-startTime3);
         List<String> tempIds = workFlowParser.getParamConfTemplate(updateFlowJson);
         List<String[]> templateIdsInRoot = tempIds.stream()
                 .map(e -> new String[]{updateDssFlow.getId().toString(), e})

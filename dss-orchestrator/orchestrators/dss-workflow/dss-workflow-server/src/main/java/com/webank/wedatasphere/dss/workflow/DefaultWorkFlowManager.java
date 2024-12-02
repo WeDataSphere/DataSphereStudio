@@ -299,7 +299,7 @@ public class DefaultWorkFlowManager implements WorkFlowManager {
         long startTime = System.currentTimeMillis();
         bmlService.downloadToLocalPath(userName, resourceId, bmlVersion, inputZipPath);
         long endTime = System.currentTimeMillis();
-        logger.info("download to local path cost {}ms", endTime-startTime);
+        logger.info("download to local path 2 cost {}ms", endTime-startTime);
         try{
             String  originProjectName=readImportZipProjectName(inputZipPath);
             if(!projectName.equals(originProjectName)){

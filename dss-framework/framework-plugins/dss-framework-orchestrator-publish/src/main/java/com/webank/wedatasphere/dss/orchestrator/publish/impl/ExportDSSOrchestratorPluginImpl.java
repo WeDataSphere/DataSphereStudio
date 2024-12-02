@@ -137,9 +137,15 @@ public class ExportDSSOrchestratorPluginImpl extends AbstractDSSOrchestratorPlug
 
             String resourceId = (String) responseRef.getResourceMap().get(ImportRequestRef.RESOURCE_ID_KEY);
             String version = (String) responseRef.getResourceMap().get(ImportRequestRef.RESOURCE_VERSION_KEY);
+            long startTime = System.currentTimeMillis();
             bmlService.downloadToLocalPath(userName, resourceId, version, flowZipPath);
+            long endTime = System.currentTimeMillis();
+            logger.info("download to local path cost {}ms", endTime-startTime);
             // /appcom/tmp/dss/yyyyMMddHHmmssSSS/arionliu/projectxxx
+            long startTime1 = System.currentTimeMillis();
             String projectPath = unzip(flowZipPath,true);
+            long endTime1 = System.currentTimeMillis();
+            logger.info("extract file cost {}ms", endTime1-startTime1);
             // /appcom/tmp/dss/yyyyMMddHHmmssSSS/arionliu/projectxxx/.flowmeta/flow_all_type_node/
             String flowMetaPath = IoUtils.generateFlowMetaIOPath(projectPath, orcName);
 
@@ -154,9 +160,12 @@ public class ExportDSSOrchestratorPluginImpl extends AbstractDSSOrchestratorPlug
             String exportPath = zip(projectPath);
 
             //3、打包新的zip包上传BML
+            long startTime2 = System.currentTimeMillis();
             InputStream inputStream = bmlService.readLocalResourceFile(userName, exportPath);
             BmlResource uploadResult = bmlService.upload(userName, inputStream,
                     dssOrchestratorInfo.getName() + ".OrcExport", projectName);
+            long endTime2 = System.currentTimeMillis();
+            logger.info("upload file cost {}ms", endTime2-startTime2);
 
             //4、判断导出后是否改变Orc的版本
             if (addOrcVersion) {

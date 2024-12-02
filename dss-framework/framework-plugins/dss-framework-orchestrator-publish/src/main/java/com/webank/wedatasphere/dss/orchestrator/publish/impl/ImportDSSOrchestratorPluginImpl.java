@@ -112,7 +112,10 @@ public class ImportDSSOrchestratorPluginImpl extends AbstractDSSOrchestratorPlug
         long endTime = System.currentTimeMillis();
         logger.info("download to local path cost {}ms", endTime-startTime);
         // /appcom/tmp/dss/yyyyMMddHHmmssSSS/arionliu/projectxxx
+        long startTime1 = System.currentTimeMillis();
         String projectPath = ZipHelper.unzip(inputZipPath,true);
+        long endTime1 = System.currentTimeMillis();
+        logger.info("extract files cost {}ms", endTime1-startTime1);
         String flowName = IoUtils.getSubdirectoriesNames(projectPath).stream().filter(name -> !name.startsWith("."))
                 .findFirst().orElseThrow(() -> new DSSRuntimeException("import package has no flow（未导入任何工作流，请检查导入包格式）"));
         String flowMetaPath = IoUtils.addFileSeparator(projectPath, FLOW_META_DIRECTORY_NAME, flowName);
