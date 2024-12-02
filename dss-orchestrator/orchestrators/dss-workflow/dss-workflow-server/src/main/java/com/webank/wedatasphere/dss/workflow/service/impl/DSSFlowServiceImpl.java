@@ -1015,7 +1015,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         long startTime3 = System.currentTimeMillis();
         DSSFlow updateDssFlow = uploadFlowJsonToBml(userName, projectName, rootFlow, updateFlowJson);
-        long end3 = System.currentTimeMillis();
+        long endTime3 = System.currentTimeMillis();
         logger.info("upload Flow Json To Bml cost {}ms", endTime3-startTime3);
         List<String> tempIds = workFlowParser.getParamConfTemplate(updateFlowJson);
         List<String[]> templateIdsInRoot = tempIds.stream()
