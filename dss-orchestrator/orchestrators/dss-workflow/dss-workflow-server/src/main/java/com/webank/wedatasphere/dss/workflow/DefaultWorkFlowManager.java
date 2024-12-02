@@ -212,11 +212,13 @@ public class DefaultWorkFlowManager implements WorkFlowManager {
                                          String projectName, Workspace workspace,
                                          List<DSSLabel> dssLabels,boolean exportExternalNodeAppConnResource) throws Exception {
         DSSFlow dssFlow = flowService.getFlowByID(flowId);
+        long startTime = System.currentTimeMillis();
         String projectPath = workFlowExportService.exportFlowInfoNew(dssProjectId, projectName, flowId, userName, workspace, dssLabels,exportExternalNodeAppConnResource);
         String exportPath = ZipHelper.zip(projectPath);
         InputStream inputStream = bmlService.readLocalResourceFile(userName, exportPath);
         BmlResource bmlResource = bmlService.upload(userName, inputStream, dssFlow.getName() + ".export", projectName);
-        logger.info("export workflow success.  flowId:{},bmlResource:{} .",flowId,bmlResource);
+        long endTime = System.currentTimeMillis();
+        logger.info("export workflow success.  flowId:{},bmlResource:{} cost:{}ms.",flowId,bmlResource,endTime-startTime);
         return  bmlResource;
     }
 
