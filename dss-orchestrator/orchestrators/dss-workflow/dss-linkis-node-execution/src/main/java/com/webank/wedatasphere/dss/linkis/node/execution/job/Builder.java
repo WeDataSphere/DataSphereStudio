@@ -113,6 +113,22 @@ public abstract class Builder {
         logger.info("Got workspace str {}.", workspace);
         job.getRuntimeParams().put("contextID", contextId);
         job.getRuntimeParams().put("workspace", workspace);
+
+        logger.info("engineType is {}. job name is {}", engineType, job.getJobName());
+        if(StringUtils.isNotEmpty(engineType) && engineType.equals("jdbc")){
+            logger.info("set runtime params wds.linkis.engine.runtime.datasource job name is {}", job.getJobName());
+            if(job.getJobName().contains("mysql")){
+                job.getRuntimeParams().put("wds.linkis.engine.runtime.datasource","mysql");
+            }else if(job.getJobName().contains("pg")){
+                job.getRuntimeParams().put("wds.linkis.engine.runtime.datasource","pg");
+            }else if (job.getJobName().contains("oracle")){
+                job.getRuntimeParams().put("wds.linkis.engine.runtime.datasource","oracle");
+            }
+
+            logger.info("set runtime params wds.linkis.engine.runtime.datasource job name is {}, value is {}", job.getJobName()
+                    ,job.getRuntimeParams().get("wds.linkis.engine.runtime.datasource"));
+        }
+
         return job;
     }
 
