@@ -22,7 +22,6 @@ import com.webank.wedatasphere.dss.linkis.node.execution.exception.LinkisJobExec
 import com.webank.wedatasphere.dss.linkis.node.execution.job.Job;
 import com.webank.wedatasphere.dss.linkis.node.execution.job.LinkisJob;
 import com.webank.wedatasphere.dss.linkis.node.execution.service.BuildJobAction;
-import com.webank.wedatasphere.dss.linkis.node.execution.utils.LinkisJobExecutionUtils;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.manager.label.constant.LabelKeyConstant;
@@ -76,7 +75,8 @@ public class BuildJobActionImpl implements BuildJobAction {
         String code = job.getCode();
         logger.info("The parseExecutionCode0X code for the job is {}", code);
         if (StringUtils.isEmpty(code) || code.equalsIgnoreCase("null")) {
-            code = LinkisJobExecutionUtils.gson.toJson(job.getParams());
+            Gson gson = new Gson();
+            code = gson.toJson(job.getParams());
             logger.info("The executable code for the job is {}", code);
         }
         return code;
@@ -88,7 +88,8 @@ public class BuildJobActionImpl implements BuildJobAction {
         logger.info("The parseExecutionCodeFor1X code for the job is {}", code);
         //for appconn node  in subflow  contains embeddedFlowId
         if (StringUtils.isEmpty(code) || code.equalsIgnoreCase("null") || code.contains(EMBEDDED_FLOW_ID.getValue())) {
-            code = LinkisJobExecutionUtils.gson.toJson(job.getParams());
+            Gson gson = new Gson();
+            code = gson.toJson(job.getParams());
             logger.info("The executable code for the job is {}", code);
         }
         return code;

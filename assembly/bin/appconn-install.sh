@@ -26,7 +26,7 @@ function isSuccess(){
   fi
 }
 
-PROC_NAME=DSSServerApplication
+PROC_NAME=DSSProjectServerApplication
 ProcNumber=`ps -ef | grep -w $PROC_NAME | grep -v grep | wc -l`
 if [ $ProcNumber -le 0 ];then
    echo "${PROC_NAME} is not running, please ensure whether DSS is installed and started."

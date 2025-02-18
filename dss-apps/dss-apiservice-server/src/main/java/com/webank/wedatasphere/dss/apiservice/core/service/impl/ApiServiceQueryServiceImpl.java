@@ -35,19 +35,16 @@ import com.webank.wedatasphere.dss.apiservice.core.service.ApiService;
 import com.webank.wedatasphere.dss.apiservice.core.util.DateUtil;
 import com.webank.wedatasphere.dss.apiservice.core.util.SQLCheckUtil;
 import com.webank.wedatasphere.dss.apiservice.core.vo.*;
-//import com.webank.wedatasphere.dss.oneservice.core.jdbc.JdbcUtil;
 import com.webank.wedatasphere.dss.apiservice.core.exception.ApiServiceRuntimeException;
 import com.webank.wedatasphere.dss.apiservice.core.service.ApiServiceQueryService;
 import com.webank.wedatasphere.dss.apiservice.core.util.AssertUtil;
 import com.webank.wedatasphere.dss.apiservice.core.util.ModelMapperUtil;
-//import com.webank.wedatasphere.dss.oneservice.core.vo.*;
 import com.webank.wedatasphere.dss.apiservice.core.vo.ApiServiceVo;
 import org.apache.linkis.bml.client.BmlClient;
 import org.apache.linkis.bml.client.BmlClientFactory;
 import org.apache.linkis.bml.protocol.BmlDownloadResponse;
 import org.apache.linkis.common.io.FsPath;
 import org.apache.linkis.storage.source.FileSource;
-import org.apache.linkis.storage.source.FileSource$;
 import org.apache.linkis.ujes.client.UJESClient;
 import org.apache.linkis.ujes.client.response.JobExecuteResult;
 import org.apache.commons.collections4.MapUtils;
@@ -170,7 +167,9 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
                                      ApiServiceToken tokenDetail,
                                      String loginUser) {
         // 根据path查询resourceId和version
+
         // 得到metadata
+
         // 执行查询
         //path 必须唯一
         ApiServiceVo apiServiceVo = apiServiceDao.queryByPath(path);
@@ -245,6 +244,10 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
                 }
             });
 
+
+//            AssertUtil.isTrue(MapUtils.isNotEmpty((Map) collect.getKey()), "数据源不能为空");
+
+
             ApiServiceExecuteJob job = new DefaultApiServiceJob();
             //sql代码封装成scala执行
             job.setCode(ExecuteCodeHelper.packageCodeToExecute(executeCode, maxApiVersionVo.getMetadataInfo()));
@@ -270,6 +273,7 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
             apiAccessVo.setAccessTime(DateUtil.getNow());
             apiServiceAccessDao.addAccessRecord(apiAccessVo);
 
+
             JobExecuteResult jobExecuteResult = LinkisJobSubmit.execute(job,ujesClient);
 
             //记录执行任务用户和代理用户关系，没有代理用户的统一设置为登录用户
@@ -279,12 +283,16 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
             apiServiceJob.setJobExecuteResult(jobExecuteResult);
             runJobs.put(jobExecuteResult.getTaskID(),apiServiceJob);
 
+
             LinkisExecuteResult linkisExecuteResult = new LinkisExecuteResult(jobExecuteResult.getTaskID(), jobExecuteResult.getExecID());
             return linkisExecuteResult;
         } catch (IOException e) {
             throw new ApiServiceRuntimeException(e.getMessage(), e);
         }
     }
+
+
+
 
     @Override
     public ApiServiceVo queryByVersionId(String userName,Long versionId) throws ApiServiceQueryException {
@@ -320,7 +328,9 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
 
         AssertUtil.notNull(targetApiVersionVo, "目标参数版本不存在，path=" + scriptPath+",version:"+versionId);
 
+        // todo~！
         List<ParamVo> paramVoList = apiServiceParamDao.queryByVersionId(targetApiVersionVo.getId());
+
 
         List<QueryParamVo> queryParamVoList = new ArrayList<>();
 
@@ -393,6 +403,7 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
             }
         }
 
+
         return collect;
     }
 
@@ -417,6 +428,60 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
 
         return collect;
     }
+
+
+
+
+//    private Tuple3 getDatasourceInfo(final Map<String, Object> datasourceMap) {
+//        Tuple3 tuple3 = datasourceCache.getIfPresent(datasourceMap);
+//
+//        if (tuple3 == null) {
+//            synchronized (this) {
+//                tuple3 = datasourceCache.getIfPresent(datasourceMap);
+//                if (tuple3 == null) {
+//                    tuple3 = JdbcUtil.getDatasourceInfo(datasourceMap);
+//                    datasourceCache.put(datasourceMap, tuple3);
+//                }
+//            }
+//        }
+//
+//        return tuple3;
+//    }
+
+//    private List<Map<String, Object>> executeJob(String executeCode,
+//                                                 Object datasourceMap, Map<String, Object> params) {
+//
+////        Tuple3 tuple3 = getDatasourceInfo((Map<String, Object>) datasourceMap);
+////        final String jdbcUrl = tuple3._1().toString();
+////        final String username = tuple3._2().toString();
+////        final String password = tuple3._3().toString();
+//
+////        NamedParameterJdbcTemplate namedParameterJdbcTemplate = datasourceService.getNamedParameterJdbcTemplate(jdbcUrl, username, password);
+//
+//        String namedSql = genNamedSql(executeCode, params);
+//
+////        return namedParameterJdbcTemplate.query(namedSql, new MapSqlParameterSource(params), new ColumnAliasMapRowMapper());
+//
+//    }
+
+    private static String genNamedSql(String executeCode, Map<String, Object> params) {
+        // 没有参数，无需生成namedSql
+        if (MapUtils.isEmpty(params)) {
+            return executeCode;
+        }
+
+        for (String paramName : params.keySet()) {
+            for (String $name : new String[]{"'${" + paramName + "}'", "${" + paramName + "}", "\"${" + paramName + "}\""}) {
+                if (executeCode.contains($name)) {
+                    executeCode = StringUtils.replace(executeCode, $name, ":" + paramName);
+                    break;
+                }
+            }
+        }
+
+        return executeCode;
+    }
+
 
     public static class ColumnAliasMapRowMapper implements RowMapper<Map<String, Object>> {
         @Override
@@ -459,7 +524,8 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
 
     @Override
     public ApiServiceJob getJobByTaskId(String taskId){
-        return runJobs.get(taskId);
+        ApiServiceJob apiServiceJob=runJobs.get(taskId);
+        return apiServiceJob;
     }
 
 

@@ -90,7 +90,7 @@ export default function () {
       document.title = to.meta.title || (apps.conf ? apps.conf.app_name || '' : '');
     }
     // 检查前端资源是否更新
-    if (process.env.NODE_ENV === 'production' && apps.conf && apps.conf.showUpdateNotice !== false) {
+    if (process.env.NODE_ENV === 'production') {
       checkNeedShowUpdate().then(
         (show) => {
           if (show) {

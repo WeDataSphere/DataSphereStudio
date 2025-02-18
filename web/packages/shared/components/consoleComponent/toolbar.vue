@@ -309,7 +309,6 @@ export default {
       }
       return {
         filter: canFilter,
-
         export:
           this.baseinfo.exportResEnable !== false &&
           isScriptis &&
@@ -449,7 +448,7 @@ export default {
             flag = this.downloadFile(url, temPath)
           } else if (
             this.isApiAll &&
-            this.allDownload &&
+            this.allDownload && 
             +this.download.format == 2
           ) {
             temPath = temPath.substring(0, temPath.lastIndexOf('/'))

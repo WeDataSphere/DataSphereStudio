@@ -114,8 +114,7 @@ public class AbstractEventCheckReceiver extends AbstractEventCheck{
         String lastMsgId = "0";
         try {
             msgConn = getEventCheckerConnection(props,log);
-            pstmtForGetID = msgConn.prepareStatement(sqlForReadMsgID, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-//            pstmtForGetID = msgConn.prepareCall(sqlForReadMsgID);
+            pstmtForGetID = msgConn.prepareCall(sqlForReadMsgID);
             pstmtForGetID.setString(1, receiver);
             pstmtForGetID.setString(2, topic);
             pstmtForGetID.setString(3, msgName);
@@ -153,8 +152,7 @@ public class AbstractEventCheckReceiver extends AbstractEventCheck{
         String[] consumedMsgInfo = null;
         try {
             msgConn = getEventCheckerConnection(props,log);
-            pstmt = msgConn.prepareStatement(sqlForReadTMsg, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-//            pstmt = msgConn.prepareCall(sqlForReadTMsg);
+            pstmt = msgConn.prepareCall(sqlForReadTMsg);
             pstmt.setString(1, topic);
             pstmt.setString(2, msgName);
             pstmt.setString(3, params[0]);
