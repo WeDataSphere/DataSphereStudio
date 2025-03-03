@@ -260,7 +260,7 @@
           type="primary"
           :loading="saveingComment"
           :disabled="saveingComment"
-          @click="workflowPublish">{{$t('message.workflow.ok')}}</Button>
+          @click="handleWorkflowPublish">{{$t('message.workflow.ok')}}</Button>
         <Button
           @click="showDiff">{{$t('message.workflow.showVersionDiff')}}</Button>
         <Button
@@ -961,11 +961,79 @@ export default {
         this.autoSave(this.$t('message.workflow.Save'), false);
       }
     },
+    urlContainsParams(paramsToCheck) {
+      // 获取当前URL
+      let url = new URL(window.location.href);
+      // window.console.log('Current URL:', url.toString());
+
+      // 检查查询字符串部分
+      let searchParams = new URLSearchParams(url.search);
+
+      // 将要检查的参数转换为数组
+      if (typeof paramsToCheck === 'string') {
+          paramsToCheck = [paramsToCheck];
+      }
+
+      // 用于存储哪些参数被找到
+      let foundParams = [];
+
+      // 遍历需要检查的参数列表
+      paramsToCheck.forEach(param => {
+          if (searchParams.has(param)) {
+              foundParams.push(param);
+              // window.console.log(`Parameter "${param}" found in query string.`);
+          }
+      });
+
+      // 获取并解析哈希部分
+      let hash = window.location.hash.slice(1); // 去掉开头的 #
+      if (hash) {
+          // 使用占位符来创建一个有效的URL以解析哈希部分
+          let hashUrl = new URL(`http://placeholder.com/?${hash}`);
+          let hashSearchParams = new URLSearchParams(hashUrl.search);
+
+          // 再次遍历需要检查的参数列表，这次是针对哈希部分
+          paramsToCheck.forEach(param => {
+              if (!foundParams.includes(param) && hashSearchParams.has(param)) {
+                  foundParams.push(param);
+                  // window.console.log(`Parameter "${param}" found in hash.`);
+              }
+          });
+      }
+
+      // 如果所有要检查的参数都被找到了
+      if (foundParams.length === paramsToCheck.length) {
+          // window.console.log('All specified parameters are present.');
+          return true;
+      } else {
+          window.console.log('Some or none of the specified parameters are present.');
+          return false;
+      }
+    },
     getBaseInfo() {
       this.loading = true;
       this.clickCurrentNode = {};
       this.nodebaseinfoShow = false;
       this.getOriginJson();
+      // 自动打开子工作流
+      let containsParams = this.urlContainsParams(['appId']);
+      if(containsParams && this.$route.query.appId && this.flowId !== Number(this.$route.query.appId)) {
+        api.fetch(`/dss/workflow/get`, {
+          flowId: Number(this.$route.query.appId),
+          labels: this.getCurrentDsslabels()
+        },'get').then((res) => {
+          const arg = {
+          appId: Number(this.$route.query.appId),     // (跳转节点所属)直接工作流id
+          flowId: Number(this.$route.query.flowId),  // 顶层工作流id
+          flowName: res.flow.name || '', // 直接工作流名称
+          flowNodeId: res.flow.resourceId || '', // 直接工作流节点id
+          jumpNodeName: this.$route.query.jumpNodeName, // 跳转节点名称
+        }
+        this.$emit('open-subFlow', arg);
+        }).catch((err) => {
+          window.console.error(err);
+        })
+      }
     },
     initAction(json) {
       // 创建工作流之后就有值
@@ -989,8 +1057,25 @@ export default {
       this.pollUpdateLock();
       this.$nextTick(() => {
         this.loading = false;
-        this.openNodeByName()
+        let containsParams = this.urlContainsParams(['appId', 'nodeName']);
+        if (containsParams &&  this.$route.query.origin === 'gitSearch') {
+          this.openSubNodeByName()
+        } else {
+          this.openNodeByName()
+        }
       })
+    },
+    openSubNodeByName() {
+      let nodeName = this.$route.query.nodeName;
+      const node = this.originalData.nodes.find(node => {
+        return node.title === nodeName
+      })
+      if (node) {
+        this.dblclick(node)
+      }
+      setTimeout(() => {
+        storage.remove('openflownode');
+      }, 2500)
     },
     openNodeByName(params) {
       const openflownode = storage.get('openflownode');
@@ -1025,7 +1110,11 @@ export default {
         if (flowEditLock && !this.myReadonly) {
           this.setFlowEditLock(flowEditLock);
         }
-        this.initAction(json);
+        if (json) {
+          this.initAction(json);
+        } else {
+          this.loading = false;
+        }
       }).catch((err) => {
         window.console.error(err);
         this.loading = false;
@@ -1125,6 +1214,10 @@ export default {
       }, 200);
     },
     dblclick(...arg) {
+      if (this.lastDblClickTime && Date.now() - this.lastDblClickTime < 600) {
+        return; // 防止双击事件触发多次
+      }
+      this.lastDblClickTime = Date.now();
       arg[0] = this.bindNodeBasicInfo(arg[0]);
       arg[0].contextID = this.contextID;
       // 由后台控制是否支持跳转
@@ -1170,6 +1263,11 @@ export default {
       });
     },
     async saveNodeBaseInfo(arg) {
+      if (this.lastSaveTime && new Date().getTime() - this.lastSaveTime < 2000) {
+        return
+      } else {
+        this.lastSaveTime = new Date().getTime();
+      }
       this.$emit('saveBaseInfo', arg);
       // 如果是可编辑脚本得改变打开的脚本得名称
       this.dispatch('Workbench:updateFlowsNodeName', arg);
@@ -1761,11 +1859,14 @@ export default {
       return results;
     },
     addDatachecker(node, data){
-      if (data) {
+      if (data && data.length) {
         // 第一行库表放到check.object，其余行放到job.desc
-        const checkObject = `${data[0].db}.${data[0].table}{${data[0].partition}}`;
+        let checkObject = `${data[0].db}.${data[0].table}`;
+        if(data[0].partition) {
+          checkObject += `{${data[0].partition}}`;
+        }
         const jobDesc = data.slice(1).map((item,idx) => {
-          return `check.object.${idx+1}=${item.db}.${item.table}{${item.partition}}`;
+          return item.partition ? `check.object.${idx+1}=${item.db}.${item.table}{${item.partition}}` : `check.object.${idx+1}=${item.db}.${item.table}`;
         }).join('\n')
         // 添加datacheck节点及连线
         const checkerNode = {
@@ -1777,8 +1878,8 @@ export default {
           "layout": {
             "width": 150,
             "height": 40,
-            "x": node.x + Math.random() * 50 + 150,
-            "y": node.y + Math.random() * 30 + 40,
+            "x": node.x - Math.random() * 50 - 150 > 100 ? node.x - Math.random() * 50 - 150 : 100,
+            "y": node.y - Math.random() * 30 - 60 > 100 ? node.y - Math.random() * 30 - 60 : 100,
           },
           params:{ 
             configuration:  {
@@ -1795,10 +1896,10 @@ export default {
         }
         const edge = {
           linkType: "straight",
-          source: node.key,
-          target: checkerNode.key,
+          target: node.key,
+          source: checkerNode.key,
           sourceLocation: "bottom",
-          targetLocation: "left"
+          targetLocation: "top"
         }
         this.json.edges.push(edge);
         this.json.nodes.push(checkerNode);
@@ -2197,16 +2298,20 @@ export default {
      * 右键菜单点击打开管理台
      */
     async openConsole(node) {
+      if (this.$refs.bottomTab) this.$refs.bottomTab.closePanel()
+      this.openningNode = null;
       this.nodeSelectedFalse(node); // 改变节点的选择状态
       // 将数据结构适配全局console组件
       node.runType = 'node'; // 新增运行类型字段
       node.taskID = node.runState.taskID; // 新增任务id
       node.execID = node.runState.execID; // 新增执行id
-      this.openningNode = node; // 传给控制台的参数
       this.consoleHeight = this.$el ? this.$el.clientHeight / 2 : 250
       this.shapeWidth = this.$refs.process && this.$refs.process.state.shapeOptions.viewWidth; // 自适应控制台宽度
       this.$nextTick(() => {
-        this.$refs.currentConsole.checkFromCache();
+        this.openningNode = node; // 传给控制台的参数
+        setTimeout(() => {
+          this.$refs.currentConsole.checkFromCache();
+        }, 50)
       })
     },
     closeConsole() {
@@ -2342,6 +2447,8 @@ export default {
       this.workflowRun('rerun')
     },
     async workflowRun(runFlag) {
+      if (this.$refs.bottomTab) this.$refs.bottomTab.closePanel()
+      this.retryTimes = 0
       let selectNodes = this.$refs.process.getSelectedNodes();
       this.dispatch('workflowIndexedDB:clearNodeCache');
       // 重新执行清掉上次的计时器
@@ -2408,6 +2515,7 @@ export default {
       this.workflowIsExecutor = true;
     },
     workflowStop() {
+      this.retryTimes = 0
       clearTimeout(this.excuteTimer);
       clearTimeout(this.executorStatusTimer);
       // 清掉当前工作流执行的缓存
@@ -2434,7 +2542,6 @@ export default {
           taskID,
           labels: this.getCurrentDsslabels()
         }, 'get').then((res) => {
-        this.retryTimes = 0
         this.flowExecutorNode(execID);
         // 根据执行状态判断是否轮询
         const status = res.status;
@@ -2468,6 +2575,7 @@ export default {
           if (status === 'Failed') {
             this.$Notice.error({desc: this.$t('message.common.projectDetail.workflowRunFail')})
             this.flowExecutorNode(execID, true);
+            this.$refs.bottomTab.showPanel('execHistory', res.logPath);
           }
           if (status === 'Cancelled') {
             this.$Notice.error({desc: this.$t('message.common.projectDetail.workflowRunCanceled')})
@@ -2610,6 +2718,27 @@ export default {
     showDiff() {
       this.pubulishShow = false;
       this.$refs.bottomTab.showPanel('version');
+    },
+    async handleWorkflowPublish() {
+      const params = {
+        orchestratorId: this.orchestratorId,
+        projectId: this.$route.query.projectID,
+      }
+      const rst = await api.fetch('/dss/framework/orchestrator/publishFlowCheck', params, 'get');
+      if(rst && rst.data && rst.data.notContainsKeywordsNodeList && rst.data.notContainsKeywordsNodeList.length>0){
+        const content = `<p class="ellipse-p">工作流${rst.data.orchestratorName}中节点：${rst.data.notContainsKeywordsNodeList.join(',')}</p><p>不包含关键字insert或create table</p>`;
+        this.$Modal.confirm({
+            title: '节点关键字检查',
+            content: content,
+            okText: '继续发布',
+            cancelText:'返回修改',
+            onOk: () => {
+              this.workflowPublish();
+            },
+        });
+      }else {
+        this.workflowPublish()
+      }
     },
     async workflowPublish() {
       // 只有未接入Git的项目发布前需求保存
@@ -2995,4 +3124,9 @@ export default {
   }
 }
 </script>
-<style src="./index.scss" lang="scss"></style>
+<style src="./index.scss" lang="scss">
+.ellipse-p {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+</style>

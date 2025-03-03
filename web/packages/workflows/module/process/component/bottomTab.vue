@@ -38,6 +38,7 @@
 <script>
 
 import Log from './log.vue';
+import api from '@dataspherestudio/shared/common/service/api';
 
 import plugin from '@dataspherestudio/shared/common/util/plugin';
 const extComponents = plugin.emitHook('workflow_bottom_panel') || {}
@@ -100,21 +101,35 @@ export default {
       this.showLog = false
       this.closePanel()
     },
-    showLogPanel(logs, show = true) {
+    showLogPanel(logPath, show = true) {
+      if (logPath) {
+        api.fetch('/filesystem/openLog', {
+          path: logPath //'hdfs:///appcom/logs/linkis/log/2021-08-26/nodeexecution/stacyyan/753499.log'
+        }, 'get').then((rst) => {
+          if (rst) {
+            this.historyLogs = rst.log
+          }
+        }).catch(() => {
+        });
+      } else {
+        this.historyLogs = ''
+      }
       this.showLog = show
-      this.historyLogs = logs
     },
     closePanel() {
       this.showContent = false
       this.curTab = {}
     },
-    showPanel(key) {
+    showPanel(key, logPath) {
       const item = this.tabs.find(it => it.key === key)
       if (this.curTab.key !== item.key) {
         this.minSize =false
         this.showContent = true
         this.showLog = false
         this.curTab = item
+      }
+      if (key == 'execHistory' && logPath) {
+        this.showLogPanel(logPath)
       }
     },
     eventFromExt(evt) {

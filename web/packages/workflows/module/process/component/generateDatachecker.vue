@@ -71,16 +71,21 @@ export default {
             this.editRow = null;
         },
         ok() {
-            this.show = false;
-            this.$emit('confirm', this.node, this.list.map(it => {
+            const items = this.list.filter(it => it.db && it.table).map(it => {
                 return {
                     db: it.db.trim(),
                     table: it.table.trim(),
-                    partition: it.partition.trim()
+                    partition: it.partition ? it.partition.trim() : '',
                 }
-            }))
-            this.list = []
-            this.editRow = null
+            })
+            if (items.length < 1 || this.list.length !== items.length) {
+                this.$Message.error('请检查库表分区信息！')
+            } else {
+                this.show = false;
+                this.$emit('confirm', this.node, items)
+                this.list = []
+                this.editRow = null
+            }
         },
         handleCopy(row) {
             this.list.push({

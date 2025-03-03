@@ -214,7 +214,7 @@
     <!-- 导入工作流 -->
     <ImportFlow v-model="importModal" ref="import" @finish="importSended" />
     <!-- 查找代码 -->
-    <CodeSearchDrawer v-model="showCodeDrawer" :currentMode="currentMode" @openFlowNode="openFlowNode" />
+    <CodeSearchDrawer v-model="showCodeDrawer" :currentMode="currentMode" @openFlowNode="openFlowNode" @openSubFlowNode="openSubFlowNode"/>
   </div>
 </template>
 <script>
@@ -633,23 +633,47 @@ export default {
         }) 
       })
     },
-    openFlowNode(evt, item, code) {
+    openSubFlowNode(evt, item, code,nodeInfo){
       let linenum = 0
       if (code) {
         linenum = code.number;
       } else {
         linenum = item.keyLines[0].number;
       }
-      // 当前查找只能在同工程下查找
-      // 根据参数找到对应node
-      const cur = this.projectsTree.filter(item => item.id == this.$route.query.projectID)[0];
-      if (cur) {
-        this.getFlow(cur, (flows) => {
+      if (nodeInfo && nodeInfo.id && nodeInfo.projectName && nodeInfo.orchestratorId && nodeInfo.appId) {
+      this.getFlow(nodeInfo, (flows) => {
           const node = flows.find(it => it.name == item.flowName);
           const query = {
             workspaceId: this.$route.query.workspaceId,
-            projectID: this.$route.query.projectID,
-            projectName: this.$route.query.projectName,
+            projectID: nodeInfo.id,
+            projectName: nodeInfo.projectName,
+            flowId: nodeInfo.orchestratorId,
+            appId: nodeInfo.appId,
+            nodeName: nodeInfo.nodeName,
+            origin: 'gitSearch',
+            tiemstamp: new Date().getTime()
+          }
+          // 子工作流直接开新页面打开
+          storage.set('openflownode', `${node.orchestratorId}_flowidname_${item.nodeName}`);
+          storage.set('revealline', linenum);
+          window.open(`/#/workflow?${qs.stringify(query)}`, '_blank');
+        });
+      }      
+    },
+    openFlowNode(evt, item, code,projectObj){
+      let linenum = 0
+      if (code) {
+        linenum = code.number;
+      } else {
+        linenum = item.keyLines[0].number;
+      }
+      if (projectObj) {
+        this.getFlow(projectObj, (flows) => {
+          const node = flows.find(it => it.name == item.flowName);
+          const query = {
+            workspaceId: this.$route.query.workspaceId,
+            projectID: projectObj.id,
+            projectName: projectObj.projectName,
             flowId: node.orchestratorId,
             tiemstamp: new Date().getTime()
           }

@@ -17,6 +17,9 @@ const GetWorkspaceUserList = (params) => api.fetch(`${API_PATH.WORKSPACE_PATH}ge
 // 获取工作空间数据
 const GetWorkspaceData = (params) => api.fetch(`${API_PATH.WORKSPACE_PATH}workspaces/${params}`, 'get')
 
+// 获取工作空间默认参数模板数据
+const GetWorkspaceTemplateData = (params) => api.fetch(`${API_PATH.ORCHESTRATOR_PATH}getWorkspaceDefaultTemplates`, 'get')
+
 // 获取工作空间应用商店数据
 const GetWorkspaceApplications = (params) => api.fetch(`${API_PATH.WORKSPACE_PATH}workspaces/${params}/appconns`, {}, {method: 'get', cacheOptions: {time: 3000}})
 
@@ -62,6 +65,7 @@ export {
   GetWorkspaceUserManagement,
   GetWorkspaceUserList,
   GetWorkspaceData,
+  GetWorkspaceTemplateData,
   GetWorkspaceApplications,
   GetDepartments,
   GetTreeDepartments,
