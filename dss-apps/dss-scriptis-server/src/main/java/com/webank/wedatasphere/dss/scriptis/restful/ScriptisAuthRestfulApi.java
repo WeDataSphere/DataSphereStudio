@@ -41,11 +41,6 @@ public class ScriptisAuthRestfulApi {
         String username = SecurityFilter.getLoginUsername(req);
         Map<String,Object> globalLimits = scriptisAuthService.getGlobalLimits(username);
 
-        if(username.endsWith("cfor_f")){
-            globalLimits.put("downloadResEnable",true);
-            globalLimits.put("exportResEnable",true);
-        }
-
         return Message.ok().data("globalLimits", globalLimits);
     }
 
