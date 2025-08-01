@@ -75,6 +75,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
+
 @Service
 public class WorkflowNodeServiceImpl implements WorkflowNodeService {
 
@@ -112,7 +114,8 @@ public class WorkflowNodeServiceImpl implements WorkflowNodeService {
             appInstance = appConn.getAppDesc().getAppInstancesByLabels(dssLabels).get(0);
         } catch (NoSuchAppInstanceException e) {
             if (dssLabels.get(0).getStringValue() == null){
-                throw new ExternalOperationFailedException(50020, "未正确退出生产中心或流失生产中，请刷新页面后重试！");
+                throw new ExternalOperationFailedException(WORKFLOW_EXIT_PRODUCTION_FAILED.getErrorCode(),
+                        WORKFLOW_EXIT_PRODUCTION_FAILED.getErrorDesc());
             }
             throw new ExternalOperationFailedException(50020, "Cannot find the appInstance with label " + dssLabels.get(0).getStringValue() +
                     ". (在" + dssLabels.get(0).getStringValue() + "中心找不到" + appConn.getAppDesc().getAppName() + "实例)");

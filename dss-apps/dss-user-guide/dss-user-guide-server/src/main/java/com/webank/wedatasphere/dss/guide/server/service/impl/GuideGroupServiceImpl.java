@@ -119,7 +119,7 @@ public class GuideGroupServiceImpl extends ServiceImpl<GuideGroupMapper, GuideGr
             int flag = guideGroupMapper.batchInsert(guideGroups);
             if(flag == 0){
                 logger.info("=========批量插入失败dss_guide_group表============");
-                throw new GuideException("批量插入失败！");
+                throw new GuideException("Batch insertion failed (批量插入失败！)");
             }
         }
         logger.info("guideContents=======>>>>"+ guideContents);
@@ -129,7 +129,7 @@ public class GuideGroupServiceImpl extends ServiceImpl<GuideGroupMapper, GuideGr
             int flag = guideContentMapper.batchInsert(guideContents);
             if(flag == 0){
                 logger.info("=========批量插入失败dss_guide_content表============");
-                throw new GuideException("批量插入失败！");
+                throw new GuideException("Batch insertion failed (批量插入失败！)");
             }
         }
         logger.info("学习引导同步完成！！！");

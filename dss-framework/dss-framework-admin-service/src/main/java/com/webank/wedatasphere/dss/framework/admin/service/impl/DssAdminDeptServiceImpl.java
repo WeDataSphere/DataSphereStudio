@@ -63,7 +63,7 @@ public class DssAdminDeptServiceImpl extends ServiceImpl<DssAdminDeptMapper, Dss
         DssAdminDept info = dssAdminDeptMapper.selectDeptById(dept.getParentId());
         // 如果父节点不为正常状态,则不允许新增子节点
         if (!UserConstants.DEPT_NORMAL.equals(info.getStatus())) {
-            throw new DSSAdminWarnException("部门停用，不允许新增");
+            throw new DSSAdminWarnException("Department suspended, no new additions allowed (部门停用，不允许新增)");
         }
         dept.setAncestors(info.getAncestors() + "," + dept.getParentId());
         return dssAdminDeptMapper.insertDept(dept);

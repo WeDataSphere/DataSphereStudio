@@ -62,7 +62,8 @@ public class HttpEventCheckSender extends AbstractEventCheck {
             try {
                 msgBody = gson.fromJson(msg, Map.class);
             }catch (JsonSyntaxException jsonSyntaxException){
-                throw new RuntimeException("msg.body格式有误，请输入标准的json格式"+ jsonSyntaxException.getMessage());
+                throw new RuntimeException("The format of msg.body is incorrect. Please enter the standard JSON format" +
+                        "(msg.body格式有误，请输入标准的json格式)"+ jsonSyntaxException.getMessage());
             }
         }
         HttpMsgSendRequest message = new HttpMsgSendRequest(sender, topic, msgName, runDate, msgId, msgBody);
@@ -77,7 +78,7 @@ public class HttpEventCheckSender extends AbstractEventCheck {
                 msgSendResponse = gson.fromJson(responseBody,
                         HttpMsgSendResponse.class);
             } catch (Exception e){
-                throw new RuntimeException("请求KGAS失败，详情：" + responseBody);
+                throw new RuntimeException("Request KGAS failed, details(请求KGAS失败，详情)：" + responseBody);
             }
 
             int reCode = msgSendResponse.getRetCode();

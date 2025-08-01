@@ -78,6 +78,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 import static com.webank.wedatasphere.dss.framework.project.utils.ProjectOperationUtils.tryProjectOperation;
 
 public class DSSFrameworkProjectServiceImpl implements DSSFrameworkProjectService {
@@ -135,7 +136,7 @@ public class DSSFrameworkProjectServiceImpl implements DSSFrameworkProjectServic
             // 校验gitUser gitToken合法性以及projectName是否重复
             boolean repeat = checkGitName(projectCreateRequest.getName(), workspace, username, projectCreateRequest.getGitUser(), projectCreateRequest.getGitToken());
             if (repeat) {
-                throw new DSSProjectErrorException(71000, "git中存在同名项目，请更换名字或删去同名项目再重试");
+                throw new DSSProjectErrorException(GIT_SAME_PROJECT_NAME.getErrorCode(), GIT_SAME_PROJECT_NAME.getErrorDesc());
             }
         }
 
@@ -188,9 +189,9 @@ public class DSSFrameworkProjectServiceImpl implements DSSFrameworkProjectServic
         try {
             isExistSameProjectName(projectCreateRequest, workspace, appConnNameList, username);
         } catch (WarnException e) {
-            throw new DSSProjectErrorException(71000, "向第三方应用发起检查工程名是否重复失败. " + e.getDesc(), e);
+            throw new DSSProjectErrorException(71000, "Failed to initiate a check for duplicate project names to third-party applications (向第三方应用发起检查工程名是否重复失败.) " + e.getDesc(), e);
         } catch (Exception e) {
-            throw new DSSProjectErrorException(71000, "向第三方应用发起检查工程名是否重复失败. 原因：" + ExceptionUtils.getRootCauseMessage(e), e);
+            throw new DSSProjectErrorException(71000, "Failed to initiate a check for duplicate project names to third-party applications, reason is (向第三方应用发起检查工程名是否重复失败. 原因)：" + ExceptionUtils.getRootCauseMessage(e), e);
         }
         if (!appConnNameList.isEmpty()) {
             throw new DSSProjectErrorException(71000, String.join(", ", appConnNameList) + " 已存在相同项目名称，请重新命名!");
@@ -249,7 +250,7 @@ public class DSSFrameworkProjectServiceImpl implements DSSFrameworkProjectServic
             updateWrapper.eq("id", projectModifyRequest.getId());
             updateWrapper.eq("workspace_id", projectModifyRequest.getWorkspaceId());
             projectMapper.update(project, updateWrapper);
-            throw new DSSProjectErrorException(71000, "修改项目接入Git失败，原因为：" + e.getMessage());
+            throw new DSSProjectErrorException(71000, "Modifying the project to connect to Git failed due to the following reason (修改项目接入Git失败，原因为) ：" + e.getMessage());
         }
     }
 
@@ -407,7 +408,8 @@ public class DSSFrameworkProjectServiceImpl implements DSSFrameworkProjectServic
         List<StaffInfoVO> all = dssWorkspaceUserService.listAllDSSUsers();
         Set<String> allDSSUsers = all.stream().map(StaffInfoVO::getUsername).collect(Collectors.toSet());
         if (allDSSUsers.contains(gitUser)) {
-            throw new DSSProjectErrorException(71000, "Git读写账号用户名必须为虚拟用户，不能是DSS实名用户！");
+            throw new DSSProjectErrorException(GIT_READ_WRITE_ACCOUNT_USERNAME.getErrorCode(),
+                    GIT_READ_WRITE_ACCOUNT_USERNAME.getErrorDesc());
         }
         // 校验Git名称
         Sender gitSender = DSSSenderServiceFactory.getOrCreateServiceInstance().getGitSender();
@@ -417,7 +419,8 @@ public class DSSFrameworkProjectServiceImpl implements DSSFrameworkProjectServic
         GitCheckProjectResponse responseWorkflowValidNode = RpcAskUtils.processAskException(ask, GitCheckProjectResponse.class, GitCheckProjectRequest.class);
         LOGGER.info("-------=======================End to check project: {}=======================-------: {}", name, responseWorkflowValidNode);
         if (responseWorkflowValidNode == null) {
-            throw new DSSProjectErrorException(71000, "向Git发起检查工程名是否重复失败，请稍后重试 ");
+            throw new DSSProjectErrorException(GIT_CHECK_DUPLICATE_PROJECT.getErrorCode(),
+                    GIT_CHECK_DUPLICATE_PROJECT.getErrorDesc());
         } else if (responseWorkflowValidNode.getRepeat()) {
             LOGGER.info("项目{}重新接入git", name);
             return true;

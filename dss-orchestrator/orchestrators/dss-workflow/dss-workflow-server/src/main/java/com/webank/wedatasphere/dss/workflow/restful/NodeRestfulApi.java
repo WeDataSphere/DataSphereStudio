@@ -333,7 +333,7 @@ public class NodeRestfulApi {
                                              @RequestParam("contentId") Long contentId) throws DSSErrorException {
 
         if (StringUtils.isBlank(nodeId) || contentId == null) {
-            return Message.error("输入的参数为空，请检查参数信息");
+            return Message.error("The input parameter is empty, please check the parameter information (输入的参数为空，请检查参数信息)");
         }
 
         Map<String, Object> data = dssFlowService.getDataDevelopNodeContent(nodeId, contentId);
@@ -456,7 +456,7 @@ public class NodeRestfulApi {
         Long projectId = request.getProjectId();
         String path = request.getPath();
         if (path == null || !path.contains("/")) {
-            return Message.error("请求参数不合法，必须包含节点path。path:"+path);
+            return Message.error("The request parameter is invalid and must include the node path. (请求参数不合法，必须包含节点path。)path:"+path);
         }
         String[] strArray=path.split("/");
         int nodeNameIndex=strArray.length-2;
@@ -470,7 +470,8 @@ public class NodeRestfulApi {
                 orchestratorName,nodeName);
         if (queryNodeInfoByPathResponse == null) {
             logger.error("找不到节点所在的工作流信息。projectId:{},path:{}", request.getProjectId(), request.getPath());
-            return Message.error("找不到节点所在的工作流信息。请检查工作流最新版本是否成功提交。");
+            return Message.error("Unable to find workflow information for the node. Please check if the latest version of the workflow has been successfully submitted " +
+                    "(找不到节点所在的工作流信息。请检查工作流最新版本是否成功提交。)");
         }
         return Message.ok().data("data", queryNodeInfoByPathResponse);
 

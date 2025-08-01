@@ -57,9 +57,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 import static com.webank.wedatasphere.dss.workflow.constant.DSSWorkFlowConstant.*;
 
 public class PublishServiceImpl implements PublishService {
@@ -147,11 +149,13 @@ public class PublishServiceImpl implements PublishService {
 
         DSSProject dssProject = (DSSProject) DSSSenderServiceFactory.getOrCreateServiceInstance().getProjectServerSender().ask(projectInfoRequest);
         if (!isReleasable) {
-            throw new DSSErrorException(800001, "用户" + convertUser + "没有项目" + dssProject.getName() + "发布权限，请检查后重新发布");
+
+            throw new DSSErrorException(USER_NOT_PROJECT_RELEASE.getErrorCode(),
+                    MessageFormat.format(USER_NOT_PROJECT_RELEASE.getErrorDesc(),convertUser,dssProject.getName()));
         }
 
         if (dssProject.getWorkspaceId() != workspace.getWorkspaceId()) {
-            DSSExceptionUtils.dealErrorException(63335, "工作流所在工作空间和cookie中不一致，请刷新页面后，再次发布！", DSSErrorException.class);
+            DSSExceptionUtils.dealErrorException(WORKFLOW_COOKIE_INCONSISTENT_ERROR.getErrorCode(), WORKFLOW_COOKIE_INCONSISTENT_ERROR.getErrorDesc(), DSSErrorException.class);
         }
         //仅对接入Git的项目更新状态为 发布-publish
         GitCommitResponse gitCommitResponse = null;
@@ -161,12 +165,13 @@ public class PublishServiceImpl implements PublishService {
             orchestratorVo = RpcAskUtils.processAskException(getOrchestratorSender().ask(new RequestQuertByAppIdOrchestrator(workflowId)),
                     OrchestratorVo.class, RequestQueryByIdOrchestrator.class);
             if (orchestratorVo == null) {
-                throw new DSSErrorException(800001, "编排不存在");
+                throw new DSSErrorException(ORCHESTRATOR_NOT_EXISTS.getErrorCode(), ORCHESTRATOR_NOT_EXISTS.getErrorDesc());
             }
             orchestratorId = orchestratorVo.getDssOrchestratorInfo().getId();
             String status = lockMapper.selectOrchestratorStatus(orchestratorId);
             if (OrchestratorRefConstant.FLOW_STATUS_SAVE.equals(status)) {
-                throw new DSSErrorException(800001, "发布前请先提交工作流");
+                throw new DSSErrorException(ORCHESTRATOR_RELEASE_VERIFICATION.getErrorCode(),
+                        ORCHESTRATOR_RELEASE_VERIFICATION.getErrorDesc());
             }
 
             try {
@@ -179,7 +184,7 @@ public class PublishServiceImpl implements PublishService {
                 // 更新工作流状态
                 lockMapper.updateOrchestratorStatus(orchestratorId, OrchestratorRefConstant.FLOW_STATUS_PUBLISH);
             } catch (Exception e) {
-                throw new DSSErrorException(800001, "获取工作流CommitId失败，请检查工作流是否为空或git服务是否异常");
+                throw new DSSErrorException(GIT_SERVICE_EXCEPTION.getErrorCode(), GIT_SERVICE_EXCEPTION.getErrorDesc());
             }
         }
         return dssFlow;
@@ -203,7 +208,8 @@ public class PublishServiceImpl implements PublishService {
             ResponseQueryOrchestrator queryResponse = RpcAskUtils.processAskException(sender.ask(queryRequest), ResponseQueryOrchestrator.class, RequestQueryOrchestrator.class);
             if (queryResponse == null) {
                 LOGGER.error("query response is null, it is a fatal error");
-                throw new DSSErrorException(80001, "查询编排失败，请确认编排是否存在") ;
+                throw new DSSErrorException(ORCHESTRATOR_QUERY_FAILED.getErrorCode(),
+                        ORCHESTRATOR_QUERY_FAILED.getErrorDesc()) ;
             }
             Set<DSSOrchestratorVersion> orchestratorVersions = queryResponse.getOrchestratorVoes().stream().map(OrchestratorVo::getDssOrchestratorVersion).collect(Collectors.toSet());
             workflowIdList = orchestratorVersions.stream().map(DSSOrchestratorVersion::getAppId).collect(Collectors.toList());

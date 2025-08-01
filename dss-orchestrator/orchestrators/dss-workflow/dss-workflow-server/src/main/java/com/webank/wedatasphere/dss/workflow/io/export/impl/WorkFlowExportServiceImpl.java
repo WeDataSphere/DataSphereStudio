@@ -64,10 +64,12 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 import static com.webank.wedatasphere.dss.workflow.constant.DSSWorkFlowConstant.NODE_EXPORT_IMPORT_TIMEOUT_MINUTES;
 import static com.webank.wedatasphere.dss.workflow.scheduler.DssJobThreadPool.nodeExportThreadPool;
 
@@ -155,7 +157,7 @@ public class WorkFlowExportServiceImpl implements WorkFlowExportService {
             }
         }
         if (dssFlows.isEmpty()) {
-            throw new DSSErrorException(90037, "该工程没有可以导出的工作流,请检查工作流是否都为空");
+            throw new DSSErrorException(WORKFLOW_EXPORT_EMPTY.getErrorCode(), WORKFLOW_EXPORT_EMPTY.getErrorDesc());
         }
 
         return projectPath;
@@ -214,7 +216,7 @@ public class WorkFlowExportServiceImpl implements WorkFlowExportService {
             }
         }
         if (dssFlows.isEmpty()) {
-            throw new DSSErrorException(90037, "该工程没有可以导出的工作流,请检查工作流是否都为空");
+            throw new DSSErrorException(WORKFLOW_EXPORT_EMPTY.getErrorCode(), WORKFLOW_EXPORT_EMPTY.getErrorDesc());
         }
         return projectPath;
     }
@@ -258,7 +260,7 @@ public class WorkFlowExportServiceImpl implements WorkFlowExportService {
             }
         }
         if (dssFlows.isEmpty()) {
-            throw new DSSErrorException(90037, "该工程没有可以导出的工作流,请检查工作流是否都为空");
+            throw new DSSErrorException(WORKFLOW_EXPORT_EMPTY.getErrorCode(), WORKFLOW_EXPORT_EMPTY.getErrorDesc());
         }
         //打包导出工程
         return ZipHelper.zip(flowExportSaveBasePath);
@@ -367,7 +369,7 @@ public class WorkFlowExportServiceImpl implements WorkFlowExportService {
             }
 
         } else {
-            throw new DSSErrorException(90067, "工作流导出生成路径为空");
+            throw new DSSErrorException(WORKFLOW_EXPORT_PATH_EMPTY.getErrorCode(), WORKFLOW_EXPORT_PATH_EMPTY.getErrorDesc());
         }
     }
 
@@ -378,7 +380,7 @@ public class WorkFlowExportServiceImpl implements WorkFlowExportService {
 
 
         if (StringUtils.isEmpty(flowCodePath)) {
-            throw new DSSErrorException(90067, "工作流导出生成路径为空");
+            throw new DSSErrorException(WORKFLOW_EXPORT_PATH_EMPTY.getErrorCode(), WORKFLOW_EXPORT_PATH_EMPTY.getErrorDesc());
         }
         logger.info("export flow resources start,flow name is {}", flowName);
         // ExecutorService executor = Utils.newFixedThreadPool(5, "export-flow-resource-Thread-", true);
@@ -517,7 +519,7 @@ public class WorkFlowExportServiceImpl implements WorkFlowExportService {
             }
 
         } else {
-            throw new DSSErrorException(90067, "工作流导出生成路径为空");
+            throw new DSSErrorException(WORKFLOW_EXPORT_PATH_EMPTY.getErrorCode(), WORKFLOW_EXPORT_PATH_EMPTY.getErrorDesc());
         }
     }
 
@@ -552,7 +554,8 @@ public class WorkFlowExportServiceImpl implements WorkFlowExportService {
                         for (FutureTask futureTask : futureTaskList) {
                             futureTask.cancel(true);
                         }
-                        throw new DSSErrorException(90070, "有节点导出失败，请重试: " + failedNodes);
+                        throw new DSSErrorException(NODE_EXPORT_FAILED.getErrorCode(),
+                                MessageFormat.format(NODE_EXPORT_FAILED.getErrorDesc() ,failedNodes));
                     }
                     for (Map.Entry<String, DSSNode> entry : waitingNodes.entrySet()) {
 //                        entry = stringDSSNodeEntry;
@@ -606,15 +609,16 @@ public class WorkFlowExportServiceImpl implements WorkFlowExportService {
                     success = countDownLatch.await(NODE_EXPORT_IMPORT_TIMEOUT_MINUTES.getValue(), TimeUnit.MINUTES);
                 } catch (InterruptedException e) {
                     logger.error("failed to export node for workflow:{}", flowName, e);
-                    throw new DSSErrorException(90071, "导出节点超时！");
+                    throw new DSSErrorException(NODE_EXPORT_TIMEOUT.getErrorCode(), NODE_EXPORT_TIMEOUT.getErrorDesc());
                 }
                 if (!failedNodes.isEmpty()) {
-                    throw new DSSErrorException(90070, "有节点导出失败，请重试: " + failedNodes);
+                    throw new DSSErrorException(NODE_EXPORT_FAILED.getErrorCode(),
+                            MessageFormat.format(NODE_EXPORT_FAILED.getErrorDesc() ,failedNodes));
                 }
             }
 
         } else {
-            throw new DSSErrorException(90067, "工作流导出生成路径为空");
+            throw new DSSErrorException(WORKFLOW_EXPORT_PATH_EMPTY.getErrorCode(), WORKFLOW_EXPORT_PATH_EMPTY.getErrorDesc());
         }
     }
 

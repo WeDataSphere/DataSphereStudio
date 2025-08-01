@@ -24,7 +24,7 @@ public class SqlUtil {
     {
         if (StringUtils.isNotEmpty(value) && !isValidOrderBySql(value))
         {
-            throw new DSSAdminWarnException("参数不符合规范，不能进行查询");
+            throw new DSSAdminWarnException("The parameters do not meet the specifications and cannot be queried (参数不符合规范，不能进行查询)");
         }
         return value;
     }

@@ -69,7 +69,10 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotNull;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.*;
+
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.WORKFLOW_LOCKED;
 
 
 @RestController
@@ -112,12 +115,13 @@ public class FlowRestfulApi {
         // TODO: 2019/5/23 flowName工程名下唯一校验
         String name = addFlowRequest.getName();
         if (name != null && name.length() > 127) {
-            return Message.error("名称超限，请保持在1到128个字符之间。超限名称：" + name);
+            return Message.error("The name exceeds the limit, please keep it between 1 and 128 characters. " +
+                    "Overlimit Name (名称超限，请保持在1到128个字符之间。超限名称)：" + name);
         }
         Long parentFlowID = addFlowRequest.getParentFlowID();
         // 判断parentFlowID中是否已存在名称为name的subflow
         if (flowService.checkExistSameSubflow(parentFlowID, name)){
-            return Message.error("子工作流名不能重复");
+            return Message.error("Sub workflow names cannot be duplicated (子工作流名不能重复)");
         }
         String workspaceName = addFlowRequest.getWorkspaceName();
         String projectName = addFlowRequest.getProjectName();
@@ -162,16 +166,17 @@ public class FlowRestfulApi {
         return DSSExceptionUtils.getMessage(() -> publishService.submitPublish(publishUser, workflowId, labels, workspace, comment),
                 taskId -> {
                 if (DSSWorkFlowConstant.PUBLISHING_ERROR_CODE.equals(taskId)) {
-                    return Message.error("发布工程已经含有工作流，正在发布中，请稍后再试");
+                    return Message.error("The project already contains a workflow and is currently being published. " +
+                            "Please try again later (发布工程已经含有工作流，正在发布中，请稍后再试)");
                 } else if (StringUtils.isNotEmpty(taskId)) {
                     //发布正常，说明dssflow一定存在，所以不需要判空。
                     DSSFlow dssFlow = flowService.getFlowByID(workflowId);
                     AuditLogUtils.printLog(publishUser,workspace.getWorkspaceId(), workspace.getWorkspaceName(),
                             TargetTypeEnum.WORKFLOW,workflowId, dssFlow.getName(),OperateTypeEnum.PUBLISH, publishWorkflowRequest);
-                    return Message.ok("生成工作流发布任务成功").data("releaseTaskId", taskId);
+                    return Message.ok("Successfully generated workflow publishing task (生成工作流发布任务成功)").data("releaseTaskId", taskId);
                 } else {
                     LOGGER.error("taskId {} is error.", taskId);
-                    return Message.error("发布工作流失败");
+                    return Message.error("Failed to publish workflow (发布工作流失败)");
                 }},
                 String.format("用户 %s 发布工作流 %s 失败.", publishUser, workflowId));
     }
@@ -186,9 +191,9 @@ public class FlowRestfulApi {
         try {
             publishService.batchPublish(publishWorkflowRequest, workspace, publishUser, labels);
         } catch (Exception e) {
-            return Message.error("批量发布失败，原因为：" + e.getMessage());
+            return Message.error("Batch release failed due to the following reason (批量发布失败，原因为)：" + e.getMessage());
         }
-        return Message.ok("批量发布提交成功");
+        return Message.ok("Batch release submitted successfully (批量发布提交成功)");
 
     }
 
@@ -209,20 +214,20 @@ public class FlowRestfulApi {
                 status = StringUtils.isNotBlank(status) ? status.toLowerCase() : status;
                 //将发布失败原因，返回前端
                 if ("failed".equalsIgnoreCase(status)) {
-                    message = Message.error("发布失败:" + response.getResponse().getMessage()).data("status", status);
+                    message = Message.error("Publication failed (发布失败):" + response.getResponse().getMessage()).data("status", status);
                 } else if (StringUtils.isNotBlank(status)) {
-                    message = Message.ok("获取进度成功").data("status", status);
+                    message = Message.ok("Successfully obtained progress (获取进度成功)").data("status", status);
                 } else {
                     LOGGER.error("status is null or empty, failed to get status");
-                    message = Message.error("获取进度失败");
+                    message = Message.error("Progress acquisition failed (获取进度失败)");
                 }
             } else {
                 LOGGER.error("status is null or empty, failed to get status");
-                message = Message.error("获取进度失败");
+                message = Message.error("Progress acquisition failed (获取进度失败)");
             }
         } catch (final Throwable t) {
             LOGGER.error("Failed to get release status for {}", releaseTaskId, t);
-            message = Message.error("发布异常:" + t.getMessage());
+            message = Message.error("Publish exception (发布异常):" + t.getMessage());
         }
         return message;
     }
@@ -247,7 +252,7 @@ public class FlowRestfulApi {
         Long parentFlowID = flowService.getParentFlowID(flowID);
         DSSFlow flowByID = flowService.getFlowByID(flowID);
         if (flowService.checkExistSameFlow(parentFlowID, name, flowByID.getName())){
-            return Message.error("子工作流名不能重复");
+            return Message.error("Sub workflow names cannot be duplicated (子工作流名不能重复)");
         }
         // TODO: 2019/6/13  projectVersionID的更新校验
         //这里可以不做事务
@@ -351,13 +356,13 @@ public class FlowRestfulApi {
                 .findFirst().map(Cookie::getValue).get();
         DSSFlowEditLock flowEditLock = lockMapper.getFlowEditLockByID(flowID);
         if (flowEditLock != null && !flowEditLock.getOwner().equals(ticketId)) {
-            return Message.error("当前工作流被用户" + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
+            return Message.error(MessageFormat.format(WORKFLOW_LOCKED.getErrorDesc(),flowEditLock.getUsername()));
         }
         try {
             version = flowService.saveFlow(flowID, jsonFlow, null, userName, workspaceName, projectName, labels);
         }catch (Exception e) {
             LOGGER.error("保存工作流失败", e);
-            return Message.error("保存失败，原因为：" + e.getMessage());
+            return Message.error("Save failed, reason is (保存失败，原因为)：" + e.getMessage());
         }
         DSSFlow dssFlow = flowService.getFlowByID(flowID);
         AuditLogUtils.printLog(username, workspace.getWorkspaceId(), workspaceName, TargetTypeEnum.WORKFLOW,
@@ -406,9 +411,9 @@ public class FlowRestfulApi {
         try {
             dssFlowService.batchEditFlow(batchEditFlowRequest, ticketId, workspace, userName);
         } catch (Exception e) {
-            return Message.error("批量编辑失败，原因为：" + e.getMessage());
+            return Message.error("Batch editing failed due to the following reason (批量编辑失败，原因为)：" + e.getMessage());
         }
-        return Message.ok("批量编辑成功");
+        return Message.ok("Batch editing successful (批量编辑成功)");
     }
 
     @RequestMapping(value = "/editNodeContent",method = RequestMethod.POST)
@@ -428,9 +433,10 @@ public class FlowRestfulApi {
             dssFlowService.editNodeContent(editNodeContentRequest,ticketId);
         } catch (Exception e) {
             LOGGER.error(String.format("%s 节点编辑失败",nodeName), e);
-            return Message.error(String.format("%s 节点编辑失败，原因为：%s",nodeName , e.getMessage()));
+            return Message.error(MessageFormat.format("{0} Node editing failed due to the following reason " +
+                    "({0} 节点编辑失败，原因为)：{1}",nodeName , e.getMessage()));
         }
-        return Message.ok(String.format("%s 节点编辑成功",nodeName));
+        return Message.ok(MessageFormat.format("{0} Node edited successfully ({0} 节点编辑成功)",nodeName));
     }
 
 
@@ -442,7 +448,7 @@ public class FlowRestfulApi {
         try {
 
             if(batchEditNodeContentRequest  == null){
-                return Message.error("批量编辑节点失败,输入参数为空");
+                return Message.error("Batch editing of nodes failed, input parameter is empty (批量编辑节点失败,输入参数为空)");
             }
 
             Cookie[] cookies = httpServletRequest.getCookies();
@@ -452,13 +458,13 @@ public class FlowRestfulApi {
             BatchEditNodeContentResponse batchEditNodeContentResponse = flowService.batchEditNodeContent(batchEditNodeContentRequest,ticketId);
 
             if(batchEditNodeContentResponse !=null && CollectionUtils.isNotEmpty(batchEditNodeContentResponse.getFailNodeName())){
-                return Message.error("批量编辑节点失败").data("data",batchEditNodeContentResponse);
+                return Message.error("Batch editing of nodes failed (批量编辑节点失败)").data("data",batchEditNodeContentResponse);
             }
 
-            return  Message.ok("批量编辑节点完成").data("data",batchEditNodeContentResponse);
+            return  Message.ok("Batch editing of nodes success (批量编辑节点完成)").data("data",batchEditNodeContentResponse);
         }catch (Exception e){
             LOGGER.error("批量编辑节点失败", e);
-            return Message.error(String.format("批量编辑节点失败，原因为：%s" , e.getMessage()));
+            return Message.error(String.format("Batch editing of nodes failed, reason is (批量编辑节点失败，原因为)：%s" , e.getMessage()));
         }
 
 
@@ -475,10 +481,10 @@ public class FlowRestfulApi {
 
         }catch (Exception e){
             LOGGER.error("获取节点信息失败", e);
-            return Message.error(String.format("获取节点信息失败，原因为：%s" , e.getMessage()));
+            return Message.error(String.format("Failed to obtain node information, reason is (获取节点信息失败，原因为)：%s" , e.getMessage()));
         }
 
-        return Message.ok("获取节点信息成功").data("data",dssNodeDefaultList);
+        return Message.ok("Successfully obtained node information (获取节点信息成功)").data("data",dssNodeDefaultList);
     }
 
 }

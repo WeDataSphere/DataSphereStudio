@@ -49,9 +49,11 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 import static com.webank.wedatasphere.dss.framework.common.conf.TokenConf.HPMS_USER_TOKEN;
 import static com.webank.wedatasphere.dss.framework.workspace.util.DSSWorkspaceConstant.WORKSPACE_ID_STR;
 
@@ -161,16 +163,18 @@ public class DSSWorkspaceUserRestful {
         }
         int workspaceId = updateWorkspaceUserRequest.getWorkspaceId();
         if (workspace.getWorkspaceId() != workspaceId) {
-            return Message.error("cookie 中的 workspaceId 与请求添加用户的 workspace 不同！");
+            return Message.error("The workspace ID in the cookie is different from the workspace requested to add the user! " +
+                    "(cookie 中的 workspaceId 与请求添加用户的 workspace 不同！)");
         }
         String userName = updateWorkspaceUserRequest.getUserName();
         String userId = updateWorkspaceUserRequest.getUserId();
         Long count = dssWorkspaceUserService.getCountByUsername(userName, workspaceId);
         if (count != null && count > 0) {
-            return Message.error("用户已经存在该工作空间，不需要重复添加！");
+            return Message.error("The user already exists in this workspace, there is no need to add it again! " +
+                    "(用户已经存在该工作空间，不需要重复添加！)");
         }
         if (!roleCheckService.checkRolesOperation(workspaceId, creator, userName, roles)) {
-            return Message.error("无权限进行该操作");
+            return Message.error("No permission to perform this operation (无权限进行该操作)");
         }
         dssUserService.insertIfNotExist(userName, workspace);
         dssWorkspaceUserService.addWorkspaceUser(roles, workspace.getWorkspaceId(), userName, creator, userId);
@@ -187,7 +191,7 @@ public class DSSWorkspaceUserRestful {
         String workspaceName = dssWorkspaceService.getWorkspaceName((long) workspaceId);
         String userName = updateWorkspaceUserRequest.getUserName();
         if (!roleCheckService.checkRolesOperation(workspaceId, creator, userName, roles)) {
-            return Message.error("无权限进行该操作");
+            return Message.error("No permission to perform this operation (无权限进行该操作)");
         }
         dssWorkspaceUserService.updateWorkspaceUser(roles, workspaceId, userName, creator);
         AuditLogUtils.printLog(userName, workspaceId, workspaceName, TargetTypeEnum.WORKSPACE, workspaceId,
@@ -203,7 +207,7 @@ public class DSSWorkspaceUserRestful {
         String workspaceName = dssWorkspaceService.getWorkspaceName((long) workspaceId);
         String creator = SecurityFilter.getLoginUsername(httpServletRequest);
         if (!roleCheckService.checkRolesOperation(workspaceId, creator, userName, new ArrayList<>())) {
-            return Message.error("无权限进行该操作");
+            return Message.error("No permission to perform this operation (无权限进行该操作)");
         }
         dssWorkspaceUserService.deleteWorkspaceUser(userName, workspaceId);
         AuditLogUtils.printLog(userName, workspaceId, workspaceName, TargetTypeEnum.WORKSPACE, workspaceId,
@@ -286,7 +290,7 @@ public class DSSWorkspaceUserRestful {
         dssWorkspaceUserService.clearUserByUserName(userName);
         AuditLogUtils.printLog(userName, null, null, TargetTypeEnum.WORKSPACE_ROLE, null,
                 "clearUser", OperateTypeEnum.DELETE, null);
-        return Message.ok("清理成功");
+        return Message.ok("Cleanup successful (清理成功)");
 
     }
 
@@ -306,7 +310,7 @@ public class DSSWorkspaceUserRestful {
         dssWorkspaceUserService.revokeUserRoles(userName, workspaceIds, roleIds);
         AuditLogUtils.printLog(userName, null, null, TargetTypeEnum.WORKSPACE_ROLE, null,
                 "revokeUserRole", OperateTypeEnum.DELETE, revokeUserRole);
-        return Message.ok("回收成功");
+        return Message.ok("Recycling successful (回收成功)");
 
     }
 
@@ -390,7 +394,8 @@ public class DSSWorkspaceUserRestful {
             }
 
             if (!dssWorkspaceService.checkAdminByWorkspace(username, r.getWorkspaceId().intValue())) {
-                throw new DSSErrorException(90054, String.format("%s 用户不是当前工作空间管理员,无权限进行该操作!",username));
+                throw new DSSErrorException(WORKSPACE_USER_NOT_ADMIN.getErrorCode(),
+                        MessageFormat.format(WORKSPACE_USER_NOT_ADMIN.getErrorDesc(),username));
             }
             r.setWorkspaceName(workspaceName);
             r.setUsername(username);

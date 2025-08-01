@@ -43,8 +43,11 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.security.Key;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 
 public class GitProjectManager {
 
@@ -165,10 +168,12 @@ public class GitProjectManager {
         // 定义一个字符串作为密钥源
         String keyString = GitServerConfig.LINKIS_MYSQL_PRI_KEY.getValue();
         if (keyString.length() < 16) {
-            throw new DSSErrorException(800001, "密钥长度必须大于16位");
+            throw new DSSErrorException(GIT_KEY_LENGTH_VERIFICATION.getErrorCode(),
+                    GIT_KEY_LENGTH_VERIFICATION.getErrorDesc());
         }
         if (StringUtils.isEmpty(password)) {
-            throw new DSSErrorException(800001, "密码或token为空");
+            throw new DSSErrorException(GIT_PASSWORD_OR_TOKEN_EMPTY.getErrorCode(),
+                    GIT_PASSWORD_OR_TOKEN_EMPTY.getErrorDesc());
         }
         try {
             // 确保密钥长度合适，AES 密钥长度为 128 位 (16 字节)
@@ -186,7 +191,8 @@ public class GitProjectManager {
                 return new String(encrypted);
             }
         } catch (Exception e) {
-            throw new DSSErrorException(800001, "加密失败,原因为" + e);
+            throw new DSSErrorException(GIT_PASSWORD_ENCRYPTION_FAILED.getErrorCode(),
+                    MessageFormat.format(GIT_PASSWORD_ENCRYPTION_FAILED.getErrorDesc(), e));
         }
     }
 
@@ -212,16 +218,18 @@ public class GitProjectManager {
                     return true;
                 }else {
                     LOGGER.info("当前token与用户名" + actualUsername + "匹配，与当前用户名" + expectedUsername + "不匹配");
-                    throw new DSSErrorException(800001, "当前用户名 token 不匹配，请检查");
+                    throw new DSSErrorException(GIT_USERNAME_NOT_MATCH_TOKEN.getErrorCode(),
+                            GIT_USERNAME_NOT_MATCH_TOKEN.getErrorDesc());
                 }
             } else if (response.getStatusLine().getStatusCode() == 401){
-                throw new DSSErrorException(800001, "请检查token是否正确");
+                throw new DSSErrorException(GIT_TOKEN_ERROR.getErrorCode(), GIT_TOKEN_ERROR.getErrorDesc());
             }
         } catch (DSSErrorException e) {
             LOGGER.info("Error verifying token: " + e.getMessage());
-            throw new DSSErrorException(800001, "校验失败" + e.getMessage());
+            throw new DSSErrorException(GIT_TOKEN_VERIFICATION_FAILED.getErrorCode(),
+                    MessageFormat.format(GIT_TOKEN_VERIFICATION_FAILED.getErrorDesc(),e.getMessage()));
         }catch (Exception e) {
-            throw new DSSErrorException(800001, "校验token失败，请确认当前环境git是否可以正常访问" + e.getMessage());
+            throw new DSSErrorException(GIT_SERVICE_ACCESS_ERROR.getErrorCode(), MessageFormat.format(GIT_SERVICE_ACCESS_ERROR.getErrorDesc(), e.getMessage()));
         }
         return false;
     }

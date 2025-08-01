@@ -30,6 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
+
 
 public abstract class DssJobManager implements DssJobListener {
 
@@ -133,7 +135,7 @@ public abstract class DssJobManager implements DssJobListener {
         if (jobInfo != null && jobInfo.isExecute() || seCondInfo != null) {
             DssJobStatus status = jobInfo == null ? seCondInfo.getStatus() : jobInfo.getStatus();
             logger.info("job执行中,id:{}，状态为{}", id, status);
-            throw new DSSErrorException(90014, "job执行中，不允许执行当前操作");
+            throw new DSSErrorException(NODE_EXECUTE_DURING.getErrorCode(), NODE_EXECUTE_DURING.getErrorDesc());
         }
     }
 

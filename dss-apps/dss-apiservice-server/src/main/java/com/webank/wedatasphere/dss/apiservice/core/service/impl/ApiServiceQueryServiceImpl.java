@@ -74,6 +74,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 import static java.util.stream.Collectors.toMap;
 
 
@@ -177,13 +178,13 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
         //path 必须唯一
         ApiServiceVo apiServiceVo = apiServiceDao.queryByPath(path);
         if(null == apiServiceVo){
-            throw new ApiServiceRuntimeException("根据脚本路径未匹配到数据服务！");
+            throw new ApiServiceRuntimeException("According to the script path, no data service was found(根据脚本路径未匹配到数据服务！)");
         }
         if(!apiService.checkUserWorkspace(loginUser,apiServiceVo.getWorkspaceId().intValue())){
-            throw new ApiServiceRuntimeException("用户工作空间检查不通过！");
+            throw new ApiServiceRuntimeException("User workspace check failed (用户工作空间检查不通过！)");
         }
         if(!apiServiceVo.getId().equals(tokenDetail.getApiServiceId())){
-            throw new ApiServiceRuntimeException("用户token中服务ID不匹配！");
+            throw new ApiServiceRuntimeException("Service ID mismatch in user token (用户token中服务ID不匹配！)");
         }
 
         ApiVersionVo maxApiVersionVo =apiService.getMaxVersion(apiServiceVo.getId());
@@ -311,13 +312,15 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
                 apiServiceVo.setContent(executeCode);
 
             } catch (IOException e) {
-                throw new ApiServiceQueryException(800002, "查询数据服务API内容异常");
+                throw new ApiServiceQueryException(DATA_SERVICE_API_CONTENT_ABNORMAL.getErrorCode(),
+                        DATA_SERVICE_API_CONTENT_ABNORMAL.getErrorDesc());
             }
             apiServiceVo.setScriptPath(apiVersionVo.getSource());
             return apiServiceVo;
         }else {
 
-            throw new ApiServiceQueryException(800003, "没有权限查看数据服务API内容，请先提单授权");
+            throw new ApiServiceQueryException(DATA_SERVICE_API_CONTENT_NO_PERMISSION.getErrorCode(),
+                    DATA_SERVICE_API_CONTENT_NO_PERMISSION.getErrorDesc());
         }
     }
 

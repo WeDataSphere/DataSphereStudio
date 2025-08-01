@@ -31,8 +31,11 @@ import com.webank.wedatasphere.dss.standard.app.structure.project.ref.ProjectUpd
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
 import org.apache.commons.collections4.CollectionUtils;
 
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 
 public class SchedulisProjectCreationOperation
         extends AbstractStructureOperation<DSSProjectContentRequestRef.DSSProjectContentRequestRefImpl, ProjectResponseRef>
@@ -66,7 +69,8 @@ public class SchedulisProjectCreationOperation
             // 先校验运维用户是否存在于 Schedulis，如果不存在，则不能成功创建工程。
             requestRef.getDSSProjectPrivilege().getReleaseUsers().forEach(releaseUser -> {
                 if (!AzkabanUserService.containsUser(releaseUser, getBaseUrl(), ssoRequestOperation, requestRef.getWorkspace())) {
-                    throw new ExternalOperationFailedException(100323, "当前设置的发布用户: " + releaseUser + ", 在 Schedulis 系统中不存在，请根据'查看解决方案'中给出的指引在ITSM上提单！");
+                    throw new ExternalOperationFailedException(WTSS_PUBLISHING_USER_NOT_EXISTS.getErrorCode(),
+                            MessageFormat.format(WTSS_PUBLISHING_USER_NOT_EXISTS.getErrorDesc(),releaseUser));
                 }
             });
         }
@@ -79,7 +83,8 @@ public class SchedulisProjectCreationOperation
             logger.info("新建工程 {}, Schedulis 返回的信息是 {}.", requestRef.getDSSProject().getName(), entStr);
             String message = AzkabanUtils.handleAzkabanEntity(entStr);
             if (!"success".equals(message)) {
-                throw new ExternalOperationFailedException(90008, "Schedulis 新建工程失败, 原因: " + message);
+                throw new ExternalOperationFailedException(WTSS_NEW_PROJECT_FAILED.getErrorCode(),
+                        MessageFormat.format(WTSS_NEW_PROJECT_FAILED.getErrorDesc(),message));
             }
         } catch (final Exception t) {
             logger.error("Failed to create project!", t);

@@ -273,7 +273,7 @@ public class WorkFlowInputServiceImpl implements WorkFlowInputService {
                                          String orcVersion, List<DSSLabel> dssLabels) throws DSSErrorException, IOException {
         List<String> nodeJsonList = workFlowParser.getWorkFlowNodesJson(flowJson);
         if (nodeJsonList == null) {
-            throw new DSSErrorException(90073, "工作流内没有工作流节点，导入失败 " + dssFlow.getName());
+            throw new DSSErrorException(90073, "There are no workflow nodes in the workflow, import failed (工作流内没有工作流节点，导入失败) " + dssFlow.getName());
         }
         String updateContextId = workFlowParser.getValueWithKey(flowJson, CSCommonUtils.CONTEXT_ID_STR);
         if (nodeJsonList.size() == 0) {
@@ -309,10 +309,10 @@ public class WorkFlowInputServiceImpl implements WorkFlowInputService {
 
                     } else if (dssFlowList.size() > 1) {
                         logger.error("工程内存在重复的子工作流节点名称，导入失败" + subFlowName);
-                        throw new DSSErrorException(90077, "工程内存在重复的子工作流节点名称，导入失败" + subFlowName);
+                        throw new DSSErrorException(90077, "There are duplicate sub workflow node names in the project, import failed (工程内存在重复的子工作流节点名称，导入失败)" + subFlowName);
                     } else {
                         logger.error("工程内未能找到子工作流节点，导入失败" + subFlowName);
-                        throw new DSSErrorException(90078, "工程内未能找到子工作流节点，导入失败" + subFlowName);
+                        throw new DSSErrorException(90078, "Unable to find sub workflow node within the project, import failed (工程内未能找到子工作流节点，导入失败)" + subFlowName);
                     }
                 }
                 if (nodeParamsJson != null && !"null".equalsIgnoreCase(nodeParamsJson)) {
@@ -343,7 +343,7 @@ public class WorkFlowInputServiceImpl implements WorkFlowInputService {
                                          String orcVersion, List<DSSLabel> dssLabels) throws DSSErrorException, IOException {
         List<String> nodeJsonList = workFlowParser.getWorkFlowNodesJson(flowJson);
         if (nodeJsonList == null) {
-            throw new DSSErrorException(90073, "工作流内没有工作流节点，导入失败 " + dssFlow.getName());
+            throw new DSSErrorException(90073, "There are no workflow nodes in the workflow, import failed (工作流内没有工作流节点，导入失败) " + dssFlow.getName());
         }
         String updateContextId = workFlowParser.getValueWithKey(flowJson, CSCommonUtils.CONTEXT_ID_STR);
         if (nodeJsonList.size() == 0) {
@@ -383,10 +383,10 @@ public class WorkFlowInputServiceImpl implements WorkFlowInputService {
 
                                     } else if (dssFlowList.size() > 1) {
                                         logger.error("工程内存在重复的子工作流节点名称，导入失败" + subFlowName);
-                                        throw new DSSRuntimeException(90077, "工程内存在重复的子工作流节点名称，导入失败" + subFlowName);
+                                        throw new DSSRuntimeException(90077, "There are duplicate sub workflow node names in the project, import failed (工程内存在重复的子工作流节点名称，导入失败)" + subFlowName);
                                     } else {
                                         logger.error("工程内未能找到子工作流节点，导入失败" + subFlowName);
-                                        throw new DSSRuntimeException(90078, "工程内未能找到子工作流节点，导入失败" + subFlowName);
+                                        throw new DSSRuntimeException(90078, "Unable to find sub workflow node within the project, import failed (工程内未能找到子工作流节点，导入失败)" + subFlowName);
                                     }
                                 }
                                 if (nodeParamsJson != null && !"null".equalsIgnoreCase(nodeParamsJson)) {
@@ -424,7 +424,7 @@ public class WorkFlowInputServiceImpl implements WorkFlowInputService {
                                       String orcVersion, List<DSSLabel> dssLabels) throws DSSErrorException, IOException {
         List<String> nodeJsonList = workFlowParser.getWorkFlowNodesJson(flowJson);
         if (nodeJsonList == null) {
-            throw new DSSErrorException(90073, "工作流内没有工作流节点，导入失败 " + dssFlow.getName());
+            throw new DSSErrorException(90073, "There are no workflow nodes in the workflow, import failed (工作流内没有工作流节点，导入失败) " + dssFlow.getName());
         }
         String updateContextId = workFlowParser.getValueWithKey(flowJson, CSCommonUtils.CONTEXT_ID_STR);
         if (nodeJsonList.size() == 0) {
@@ -463,10 +463,10 @@ public class WorkFlowInputServiceImpl implements WorkFlowInputService {
                         nodeJsonListRes.add(nodeJsonMap);
                     } else if (dssFlowList.size() > 1) {
                         logger.error("工程内存在重复的子工作流节点名称，导入失败" + subFlowName);
-                        throw new DSSErrorException(90077, "工程内存在重复的子工作流节点名称，导入失败" + subFlowName);
+                        throw new DSSErrorException(90077, "There are duplicate sub workflow node names in the project, import failed (工程内存在重复的子工作流节点名称，导入失败)" + subFlowName);
                     } else {
                         logger.error("工程内未能找到子工作流节点，导入失败" + subFlowName);
-                        throw new DSSErrorException(90078, "工程内未能找到子工作流节点，导入失败" + subFlowName);
+                        throw new DSSErrorException(90078, "Unable to find sub workflow node within the project, import failed (工程内未能找到子工作流节点，导入失败)" + subFlowName);
                     }
                 } else {
                     nodeJsonListRes.add(nodeJsonMap);

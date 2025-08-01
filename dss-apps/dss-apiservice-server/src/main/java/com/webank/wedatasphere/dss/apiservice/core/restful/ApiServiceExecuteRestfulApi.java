@@ -134,16 +134,16 @@ public class ApiServiceExecuteRestfulApi {
                                 @RequestParam(required = false, name = "taskId") String taskId) {
         String userName = SecurityFilter.getLoginUsername(req);
         if (!isNumber(taskId)) {
-            return Message.error("请求参数 taskId 非法.");
+            return Message.error("The request parameter taskId is illegal (请求参数 taskId 非法.)");
         } else if(StringUtils.isEmpty(taskId)){
-            return Message.error("taskId 为空.");
+            return Message.error("The taskId is empty (taskId 为空.)");
         }
         if (StringUtils.isEmpty(path)) {
-            return Message.error("path 为空.");
+            return Message.error("The path is empty (path 为空.)");
         }
         ApiServiceJob apiServiceJob = queryService.getJobByTaskId(taskId);
         if(apiServiceJob == null) {
-            return Message.error("当前用户不存在运行的TaskId: " + taskId);
+            return Message.error("The current user does not have a running TaskId (当前用户不存在运行的TaskId): " + taskId);
         } else if(userName.equals(apiServiceJob.getSubmitUser())) {
             JobExecuteResult jobExecuteResult = new JobExecuteResult();
             jobExecuteResult.setTaskID(taskId);
@@ -178,12 +178,12 @@ public class ApiServiceExecuteRestfulApi {
         String userName = SecurityFilter.getLoginUsername(req);
         logger.info("User {} wants to open resultSet file {} in task {}.", userName, path, taskId);
         if (!isNumber(taskId)) {
-            return Message.error("请求参数 taskId 非法.");
+            return Message.error("The request parameter taskId is illegal (请求参数 taskId 非法.)");
         } else if(StringUtils.isEmpty(taskId)){
-            return Message.error("taskId 为空.");
+            return Message.error("The taskId is empty (taskId 为空.)");
         }
         if (StringUtils.isEmpty(path)) {
-            return Message.error("path 为空.");
+            return Message.error("The path is empty (path 为空.)");
         }
 
         ApiServiceJob apiServiceJob = queryService.getJobByTaskId(taskId);

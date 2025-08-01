@@ -84,7 +84,7 @@ public class DolphinSchedulerTokenManager_1_X extends AbstractDolphinSchedulerTo
         try {
             getHttpGetResult(url);
         } catch (Exception e) {
-            throw new ExternalOperationFailedException(90051, "DolphinScheduler 验证用户名失败.", e);
+            throw new ExternalOperationFailedException(90051, "DolphinScheduler failed to verify username (DolphinScheduler 验证用户名失败).", e);
         }
         return true;
     }

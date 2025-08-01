@@ -75,11 +75,13 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 import static com.webank.wedatasphere.dss.common.utils.IoUtils.FLOW_META_DIRECTORY_NAME;
 import static com.webank.wedatasphere.dss.workflow.constant.DSSWorkFlowConstant.DEFAULT_SCHEDULER_APP_CONN;
 
@@ -234,7 +236,8 @@ public class DefaultWorkFlowManager implements WorkFlowManager {
             // GB
             Long limits = Long.parseLong(limitValue) * 1024 *1024 * 1024;
             if (file.length() > limits) {
-                throw new DSSErrorException(100098, "工作流导出失败，原因为本次导出总大小超过" + limitValue + "GB");
+                throw new DSSErrorException(WORKFLOW_EXPORT_SIZE_LIMIT.getErrorCode(),
+                        MessageFormat.format(WORKFLOW_EXPORT_SIZE_LIMIT.getErrorDesc(),limitValue));
             }
         }
         InputStream inputStream = bmlService.readLocalResourceFile(userName, exportPath);
@@ -259,7 +262,7 @@ public class DefaultWorkFlowManager implements WorkFlowManager {
             }
         } catch (Exception e) {
             logger.error("exportFlowInfoNew failed , the reason is:", e);
-            throw new DSSErrorException(100098, "工作流导出失败，原因为" + e.getMessage());
+            throw new DSSErrorException(100098, "exportFlowInfoNew failed , the reason is (工作流导出失败，原因为)" + e.getMessage());
         } finally {
             //删掉整个目录
             if (StringUtils.isNotEmpty(projectPath)) {

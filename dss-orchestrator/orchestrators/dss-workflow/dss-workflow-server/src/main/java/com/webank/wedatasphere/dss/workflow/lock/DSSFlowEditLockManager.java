@@ -53,6 +53,8 @@ import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
+
 
 /**
  * 工作流编辑分布式锁
@@ -188,7 +190,7 @@ public class DSSFlowEditLockManager {
             LOGGER.warn("acquire lock failed", e.getMessage());
             DSSFlowEditLock personalFlowEditLock = lockMapper.getPersonalFlowEditLock(flowID, null);
             String userName = Optional.ofNullable(personalFlowEditLock).map(DSSFlowEditLock::getUsername).orElse(null);
-            throw new DSSErrorException(DSSWorkFlowConstant.EDIT_LOCK_ERROR_CODE, "用户" + userName + "已锁定编辑");
+            throw new DSSErrorException(DSSWorkFlowConstant.EDIT_LOCK_ERROR_CODE, "User" + userName +" is locked for editing (用户" + userName + "已锁定编辑)");
         }
     }
 
@@ -203,7 +205,7 @@ public class DSSFlowEditLockManager {
             }
         } catch (Exception e) {
             LOGGER.error("flowEditLock delete failed，flowId：{}", flowEditLock, e);
-            throw new DSSErrorException(60059, "工作流编辑锁主动释放失败，flowId:" + flowEditLock + "");
+            throw new DSSErrorException(60059, "Active release of workflow editing lock failed (工作流编辑锁主动释放失败), flowId:" + flowEditLock + "");
         }
     }
 
@@ -213,7 +215,7 @@ public class DSSFlowEditLockManager {
         DSSProject dssProject = RpcAskUtils.processAskException(DSSSenderServiceFactory.getOrCreateServiceInstance().getProjectServerSender()
                 .ask(projectInfoRequest), DSSProject.class, ProjectInfoRequest.class);
         if (dssProject == null) {
-            throw new DSSErrorException(90001, "工程不存在");
+            throw new DSSErrorException(90001, "The project does not exist! (工程不存在!)");
         }
         return dssProject;
     }
@@ -223,7 +225,7 @@ public class DSSFlowEditLockManager {
         OrchestratorVo orchestratorVo = RpcAskUtils.processAskException(orcSender.ask(new RequestQuertByAppIdOrchestrator(flowID)),
                 OrchestratorVo.class, RequestQueryByIdOrchestrator.class);
         if (orchestratorVo == null) {
-            throw new DSSErrorException(800001, "编排不存在");
+            throw new DSSErrorException(ORCHESTRATOR_NOT_EXISTS.getErrorCode(), ORCHESTRATOR_NOT_EXISTS.getErrorDesc());
         }
         return orchestratorVo;
     }
@@ -258,7 +260,7 @@ public class DSSFlowEditLockManager {
         DSSFlowEditLock updateFlowEditLock = lockMapper.getFlowEditLockByLockContent(lock);
         if (updateFlowEditLock == null || updateFlowEditLock.getExpire()) {
             lockMapper.clearExpire(sdf.get().format(new Date(System.currentTimeMillis() - DSSWorkFlowConstant.DSS_FLOW_EDIT_LOCK_TIMEOUT.getValue())), 0L);
-            throw new DSSErrorException(60057, "编辑锁已过期，请刷新页面");
+            throw new DSSErrorException(WORKFLOW_LOCK_UPDATE_EXPIRED.getErrorCode(), WORKFLOW_LOCK_UPDATE_EXPIRED.getErrorDesc());
         }
         try {
             lockMapper.compareAndSwap(dssFlowEditLock);
@@ -266,7 +268,7 @@ public class DSSFlowEditLockManager {
         } catch (Exception e) {
             LOGGER.error("unexpected error occurred when update dss flow edit lock,{}", dssFlowEditLock, e);
             lockMapper.clearExpire(sdf.get().format(new Date(System.currentTimeMillis() - DSSWorkFlowConstant.DSS_FLOW_EDIT_LOCK_TIMEOUT.getValue())), updateFlowEditLock.getFlowID());
-            throw new DSSErrorException(60059, "工作流编辑锁更新出错，请刷新页面");
+            throw new DSSErrorException(WORKFLOW_LOCK_UPDATE_FAILED.getErrorCode(), WORKFLOW_LOCK_UPDATE_FAILED.getErrorDesc());
         }
     }
 

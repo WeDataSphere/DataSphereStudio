@@ -74,9 +74,12 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 
 public class DSSGitUtils {
     private static final Logger logger = LoggerFactory.getLogger(DSSGitUtils.class);
@@ -97,7 +100,8 @@ public class DSSGitUtils {
                 if (statusCode == 201) {
                     logger.info("init success");
                 } else {
-                    throw new GitErrorException(80001, "创建Git项目失败，请检查工作空间token是否过期");
+                    throw new GitErrorException(GIT_CREATE_PROJECT_FAILED.getErrorCode(),
+                            GIT_CREATE_PROJECT_FAILED.getErrorDesc());
                 }
             }
         }
@@ -177,7 +181,8 @@ public class DSSGitUtils {
         } catch (Exception e) {
             // 丢失本地修改，处理冲突
             reset(repository, projectName);
-            throw new GitErrorException(80001, "拉取git最新代码失败，原因为:" + e.getMessage());
+            throw new GitErrorException(GIT_PULL_FAILED.getErrorCode(),
+                    MessageFormat.format(GIT_PULL_FAILED.getErrorDesc(),e.getMessage()));
         }
     }
 
@@ -437,7 +442,7 @@ public class DSSGitUtils {
             logger.info("Changes pushed to remote repository.");
         } catch (GitAPIException e) {
             reset(repository, projectName);
-            throw new GitErrorException(80105, "提交失败，请重试或检查token是否过期", e);
+            throw new GitErrorException(GIT_SUBMIT_FAILED.getErrorCode(), GIT_SUBMIT_FAILED.getErrorDesc(), e);
         }
     }
 
@@ -497,7 +502,7 @@ public class DSSGitUtils {
                 }
             }
         } catch (Exception e) {
-            throw new GitErrorException(80108, "检查项目名称失败，请检查工作空间token是否过期", e);
+            throw new GitErrorException(80108, GIT_CHECK_PROJECT_NAME_FAILED.getErrorDesc(), e);
         }
     }
 
@@ -528,14 +533,15 @@ public class DSSGitUtils {
                         JsonObject userObject = jsonArray.get(0).getAsJsonObject();
                         return userObject.get("id").toString();
                     } else {
-                        throw new GitErrorException(80109, "获取userId失败，请检查该用户是否为git用户并激活");
+                        throw new GitErrorException(GIT_USER_ACTIVATE.getErrorCode(), GIT_USER_ACTIVATE.getErrorDesc());
                     }
                 } else {
-                    throw new GitErrorException(80109, "获取userId失败，请检查编辑用户token是否过期或git服务是否正常");
+                    throw new GitErrorException(GIT_SERVICE_FAILED.getErrorCode(), GIT_SERVICE_FAILED.getErrorDesc());
                 }
             }
         } catch (Exception e) {
-            throw new GitErrorException(80109, "获取该git用户Id失败，原因为", e);
+            throw new GitErrorException(GIT_RETRIEVE_USERID_FAILED.getErrorCode(),
+                    GIT_RETRIEVE_USERID_FAILED.getErrorDesc(), e);
         } finally {
             if (in != null) {
                 in.close();
@@ -578,13 +584,14 @@ public class DSSGitUtils {
                         }
                     }
                 } else {
-                    throw new GitErrorException(80110, "项目创建失败，请稍后重试");
+                    throw new GitErrorException(GIT_PROJECT_CREATE_FAILED.getErrorCode(),
+                            GIT_PROJECT_CREATE_FAILED.getErrorDesc());
                 }
             } else {
-                throw new GitErrorException(80110, "请检查编辑用户token是否过期或git服务是否正常");
+                throw new GitErrorException(GIT_SERVICE_ABNORMAL.getErrorCode(), GIT_SERVICE_ABNORMAL.getErrorDesc());
             }
         } catch (Exception e) {
-            throw new GitErrorException(80110, "获取该项目git Id 失败，原因为", e);
+            throw new GitErrorException(GIT_RETRIEVE_ID_FAILED.getErrorCode(), GIT_RETRIEVE_ID_FAILED.getErrorDesc(), e);
         }
         return null;
     }
@@ -605,11 +612,12 @@ public class DSSGitUtils {
                 if (statusCode == 201 || (statusCode == 409 && responseBody.contains("Member already exists"))) {
                     return true;
                 } else {
-                    throw new GitErrorException(80111, "添加用户失败，请检查只读用户是否存在或编辑用户token是否过期");
+                    throw new GitErrorException(GIT_ADD_USER_FAILED.getErrorCode(), GIT_ADD_USER_FAILED.getErrorDesc());
                 }
             }
         } catch (Exception e) {
-            throw new GitErrorException(80111, "添加用户失败，请检查编辑用户token是否过期或git服务是否正常");
+            throw new GitErrorException(GIT_ADD_USER_SERVICE_ABNORMAL.getErrorCode(),
+                    GIT_ADD_USER_SERVICE_ABNORMAL.getErrorDesc());
         }
     }
 
@@ -660,9 +668,11 @@ public class DSSGitUtils {
                     allProjectNames.addAll(projectNames);
                 }
             } catch (IOException e) {
-                throw new GitErrorException(80113, "检查项目名称失败，请检查工作空间token是否过期", e);
+                throw new GitErrorException(GIT_CHECK_PROJECT_NAME_FAILED.getErrorCode(),
+                        GIT_CHECK_PROJECT_NAME_FAILED.getErrorDesc(), e);
             } catch (Exception e) {
-                throw new GitErrorException(80113, "检查项目名称时解析JSON失败，请确认git当前是否可访问 ", e);
+                throw new GitErrorException(GIT_JSON_PARSE_FAILED.getErrorCode(),
+                        GIT_JSON_PARSE_FAILED.getErrorDesc(), e);
             }
             page++;
         } while (!projectNames.isEmpty());
@@ -747,7 +757,7 @@ public class DSSGitUtils {
             logger.info(response.toString());
 
         } catch (Exception e) {
-            throw new GitErrorException(80115, "归档失败，请检查当前token是否过期 ", e);
+            throw new GitErrorException(GIT_ARCHIVE_FAILED.getErrorCode(), GIT_ARCHIVE_FAILED.getErrorDesc(), e);
         }
     }
 

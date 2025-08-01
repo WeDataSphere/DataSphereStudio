@@ -146,7 +146,7 @@ public class GuideCatalogServiceImpl extends ServiceImpl<GuideCatalogMapper, Gui
             int flag = guideCatalogMapper.batchInsert(catalogs);
             if(flag == 0){
                 logger.info("=========批量插入失败dss_guide_catalog表============");
-                throw new GuideException("批量插入失败！");
+                throw new GuideException("Batch insertion failed (批量插入失败！)");
             }
         }
         logger.info("chapters=======>>>>"+ chapters);
@@ -156,7 +156,7 @@ public class GuideCatalogServiceImpl extends ServiceImpl<GuideCatalogMapper, Gui
             int flag = guideChapterMapper.batchInsert(chapters);
             if(flag == 0){
                 logger.info("=========批量插入失败dss_guide_chapter表============");
-                throw new GuideException("批量插入失败！");
+                throw new GuideException("Batch insertion failed (批量插入失败！)");
             }
         }
         logger.info("知识库同步完成。。。");

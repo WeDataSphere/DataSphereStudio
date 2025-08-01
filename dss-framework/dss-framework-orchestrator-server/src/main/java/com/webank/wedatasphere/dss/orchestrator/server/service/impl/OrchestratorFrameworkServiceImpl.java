@@ -99,6 +99,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import javax.servlet.http.Cookie;
+import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -108,6 +109,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 
 
 public class OrchestratorFrameworkServiceImpl implements OrchestratorFrameworkService {
@@ -514,10 +517,10 @@ public class OrchestratorFrameworkServiceImpl implements OrchestratorFrameworkSe
         DSSProject dssProject = RpcAskUtils.processAskException(DSSSenderServiceFactory.getOrCreateServiceInstance().getProjectServerSender()
                 .ask(projectInfoRequest), DSSProject.class, ProjectInfoRequest.class);
         if (dssProject == null) {
-            DSSExceptionUtils.dealErrorException(6003, "工程不存在", DSSOrchestratorErrorException.class);
+            DSSExceptionUtils.dealErrorException(6003, "The project does not exist (工程不存在)", DSSOrchestratorErrorException.class);
         }
         if (!hasProjectEditPriv(projectId, username)) {
-            DSSExceptionUtils.dealErrorException(6004, "用户没有工程编辑权限", DSSOrchestratorErrorException.class);
+            DSSExceptionUtils.dealErrorException(6004, "The user does not have engineering editing permission (用户没有工程编辑权限)", DSSOrchestratorErrorException.class);
         }
         return dssProject;
     }
@@ -1018,7 +1021,8 @@ public class OrchestratorFrameworkServiceImpl implements OrchestratorFrameworkSe
         if (workspaceId.intValue() != dssProject.getWorkspaceId()) {
             LOGGER.error("project id is {}, workspace id is {},{} project not in workspace",
                     workspaceId, projectId, dssProject.getName());
-            throw new DSSErrorException(90003, "项目不存在于当前工作空间中");
+            throw new DSSErrorException(PROJECT_NOT_IN_WORKSPACE.getErrorCode(),
+                    PROJECT_NOT_IN_WORKSPACE.getErrorDesc());
         }
 
         // 工作流校验
@@ -1026,13 +1030,14 @@ public class OrchestratorFrameworkServiceImpl implements OrchestratorFrameworkSe
 
         if (dssOrchestratorInfo == null) {
             LOGGER.error("{} orchestrator not exists", orchestratorId);
-            throw new DSSErrorException(90003, "复制的工作流不存在");
+            throw new DSSErrorException(WORKFLOW_NOT_EXISTS.getErrorCode(), WORKFLOW_NOT_EXISTS.getErrorDesc());
         }
 
         if (dssOrchestratorInfo.getProjectId() != dssProject.getId()) {
             LOGGER.error("project id is {},orchestrator id is {},{} orchestrator not in {} project",
                     projectId, orchestratorId, dssOrchestratorInfo.getName(), dssProject.getName());
-            throw new DSSErrorException(90003, String.format("%s工作流不属于%s项目", dssOrchestratorInfo.getName(), dssProject.getName()));
+            throw new DSSErrorException(ORCHESTRATOR_NOT_IN_PROJECT.getErrorCode(),
+                    MessageFormat.format(ORCHESTRATOR_NOT_IN_PROJECT.getErrorDesc(), dssOrchestratorInfo.getName(), dssProject.getName()));
         }
         String targetOrchestratorName = String.format("%s_%s", dssOrchestratorInfo.getName(), request.getCopyFlowSuffix());
 

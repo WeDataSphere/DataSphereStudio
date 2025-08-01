@@ -66,11 +66,11 @@ public class EventCheckerHttpUtils {
                                      Map<String, String> params,   String jsonBody) throws IOException {
 
         if (method == null) {
-            throw new RuntimeException("请求方法不能为空");
+            throw new RuntimeException("The request method cannot be empty(请求方法不能为空)");
         }
 
         if (url == null) {
-            throw new RuntimeException("url不能为空");
+            throw new RuntimeException("URL cannot be empty(url不能为空)");
         }
 
         HttpUrl.Builder httpBuilder = HttpUrl.parse(url).newBuilder();

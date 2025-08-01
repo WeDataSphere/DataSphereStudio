@@ -73,7 +73,7 @@ public class ApiConfigServiceImpl extends ServiceImpl<ApiConfigMapper, ApiConfig
         List<ApiConfig> apiList = this.list(new QueryWrapper<ApiConfig>().eq("api_path", apiConfig.getApiPath()));
         Integer id = apiConfig.getId();
         if(apiList.size() > 0 && id == null){
-            throw new DataApiException("路径已经存在");
+            throw new DataApiException("The path already exists(路径已经存在)");
         }
         String apiType = apiConfig.getApiType();
         if ("GUIDE".equals(apiType)) {
@@ -90,7 +90,7 @@ public class ApiConfigServiceImpl extends ServiceImpl<ApiConfigMapper, ApiConfig
 //                .eq("id", id);
         if (id != null) {
             if(apiConfig.getStatus() == 1){
-                throw new DataApiException("请先下线,测试通过后, 重新发布");
+                throw new DataApiException("Please go offline first. After passing the test, please re publish(请先下线,测试通过后, 重新发布)");
             }
             apiConfig.setIsTest(0);
             this.updateById(apiConfig);
@@ -122,11 +122,11 @@ public class ApiConfigServiceImpl extends ServiceImpl<ApiConfigMapper, ApiConfig
         if(pageSize > 0 ){
             Object pageNumObject = map.get("pageNum");
             if(pageNumObject == null){
-                throw new DataApiException("请设置pageNum参数");
+                throw new DataApiException("Please set the pageNum parameter (请设置pageNum参数)");
             }
             pageNum = Integer.valueOf(pageNumObject.toString());
             if(pageNum < 1){
-                throw new DataApiException("pageNum参数错误");
+                throw new DataApiException("Page Num parameter error(pageNum参数错误)");
             }
             limitSent = " limit "+ ((pageNum-1) * pageSize)+","+pageSize;
         }
@@ -182,13 +182,13 @@ public class ApiConfigServiceImpl extends ServiceImpl<ApiConfigMapper, ApiConfig
         String appKey = request.getHeader("appKey");
         String appSecret = request.getHeader("appSecret");
         if(StringUtils.isAnyBlank(appKey,appSecret)){
-            throw new DataApiException("请求header需添加appKey,appSecret");
+            throw new DataApiException("Request header needs to add appKey and appSecret (请求header需添加appKey,appSecret)");
         }
         ApiConfig apiConfig = this.getOne(new QueryWrapper<ApiConfig>().eq("api_path", path).eq("is_delete",0));
         if(apiConfig != null){
             int status = apiConfig.getStatus();
             if(status == 0){
-                throw new DataApiException("该服务已下线");
+                throw new DataApiException("The service has been taken offline (该服务已下线)");
             }
             long startTime = System.currentTimeMillis();
             apiCall.setApiId(apiConfig.getId().longValue());
@@ -205,10 +205,10 @@ public class ApiConfigServiceImpl extends ServiceImpl<ApiConfigMapper, ApiConfig
                 apiCallMapper.addApiCall(apiCall);
                 return apiExecuteInfo;
             }else {
-                throw new DataApiException("token已失效");
+                throw new DataApiException("Token has expired (token已失效)");
             }
         }else {
-            throw new DataApiException("该服务不存在,请检查服务url是否正确");
+            throw new DataApiException("The service does not exist, please check if the service URL is correct (该服务不存在,请检查服务url是否正确)");
         }
     }
 

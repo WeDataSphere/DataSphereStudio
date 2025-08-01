@@ -38,6 +38,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
+
 public class ExecuteCodeHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecuteCodeHelper.class);
@@ -94,7 +96,8 @@ public class ExecuteCodeHelper {
             LOGGER.warn("Failed to execute job", e);
             String reason = getLog(job, client);
             LOGGER.error("Reason for failure: " + reason);
-            throw new ApiExecuteException(800024,"获取库表信息失败，执行脚本出错！");
+            throw new ApiExecuteException(DATA_SERVICE_GET_LIBRARY_TABLE_FAILED.getErrorCode(),
+                    DATA_SERVICE_GET_LIBRARY_TABLE_FAILED.getErrorDesc());
         }
         int resultSize = getResultSize(job, client);
         for(int i =0; i < resultSize; i++){

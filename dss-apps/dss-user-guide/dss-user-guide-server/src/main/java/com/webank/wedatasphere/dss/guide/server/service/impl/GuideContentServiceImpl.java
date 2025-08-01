@@ -58,11 +58,11 @@ public class GuideContentServiceImpl extends ServiceImpl<GuideContentMapper, Gui
     public void updateGuideContentById(long id, Map<String, Object> map) throws GuideException {
         Object content = map.get("content");
         if(content == null){
-            throw new GuideException("请设置content参数");
+            throw new GuideException("Please set the content parameter (请设置content参数)");
         }
         Object contentHtml = map.get("contentHtml");
         if(contentHtml == null){
-            throw new GuideException("请设置contentHtml参数");
+            throw new GuideException("Please set the contentHtml parameter (请设置contentHtml参数)");
         }
         guideContentMapper.updateGuideContentById(id, content.toString(), contentHtml.toString());
     }

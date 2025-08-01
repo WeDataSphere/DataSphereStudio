@@ -104,7 +104,7 @@ public class OrchestratorIERestful {
             try(Fs fileSystem = FSFactory.getFsByProxyUser(fsPath, userName)) {
                 fileSystem.init(new HashMap<String, String>());
                 if (!fileSystem.exists(fsPath)) {
-                    throw new DSSRuntimeException("路径上不存在文件！");
+                    throw new DSSRuntimeException("There is no file on the path! (路径上不存在文件！)");
                 }
                 inputStream = fileSystem.read(fsPath);
                 fileName = packageUri.substring(packageUri.lastIndexOf('/') + 1);

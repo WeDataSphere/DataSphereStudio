@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -38,6 +39,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 
 
 public class ProjectInfoWorkflowToRelConverter implements WorkflowToRelConverter {
@@ -51,7 +54,7 @@ public class ProjectInfoWorkflowToRelConverter implements WorkflowToRelConverter
         String repeatNodes = nodeNames.stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
                 .entrySet().stream().filter(entry -> entry.getValue() > 1).map(Map.Entry::getKey).collect(Collectors.joining(", "));
         if (StringUtils.isNotEmpty(repeatNodes)) {
-            throw new DSSRuntimeException(80001, "重复的节点名称。项目中不同工作流(或子工作流）里存在重名节点，请修改节点名避免重名。重名节点：" + repeatNodes);
+            throw new DSSRuntimeException(NODE_NAME_DUPLICATED.getErrorCode(), MessageFormat.format(NODE_NAME_DUPLICATED.getErrorDesc(),repeatNodes));
         }
         AzkabanConvertedRel azkabanConvertedRel = new AzkabanConvertedRel(projectPreConversionRel);
         //1. Assign a value to the storepath of azkabanschedulerproject.

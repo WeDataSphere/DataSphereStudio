@@ -96,6 +96,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
+
 public class DSSProjectServiceImpl extends ServiceImpl<DSSProjectMapper, DSSProjectDO> implements DSSProjectService {
     private static final Logger LOGGER = LoggerFactory.getLogger(DSSProjectServiceImpl.class);
     @Autowired
@@ -362,11 +364,11 @@ public class DSSProjectServiceImpl extends ServiceImpl<DSSProjectMapper, DSSProj
     @Override
     public void deleteProject(String username, ProjectDeleteOrRestoreRequest projectDeleteRequest, Workspace workspace, DSSProjectDO dssProjectDO)  {
         if (dssProjectDO == null) {
-            throw new DSSErrorException(600001, "工程不存在!");
+            throw new DSSErrorException(PROJECT_NOT_EXISTS.getErrorCode(), PROJECT_NOT_EXISTS.getErrorDesc());
         }
         LOGGER.warn("user {} begins to delete project {} in workspace {}.", username, dssProjectDO.getName(), workspace.getWorkspaceName());
         if (!dssProjectDO.getUsername().equalsIgnoreCase(username)) {
-            throw new DSSErrorException(600002, "刪除工程失敗，沒有删除权限!");
+            throw new DSSErrorException(PROJECT_DELETE_FAILED.getErrorCode(), PROJECT_DELETE_FAILED.getErrorDesc());
         }
         // 对于DSS项目进行归档
         archiveGitProject(username, projectDeleteRequest, workspace, dssProjectDO);
@@ -376,10 +378,10 @@ public class DSSProjectServiceImpl extends ServiceImpl<DSSProjectMapper, DSSProj
     @Override
     public void restoreProject(String username, ProjectDeleteOrRestoreRequest projectDeleteRequest, Workspace workspace, DSSProjectDO dssProjectDO) throws Exception {
         if (dssProjectDO == null) {
-            throw new DSSErrorException(600001, "工程不存在!");
+            throw new DSSErrorException(PROJECT_NOT_EXISTS.getErrorCode(), PROJECT_NOT_EXISTS.getErrorDesc());
         }
         if (!Integer.valueOf(-1).equals(dssProjectDO.getVisible())) {
-            throw new DSSRuntimeException("非近期删除的项目，不允许恢复!");
+            throw new DSSRuntimeException("Projects that have not been recently deleted are not allowed to be restored (非近期删除的项目，不允许恢复!)");
         }
         LOGGER.warn("user {} begins to restore project {} in workspace {}.", username, dssProjectDO.getName(), workspace.getWorkspaceName());
         // 对于DSS项目进行归档恢复

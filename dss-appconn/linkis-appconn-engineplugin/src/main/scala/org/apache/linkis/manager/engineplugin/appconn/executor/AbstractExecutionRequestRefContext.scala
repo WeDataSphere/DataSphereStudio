@@ -84,7 +84,7 @@ abstract class AbstractExecutionRequestRefContext(engineExecutorContext: EngineE
     val instances = Utils.tryThrow {
       Sender.getInstances(AppConnEngineConnConfiguration.GATEWAY_SPRING_APPLICATION.getValue)
     } { t => new AppConnExecutionErrorException(75538, "获取gateway的url失败", t) }
-    if (instances.length == 0) throw new AppConnExecutionErrorException(75538, "获取gateway的url失败")
+    if (instances.length == 0) throw new AppConnExecutionErrorException(75538, "Failed to obtain the URL of the gateway (获取gateway的url失败)")
     instances(0).getInstance
   }
 

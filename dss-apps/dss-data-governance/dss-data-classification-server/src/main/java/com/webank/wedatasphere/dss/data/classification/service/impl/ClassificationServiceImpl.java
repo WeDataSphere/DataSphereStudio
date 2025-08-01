@@ -141,7 +141,8 @@ public class ClassificationServiceImpl implements ClassificationService {
             atlasService.deleteTypedefByName(name);
         } catch (AtlasServiceException exception) {
             if(ClientResponse.Status.CONFLICT ==exception.getStatus()){
-                throw new DataGovernanceException("该分类(主题域/分层)已经与表关联，无法删除");
+                throw new DataGovernanceException("This category (subject domain/hierarchy) is already associated " +
+                        "with the table and cannot be deleted (该分类(主题域/分层)已经与表关联，无法删除)");
             }
             throw new DataGovernanceException(exception.getMessage());
         }

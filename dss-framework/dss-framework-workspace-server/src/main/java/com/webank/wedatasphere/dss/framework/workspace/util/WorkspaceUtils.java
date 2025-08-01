@@ -29,6 +29,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.WORKSPACE_ID_INCONSISTENT;
+
 
 public class WorkspaceUtils {
 
@@ -56,7 +58,7 @@ public class WorkspaceUtils {
     public static void validateWorkspace(long workspaceId, HttpServletRequest httpServletRequest) throws DSSErrorException {
         Workspace workspace = SSOHelper.getWorkspace(httpServletRequest);
         if (workspace.getWorkspaceId() != workspaceId) {
-            throw new DSSErrorException(80001, "请求参数的workspaceId和cookie中的workspaceId不一致，请切换至正确的workspace再操作。");
+            throw new DSSErrorException(WORKSPACE_ID_INCONSISTENT.getErrorCode(), WORKSPACE_ID_INCONSISTENT.getErrorDesc());
         }
     }
 

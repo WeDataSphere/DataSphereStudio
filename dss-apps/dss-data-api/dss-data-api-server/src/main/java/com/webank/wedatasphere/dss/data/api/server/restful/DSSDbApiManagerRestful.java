@@ -70,11 +70,11 @@ public class DSSDbApiManagerRestful {
 
         ApiInfo apiInfo = apiManagerService.getApiInfo(apiId);
         if (apiInfo.getIsTest() == 0) {
-            throw new DataApiException("请测试通过后再上线");
+            throw new DataApiException("Please test it before going online (请测试通过后再上线)");
         }
 
         if (apiInfo.getStatus() == 1) {
-            throw new DataApiException("该Api已发布,请勿重复发布");
+            throw new DataApiException("This API has been released, please do not publish it again (该Api已发布,请勿重复发布)");
         }
 
         apiManagerService.onlineApi(apiId);

@@ -65,7 +65,7 @@ public class ApiUtils {
             return new BeanValidationExceptionMapper().toResponse(e);
         } catch (WarnException e) {
             LOG.error("api error ", e);
-            return Message.error("系统异常");
+            return Message.error("System abnormality (系统异常)");
         } catch (AssertException e) {
             LOG.error("api error ", e);
             return Message.error(e.getMessage());

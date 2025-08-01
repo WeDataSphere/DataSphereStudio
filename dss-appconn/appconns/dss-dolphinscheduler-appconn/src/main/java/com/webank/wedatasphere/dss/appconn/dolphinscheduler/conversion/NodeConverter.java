@@ -32,12 +32,14 @@ import org.apache.linkis.common.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
 import static com.webank.wedatasphere.dss.appconn.dolphinscheduler.conf.DolphinSchedulerConf.DSS_DOLPHINSCHEDULER_CLIENT_HOME;
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 
 public class NodeConverter {
 
@@ -105,7 +107,8 @@ public class NodeConverter {
             taskParams.setRawScript(String.join("\n", scriptList));
         } catch (Exception e) {
             logger.error("工作流节点 {} 转换失败.", dssNode.getName(), e);
-            throw new ExternalOperationWarnException(90321, "工作流节点 " + dssNode.getName() + " 转换成DolphinScheduler节点失败！", e);
+            throw new ExternalOperationWarnException(NODE_CONVERT_TO_DOLPHINSCHEDULER_FAILED.getErrorCode(),
+                    MessageFormat.format(NODE_CONVERT_TO_DOLPHINSCHEDULER_FAILED.getErrorDesc(),dssNode.getName()), e);
         }
         task.setParams(taskParams);
         return task;

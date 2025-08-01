@@ -75,7 +75,7 @@ public class HttpEventcheckerReceiver extends AbstractEventCheckReceiver{
                 msgReceiveResponse = gson.fromJson(responseBody,
                         HttpMsgReceiveResponse.class);
             }catch (Exception e){
-                throw new RuntimeException("请求KGAS失败，详情：" + responseBody);
+                throw new RuntimeException("Request KGAS failed, details(请求KGAS失败，详情)：" + responseBody);
             }
             int reCode = msgReceiveResponse.getRetCode();
             if (reCode == 0 ) {

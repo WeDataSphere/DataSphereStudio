@@ -67,6 +67,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 import static com.webank.wedatasphere.dss.framework.workspace.util.DSSWorkspaceConstant.WORKSPACE_ID_STR;
 import static com.webank.wedatasphere.dss.standard.sso.utils.SSOHelper.USERNAME_NAME_COOKIE_KEY;
 
@@ -495,7 +496,8 @@ public class DSSWorkspaceRestful {
         String workspaceId= json.getOrDefault("workspaceId",String.valueOf(workspace.getWorkspaceId()));
 
         if(!workspaceId.equals(String.valueOf(workspace.getWorkspaceId()))){
-            throw  new DSSErrorException(90053,"当前工作空间与cookie中的不一致，重新刷新页面后在操作");
+            throw  new DSSErrorException(WORKSPACE_COOKIE_INCONSISTENT.getErrorCode(),
+                    WORKSPACE_COOKIE_INCONSISTENT.getErrorDesc());
         }
 
         String enabledFlowKeywordsCheck = json.getOrDefault("enabledFlowKeywordsCheck","0");

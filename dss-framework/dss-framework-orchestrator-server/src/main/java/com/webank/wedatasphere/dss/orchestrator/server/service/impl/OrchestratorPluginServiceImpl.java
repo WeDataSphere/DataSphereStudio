@@ -86,10 +86,13 @@ import java.io.File;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 
 
 public class OrchestratorPluginServiceImpl implements OrchestratorPluginService {
@@ -261,7 +264,7 @@ public class OrchestratorPluginServiceImpl implements OrchestratorPluginService 
         Long orchestratorId = flowRequest.getOrchestratorId();
         String status = lockMapper.selectOrchestratorStatus(orchestratorId);
         if (!StringUtils.isEmpty(status) && !status.equals(OrchestratorRefConstant.FLOW_STATUS_SAVE)) {
-            throw new DSSErrorException(800001, "工作流无改动或改动未提交，请确认改动并保存再进行提交");
+            throw new DSSErrorException(WORKFLOW_CHANGED_NOT_SUBMITTED.getErrorCode(), WORKFLOW_CHANGED_NOT_SUBMITTED.getErrorDesc());
         }
         OrchestratorSubmitJob submitJob = new OrchestratorSubmitJob();
         submitJob.setOrchestratorId(orchestratorId);
@@ -283,7 +286,8 @@ public class OrchestratorPluginServiceImpl implements OrchestratorPluginService 
     @Override
     public void batchSubmitFlow(Map<String, List<OrchestratorRelationVo>> map, Map<String, Long> projectMap, String username, Workspace workspace, String label, String comment) throws DSSErrorException {
         if (map == null) {
-            throw new DSSErrorException(80001, "批量提交的工作流不能为空");
+            throw new DSSErrorException(WORKFLOW_BATCH_SUBMISSION_EMPTY.getErrorCode(),
+                    WORKFLOW_BATCH_SUBMISSION_EMPTY.getErrorDesc());
         }
         Map<Long, Long> taskMap = new HashMap<>();
         List<OrchestratorSubmitRequest> submitRequests = new ArrayList<>();
@@ -305,7 +309,8 @@ public class OrchestratorPluginServiceImpl implements OrchestratorPluginService 
             isEditable = isEditable || projectUserAuthResponse.getProjectOwner().equals(username);
 
             if (!isEditable) {
-                DSSExceptionUtils.dealErrorException(63335, "用户" + username + "没有项目" + projectName + "编辑权限，请检查后重新提交", DSSErrorException.class);
+                DSSExceptionUtils.dealErrorException(63335, "User "+ username +" does not have permission to edit the " + projectName + " project. Please check and resubmit" +
+                        "(用户" + username + "没有项目" + projectName + "编辑权限，请检查后重新提交)", DSSErrorException.class);
             }
 
             for (OrchestratorRelationVo relationVo : orchestratorRelationVos) {
@@ -442,7 +447,8 @@ public class OrchestratorPluginServiceImpl implements OrchestratorPluginService 
             if(!String.valueOf(dssOrchestratorInfo.getWorkspaceId()).equals(String.valueOf(workspace.getWorkspaceId()))){
                 LOGGER.error("cookie workspaceId is {}, orchestrator workspaceId,id,name  is {},{},{} "
                         ,workspace.getWorkspaceId(),dssOrchestratorInfo.getWorkspaceId(),dssOrchestratorInfo.getId(),dssOrchestratorInfo.getName());
-                throw new DSSErrorException(90058,"工作流对应的工作空间与cookie中不一致，请刷新页面后重试");
+                throw new DSSErrorException(WORKFLOW_COOKIE_INCONSISTENT.getErrorCode(),
+                        WORKFLOW_COOKIE_INCONSISTENT.getErrorDesc());
             }
 
             for(DSSOrchestratorInfo orchestratorInfo: orchestratorInfoList){
@@ -675,7 +681,8 @@ public class OrchestratorPluginServiceImpl implements OrchestratorPluginService 
         if (orchestratorSubmitJob != null) {
             String status = orchestratorSubmitJob.getStatus();
             if (OrchestratorRefConstant.FLOW_STATUS_PUSH_FAILED.equals(status)) {
-                throw new DSSErrorException(80001, "获取工作流diff内容失败，原因为：" + orchestratorSubmitJob.getErrorMsg());
+                throw new DSSErrorException(WORKFLOW_DIFF_FAILED.getErrorCode(),
+                        MessageFormat.format(WORKFLOW_DIFF_FAILED.getErrorDesc(),orchestratorSubmitJob.getErrorMsg()));
             }
             return status;
         }
@@ -734,7 +741,8 @@ public class OrchestratorPluginServiceImpl implements OrchestratorPluginService 
             }
         } catch (Exception e) {
             LOGGER.error("exportFlowInfoNew failed , the reason is:", e);
-            throw new DSSErrorException(100098, "工作流导出失败，原因为" + e.getMessage());
+            throw new DSSErrorException(WORKFLOW_EXPORT_FAILED.getErrorCode(),
+                    MessageFormat.format(WORKFLOW_EXPORT_FAILED.getErrorDesc(),e.getMessage()));
         } finally {
             //删掉整个目录
             if (StringUtils.isNotEmpty(projectPath)) {
@@ -754,7 +762,8 @@ public class OrchestratorPluginServiceImpl implements OrchestratorPluginService 
         Long orchestratorId = flowRequest.getOrchestratorId();
         String status = lockMapper.selectOrchestratorStatus(orchestratorId);
         if (!StringUtils.isEmpty(status) && !status.equals(OrchestratorRefConstant.FLOW_STATUS_SAVE)) {
-            throw new DSSErrorException(800001, "工作流无改动，请确认改动并保存再进行提交");
+            throw new DSSErrorException(WORKFLOW_CHANGED_NOT_SUBMITTED.getErrorCode(),
+                    WORKFLOW_CHANGED_NOT_SUBMITTED.getErrorDesc());
         }
         DSSOrchestratorInfo orchestrator = orchestratorMapper.getOrchestrator(orchestratorId);
         Long flowId = flowRequest.getFlowId();

@@ -69,11 +69,13 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 import static com.webank.wedatasphere.dss.framework.workspace.util.DSSWorkspaceConstant.DEFAULT_DEMO_WORKSPACE_NAME;
 
 public class DSSWorkspaceServiceImpl implements DSSWorkspaceService {
@@ -165,7 +167,8 @@ public class DSSWorkspaceServiceImpl implements DSSWorkspaceService {
         List<DSSWorkspace> dssWorkspaces = workspaceMapper.findByWorkspaceName(workspaceName);
 
         if (dssWorkspaces == null || dssWorkspaces.isEmpty()) {
-            throw new DSSFrameworkWarnException(30021, workspaceName + "工作空间不存在!");
+            throw new DSSFrameworkWarnException(WORKSPACE_NOT_EXISTS.getErrorCode(),
+                    MessageFormat.format(WORKSPACE_NOT_EXISTS.getErrorDesc(),workspaceName));
         } else if (dssWorkspaces.size() > 1) {
             throw new DSSFrameworkWarnException(30021, "Too many workspaces named " + workspaceName);
         }
@@ -606,7 +609,8 @@ public class DSSWorkspaceServiceImpl implements DSSWorkspaceService {
         List<Integer> userRoles = dssWorkspaceUserMapper.getRoleInWorkspace(workspaceId.intValue(), user);
         //管理员鉴权
         if (userRoles.stream().noneMatch(l -> l == workspaceDBHelper.getRoleIdByName(CommonRoleEnum.ADMIN.getName()))) {
-            throw new DSSErrorException(80000, "无权限操作");
+            throw new DSSErrorException(WORKSPACE_PERMISSION_FAILED.getErrorCode(),
+                    WORKSPACE_PERMISSION_FAILED.getErrorDesc());
         }
         if (dssWorkspaceMapper.getAssociateDepartmentsByWorkspaceId(workspaceId) != null) {
             dssWorkspaceMapper.updateDepartmentsForWorkspace(workspaceId, departments, roles, user);
@@ -966,7 +970,8 @@ public class DSSWorkspaceServiceImpl implements DSSWorkspaceService {
             if (requestOne == null) {
                 //请求中没有该集群，删除前需要校验有没有被引用，没有引用才允许删除
                 if (executeClusterSet.contains(item.getClusterName())) {
-                    throw new DSSErrorException(90054, String.format("集群 %s 在工作流节点中被引用，不允许删除", item.getClusterName()) );
+                    throw new DSSErrorException(WORKFLOW_CLUSTER_REFERENCED.getErrorCode(),
+                            MessageFormat.format(WORKFLOW_CLUSTER_REFERENCED.getErrorDesc(), item.getClusterName()) );
                 } else {
                     dssWorkspaceStarRocksClusterMapper.deleteItemById(item.getId());
                 }
@@ -1008,7 +1013,8 @@ public class DSSWorkspaceServiceImpl implements DSSWorkspaceService {
         List<DSSWorkspaceStarRocksCluster> itemsByWorkspaceId = dssWorkspaceStarRocksClusterMapper.getItemsByWorkspaceId(workspaceId);
         for (DSSWorkspaceStarRocksCluster item : itemsByWorkspaceId) {
             if (executeClusterSet.contains(item.getClusterName())) {
-                throw new DSSErrorException(90054, String.format("集群 %s 在工作流节点中被引用，不允许删除", item.getClusterName()) );
+                throw new DSSErrorException(WORKFLOW_CLUSTER_REFERENCED.getErrorCode(),
+                        MessageFormat.format(WORKFLOW_CLUSTER_REFERENCED.getErrorDesc(), item.getClusterName()) );
             } else {
                 dssWorkspaceStarRocksClusterMapper.deleteItemByWorkspaceId(workspaceId);
             }

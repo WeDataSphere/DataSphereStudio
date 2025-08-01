@@ -58,7 +58,7 @@ class BMLService extends JavaLog {
     val inputStream = new ByteArrayInputStream(content.getBytes("utf-8"))
     val client: BmlClient = getBmlClient(userName)
     val resource: BmlUploadResponse = client.uploadShareResource(userName, projectName, fileName, inputStream)
-    if (!resource.isSuccess) throw new DSSErrorException(911113, "上传失败")
+    if (!resource.isSuccess) throw new DSSErrorException(911113, "Upload failed (上传失败)")
     val map = new util.HashMap[String, Object]
     map += "resourceId" -> resource.resourceId
     map += "version" -> resource.version
@@ -75,7 +75,7 @@ class BMLService extends JavaLog {
   def upload(userName: String, inputStream: InputStream, fileName: String, projectName: String): BmlResource = {
     val client: BmlClient = getBmlClient(userName)
     val resource: BmlUploadResponse = client.uploadShareResource(userName, projectName, fileName, inputStream)
-    if (!resource.isSuccess) throw new DSSErrorException(911113, "上传失败")
+    if (!resource.isSuccess) throw new DSSErrorException(911113, "Upload failed (上传失败)")
     new BmlResource(resource.resourceId, resource.version)
   }
 
@@ -88,7 +88,7 @@ class BMLService extends JavaLog {
   def update(userName: String, resourceId: String, inputStream: InputStream): util.Map[String, Object] = {
     val client: BmlClient = getBmlClient(userName)
     val resource: BmlUpdateResponse = client.updateShareResource(userName, resourceId, "", inputStream)
-    if (!resource.isSuccess) throw new DSSErrorException(911114, "更新失败")
+    if (!resource.isSuccess) throw new DSSErrorException(911114, "Update failed (更新失败)")
     val map = new util.HashMap[String, Object]
     map += "resourceId" -> resource.resourceId
     map += "version" -> resource.version
@@ -105,7 +105,7 @@ class BMLService extends JavaLog {
     val inputStream = new ByteArrayInputStream(content.getBytes("utf-8"))
     val client: BmlClient = getBmlClient(userName)
     val resource: BmlUpdateResponse = client.updateShareResource(userName, resourceId, UUID.randomUUID().toString + ".json", inputStream)
-    if (!resource.isSuccess) throw new DSSErrorException(911114, "更新失败")
+    if (!resource.isSuccess) throw new DSSErrorException(911114, "Update failed (更新失败)")
     val map = new util.HashMap[String, Object]
     map += "resourceId" -> resource.resourceId
     map += "version" -> resource.version
@@ -122,7 +122,7 @@ class BMLService extends JavaLog {
     } else {
       resource = client.downloadShareResource(userName, resourceId, version)
     }
-    if (!resource.isSuccess) throw new DSSErrorException(911115, "下载失败")
+    if (!resource.isSuccess) throw new DSSErrorException(911115, "Download failed (下载失败)")
     val map = new util.HashMap[String, Object]
     map += "path" -> resource.fullFilePath
     map += "string" -> inputstremToString(resource.inputStream)
@@ -140,7 +140,7 @@ class BMLService extends JavaLog {
     } else {
       resource = client.downloadShareResource(userName, resourceId, version)
     }
-    if (!resource.isSuccess) throw new DSSErrorException(911115, "下载失败")
+    if (!resource.isSuccess) throw new DSSErrorException(911115, "Download failed (下载失败)")
     val map = new util.HashMap[String, Object]
     map += "path" -> resource.fullFilePath
     map += "is" -> resource.inputStream

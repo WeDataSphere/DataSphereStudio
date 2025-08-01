@@ -42,7 +42,10 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
 import java.io.File;
+import java.text.MessageFormat;
 import java.util.*;
+
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 
 @Service
 public class DSSGitProjectManagerServiceImpl  implements DSSGitProjectManagerService {
@@ -71,7 +74,8 @@ public class DSSGitProjectManagerServiceImpl  implements DSSGitProjectManagerSer
         String gitUrl = projectInfoByProjectName.getGitUrl();
 
         if (request.getGitUser() != null && !gitUser.equals(request.getGitUser())) {
-            throw new DSSErrorException(80001, "Git用户名不允许更换");
+            throw new DSSErrorException(GIT_USERNAME_NOT_CHANGED.getErrorCode(),
+                    GIT_USERNAME_NOT_CHANGED.getErrorDesc());
         }
 
         if (requestGitToken != null && !gitToken.equals(requestGitToken)) {
@@ -150,14 +154,15 @@ public class DSSGitProjectManagerServiceImpl  implements DSSGitProjectManagerSer
         Long workspaceId = request.getWorkspaceId();
         Long workspaceIdByUser = GitProjectManager.getWorkspaceIdByUser(gitUser);
         if (workspaceIdByUser != null && !workspaceIdByUser.equals(workspaceId)) {
-            throw new DSSErrorException(80001, "该Git用户已在" + workspaceIdByUser + "配置，请更换Git用户重试");
+            throw new DSSErrorException(GIT_USERNAME_EXISTS.getErrorCode(),
+                    MessageFormat.format(GIT_USERNAME_EXISTS.getErrorDesc(),workspaceIdByUser));
         }
         // 数据库是否存在标志
         Boolean isExist = false;
         GitProjectGitInfo projectGitInfo = GitProjectManager.getProjectInfoByProjectName(projectName);
         if (projectGitInfo != null ) {
             if (!projectGitInfo.getGitUser().equals(gitUser)) {
-                throw new DSSErrorException(80001, "Git用户名不允许更换");
+                throw new DSSErrorException(GIT_SERVICE_ACCESS_ERROR.getErrorCode(), GIT_SERVICE_ACCESS_ERROR.getErrorDesc());
             }
             isExist = true;
         }
@@ -182,7 +187,8 @@ public class DSSGitProjectManagerServiceImpl  implements DSSGitProjectManagerSer
                     GitProjectGitInfo gitProjectGitInfo = new GitProjectGitInfo(workspaceId, projectName, gitUser, gitToken, gitUrl);
                     GitProjectManager.updateProjectInfo(gitProjectGitInfo, false);
                 } else {
-                    throw new GitErrorException(80101, "git账号: "+ gitUser+ "下已存在同名项目"+ projectName +"，请更换git账号或项目名称");
+                    throw new GitErrorException(GIT_PROJECT_EXISTS.getErrorCode(),
+                            MessageFormat.format(GIT_PROJECT_EXISTS.getErrorDesc(),gitUser,projectName));
                 }
             }
         } else {
@@ -237,11 +243,12 @@ public class DSSGitProjectManagerServiceImpl  implements DSSGitProjectManagerSer
                 File file = new File(filePath);
                 if (!file.exists()) {
                     logger.error("{}不存在", filePath);
-                    throw new DSSErrorException(80001, "当前工作流或工作流节点未提交到git，请提交后再跳转");
+                    throw new DSSErrorException(GIT_WORKFLOW_NOT_COMMIT.getErrorCode(),
+                            GIT_WORKFLOW_NOT_COMMIT.getErrorDesc());
                 }
             } catch (JGitInternalException e) {
                 logger.error("get git failed, the reason is", e);
-                throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+                throw new DSSErrorException(GIT_OPERATING.getErrorCode(), GIT_OPERATING.getErrorDesc());
             } catch (Exception e) {
                 logger.error("git init failed, the reason is ", e);
                 throw new DSSErrorException(80001, "diff failed, the reason is" + e.getMessage());

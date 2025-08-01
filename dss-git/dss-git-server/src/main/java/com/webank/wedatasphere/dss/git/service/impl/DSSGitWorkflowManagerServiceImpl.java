@@ -54,10 +54,13 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 
 @Service
 public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerService {
@@ -106,7 +109,7 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
             DSSGitUtils.reset(repository, projectName);
         }catch (JGitInternalException e) {
             logger.error("get git failed, the reason is", e);
-            throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+            throw new DSSErrorException(GIT_OPERATING.getErrorCode(), GIT_OPERATING.getErrorDesc());
         } catch (Exception e) {
             logger.error("diff failed, the reason is ",e);
             throw new DSSErrorException(80001, "diff failed, the reason is" + e.getMessage());
@@ -164,7 +167,7 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
 
         } catch (JGitInternalException e) {
             logger.error("get git failed, the reason is", e);
-            throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+            throw new DSSErrorException(GIT_OPERATING.getErrorCode(), GIT_OPERATING.getErrorDesc());
         } catch (Exception e) {
             logger.error("diffGit failed, the reason is ",e);
             throw new DSSErrorException(80001, "diffGit failed, the reason is" + e.getMessage());
@@ -229,7 +232,8 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
         GitProjectGitInfo projectInfoByProjectName = GitProjectManager.getProjectInfoByProjectName(projectName);
         if (projectInfoByProjectName == null) {
             logger.error("the projectName : {} don't associate with git", projectName);
-            throw new DSSErrorException(80001, "DSS项目:" + projectName +" 未关联git");
+            throw new DSSErrorException(GIT_PROJECT_NOT_ASSOCIATED.getErrorCode(),
+                    MessageFormat.format(GIT_PROJECT_NOT_ASSOCIATED.getErrorDesc(),projectName));
         }
         String gitUser = projectInfoByProjectName.getGitUser();
         String gitToken = projectInfoByProjectName.getGitToken();
@@ -237,7 +241,8 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
         String gitUrl = projectInfoByProjectName.getGitUrl();
 
         if (request.getGitUser() != null && !gitUser.equals(request.getGitUser())) {
-            throw new DSSErrorException(80001, "Git用户名不允许更换");
+            throw new DSSErrorException(GIT_USERNAME_NOT_CHANGED.getErrorCode(),
+                    GIT_USERNAME_NOT_CHANGED.getErrorDesc());
         }
 
         if (requestGitToken != null && !gitTokenEncrypt.equals(requestGitToken)) {
@@ -283,7 +288,7 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
             commitResponse = DSSGitUtils.getCurrentCommit(repository);
         } catch (JGitInternalException e) {
             logger.error("get git failed, the reason is", e);
-            throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+            throw new DSSErrorException(GIT_OPERATING.getErrorCode(),GIT_OPERATING.getErrorDesc());
         }catch (Exception e) {
             logger.error("commit failed, the reason is ",e);
             throw new DSSErrorException(8001, "commit workflow failed, the reason is: " + e.getMessage());
@@ -339,7 +344,7 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
             commitResponse = DSSGitUtils.getCurrentCommit(repository);
         } catch (JGitInternalException e) {
             logger.error("get git failed, the reason is", e);
-            throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+            throw new DSSErrorException(GIT_OPERATING.getErrorCode(),GIT_OPERATING.getErrorDesc());
         }catch (Exception e) {
             logger.error("commit failed, the reason is ",e);
             throw new DSSErrorException(8001, "commit workflow failed, the reason is: " + e);
@@ -369,10 +374,11 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
             DSSGitUtils.pull(repository, projectName, gitUser, gitToken);
         } catch (JGitInternalException e) {
             logger.error("get git failed, the reason is", e);
-            throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+            throw new DSSErrorException(GIT_OPERATING.getErrorCode(),GIT_OPERATING.getErrorDesc());
         } catch (Exception e) {
             logger.error("pull failed, the reason is ",e);
-            throw new DSSErrorException(80001, "更新本地git项目失败，原因为" + e.getMessage());
+            throw new DSSErrorException(GIT_UPDATE_PROJECT_FAILED.getErrorCode(),
+                    MessageFormat.format(GIT_UPDATE_PROJECT_FAILED.getErrorDesc(),e.getMessage()));
         }
         if (CollectionUtils.isEmpty(request.getTypeList())) {
             request.setTypeList(GitConstant.GIT_SERVER_SEARCH_TYPE);
@@ -594,7 +600,7 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
             DSSGitUtils.push(repository, projectName, gitUser, gitToken, "delete " + request.getDeleteFileList(), request.getDeleteFileList());
         } catch (JGitInternalException e) {
             logger.error("get git failed, the reason is", e);
-            throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+            throw new DSSErrorException(GIT_OPERATING.getErrorCode(),GIT_OPERATING.getErrorDesc());
         }catch (Exception e) {
             logger.error("delete failed, the reason is ",e);
             throw new DSSErrorException(80001, "delete workflow failed, the reason is: " + e);
@@ -653,7 +659,7 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
             return contentResponse;
         } catch (JGitInternalException e) {
             logger.error("get git failed, the reason is", e);
-            throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+            throw new DSSErrorException(GIT_OPERATING.getErrorCode(),GIT_OPERATING.getErrorDesc());
         }catch (Exception e) {
             throw new DSSErrorException(80001, "getFileContent failed, the reason is: " + e);
         }
@@ -708,7 +714,7 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
             return new GitDiffFileContentResponse(gitFileContentResponseList);
         } catch (JGitInternalException e) {
             logger.error("get git failed, the reason is", e);
-            throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+            throw new DSSErrorException(GIT_OPERATING.getErrorCode(),GIT_OPERATING.getErrorDesc());
         }catch (Exception e) {
             throw new DSSErrorException(80001, "getFileContent failed, the reason is: " + e);
         }
@@ -748,7 +754,7 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
 
         } catch (JGitInternalException e) {
             logger.error("get git failed, the reason is", e);
-            throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+            throw new DSSErrorException(GIT_OPERATING.getErrorCode(),GIT_OPERATING.getErrorDesc());
         }catch (Exception e) {
             throw new DSSErrorException(80001, "getHistory failed, the reason is: " + e);
         }
@@ -772,7 +778,7 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
             }
         } catch (JGitInternalException e) {
             logger.error("get git failed, the reason is", e);
-            throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+            throw new DSSErrorException(GIT_OPERATING.getErrorCode(),GIT_OPERATING.getErrorDesc());
         }catch (Exception e) {
             logger.info("get repository failed, the reason is: ", e);
             throw new DSSErrorException(80001, "get repository failed, the reason is: " + e);
@@ -812,7 +818,7 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
 
         } catch (JGitInternalException e) {
             logger.error("get git failed, the reason is", e);
-            throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+            throw new DSSErrorException(GIT_OPERATING.getErrorCode(),GIT_OPERATING.getErrorDesc());
         }catch (Exception e) {
             logger.error("getCurrentCommit, the reason is ",e);
             throw new DSSErrorException(80001, "getCurrentCommit failed, the reason is: " + e);
@@ -856,7 +862,7 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
 
         } catch (JGitInternalException e) {
             logger.error("get git failed, the reason is", e);
-            throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+            throw new DSSErrorException(GIT_OPERATING.getErrorCode(),GIT_OPERATING.getErrorDesc());
         }catch (Exception e) {
             logger.error("checkOut failed, the reason is ",e);
             throw new DSSErrorException(80001, "checkOut failed, the reason is: " + e);
@@ -904,7 +910,7 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
 
         } catch (JGitInternalException e) {
             logger.error("get git failed, the reason is", e);
-            throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+            throw new DSSErrorException(GIT_OPERATING.getErrorCode(), GIT_OPERATING.getErrorDesc());
         }catch (Exception e) {
             logger.error("removeFile failed, the reason is ",e);
             throw new DSSErrorException(80001, "removeFile failed, the reason is: " + e);
@@ -961,7 +967,7 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
 
         } catch (JGitInternalException e) {
             logger.error("get git failed, the reason is", e);
-            throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+            throw new DSSErrorException(GIT_OPERATING.getErrorCode(),GIT_OPERATING.getErrorDesc());
         }catch (Exception e) {
             logger.error("rename failed, the reason is ",e);
             throw new DSSErrorException(80001, "rename failed, the reason is: " + e);
@@ -1003,7 +1009,7 @@ public class DSSGitWorkflowManagerServiceImpl implements DSSGitWorkflowManagerSe
             }
         } catch (JGitInternalException e) {
             logger.error("get git failed, the reason is", e);
-            throw new DSSErrorException(80001, "当前项目下已有工作流在进行git操作，请稍后重试");
+            throw new DSSErrorException(GIT_OPERATING.getErrorCode(),GIT_OPERATING.getErrorDesc());
         }catch (Exception e) {
             logger.error("getHistory failed, the reason is ",e);
             throw new DSSErrorException(80001, "getHistory failed, the reason is: " + e);

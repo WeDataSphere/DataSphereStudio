@@ -64,6 +64,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 import static com.webank.wedatasphere.dss.common.utils.ZipHelper.unzip;
 import static com.webank.wedatasphere.dss.common.utils.ZipHelper.zip;
 
@@ -167,7 +168,8 @@ public class ExportDSSOrchestratorPluginImpl extends AbstractDSSOrchestratorPlug
             return new OrchestratorExportResult(uploadResult,String.valueOf(orcVersionId));
             //4、返回BML存储信息
         } else {
-            throw new DSSErrorException(90038, "该Orchestrator的版本号不存在，请检查版本号是否正确.");
+            throw new DSSErrorException(ORCHESTRATOR_VERSION_NOT_EXISTS.getErrorCode(),
+                    ORCHESTRATOR_VERSION_NOT_EXISTS.getErrorDesc());
         }
     }
     @Override
@@ -244,7 +246,8 @@ public class ExportDSSOrchestratorPluginImpl extends AbstractDSSOrchestratorPlug
             return new OrchestratorExportResult(uploadResult,String.valueOf(orcVersionId));
             //4、返回BML存储信息
         } else {
-            throw new DSSErrorException(90038, "该Orchestrator的版本号不存在，请检查版本号是否正确.");
+            throw new DSSErrorException(ORCHESTRATOR_VERSION_NOT_EXISTS.getErrorCode(),
+                    ORCHESTRATOR_VERSION_NOT_EXISTS.getErrorDesc());
         }
     }
 

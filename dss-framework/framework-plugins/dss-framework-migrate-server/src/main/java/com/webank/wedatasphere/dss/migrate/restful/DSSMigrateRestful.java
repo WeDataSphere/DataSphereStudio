@@ -428,7 +428,7 @@ public class DSSMigrateRestful {
                 resp.getOutputStream().flush();
             } catch (IOException e) {
                 LOG.error("资源文件打包下载失败，下载路径：{}", orcZipPath, e);
-                throw new DSSErrorException(100800, "资源文件打包下载失败:原因： " + e.getMessage());
+                throw new DSSErrorException(100800, "Resource file packaging download failed: reason (资源文件打包下载失败:原因)： " + e.getMessage());
             }
         }
     }

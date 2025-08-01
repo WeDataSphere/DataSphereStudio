@@ -71,7 +71,7 @@ public class ExportAndImportSupportUtils {
                 workFlowProjectPaths.put(workflow, Paths.get(newWorkflowDir));
             } catch (IOException e) {
                 LOGGER.error("Error while copying workflow directory " , e);
-                throw new DSSRuntimeException(70001, "导入多个工作流时分离工作流失败，原因为:" + e.getMessage(),e);
+                throw new DSSRuntimeException(70001, "Failed to separate workflows when importing multiple workflows due to the following reason (导入多个工作流时分离工作流失败，原因为:)" + e.getMessage(),e);
             }
 
 

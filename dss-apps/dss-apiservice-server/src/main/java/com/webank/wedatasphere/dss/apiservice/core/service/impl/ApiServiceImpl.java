@@ -56,8 +56,11 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.webank.wedatasphere.dss.common.exception.MessageErrorCodeSummary.*;
 
 
 @Service
@@ -336,7 +339,8 @@ public class ApiServiceImpl implements ApiService {
             for (ApiServiceVo apiServiceVo : authQueryList) {
                 ApiVersionVo maxApiVersionVo = getMaxVersion(apiServiceVo.getId());
                 if(null == maxApiVersionVo){
-                    throw new ApiServiceQueryException(800032,"数据服务API版本记录为空"+apiServiceVo.getName());
+                    throw new ApiServiceQueryException(DATA_SERVICE_API_VERSION_EMPTY.getErrorCode(),
+                            MessageFormat.format(DATA_SERVICE_API_VERSION_EMPTY.getErrorDesc(),apiServiceVo.getName()));
                 }
                 apiServiceVo.setParams(apiServiceParamDao.queryByVersionId(maxApiVersionVo.getId()));
                 apiServiceVo.setLatestVersionId(maxApiVersionVo.getId());
