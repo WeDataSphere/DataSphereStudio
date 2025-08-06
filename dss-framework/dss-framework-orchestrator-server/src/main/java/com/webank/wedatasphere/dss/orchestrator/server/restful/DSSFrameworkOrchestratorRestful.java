@@ -672,7 +672,7 @@ public class DSSFrameworkOrchestratorRestful {
             return Message.error("can not get roles information");
         }
 
-        boolean isEnglish = "en".equals(httpServletRequest.getHeader("Content-language"));
+        boolean isEnglish = "en".equalsIgnoreCase(httpServletRequest.getHeader("Content-language"));
         List<Long> totals = new ArrayList<>();
 
         List<OrchestratorMeta> orchestratorMetaList = orchestratorFrameworkService.getAllOrchestratorMeta(orchestratorMetaRequest, totals,userName,isEnglish);
@@ -743,7 +743,7 @@ public class DSSFrameworkOrchestratorRestful {
      **/
     @RequestMapping(value = "/getOrchestratorGitStatus", method = RequestMethod.GET)
     public Message getOrchestratorGitStatus() {
-        boolean isEnglish = "en".equals(httpServletRequest.getHeader("Content-language"));
+        boolean isEnglish = "en".equalsIgnoreCase(httpServletRequest.getHeader("Content-language"));
         return Message.ok().data("status", orchestratorService.getOrchestratorGitStatus(isEnglish));
     }
 
