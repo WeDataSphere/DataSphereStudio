@@ -647,7 +647,7 @@ public class OrchestratorFrameworkServiceImpl implements OrchestratorFrameworkSe
 
 
     @Override
-    public List<OrchestratorMeta> getAllOrchestratorMeta(OrchestratorMetaRequest orchestratorMetaRequest, List<Long> total, String username) {
+    public List<OrchestratorMeta> getAllOrchestratorMeta(OrchestratorMetaRequest orchestratorMetaRequest, List<Long> total, String username,boolean isEnglish) {
         List<OrchestratorMeta> orchestratorMetaList = orchestratorMapper.getAllOrchestratorMeta(orchestratorMetaRequest);
         List<OrchestratorMeta> orchestratorMetaInfo = new ArrayList<>();
         if (CollectionUtils.isEmpty(orchestratorMetaList)) {
@@ -748,7 +748,14 @@ public class OrchestratorFrameworkServiceImpl implements OrchestratorFrameworkSe
         Map<Long, Boolean> map = new HashMap<>();
         for (int i = start; i < end; i++) {
             OrchestratorMeta orchestratorMeta = orchestratorMetaList.get(i);
-            orchestratorMeta.setStatusName(OrchestratorStatusEnum.getEnum(orchestratorMeta.getStatus()).getName());
+            // 补充DSS国际化
+            if(isEnglish){
+                orchestratorMeta.setStatusName(OrchestratorStatusEnum.getEnum(orchestratorMeta.getStatus()).getNameEn());
+                orchestratorMeta.setNewStatusName(OrchestratorStatusEnum.getEnum(orchestratorMeta.getNewStatus()).getNameEn());
+            }else{
+                orchestratorMeta.setStatusName(OrchestratorStatusEnum.getEnum(orchestratorMeta.getStatus()).getName());
+            }
+
 
             if (!map.containsKey(orchestratorMeta.getProjectId())) {
 

@@ -153,7 +153,7 @@ public interface OrchestratorService {
 
     List<DSSOrchestratorInfo> getOrchestratorInfoByLabel(OrchestratorRequest orchestratorRequest);
 
-    List<OrchestratorStatusVo> getOrchestratorGitStatus();
+    List<OrchestratorStatusVo> getOrchestratorGitStatus(boolean isEnglish);
 
     List<String> getAllOrchestratorName(Long workspaceId,String projectName);
 

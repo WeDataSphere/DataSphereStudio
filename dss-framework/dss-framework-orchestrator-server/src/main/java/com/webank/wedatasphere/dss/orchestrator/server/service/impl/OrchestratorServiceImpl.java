@@ -714,9 +714,9 @@ public class OrchestratorServiceImpl implements OrchestratorService {
     }
 
 
-    public List<OrchestratorStatusVo> getOrchestratorGitStatus() {
+    public List<OrchestratorStatusVo> getOrchestratorGitStatus(boolean isEnglish) {
 
-        return OrchestratorStatusEnum.getOrchestratorGitStatus();
+        return OrchestratorStatusEnum.getOrchestratorGitStatus(isEnglish);
     }
 
     @Override

@@ -23,24 +23,28 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public enum OrchestratorStatusEnum {
-    SAVE(OrchestratorRefConstant.FLOW_STATUS_SAVE, "待提交"),
-    PUSH(OrchestratorRefConstant.FLOW_STATUS_PUSH, "待发布"),
-    PUBLISH(OrchestratorRefConstant.FLOW_STATUS_PUBLISH, "已发布"),
-    RUNNING(OrchestratorRefConstant.FLOW_STATUS_PUSHING, "提交中"),
-    PUBLISHING(OrchestratorRefConstant.FLOW_STATUS_PUBLISHING, "发布中"),
-    STATELESS(OrchestratorRefConstant.FLOW_STATUS_STATELESS, "--"),
-    SUCCESS(OrchestratorRefConstant.FLOW_STATUS_PUSH_SUCCESS,"发布成功"),
-    UNPUBLISHED(OrchestratorRefConstant.FLOW_STATUS_UNPUBLISHED,"未发布"),
-    FAILED(OrchestratorRefConstant.FLOW_STATUS_PUSH_FAILED, "发布失败");
+    SAVE(OrchestratorRefConstant.FLOW_STATUS_SAVE, "待提交","ready to submit"),
+    PUSH(OrchestratorRefConstant.FLOW_STATUS_PUSH, "待发布", "ready to publish"),
+    PUBLISH(OrchestratorRefConstant.FLOW_STATUS_PUBLISH, "已发布","already published"),
+    RUNNING(OrchestratorRefConstant.FLOW_STATUS_PUSHING, "提交中", "submitting"),
+    PUBLISHING(OrchestratorRefConstant.FLOW_STATUS_PUBLISHING, "发布中","publishing"),
+    STATELESS(OrchestratorRefConstant.FLOW_STATUS_STATELESS, "--","--"),
+    SUCCESS(OrchestratorRefConstant.FLOW_STATUS_PUSH_SUCCESS,"发布成功","published successfully"),
+    UNPUBLISHED(OrchestratorRefConstant.FLOW_STATUS_UNPUBLISHED,"未发布","unpublished"),
+    FAILED(OrchestratorRefConstant.FLOW_STATUS_PUSH_FAILED, "发布失败","publication failed");
 
 
     private String status;
     private String name;
+    private String nameEn;
 
-    OrchestratorStatusEnum(String status, String name) {
+    OrchestratorStatusEnum(String status, String name,String nameEn) {
         this.status = status;
         this.name = name;
+        this.nameEn = nameEn;
     }
+
+
 
 
     public static OrchestratorStatusEnum getEnum(String status) {
@@ -72,16 +76,25 @@ public enum OrchestratorStatusEnum {
         this.name = name;
     }
 
+    public String getNameEn() {
+        return nameEn;
+    }
 
-    public static List<OrchestratorStatusVo> getOrchestratorGitStatus() {
+    public void setNameEn(String nameEn) {
+        this.nameEn = nameEn;
+    }
+
+    public static List<OrchestratorStatusVo> getOrchestratorGitStatus(boolean isEnglish) {
 
         return Stream.of(
-                new OrchestratorStatusVo(PUSH.getStatus(), PUSH.getName()),
-                new OrchestratorStatusVo(SAVE.getStatus(), SAVE.getName()),
-                new OrchestratorStatusVo(PUBLISHING.getStatus(), PUBLISHING.getName()),
-                new OrchestratorStatusVo(RUNNING.getStatus(), RUNNING.getName()),
-                new OrchestratorStatusVo(PUBLISH.getStatus(),PUBLISH.getName()),
-                new OrchestratorStatusVo(STATELESS.getStatus(), STATELESS.getName())
+
+                new OrchestratorStatusVo(PUSH.getStatus(), isEnglish ? PUSH.getNameEn():PUSH.getName()),
+                new OrchestratorStatusVo(SAVE.getStatus(), isEnglish ? SAVE.getNameEn():SAVE.getName()),
+                new OrchestratorStatusVo(PUBLISHING.getStatus(), isEnglish ? PUBLISHING.getNameEn(): PUBLISHING.getName()),
+                new OrchestratorStatusVo(RUNNING.getStatus(), isEnglish? RUNNING.getNameEn() : RUNNING.getName()),
+                new OrchestratorStatusVo(PUBLISH.getStatus(),isEnglish ? PUBLISH.getNameEn() : PUBLISH.getName()),
+                new OrchestratorStatusVo(STATELESS.getStatus(), isEnglish ? STATELESS.getNameEn() : STATELESS.getName())
+
         ).collect(Collectors.toList());
     }
 
