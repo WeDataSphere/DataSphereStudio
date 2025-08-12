@@ -142,10 +142,10 @@ public class DSSWorkspaceUserRestful {
 
 
     @RequestMapping(path = "addWorkspaceUser", method = RequestMethod.POST)
-    public Message addWorkspaceUser(@RequestBody UpdateWorkspaceUserRequest updateWorkspaceUserRequest) {
+    public Message addWorkspaceUser(@RequestBody CreateWorkspaceUserRequest createWorkspaceUserRequest) {
         //todo 工作空间添加用户
         String creator = SecurityFilter.getLoginUsername(httpServletRequest);
-        List<Integer> roles = updateWorkspaceUserRequest.getRoles();
+        List<Integer> roles = createWorkspaceUserRequest.getRoles();
         Workspace workspace;
         //兼容外部系统通过接口调用场景，cookie未设置workspaceName
         if (Arrays.stream(httpServletRequest.getCookies()).noneMatch(l -> l.getName().equals("workspaceName"))) {
@@ -153,29 +153,31 @@ public class DSSWorkspaceUserRestful {
             try {
                 workspace = SSOHelper.getWorkspace(httpServletRequest);
             } catch (AppStandardWarnException appStandardWarnException) {
-                workspace.setWorkspaceId(updateWorkspaceUserRequest.getWorkspaceId());
-                workspace.setWorkspaceName(String.valueOf(updateWorkspaceUserRequest.getWorkspaceId()));
+                workspace.setWorkspaceId(createWorkspaceUserRequest.getWorkspaceId());
+                workspace.setWorkspaceName(String.valueOf(createWorkspaceUserRequest.getWorkspaceId()));
             }
         } else {
             workspace = SSOHelper.getWorkspace(httpServletRequest);
         }
-        int workspaceId = updateWorkspaceUserRequest.getWorkspaceId();
+        int workspaceId = createWorkspaceUserRequest.getWorkspaceId();
         if (workspace.getWorkspaceId() != workspaceId) {
             return Message.error("cookie 中的 workspaceId 与请求添加用户的 workspace 不同！");
         }
-        String userName = updateWorkspaceUserRequest.getUserName();
-        String userId = updateWorkspaceUserRequest.getUserId();
-        Long count = dssWorkspaceUserService.getCountByUsername(userName, workspaceId);
-        if (count != null && count > 0) {
-            return Message.error("用户已经存在该工作空间，不需要重复添加！");
+        List<String> userName = createWorkspaceUserRequest.getUserName();
+        List<String> userId = createWorkspaceUserRequest.getUserId();
+        for (int i = 0; i < userName.size(); i++) {
+            Long count = dssWorkspaceUserService.getCountByUsername(userName.get(i), workspaceId);
+            if (count != null && count > 0) {
+                return Message.error("用户" + userName.get(i) + "已经存在该工作空间，不需要重复添加！");
+            }
+            if (!roleCheckService.checkRolesOperation(workspaceId, creator, userName.get(i), roles)) {
+                return Message.error("无权限进行该操作");
+            }
+            dssUserService.insertIfNotExist(userName.get(i), workspace);
+            dssWorkspaceUserService.addWorkspaceUser(roles, workspace.getWorkspaceId(), userName.get(i), creator, userId.get(i));
         }
-        if (!roleCheckService.checkRolesOperation(workspaceId, creator, userName, roles)) {
-            return Message.error("无权限进行该操作");
-        }
-        dssUserService.insertIfNotExist(userName, workspace);
-        dssWorkspaceUserService.addWorkspaceUser(roles, workspace.getWorkspaceId(), userName, creator, userId);
-        AuditLogUtils.printLog(userName, workspaceId, workspace.getWorkspaceName(), TargetTypeEnum.WORKSPACE, workspaceId,
-                workspace.getWorkspaceName(), OperateTypeEnum.ADD_USERS, updateWorkspaceUserRequest);
+        AuditLogUtils.printLog(userName.toString(), workspaceId, workspace.getWorkspaceName(), TargetTypeEnum.WORKSPACE, workspaceId,
+                workspace.getWorkspaceName(), OperateTypeEnum.ADD_USERS, createWorkspaceUserRequest);
         return Message.ok();
     }
 
