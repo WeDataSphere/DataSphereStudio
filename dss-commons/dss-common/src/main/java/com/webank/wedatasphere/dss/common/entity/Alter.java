@@ -69,4 +69,15 @@ public abstract class Alter {
     public void setAlterReceiver(String alterReceiver) {
         this.alterReceiver = alterReceiver;
     }
+
+
+    @Override
+    public String toString() {
+        return "Alter{" +
+                "alterTitle='" + alterTitle + '\'' +
+                ", alterInfo='" + alterInfo + '\'' +
+                ", alterLevel='" + alterLevel + '\'' +
+                ", alterReceiver='" + alterReceiver + '\'' +
+                '}';
+    }
 }
