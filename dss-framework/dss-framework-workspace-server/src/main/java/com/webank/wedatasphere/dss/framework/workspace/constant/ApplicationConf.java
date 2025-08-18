@@ -31,4 +31,19 @@ public class ApplicationConf {
     public static final CommonVars<String> ITSM_SECRETKEY = CommonVars.apply("wds.dss.itsm.secretkey","350965f1d6dfc38757cba3c34478163176aafcb2ed5ff2478d94a43b40d3ae42");
 
     public static final CommonVars<String> HOMEPAGE_DEFAULT_WORKSPACE = CommonVars.apply("wds.linkis.special.homepage.default.workspace","BRM_WORKSPACE,CF_WORKSPACE");
+
+
+    /**
+     * 是否 忽略数据服务
+     */
+    public static final CommonVars<Boolean> IGNORE_API_SERVICE = CommonVars.apply("wds.dss.workflow.ignore.apiservice", true);
+
+
+    /****
+     *  数据服务appconn名称
+     */
+    public static final CommonVars<String> API_SERVICE_APPCONN_NAME = CommonVars.apply("wds.dss.workflow.apiservice.appconn.name", "apiService");
+
+
+
 }
