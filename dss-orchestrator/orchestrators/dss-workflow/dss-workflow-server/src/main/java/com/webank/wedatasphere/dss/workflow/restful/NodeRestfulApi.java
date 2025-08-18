@@ -28,6 +28,7 @@ import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalO
 import com.webank.wedatasphere.dss.standard.sso.utils.SSOHelper;
 import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlow;
 import com.webank.wedatasphere.dss.workflow.common.parser.WorkFlowParser;
+import com.webank.wedatasphere.dss.workflow.constant.DSSWorkFlowConstant;
 import com.webank.wedatasphere.dss.workflow.cs.DSSCSHelper;
 import com.webank.wedatasphere.dss.workflow.entity.*;
 import com.webank.wedatasphere.dss.workflow.entity.request.*;
@@ -86,6 +87,16 @@ public class NodeRestfulApi {
                     throw new DSSRuntimeException(81200, e.getMessage(), e);
                 }
             }).collect(Collectors.toList()));
+
+            // 忽略sendemail节点
+            if(DSSWorkFlowConstant.IGNORE_SENDEMAIL_NODE){
+
+                nodeGroupVO.setChildren(nodeGroupVO.getChildren().stream()
+                        .filter(nodeInfoVO -> !DSSWorkFlowConstant.SENDEMAIL_TYPE.equals(nodeInfoVO.getType()))
+                        .collect(Collectors.toList()));
+
+            }
+
             groupVos.add(nodeGroupVO);
         }
         groupVos = groupVos.stream().sorted(NodeGroupVO::compareTo).collect(Collectors.toList());

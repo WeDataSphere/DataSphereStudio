@@ -65,4 +65,10 @@ public class DSSWorkFlowConstant {
      */
     public static final CommonVars<String> DEFAULT_ZIP_FILE_LIMIT = CommonVars.apply("wds.dss.workflow.export.default.zip.limit", "5");
 
+    /***
+     * 忽略发送邮件节点
+     */
+    public static Boolean IGNORE_SENDEMAIL_NODE = CommonVars.apply("wds.dss.ignore.sendemail.node", true).getValue();
+
+    public static String SENDEMAIL_TYPE = CommonVars.apply("wds.dss.sendemail.key", "linkis.appconn.sendemail").getValue();
 }
