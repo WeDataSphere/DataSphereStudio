@@ -62,8 +62,8 @@ public interface DSSWorkspaceUserMapper {
     @Select({
             "<script>",
             "select created_by as creator, username as username, create_time as joinTime, workspace_id as workspaceId, group_concat(role_id) as roleIds, update_time as updateTime, update_user as updateUser " +
-                    "from dss_workspace_user_role where workspace_id = #{workspaceId} ",
-            "<if test='username != null'>and username like concat('%',#{username},'%')</if> " + "group by username,created_by,create_time,workspace_id,update_time,update_user " +
+                    " ,max(id) as id from dss_workspace_user_role where workspace_id = #{workspaceId} ",
+            "<if test='username != null'>and username like concat('%',#{username},'%')</if> " + "group by created_by,username,create_time,workspace_id,update_time,update_user " +
                     "<if test='roleId != null'>HAVING FIND_IN_SET(#{roleId},roleIds)</if> " +
                     "order by id desc",
             "</script>"
@@ -123,7 +123,9 @@ public interface DSSWorkspaceUserMapper {
     @MapKey("userName")
     Map<String, DSSUserRoleComponentPriv> getWorkspaceRolePrivByUsername(@Param("list") List<DSSUserRoleComponentPriv> list);
 
-    @Select("select distinct username from dss_workspace_user_role where workspace_id = #{workspaceId} and role_id = #{roleId} order by id desc")
+    @Select("select username  from (\n" +
+            "select distinct id, username from dss_workspace_user_role where workspace_id = 224 and role_id = 1 order by id desc \n" +
+            ") t ")
     List<String> getWorkspaceUserByRoleId(@Param("workspaceId") Long workspaceId,@Param("roleId") Integer roleId);
 
     @Delete("delete from dss_project_user where username = #{username} ")
