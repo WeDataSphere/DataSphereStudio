@@ -42,7 +42,7 @@ public class ApplicationConf {
     /****
      *  数据服务appconn名称
      */
-    public static final CommonVars<String> API_SERVICE_APPCONN_NAME = CommonVars.apply("wds.dss.workflow.apiservice.appconn.name", "apiService");
+    public static final CommonVars<String> API_SERVICE_APPCONN_NAME = CommonVars.apply("wds.dss.workflow.apiservice.appconn.name", "apiservice");
 
 
 

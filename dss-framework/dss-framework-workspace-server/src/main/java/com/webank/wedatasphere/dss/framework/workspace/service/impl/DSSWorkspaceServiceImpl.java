@@ -720,13 +720,16 @@ public class DSSWorkspaceServiceImpl implements DSSWorkspaceService {
         for (WorkspaceMenuVo menuVo : menuVos) {
             Long menuId = menuVo.getId();
             List<WorkspaceMenuAppconnVo> menuAppconns = isChinese ? workspaceMapper.getMenuAppInstancesCn(menuId) : workspaceMapper.getMenuAppInstancesEn(menuId);
-            for (WorkspaceMenuAppconnVo menuAppconn : menuAppconns) {
 
+            if(ApplicationConf.IGNORE_API_SERVICE.getValue()){
                 // 忽略 数据服务
-                if(ApplicationConf.IGNORE_API_SERVICE.getValue() &&
-                        ApplicationConf.API_SERVICE_APPCONN_NAME.getValue().equalsIgnoreCase(menuAppconn.getName())){
-                    continue;
-                }
+                menuAppconns = menuAppconns.stream()
+                        .filter(appconn -> !ApplicationConf.API_SERVICE_APPCONN_NAME.getValue().equalsIgnoreCase(appconn.getName()))
+                        .collect(Collectors.toList());
+
+            }
+
+            for (WorkspaceMenuAppconnVo menuAppconn : menuAppconns) {
 
                 // 如果该工作空间中用户拥有该组件权限，则该组件的accessable属性为true；否则为false
                 menuAppconn.setAccessable(userMenuAppConnIds.contains(menuAppconn.getId()));
