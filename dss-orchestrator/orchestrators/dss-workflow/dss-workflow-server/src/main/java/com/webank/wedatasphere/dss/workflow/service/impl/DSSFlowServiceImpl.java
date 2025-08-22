@@ -2939,6 +2939,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         String nodeName = editNodeContentRequest.getNodeName();
         String nodeContent = editNodeContentRequest.getNodeContent();
         Map<String,Object> nodeMetadata = editNodeContentRequest.getNodeMetadata();
+        String modifyNodeName = editNodeContentRequest.getModifyNodeName();
 
         if(StringUtils.isEmpty(nodeContent) && MapUtils.isEmpty(nodeMetadata)){
             DSSExceptionUtils.dealErrorException(90003, String.format("节点内容和节点配置信息都为空,%s节点不做更新",nodeName), DSSErrorException.class);
@@ -2983,7 +2984,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         try {
 
-            updateNodeContent(flow,nodeName,nodeContent,nodeMetadata,dssProject.getName(),username);
+            updateNodeContent(flow,nodeName,nodeContent,nodeMetadata,dssProject.getName(),username,modifyNodeName);
 
             saveFlow(flow.getId(),flow.getFlowJson(),flow.getDescription(),flow.getCreator(),
                     dssProject.getWorkspaceName(),dssProject.getName(),null);
@@ -3073,7 +3074,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 }
 
                 updateNodeContent(flow,nodeContent.getNodeName(),nodeContent.getNodeContent(),nodeContent.getNodeMetadata(),
-                        dssProject.getName(),username);
+                        dssProject.getName(),username,nodeContent.getModifyNodeName());
 
                 flowMap.put(flow.getId(),flow);
 
@@ -3204,7 +3205,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
 
     public void updateNodeContent(DSSFlow dssFlow,String nodeName,String nodeContent,Map<String,Object> nodeMetaData,
-                                  String projectName,String username) throws DSSErrorException,IOException {
+                                  String projectName,String username,String modifyNodeName) throws DSSErrorException,IOException {
 
         DSSNodeDefault dssNodeDefault = getNode(dssFlow,nodeName);
 
@@ -3221,7 +3222,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         }
 
         // 修改json信息
-        updateNodeMetadata(dssFlow,dssNodeDefault,nodeMetaData,resource,username);
+        updateNodeMetadata(dssFlow,dssNodeDefault,nodeMetaData,resource,username,modifyNodeName);
 
 
         logger.info("flow id is {}, {} workflow json is {}",dssFlow.getId(),dssFlow.getName(),dssFlow.getFlowJson());
@@ -3322,7 +3323,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
     public void updateNodeMetadata(DSSFlow dssFlow,DSSNodeDefault dssNodeDefault,Map<String,Object> nodeMetaData,
-                                   Resource resource,String username){
+                                   Resource resource,String username,String modifyNodeName){
 
 
         logger.info("node info is {}, input meta data is {}",dssNodeDefault.toString(),DSSCommonUtils.COMMON_GSON.toJson(nodeMetaData));
@@ -3358,9 +3359,18 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                     }
                 }
 
+                // 修改节点名称
+                if(StringUtils.isNotEmpty(modifyNodeName)
+                        && !modifyNodeName.equals(title)){
+
+                    json.addProperty("title", modifyNodeName);
+
+                }
+
                 // 修改节点的更新时间
                 json.addProperty("modifyTime",System.currentTimeMillis());
                 json.addProperty("modifyUser", username);
+
 
                 break;
             }
@@ -3370,6 +3380,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         // 修改工作流的更新时间
         jsonObject.addProperty("updateTime", System.currentTimeMillis());
         jsonObject.addProperty("updateUser", username);
+
 
         dssFlow.setFlowJson(DSSCommonUtils.COMMON_GSON.toJson(jsonObject));
 

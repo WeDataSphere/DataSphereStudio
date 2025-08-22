@@ -15,6 +15,8 @@ public class BatchEditNodeContentRequest {
 
         private Map<String,Object> nodeMetadata;
 
+        private String modifyNodeName;
+
 
         public String getNodeName() {
             return nodeName;
@@ -38,6 +40,14 @@ public class BatchEditNodeContentRequest {
 
         public void setNodeMetadata(Map<String, Object> nodeMetadata) {
             this.nodeMetadata = nodeMetadata;
+        }
+
+        public String getModifyNodeName() {
+            return modifyNodeName;
+        }
+
+        public void setModifyNodeName(String modifyNodeName) {
+            this.modifyNodeName = modifyNodeName;
         }
     }
 

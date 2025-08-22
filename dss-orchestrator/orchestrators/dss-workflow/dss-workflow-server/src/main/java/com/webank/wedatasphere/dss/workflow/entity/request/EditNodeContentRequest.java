@@ -15,6 +15,7 @@ public class EditNodeContentRequest {
 
     private Map<String,Object> nodeMetadata;
 
+    private String modifyNodeName;
     private String username;
 
 
@@ -72,5 +73,13 @@ public class EditNodeContentRequest {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getModifyNodeName() {
+        return modifyNodeName;
+    }
+
+    public void setModifyNodeName(String modifyNodeName) {
+        this.modifyNodeName = modifyNodeName;
     }
 }
