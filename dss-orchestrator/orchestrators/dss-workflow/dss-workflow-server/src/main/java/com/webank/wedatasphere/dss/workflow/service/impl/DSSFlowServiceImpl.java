@@ -2982,7 +2982,27 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         try {
 
-            updateNodeContent(flow,nodeName,nodeContent,nodeMetadata,dssProject.getName(),username,modifyNodeName);
+            DSSNodeDefault node = updateNodeContent(flow,nodeName,nodeContent,nodeMetadata,dssProject.getName(),username,modifyNodeName);
+
+            if("workflow.subflow".equalsIgnoreCase(node.getJobType()) &&
+                    StringUtils.isNotEmpty(modifyNodeName)){
+
+                Object subFlowId = node.getJobContent().get("embeddedFlowId");
+                logger.info("node is {}, type is {}, embeddedFlowId is {}",node.getTitle(),node.getJobType(), subFlowId);
+                if(subFlowId == null){
+                    logger.info("json is {}", flow.getFlowJson());
+                    DSSExceptionUtils.dealErrorException(91003, "get subflow node flowId is empty", DSSErrorException.class);
+                }
+
+                Long flowId = (long) subFlowId;
+
+                DSSFlow subFlow = new DSSFlow();
+                subFlow.setId(flowId);
+                subFlow.setName(modifyNodeName);
+                subFlow.setUses(username);
+
+                updateFlowBaseInfo(subFlow);
+            }
 
             saveFlow(flow.getId(),flow.getFlowJson(),flow.getDescription(),flow.getCreator(),
                     dssProject.getWorkspaceName(),dssProject.getName(),null);
@@ -3053,7 +3073,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
             Map<Long,DSSFlow> flowMap = new HashMap<>();
 
-            Map<Long,List<String>> flowNodeMap = new HashMap<>();
+            Map<Long,List<DSSNodeDefault>> flowNodeMap = new HashMap<>();
             // 查找出节点所属的工作流 并分组
             for(BatchEditNodeContentRequest.NodeContent nodeContent: nodeContentList){
 
@@ -3074,34 +3094,63 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                     flow = flowMap.get(flow.getId());
                 }
 
-                updateNodeContent(flow,nodeContent.getNodeName(),nodeContent.getNodeContent(),nodeContent.getNodeMetadata(),
+                DSSNodeDefault node = updateNodeContent(flow,nodeContent.getNodeName(),nodeContent.getNodeContent(),nodeContent.getNodeMetadata(),
                         dssProject.getName(),username,nodeContent.getModifyNodeName());
+                node.setModifyNodeName(nodeContent.getModifyNodeName());
+
 
                 flowMap.put(flow.getId(),flow);
 
                 if(!flowNodeMap.containsKey(flow.getId())){
                     flowNodeMap.put(flow.getId(),new ArrayList<>());
                 }
-                flowNodeMap.get(flow.getId()).add(nodeContent.getNodeName());
+                flowNodeMap.get(flow.getId()).add(node);
 
             }
 
 
             // 保存工作流
             for(Long flowId: flowMap.keySet()){
-
+                List<DSSNodeDefault> dssNodeDefaultList =  flowNodeMap.get(flowId);
+                List<String> nodeNameList = dssNodeDefaultList.stream().map(DSSNodeDefault::getName).collect(Collectors.toList());
                 try {
                     DSSFlow dssFlow = flowMap.get(flowId);
                     logger.info("orchestrator is [{},{}],flow is [{},{}],update dssFlow json is {}",
                             dssOrchestratorInfo.getName(),dssOrchestratorInfo.getId(),
                             flowId,dssFlow.getName(),
                             dssFlow.getFlowJson());
+
+
+
+                    for(DSSNodeDefault node: dssNodeDefaultList){
+
+                        if("workflow.subflow".equalsIgnoreCase(node.getJobType()) &&
+                                StringUtils.isNotEmpty(node.getModifyNodeName())){
+
+                            Object embeddedFlowId = node.getJobContent().get("embeddedFlowId");
+                            logger.info("node is {}, type is {}, embeddedFlowId is {}",node.getTitle(),node.getJobType(), embeddedFlowId);
+                            if(embeddedFlowId == null){
+                                logger.info("json is {}",  dssFlow.getFlowJson());
+                                DSSExceptionUtils.dealErrorException(91003, "get subflow node flowId is empty", DSSErrorException.class);
+                            }
+
+                            Long subFlowId = (long) embeddedFlowId;
+
+                            DSSFlow subFlow = new DSSFlow();
+                            subFlow.setId(subFlowId);
+                            subFlow.setName(node.getModifyNodeName());
+                            subFlow.setUses(username);
+                            updateFlowBaseInfo(subFlow);
+                        }
+
+                    }
+
                     saveFlow(flowId,dssFlow.getFlowJson(),username,dssFlow.getDescription(),
                             dssProject.getWorkspaceName(),dssProject.getName(),null);
 
-                    batchEditNodeContentResponse.setSuccessNodeName(flowNodeMap.get(flowId));
+                    batchEditNodeContentResponse.setSuccessNodeName(nodeNameList);
                 }catch (Exception e){
-                    batchEditNodeContentResponse.setFailNodeName(flowNodeMap.get(flowId));
+                    batchEditNodeContentResponse.setFailNodeName(nodeNameList);
                     batchEditNodeContentResponse.setErrorMsg(e.getMessage());
                     logger.error("保存工作流失败", e);
                     break;
@@ -3205,7 +3254,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
 
-    public void updateNodeContent(DSSFlow dssFlow,String nodeName,String nodeContent,Map<String,Object> nodeMetaData,
+    public DSSNodeDefault updateNodeContent(DSSFlow dssFlow,String nodeName,String nodeContent,Map<String,Object> nodeMetaData,
                                   String projectName,String username,String modifyNodeName) throws DSSErrorException,IOException {
 
         DSSNodeDefault dssNodeDefault = getNode(dssFlow,nodeName);
@@ -3227,6 +3276,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
 
         logger.info("flow id is {}, {} workflow json is {}",dssFlow.getId(),dssFlow.getName(),dssFlow.getFlowJson());
+
+        return dssNodeDefault;
 
     }
 

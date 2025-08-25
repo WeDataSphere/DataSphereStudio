@@ -50,6 +50,10 @@ public class DSSNodeDefault implements DSSNode {
      */
     private Map<String, Object> jobContent;
 
+    /***
+     *  更改后的节点名称
+     */
+    private String modifyNodeName;
 
     @Override
     public Layout getLayout() {
@@ -272,5 +276,13 @@ public class DSSNodeDefault implements DSSNode {
 
     public void setDependencys(List<String> dependencys) {
         this.dependencys = dependencys;
+    }
+
+    public String getModifyNodeName() {
+        return modifyNodeName;
+    }
+
+    public void setModifyNodeName(String modifyNodeName) {
+        this.modifyNodeName = modifyNodeName;
     }
 }
