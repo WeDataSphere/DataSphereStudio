@@ -62,6 +62,7 @@ public class BatchEditNodeContentRequest {
 
     private List<NodeContent> nodeContentList;
 
+    private boolean unlock;
     public Long getWorkspaceId() {
         return workspaceId;
     }
@@ -103,6 +104,14 @@ public class BatchEditNodeContentRequest {
     }
 
 
+    public boolean getUnlock() {
+        return unlock;
+    }
+
+    public void setUnlock(boolean unlock) {
+        this.unlock = unlock;
+    }
+
     @Override
     public String toString() {
         return "BatchEditNodeContentRequest{" +
@@ -110,6 +119,8 @@ public class BatchEditNodeContentRequest {
                 ", projectId=" + projectId +
                 ", orchestratorId=" + orchestratorId +
                 ", username='" + username + '\'' +
+                ", nodeContentList=" + nodeContentList +
+                ", unlock=" + unlock +
                 '}';
     }
 }

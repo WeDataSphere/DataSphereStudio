@@ -2940,6 +2940,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         String nodeContent = editNodeContentRequest.getNodeContent();
         Map<String,Object> nodeMetadata = editNodeContentRequest.getNodeMetadata();
         String modifyNodeName = editNodeContentRequest.getModifyNodeName();
+        boolean isUnlock = editNodeContentRequest.getUnlock();
 
         if(StringUtils.isEmpty(nodeContent) && MapUtils.isEmpty(nodeMetadata)){
             DSSExceptionUtils.dealErrorException(90003, String.format("节点内容和节点配置信息都为空,%s节点不做更新",nodeName), DSSErrorException.class);
@@ -2974,11 +2975,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             DSSExceptionUtils.dealErrorException(90003, "工作流下未找到相关节点", DSSErrorException.class);
         }
 
-        // 校验工作流是否锁定
-        DSSFlowEditLock flowEditLock = lockMapper.getFlowEditLockByID(dssOrchestratorVersion.getAppId());
-        if (flowEditLock != null && !flowEditLock.getOwner().equals(ticketId)) {
-            throw new DSSErrorException(80001, "当前工作流" + rootFlow.getName() +"被用户" + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
-        }
+        // 强制解锁工作流
+        forceUnlockWorkflow(rootFlow, ticketId,username,isUnlock,workspace);
 
         lockFlow(rootFlow, username, ticketId);
 
@@ -3009,6 +3007,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         Long workspaceId = batchEditNodeContentRequest.getWorkspaceId();
         Long orchestratorId = batchEditNodeContentRequest.getOrchestratorId();
         List<BatchEditNodeContentRequest.NodeContent> nodeContentList = batchEditNodeContentRequest.getNodeContentList();
+        boolean isUnlock = batchEditNodeContentRequest.getUnlock();
 
         // 鉴权
         DSSProject  dssProject = validateOperation(projectId,username);
@@ -3039,8 +3038,9 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         // 获取主工作流下的节点和所有子工作流
         DSSFlow rootFlow = genDSSFlowTree(dssOrchestratorVersion.getAppId());
 
-        // 校验工作流是否锁定
-        validateFlowLock(rootFlow, ticketId);
+        // 强制解锁工作流
+        forceUnlockWorkflow(rootFlow, ticketId,username,isUnlock,workspace);
+
 
         BatchEditNodeContentResponse batchEditNodeContentResponse = new BatchEditNodeContentResponse();
         batchEditNodeContentResponse.setOrchestratorId(dssOrchestratorInfo.getId());
@@ -3583,6 +3583,25 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
 
         return dssNodeDefaultList;
+
+    }
+
+
+    public void forceUnlockWorkflow(DSSFlow rootFlow,String ticketId, String username,boolean isUnlock,Workspace workspace){
+
+        // 校验工作流是否锁定
+        DSSFlowEditLock flowEditLock = lockMapper.getFlowEditLockByID(rootFlow.getId());
+        if (flowEditLock != null && !flowEditLock.getOwner().equals(ticketId)) {
+            // 工作流如果锁定编辑, isUnlock = true 则强制解锁
+            if (isUnlock){
+                logger.info("force unlock workflow is [{},{}], username is {}",rootFlow.getName(),
+                        rootFlow.getId(),username);
+                workFlowManager.unlockWorkflow(username,rootFlow.getId(),true,workspace);
+            }else{
+                throw new DSSErrorException(80001, "当前工作流" + rootFlow.getName() +"被用户" + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
+            }
+
+        }
 
     }
 

@@ -18,6 +18,7 @@ public class EditNodeContentRequest {
     private String modifyNodeName;
     private String username;
 
+    private boolean unlock;
 
     public Long getWorkspaceId() {
         return workspaceId;
@@ -81,5 +82,14 @@ public class EditNodeContentRequest {
 
     public void setModifyNodeName(String modifyNodeName) {
         this.modifyNodeName = modifyNodeName;
+    }
+
+
+    public boolean getUnlock() {
+        return unlock;
+    }
+
+    public void setUnlock(boolean unlock) {
+        this.unlock = unlock;
     }
 }

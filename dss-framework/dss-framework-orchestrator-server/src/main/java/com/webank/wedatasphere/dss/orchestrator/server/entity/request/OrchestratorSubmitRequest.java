@@ -12,6 +12,7 @@ public class OrchestratorSubmitRequest {
     // 是否获取发布前后文件内容 true-发布 false-提交
     private Boolean publish;
 
+    private  boolean unlock;
     public OrchestratorSubmitRequest(Long flowId, LabelRouteVO labels, String projectName, String comment, Long orchestratorId, String filePath, Boolean publish) {
         this.flowId = flowId;
         this.labels = labels;
@@ -80,4 +81,13 @@ public class OrchestratorSubmitRequest {
     public void setPublish(Boolean publish) {
         this.publish = publish;
     }
+
+    public boolean getUnlock() {
+        return unlock;
+    }
+
+    public void setUnlock(boolean unlock) {
+        this.unlock = unlock;
+    }
+
 }
