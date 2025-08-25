@@ -2991,10 +2991,10 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 logger.info("node is {}, type is {}, embeddedFlowId is {}",node.getTitle(),node.getJobType(), subFlowId);
                 if(subFlowId == null){
                     logger.info("json is {}", flow.getFlowJson());
-                    DSSExceptionUtils.dealErrorException(91003, "get subflow node flowId is empty", DSSErrorException.class);
+                    DSSExceptionUtils.dealErrorException(91003, "get subflow " + node.getTitle() + "node flowId is empty", DSSErrorException.class);
                 }
 
-                Long flowId = (long) subFlowId;
+                Long flowId = Long.valueOf(objectNumToString(subFlowId));
 
                 DSSFlow subFlow = new DSSFlow();
                 subFlow.setId(flowId);
@@ -3131,10 +3131,10 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                             logger.info("node is {}, type is {}, embeddedFlowId is {}",node.getTitle(),node.getJobType(), embeddedFlowId);
                             if(embeddedFlowId == null){
                                 logger.info("json is {}",  dssFlow.getFlowJson());
-                                DSSExceptionUtils.dealErrorException(91003, "get subflow node flowId is empty", DSSErrorException.class);
+                                DSSExceptionUtils.dealErrorException(91003, "get subflow "+ node.getTitle()+" node flowId is empty", DSSErrorException.class);
                             }
 
-                            Long subFlowId = (long) embeddedFlowId;
+                            Long subFlowId = Long.valueOf(objectNumToString(embeddedFlowId)) ;
 
                             DSSFlow subFlow = new DSSFlow();
                             subFlow.setId(subFlowId);
@@ -3653,6 +3653,20 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 throw new DSSErrorException(80001, "当前工作流" + rootFlow.getName() +"被用户" + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
             }
 
+        }
+
+    }
+
+
+    public static String objectNumToString(Object value) {
+
+        if (value instanceof Number) {
+            Number numValue = (Number) value;
+            return numValue.longValue() == numValue.doubleValue() ?
+                    String.valueOf(numValue.longValue()) :
+                    numValue.toString();
+        } else {
+            return value.toString();
         }
 
     }
