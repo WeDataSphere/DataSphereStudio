@@ -2942,8 +2942,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         String modifyNodeName = editNodeContentRequest.getModifyNodeName();
         boolean isUnlock = editNodeContentRequest.getUnlock();
 
-        if(StringUtils.isEmpty(nodeContent) && MapUtils.isEmpty(nodeMetadata)){
-            DSSExceptionUtils.dealErrorException(90003, String.format("节点内容和节点配置信息都为空,%s节点不做更新",nodeName), DSSErrorException.class);
+        if(StringUtils.isEmpty(nodeContent) && MapUtils.isEmpty(nodeMetadata) && StringUtils.isEmpty(modifyNodeName)){
+            DSSExceptionUtils.dealErrorException(90003, String.format("节点内容和节点配置信息、需修改节点名称都为空,%s节点不做更新",nodeName), DSSErrorException.class);
         }
 
         // 鉴权
@@ -3057,9 +3057,10 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             // 查找出节点所属的工作流 并分组
             for(BatchEditNodeContentRequest.NodeContent nodeContent: nodeContentList){
 
-                if(StringUtils.isEmpty(nodeContent.getNodeContent()) && MapUtils.isEmpty(nodeContent.getNodeMetadata())){
+                if(StringUtils.isEmpty(nodeContent.getNodeContent()) && MapUtils.isEmpty(nodeContent.getNodeMetadata())
+                  && StringUtils.isEmpty(nodeContent.getModifyNodeName())){
                     DSSExceptionUtils.dealErrorException(90003,
-                            String.format("节点内容和节点配置信息都为空,%s节点不做更新",nodeContent.getNodeName()), DSSErrorException.class);
+                            String.format("节点内容和节点配置信息、需修改节点名称 都为空,%s节点不做更新",nodeContent.getNodeName()), DSSErrorException.class);
                 }
 
                 DSSFlow flow = getFLowByNode(rootFlow,nodeContent.getNodeName());
