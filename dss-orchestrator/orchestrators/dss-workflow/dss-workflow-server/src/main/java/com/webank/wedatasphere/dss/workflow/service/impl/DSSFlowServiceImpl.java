@@ -107,10 +107,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.MessageFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.webank.wedatasphere.dss.workflow.constant.DSSWorkFlowConstant.*;
@@ -161,6 +164,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     private static final String nodeUITitleKey = "title";
 
     private static final String nodeUIViewIdKey = "viewId";
+
+    private static final Pattern pattern = Pattern.compile("^[a-zA-Z][a-zA-Z0-9_-]*$");
 
     protected Sender getOrchestratorSender() {
         return DSSSenderServiceFactory.getOrCreateServiceInstance().getOrcSender();
@@ -2984,6 +2989,10 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
             DSSNodeDefault node = updateNodeContent(flow,nodeName,nodeContent,nodeMetadata,dssProject.getName(),username,modifyNodeName);
             node.setModifyNodeName(modifyNodeName);
+
+            // 校验修改的节点名称是否符合要求
+            validModifyNodeName(node);
+
             updateSubFlowName(node,username,flow);
 
             saveFlow(flow.getId(),flow.getFlowJson(),flow.getDescription(),flow.getCreator(),
@@ -3105,6 +3114,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
 
                     for(DSSNodeDefault node: dssNodeDefaultList){
+
+                        validModifyNodeName(node);
 
                         updateSubFlowName(node,username,dssFlow);
                     }
@@ -3658,6 +3669,30 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         }
 
     }
+
+
+    public void validModifyNodeName(DSSNodeDefault node){
+
+        if(StringUtils.isNotEmpty(node.getModifyNodeName())){
+
+            if(node.getModifyNodeName().length() >= 128){
+                DSSExceptionUtils.dealErrorException(91004,
+                        String.format(" %s modifyNodeName length cannot exceed 128 (名称长度超过了128)", node.getModifyNodeName()), DSSErrorException.class);
+            }
+
+            // 校验是否字母、数字、下划线
+            Matcher matcher = pattern.matcher(node.getModifyNodeName());
+
+            if(!matcher.find()){
+                DSSExceptionUtils.dealErrorException(91004, String.format("%s modifyNodeName must be Started with alphabetic characters, " +
+                                "only alphanumeric and underscore are allowed! (必须以字母开头，且只支持字母、数字、下划线！) ", node.getModifyNodeName()),
+                        DSSErrorException.class);
+            }
+
+        }
+
+    }
+
 
 }
 
