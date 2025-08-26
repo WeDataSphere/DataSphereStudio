@@ -3089,9 +3089,6 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                         dssProject.getName(),username,nodeContent.getModifyNodeName());
                 node.setModifyNodeName(nodeContent.getModifyNodeName());
 
-                logger.info("node name is {}, node title is {}, nodeContent name is {},flowId is {}",
-                        node.getName(),node.getTitle(),nodeContent.getNodeName(), flow.getId());
-
                 flowMap.put(flow.getId(),flow);
 
                 if(!flowNodeMap.containsKey(flow.getId())){
@@ -3106,15 +3103,13 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             for(Long flowId: flowMap.keySet()){
                 List<DSSNodeDefault> dssNodeDefaultList =  flowNodeMap.get(flowId);
                 List<String> nodeNameList = dssNodeDefaultList.stream().map(DSSNodeDefault::getTitle).collect(Collectors.toList());
-                logger.info("flowID is {}, nodeName list is [{}]",flowId,String.join(",",nodeNameList));
+
                 try {
                     DSSFlow dssFlow = flowMap.get(flowId);
                     logger.info("orchestrator is [{},{}],flow is [{},{}],update dssFlow json is {}",
                             dssOrchestratorInfo.getName(),dssOrchestratorInfo.getId(),
                             flowId,dssFlow.getName(),
                             dssFlow.getFlowJson());
-
-
 
                     for(DSSNodeDefault node: dssNodeDefaultList){
 
@@ -3126,7 +3121,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                     saveFlow(flowId,dssFlow.getFlowJson(),username,dssFlow.getDescription(),
                             dssProject.getWorkspaceName(),dssProject.getName(),null);
 
-                    batchEditNodeContentResponse.setSuccessNodeName(nodeNameList);
+                    batchEditNodeContentResponse.getSuccessNodeName().addAll(nodeNameList);
                 }catch (Exception e){
                     batchEditNodeContentResponse.setFailNodeName(nodeNameList);
                     batchEditNodeContentResponse.setErrorMsg(e.getMessage());

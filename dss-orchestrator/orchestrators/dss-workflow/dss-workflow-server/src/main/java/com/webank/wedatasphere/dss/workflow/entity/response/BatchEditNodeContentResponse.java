@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.dss.workflow.entity.response;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class BatchEditNodeContentResponse {
@@ -8,7 +9,7 @@ public class BatchEditNodeContentResponse {
     private String orchestratorName;
 
     private List<String> failNodeName;
-    private List<String> successNodeName;
+    private List<String> successNodeName = new ArrayList<>();
 
     private String errorMsg;
     public Long getOrchestratorId() {
