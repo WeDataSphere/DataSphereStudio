@@ -2984,25 +2984,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
             DSSNodeDefault node = updateNodeContent(flow,nodeName,nodeContent,nodeMetadata,dssProject.getName(),username,modifyNodeName);
 
-            if("workflow.subflow".equalsIgnoreCase(node.getJobType()) &&
-                    StringUtils.isNotEmpty(modifyNodeName)){
-
-                Object subFlowId = node.getJobContent().get("embeddedFlowId");
-                logger.info("node is {}, type is {}, embeddedFlowId is {}",node.getTitle(),node.getJobType(), subFlowId);
-                if(subFlowId == null){
-                    logger.info("json is {}", flow.getFlowJson());
-                    DSSExceptionUtils.dealErrorException(91003, "get subflow " + node.getTitle() + "node flowId is empty", DSSErrorException.class);
-                }
-
-                Long flowId = Long.valueOf(objectNumToString(subFlowId));
-
-                DSSFlow subFlow = new DSSFlow();
-                subFlow.setId(flowId);
-                subFlow.setName(modifyNodeName);
-                subFlow.setUses(username);
-
-                updateFlowBaseInfo(subFlow);
-            }
+            updateSubFlowName(node,username,flow);
 
             saveFlow(flow.getId(),flow.getFlowJson(),flow.getDescription(),flow.getCreator(),
                     dssProject.getWorkspaceName(),dssProject.getName(),null);
@@ -3124,25 +3106,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
                     for(DSSNodeDefault node: dssNodeDefaultList){
 
-                        if("workflow.subflow".equalsIgnoreCase(node.getJobType()) &&
-                                StringUtils.isNotEmpty(node.getModifyNodeName())){
-
-                            Object embeddedFlowId = node.getJobContent().get("embeddedFlowId");
-                            logger.info("node is {}, type is {}, embeddedFlowId is {}",node.getTitle(),node.getJobType(), embeddedFlowId);
-                            if(embeddedFlowId == null){
-                                logger.info("json is {}",  dssFlow.getFlowJson());
-                                DSSExceptionUtils.dealErrorException(91003, "get subflow "+ node.getTitle()+" node flowId is empty", DSSErrorException.class);
-                            }
-
-                            Long subFlowId = Long.valueOf(objectNumToString(embeddedFlowId)) ;
-
-                            DSSFlow subFlow = new DSSFlow();
-                            subFlow.setId(subFlowId);
-                            subFlow.setName(node.getModifyNodeName());
-                            subFlow.setUses(username);
-                            updateFlowBaseInfo(subFlow);
-                        }
-
+                        updateSubFlowName(node,username,dssFlow);
                     }
 
                     saveFlow(flowId,dssFlow.getFlowJson(),username,dssFlow.getDescription(),
@@ -3667,6 +3631,30 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                     numValue.toString();
         } else {
             return value.toString();
+        }
+
+    }
+
+    public void updateSubFlowName(DSSNodeDefault node,String username, DSSFlow dssFlow){
+
+
+        if("workflow.subflow".equalsIgnoreCase(node.getJobType()) &&
+                StringUtils.isNotEmpty(node.getModifyNodeName())){
+
+            Object embeddedFlowId = node.getJobContent().get("embeddedFlowId");
+            logger.info("node is {}, type is {}, embeddedFlowId is {}",node.getTitle(),node.getJobType(), embeddedFlowId);
+            if(embeddedFlowId == null){
+                logger.info("json is {}",  dssFlow.getFlowJson());
+                DSSExceptionUtils.dealErrorException(91003, "get subflow "+ node.getTitle()+" node flowId is empty", DSSErrorException.class);
+            }
+
+            Long subFlowId = Long.valueOf(objectNumToString(embeddedFlowId)) ;
+
+            DSSFlow subFlow = new DSSFlow();
+            subFlow.setId(subFlowId);
+            subFlow.setName(node.getModifyNodeName());
+            subFlow.setUses(username);
+            updateFlowBaseInfo(subFlow);
         }
 
     }
