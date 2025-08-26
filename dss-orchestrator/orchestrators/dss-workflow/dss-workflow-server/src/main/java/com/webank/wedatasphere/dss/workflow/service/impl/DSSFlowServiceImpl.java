@@ -2983,7 +2983,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         try {
 
             DSSNodeDefault node = updateNodeContent(flow,nodeName,nodeContent,nodeMetadata,dssProject.getName(),username,modifyNodeName);
-
+            node.setModifyNodeName(modifyNodeName);
             updateSubFlowName(node,username,flow);
 
             saveFlow(flow.getId(),flow.getFlowJson(),flow.getDescription(),flow.getCreator(),
