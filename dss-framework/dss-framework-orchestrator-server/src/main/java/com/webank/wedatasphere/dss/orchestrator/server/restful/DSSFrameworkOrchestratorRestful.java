@@ -55,6 +55,7 @@ import com.webank.wedatasphere.dss.orchestrator.server.service.OrchestratorServi
 import com.webank.wedatasphere.dss.sender.service.DSSSenderServiceFactory;
 import com.webank.wedatasphere.dss.standard.app.sso.Workspace;
 import com.webank.wedatasphere.dss.standard.sso.utils.SSOHelper;
+import com.webank.wedatasphere.dss.workflow.WorkFlowManager;
 import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlow;
 import com.webank.wedatasphere.dss.workflow.common.protocol.RequestLockWorkflow;
 import com.webank.wedatasphere.dss.workflow.common.protocol.ResponseLockWorkflow;
@@ -116,6 +117,9 @@ public class DSSFrameworkOrchestratorRestful {
 
     private final  String encryptCopyWorkflowSuffix = "copy_cib";
 
+
+    @Autowired
+    private WorkFlowManager workFlowManager;
 
     /**
      * 创建编排模式
@@ -230,7 +234,7 @@ public class DSSFrameworkOrchestratorRestful {
             return Message.error("当前工作流正在被复制，不允许再次复制");
         }
 
-        String copyJobId = orchestratorFrameworkService.copyOrchestrator(username, orchestratorCopyRequest, workspace,null,null);
+        String copyJobId = orchestratorFrameworkService.copyOrchestrator(username, orchestratorCopyRequest, workspace,null,null,false);
         AuditLogUtils.printLog(username, workspace.getWorkspaceId(), workspace.getWorkspaceName(), TargetTypeEnum.ORCHESTRATOR,
                 orchestratorCopyRequest.getSourceOrchestratorId(), orchestratorCopyRequest.getSourceOrchestratorName(), OperateTypeEnum.COPY, orchestratorCopyRequest);
 
@@ -514,7 +518,16 @@ public class DSSFrameworkOrchestratorRestful {
         DSSFlowEditLock flowEditLock = lockMapper.getFlowEditLockByID(flowId);
         submitFlowRequest.setFlowId(flowId);
         if (flowEditLock != null && !flowEditLock.getOwner().equals(ticketId)) {
-            throw new DSSErrorException(80001,"当前工作流被用户" + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
+
+            if(submitFlowRequest.getUnlock()){
+                LOGGER.info("force unlock workflow id is [{}], username is {}",
+                        latestOrchestratorVersion.getAppId(),userName);
+                workFlowManager.unlockWorkflow(userName,flowId,true,workspace);
+            }else{
+                throw new DSSErrorException(80001,"当前工作流被用户" + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
+            }
+
+
         }
         lockFlow(flowId, userName, ticketId);
 

@@ -15,6 +15,8 @@ public class BatchEditNodeContentRequest {
 
         private Map<String,Object> nodeMetadata;
 
+        private String modifyNodeName;
+
 
         public String getNodeName() {
             return nodeName;
@@ -39,6 +41,14 @@ public class BatchEditNodeContentRequest {
         public void setNodeMetadata(Map<String, Object> nodeMetadata) {
             this.nodeMetadata = nodeMetadata;
         }
+
+        public String getModifyNodeName() {
+            return modifyNodeName;
+        }
+
+        public void setModifyNodeName(String modifyNodeName) {
+            this.modifyNodeName = modifyNodeName;
+        }
     }
 
 
@@ -52,6 +62,7 @@ public class BatchEditNodeContentRequest {
 
     private List<NodeContent> nodeContentList;
 
+    private boolean unlock;
     public Long getWorkspaceId() {
         return workspaceId;
     }
@@ -93,6 +104,14 @@ public class BatchEditNodeContentRequest {
     }
 
 
+    public boolean getUnlock() {
+        return unlock;
+    }
+
+    public void setUnlock(boolean unlock) {
+        this.unlock = unlock;
+    }
+
     @Override
     public String toString() {
         return "BatchEditNodeContentRequest{" +
@@ -100,6 +119,8 @@ public class BatchEditNodeContentRequest {
                 ", projectId=" + projectId +
                 ", orchestratorId=" + orchestratorId +
                 ", username='" + username + '\'' +
+                ", nodeContentList=" + nodeContentList +
+                ", unlock=" + unlock +
                 '}';
     }
 }
