@@ -49,7 +49,16 @@ object EmailCSHelper extends Logging{
       throw new EmailSendFailedException(80003 ,"empty result set is not allowed")
     }
     info(s"From cs to getJob ids $nodeIDs.")
-    val jobIds = nodeIDs.map(ContextServiceUtils.getNodeNameByNodeID(contextIDStr, _)).map{ nodeName =>
+    info(s"The contextID value is $contextIDStr")
+    val jobIds = nodeIDs.map { nodeId =>
+      val nodeName = ContextServiceUtils.getNodeNameByNodeID(contextIDStr, nodeId)
+      if (nodeName == null) {
+        info(s"The node name is null")
+      } else {
+        info(s"The node name is $nodeName")
+      }
+      nodeName
+    }.map{ nodeName =>
       val contextKey = new CommonContextKey
       contextKey.setContextScope(ContextScope.PUBLIC)
       contextKey.setContextType(ContextType.DATA)
