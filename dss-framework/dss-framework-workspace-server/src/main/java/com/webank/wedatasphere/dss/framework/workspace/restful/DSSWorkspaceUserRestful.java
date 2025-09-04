@@ -174,7 +174,7 @@ public class DSSWorkspaceUserRestful {
                 return Message.error("无权限进行该操作");
             }
             dssUserService.insertIfNotExist(userName.get(i), workspace);
-            dssWorkspaceUserService.addWorkspaceUser(roles, workspace.getWorkspaceId(), userName.get(i), creator, userId.get(i));
+            dssWorkspaceUserService.addWorkspaceUser(roles, workspace.getWorkspaceId(), userName.get(i), creator, CollectionUtils.isEmpty(userId) ? null : userId.get(i));
         }
         AuditLogUtils.printLog(userName.toString(), workspaceId, workspace.getWorkspaceName(), TargetTypeEnum.WORKSPACE, workspaceId,
                 workspace.getWorkspaceName(), OperateTypeEnum.ADD_USERS, createWorkspaceUserRequest);
