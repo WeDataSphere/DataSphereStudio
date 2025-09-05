@@ -1149,7 +1149,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             List<Resource> resourceList = nodeParser.getNodeResource(nodeJson);
             String oldId = nodeJsonMap.get("id").toString();
             if (CollectionUtils.isNotEmpty(resourceList)) {
-                String oldKey = (String) nodeJsonMap.get("key");
+                String oldKey =  nodeJsonMap.get("key").toString();
                 final String newKey = UUID.randomUUID().toString();
                 //需要替换resource的fileName
                 resourceList.forEach(resource -> {
