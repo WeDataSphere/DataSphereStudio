@@ -3289,15 +3289,24 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         Map<String,Object> params;
 
+        // 深度拷贝map
         if(!MapUtils.isEmpty(nodeMetaData)){
-            params = nodeMetaData;
+            params = new HashMap<>(nodeMetaData);
         }else{
-            params = dssNodeDefault.getParams();
+            params =  new HashMap<>(dssNodeDefault.getParams());
         }
 
-        if(params == null){
-            params = new HashMap<>();
+        // 清空startup信息后,在保存bml内容。防止脚本头部 带有参数
+        if(params.containsKey("configuration")){
+            Map<String,Object> configuration = (Map) params.get("configuration");
+            if(MapUtils.isNotEmpty(configuration)){
+                Map<String,Object> copyConfiguration = new HashMap<>(configuration);
+                copyConfiguration.put("startup", new HashMap<>());
+                params.put("configuration",copyConfiguration);
+            }
+
         }
+
 
         // 保存bml的内容和metadata 根据linkis saveScriptToBML接口
         ScriptFsWriter writer =
