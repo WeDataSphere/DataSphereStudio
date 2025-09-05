@@ -1147,7 +1147,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             Map<String, Object> nodeJsonMap = BDPJettyServerHelper.jacksonJson().readValue(nodeJson, Map.class);
             nodeJsonMap.replace(TITLE_KEY, nodeJsonMap.get(TITLE_KEY) + "_" + nodeSuffix);
             List<Resource> resourceList = nodeParser.getNodeResource(nodeJson);
-            String oldId = (String) nodeJsonMap.get("id");
+            String oldId = nodeJsonMap.get("id").toString();
             if (CollectionUtils.isNotEmpty(resourceList)) {
                 String oldKey = (String) nodeJsonMap.get("key");
                 final String newKey = UUID.randomUUID().toString();
