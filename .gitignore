@@ -116,6 +116,8 @@ plugins/linkis/dss-gateway-support/target
 logs
 logs/*
 
+CLAUDE.md
+
 *.iml
 /plugins/dolphinscheduler/dss-dolphinscheduler-client/target
 /plugins/dolphinscheduler/dolphinscheduler-prod-metrics/target
