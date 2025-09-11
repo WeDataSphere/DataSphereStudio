@@ -72,4 +72,8 @@ public interface NodeContentMapper {
                 "WHERE t1.node_type = 'linkis.jdbc.starrocks' AND t3.workspace_id = #{workspaceId} AND t1.node_ui_key in ('executeCluster','ReuseEngine', 'auto.disabled') "
     )
     List<StarRocksNodeInfo> queryStarRocksNodeInfo(@Param("workspaceId") Long workspaceId);
+
+
+    void deleteNodeContentById(@Param("list") List<Long> list);
+
 }

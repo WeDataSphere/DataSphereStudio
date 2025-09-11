@@ -398,6 +398,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 // 更新版本更新时间
                 RpcAskUtils.processAskException(getOrchestratorSender().ask(new RequestOrchestratorVersionUpdateTime(orchestratorId)),
                         Boolean.class, RequestOrchestratorVersionUpdateTime.class);
+                // 保存工作流时, 清理工作流元数据表中的脏数据
+                clearFlowMetaData(orchestratorId,rootFlowId);
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -732,10 +734,56 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             if (CollectionUtils.isNotEmpty(nodeContentUIDOS)) {
                 nodeContentUIMapper.batchInsertNodeContentUI(new ArrayList<>(nodeContentUIDOS));
             }
+
         } catch (Exception e) {
             logger.error("saveFlowMeta error, the reason is: ", e);
         }
     }
+
+
+
+    private void clearFlowMetaData(Long orchestratorId, Long rootFlowId){
+
+        // 保存时 清理node_content表的脏数据
+        // 获取编排目前的所有的flowID
+        List<Long> flowIdList  = getFlowIdListByOrchestratorId(rootFlowId);
+        // 获取编排不存在的工作流信息
+        List<Long> contentIdList = nodeContentMapper.getNodeContentListByOrchestratorId(orchestratorId).stream()
+                .filter(nodeContentDO -> !flowIdList.contains(nodeContentDO.getFlowId()))
+                .map(NodeContentDO::getId)
+                .collect(Collectors.toList());
+        // 删除node_content表多余的节点信息
+        if(CollectionUtils.isNotEmpty(contentIdList)){
+            nodeContentUIMapper.deleteNodeContentUIByContentList(contentIdList);
+            nodeContentMapper.deleteNodeContentById(contentIdList);
+        }
+
+    }
+
+    private List<Long> getFlowIdListByOrchestratorId(Long rootFlowId){
+
+        List<Long> flowIdList = new ArrayList<>();
+
+        DSSFlow dssFlow = genDSSFlowTree(rootFlowId);
+
+        getFlowIdList(dssFlow, flowIdList);
+
+        return flowIdList;
+
+    }
+
+    private void getFlowIdList(DSSFlow dssFlow,List<Long> flowIdList){
+
+        flowIdList.add(dssFlow.getId());
+
+        if(dssFlow.getChildren() != null){
+
+            for(DSSFlow flow: dssFlow.getChildren()){
+                getFlowIdList(flow,flowIdList);
+            }
+        }
+    }
+
 
 
     private void deleteFlowMetaDataByFlowId(Long flowID) {

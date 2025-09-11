@@ -182,6 +182,12 @@
         from dss_workflow_node_content where id = #{contentId} and node_id = #{nodeId} limit 1
 
     </select>
-    
+
+    <delete id="deleteNodeContentById">
+        DELETE FROM dss_workflow_node_content WHERE id IN
+        <foreach collection="list" item="item" index="index" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </delete>
 
 </mapper>
