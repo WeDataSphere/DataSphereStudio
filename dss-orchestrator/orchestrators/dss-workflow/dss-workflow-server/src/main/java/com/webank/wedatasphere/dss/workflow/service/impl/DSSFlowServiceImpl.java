@@ -1013,16 +1013,21 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                                 String projectName, String version, String contextIdStr,
                                 String description, List<DSSLabel> dssLabels, String nodeSuffix,
                                 String newFlowName, Long newProjectId,List<String> enableNodeList,
-                                String flowProxyUser,boolean skipThirdAppconn) throws DSSErrorException, IOException {
+                                String flowProxyUser,boolean skipThirdAppconn, boolean copyOrchestrator) throws DSSErrorException, IOException {
         DSSFlow dssFlow = flowMapper.selectFlowByID(rootFlowId);
         Sender orcSender = DSSSenderServiceFactory.getOrCreateServiceInstance().getOrcSender(dssLabels);
         OrchestratorVo orchestratorVo = RpcAskUtils.processAskException(orcSender.ask(new RequestQuertByAppIdOrchestrator(dssFlow.getId())),
                 OrchestratorVo.class, RequestQueryByIdOrchestrator.class);
         Long orchestratorId = orchestratorVo.getDssOrchestratorInfo().getId();
-        deleteFlowMetaData(orchestratorId);
+
+        if(!copyOrchestrator){
+            // 不是复制工作流,就删除元数据信息
+            deleteFlowMetaData(orchestratorId);
+        }
+
         DSSFlow rootFlowWithSubFlows = copyFlowAndSetSubFlowInDB(dssFlow, userName, description, nodeSuffix, newFlowName, newProjectId);
         updateFlowJson(userName, projectName, rootFlowWithSubFlows, version, null,
-                contextIdStr, workspace, dssLabels, nodeSuffix, orchestratorId,enableNodeList,flowProxyUser, skipThirdAppconn);
+                contextIdStr, workspace, dssLabels, nodeSuffix, orchestratorId,enableNodeList,flowProxyUser, skipThirdAppconn,copyOrchestrator);
         DSSFlow copyFlow = flowMapper.selectFlowByID(rootFlowWithSubFlows.getId());
         copyFlow.setFlowIdParamConfTemplateIdTuples(rootFlowWithSubFlows.getFlowIdParamConfTemplateIdTuples());
         return copyFlow;
@@ -1137,7 +1142,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     private void updateFlowJson(String userName, String projectName, DSSFlow rootFlow,
                                 String version, Long parentFlowId, String contextIdStr,
                                 Workspace workspace, List<DSSLabel> dssLabels, String nodeSuffix,
-                                Long orchestratorId,List<String> enableNodeList,String flowProxyUser,boolean skipThirdAppconn) throws DSSErrorException, IOException {
+                                Long orchestratorId,List<String> enableNodeList,String flowProxyUser,
+                                boolean skipThirdAppconn, boolean copyOrchestrator) throws DSSErrorException, IOException {
         String flowJson = bmlService.readTextFromBML(userName, rootFlow.getResourceId(), rootFlow.getBmlVersion());
         //如果包含subflow,需要一同导入subflow内容，并更新parrentflow的json内容
         // TODO: 2020/7/31 优化update方法里面的saveContent
@@ -1160,14 +1166,20 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         //上传节点的资源或调用appconn的copyRef
         updateFlowJson = updateWorkFlowNodeJsonForMultiThread(userName, projectName, updateFlowJson, rootFlow,
                 version, workspace, dssLabels,skipThirdAppconn);
-        // 更新对应节点的FlowJson
-        saveFlowMetaData(rootFlow.getId(), updateFlowJson, orchestratorId);
+
+        // 不是复制工作流 就保存元数据信息
+        if(!copyOrchestrator){
+            // 更新对应节点的FlowJson
+            saveFlowMetaData(rootFlow.getId(), updateFlowJson, orchestratorId);
+        }
+
         List<? extends DSSFlow> subFlows = rootFlow.getChildren();
         List<String[]> templateIds = new ArrayList<>();
         if (subFlows != null) {
             for (DSSFlow subflow : subFlows) {
                 updateFlowJson(userName, projectName, subflow, version, rootFlow.getId(),
-                        contextIdStr, workspace, dssLabels, nodeSuffix, orchestratorId,enableNodeList,flowProxyUser,skipThirdAppconn);
+                        contextIdStr, workspace, dssLabels, nodeSuffix, orchestratorId,enableNodeList,flowProxyUser,
+                        skipThirdAppconn, copyOrchestrator);
                 templateIds.addAll(subflow.getFlowIdParamConfTemplateIdTuples());
             }
         }

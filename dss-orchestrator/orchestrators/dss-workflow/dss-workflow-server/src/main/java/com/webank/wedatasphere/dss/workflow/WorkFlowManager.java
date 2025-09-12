@@ -79,7 +79,8 @@ public interface WorkFlowManager {
                                      String newFlowName, Long newProjectId,
                                      List<String> enableNodeList,
                                      String flowProxyUser,
-                                     boolean skipThirdAppconn) throws DSSErrorException, IOException;
+                                     boolean skipThirdAppconn,
+                                     boolean isCopyOrchestrator) throws DSSErrorException, IOException;
 
 
     DSSFlow queryWorkflow(String userName, Long rootFlowId) throws DSSErrorException;

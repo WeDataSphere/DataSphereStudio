@@ -138,6 +138,7 @@ public class OrchestratorCopyJob implements Runnable {
                     refJobContent.put(OrchestratorRefConstant.ORCHESTRATION_SKIP_THIRD_NODE, skipThirdNode);
                     // 添加copy工作流的代理用户
                     refJobContent.put(OrchestratorRefConstant.FLOW_PROXY_USER,flowProxyUser);
+                    refJobContent.put(OrchestratorRefConstant.ORCHESTRATION_COPY_KEY,Boolean.TRUE);
                     requestRef.setNewVersion(dssOrchestratorVersion.getVersion()).setRefJobContent(refJobContent);
                     return ((RefCopyOperation) developmentOperation).copyRef(requestRef);
                 }, "copy");

@@ -66,4 +66,5 @@ public interface OrchestratorRefConstant {
 
     public static final String FLOW_PROXY_USER="flowProxyUser";
 
+    public static final String ORCHESTRATION_COPY_KEY = "orchestrationCopy";
 }

@@ -41,6 +41,8 @@ public class RequestCopyWorkflow {
    private String flowProxyUser;
    private boolean skipThirdAppconn;
 
+   private boolean copyOrchestrator;
+
     public RequestCopyWorkflow(String userName,
                                Workspace workspace,
                                Long rootFlowId,
@@ -81,7 +83,8 @@ public class RequestCopyWorkflow {
                                String newFlowName,
                                List<String> enableNodeList,
                                String flowProxyUser,
-                               boolean skipThirdAppconn) {
+                               boolean skipThirdAppconn,
+                               boolean copyOrchestrator) {
 
         this.userName = userName;
         this.workspace = workspace;
@@ -97,6 +100,7 @@ public class RequestCopyWorkflow {
         this.enableNodeList = enableNodeList;
         this.flowProxyUser = flowProxyUser;
         this.skipThirdAppconn=skipThirdAppconn;
+        this.copyOrchestrator = copyOrchestrator;
 
     }
 
@@ -210,5 +214,13 @@ public class RequestCopyWorkflow {
 
     public void setFlowProxyUser(String flowProxyUser) {
         this.flowProxyUser = flowProxyUser;
+    }
+
+    public boolean getCopyOrchestrator() {
+        return copyOrchestrator;
+    }
+
+    public void setCopyOrchestrator(boolean copyOrchestrator) {
+        this.copyOrchestrator = copyOrchestrator;
     }
 }
