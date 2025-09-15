@@ -80,7 +80,7 @@ public interface WorkFlowManager {
                                      List<String> enableNodeList,
                                      String flowProxyUser,
                                      boolean skipThirdAppconn,
-                                     boolean isCopyOrchestrator) throws DSSErrorException, IOException;
+                                     boolean copyOrchestrator) throws DSSErrorException, IOException;
 
 
     DSSFlow queryWorkflow(String userName, Long rootFlowId) throws DSSErrorException;

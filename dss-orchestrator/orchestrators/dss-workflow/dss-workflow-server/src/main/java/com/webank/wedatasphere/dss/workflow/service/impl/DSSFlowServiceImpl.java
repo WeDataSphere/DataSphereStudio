@@ -1019,12 +1019,13 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         OrchestratorVo orchestratorVo = RpcAskUtils.processAskException(orcSender.ask(new RequestQuertByAppIdOrchestrator(dssFlow.getId())),
                 OrchestratorVo.class, RequestQueryByIdOrchestrator.class);
         Long orchestratorId = orchestratorVo.getDssOrchestratorInfo().getId();
-
+        logger.info("copyRootFlow orchestrator id is {}, name is {}, flowId is {}, copyOrchestrator is {}",
+                orchestratorId,dssFlow.getName(), dssFlow.getId(), copyOrchestrator);
         if(!copyOrchestrator){
+            logger.info("delete flow metadata , orchestratorId is {}", orchestratorId);
             // 不是复制工作流,就删除元数据信息
             deleteFlowMetaData(orchestratorId);
         }
-
         DSSFlow rootFlowWithSubFlows = copyFlowAndSetSubFlowInDB(dssFlow, userName, description, nodeSuffix, newFlowName, newProjectId);
         updateFlowJson(userName, projectName, rootFlowWithSubFlows, version, null,
                 contextIdStr, workspace, dssLabels, nodeSuffix, orchestratorId,enableNodeList,flowProxyUser, skipThirdAppconn,copyOrchestrator);
@@ -1157,7 +1158,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             updateFlowJson = addFLowNodeSuffix(updateFlowJson, nodeSuffix,enableNodeList);
         }
 
-        if(StringUtils.isNotBlank(flowProxyUser)){
+        if(StringUtils.isNotBlank(flowProxyUser) && copyOrchestrator){
             updateFlowJson = updateFlowProxyUser(updateFlowJson,flowProxyUser,orchestratorId,rootFlow);
         }
 
