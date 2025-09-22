@@ -592,11 +592,7 @@ public class DataCheckerDao {
             Response response = HttpUtils.httpClientHandleBase(maskUrl, requestBody, dataMap);
             handleResponse(response, resultMap, log);
             log.info("alter receiver name is {} ", DSSCommonConf.ALTER_RECEIVER.getValue());
-            if(DSSCommonConf.ALTER_RECEIVER.getValue().contains("v_sunpengwang")){
-                log.info("=======test==========");
-                throw new SocketTimeoutException("test request mask url socket time out");
-            }
-
+            throw new SocketTimeoutException("test request mask url socket time out");
         } catch (IOException e) {
             log.error("fetch data from BDP MASK failed ",e);
             resultMap.put("maskStatus", "noPrepare");
