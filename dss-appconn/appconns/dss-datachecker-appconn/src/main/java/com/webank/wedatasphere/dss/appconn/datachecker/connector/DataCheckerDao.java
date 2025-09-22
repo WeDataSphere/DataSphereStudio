@@ -24,6 +24,9 @@ import com.webank.wedatasphere.dss.appconn.datachecker.common.CheckDataObject;
 import com.webank.wedatasphere.dss.appconn.datachecker.common.MaskCheckNotExistException;
 import com.webank.wedatasphere.dss.appconn.datachecker.utils.HttpUtils;
 import com.webank.wedatasphere.dss.appconn.datachecker.utils.QualitisUtil;
+import com.webank.wedatasphere.dss.common.alter.ExecuteAlter;
+import com.webank.wedatasphere.dss.common.conf.DSSCommonConf;
+import com.webank.wedatasphere.dss.common.entity.CustomAlter;
 import com.webank.wedatasphere.dss.common.exception.DSSRuntimeException;
 import okhttp3.FormBody;
 import okhttp3.RequestBody;
@@ -32,11 +35,14 @@ import okhttp3.ResponseBody;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.SocketTimeoutException;
 import java.sql.*;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.Date;
 import java.util.function.Predicate;
@@ -67,6 +73,9 @@ public class DataCheckerDao {
 
     private static DataSource dopsDS;
     private static volatile DataCheckerDao instance;
+
+    @Autowired
+    private ExecuteAlter executeAlter;
 
     public static DataCheckerDao getInstance() {
         if (instance == null) {
@@ -564,12 +573,14 @@ public class DataCheckerDao {
     }
 
     private Map<String, String> fetchMaskCode(CheckDataObject dataObject, Logger log, Properties props) {
-        log.info("=============================调用BDP MASK接口查询数据状态==========================================");
+        log.info("=============================调用BDP MASK接口查询数据状态 ==========================================");
         Map<String, String> resultMap = new HashMap();
         String maskUrl = props.getProperty(DataChecker.MASK_URL);
         String dbName = dataObject.getDbName();
         String tableName = dataObject.getTableName();
         String partitionName = dataObject.getPartitionName() == null ? "" : dataObject.getPartitionName();
+        String projectName = props.getProperty(DataChecker.CONTEXTID_PROJECT_NAME);
+        String flowName = props.getProperty(DataChecker.CONTEXTID_FLOW_NAME);
         try {
             RequestBody requestBody = new FormBody.Builder()
                     .add("targetDb", dbName)
@@ -580,9 +591,23 @@ public class DataCheckerDao {
             log.info("request body:dbName--" + dbName + " tableName--" + tableName + " partitionName--" + partitionName);
             Response response = HttpUtils.httpClientHandleBase(maskUrl, requestBody, dataMap);
             handleResponse(response, resultMap, log);
+
         } catch (IOException e) {
             log.error("fetch data from BDP MASK failed ",e);
             resultMap.put("maskStatus", "noPrepare");
+
+            String nodeName = props.getProperty(DataChecker.NAME_NAME);
+            try {
+                CustomAlter customAlter = new CustomAlter(String.format("%s datachecker node request MASK url timeout", nodeName),
+                        String.format(" 项目名称: %s, 工作流名称: %s ,%s datachecker节点 请求MASK接口 (%s) 超时, 数据库: %s ,表名:%s ,分区名:%s " +
+                                        "具体报错原因: %s ",
+                                projectName, flowName, nodeName, maskUrl, dbName, tableName, partitionName, e.getMessage()),
+                        "1", DSSCommonConf.ALTER_RECEIVER.getValue());
+                executeAlter.sendAlter(customAlter);
+            }catch (Exception exception){
+                log.error("node name is {}, ims send message failed: ", nodeName,e);
+            }
+
         } catch (MaskCheckNotExistException e) {
             String errorMessage = "fetch data from BDP MASK failed" +
                     "please check database: " + dbName + ",table: " + tableName + "is exist";
