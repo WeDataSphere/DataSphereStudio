@@ -592,20 +592,25 @@ public class DataCheckerDao {
             Response response = HttpUtils.httpClientHandleBase(maskUrl, requestBody, dataMap);
             handleResponse(response, resultMap, log);
             log.info("alter receiver name is {} ", DSSCommonConf.ALTER_RECEIVER.getValue());
+            if(flowName.equals("test0919")){
+                throw  new SocketTimeoutException("test mask url socket time out");
+            }
         } catch (IOException e) {
             log.error("fetch data from BDP MASK failed ",e);
             resultMap.put("maskStatus", "noPrepare");
 
             String nodeName = props.getProperty(DataChecker.NAME_NAME);
+            log.info("job id is {}", props.getProperty("jobId"));
             try {
+                // DSSCommonConf.ALTER_RECEIVER.getValue()
                 CustomAlter customAlter = new CustomAlter(String.format("%s datachecker node request MASK url timeout", nodeName),
                         String.format(" 项目名称: %s, 工作流名称: %s ,%s datachecker节点 请求MASK接口 (%s) 超时, 数据库: %s ,表名:%s ,分区名:%s " +
                                         "具体报错原因: %s ",
                                 projectName, flowName, nodeName, maskUrl, dbName, tableName, partitionName, e.getMessage()),
-                        "1", DSSCommonConf.ALTER_RECEIVER.getValue());
+                        "1", "v_sunpengwang");
                 executeAlter.sendAlter(customAlter);
             }catch (Exception exception){
-                log.error("node name is {}, ims send message failed: ", nodeName,e);
+                log.error("node name is {}, ims send message failed: ", nodeName,exception);
             }
 
         } catch (MaskCheckNotExistException e) {
