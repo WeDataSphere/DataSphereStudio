@@ -74,8 +74,7 @@ public class DataCheckerDao {
     private static DataSource dopsDS;
     private static volatile DataCheckerDao instance;
 
-    @Autowired
-    private ExecuteAlter executeAlter;
+    private ExecuteAlter executeAlter = new ExecuteAlter();
 
     public static DataCheckerDao getInstance() {
         if (instance == null) {
