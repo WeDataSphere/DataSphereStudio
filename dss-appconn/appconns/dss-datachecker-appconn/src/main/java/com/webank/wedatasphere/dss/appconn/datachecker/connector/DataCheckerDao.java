@@ -34,6 +34,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.linkis.common.conf.CommonVars;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -75,6 +76,12 @@ public class DataCheckerDao {
     private static volatile DataCheckerDao instance;
 
     private ExecuteAlter executeAlter = new ExecuteAlter();
+
+    public static final CommonVars<String> GATEWAY_URL =
+            CommonVars.apply("wds.linkis.gateway.url", "");
+
+    public static final CommonVars<String> APPCONN_TOKEN =
+            CommonVars.apply("wds.dss.appconn.client.user.token", "");
 
     public static DataCheckerDao getInstance() {
         if (instance == null) {
@@ -601,6 +608,8 @@ public class DataCheckerDao {
             String nodeName = props.getProperty(DataChecker.NAME_NAME);
             log.info("job id is {}", props.getProperty("jobId"));
             try {
+                log.info("GATEWAY_URL is {}",GATEWAY_URL);
+                log.info("APPCONN_TOKEN is {}",APPCONN_TOKEN);
                 // DSSCommonConf.ALTER_RECEIVER.getValue()
                 CustomAlter customAlter = new CustomAlter(String.format("%s datachecker node request MASK url timeout", nodeName),
                         String.format(" 项目名称: %s, 工作流名称: %s ,%s datachecker节点 请求MASK接口 (%s) 超时, 数据库: %s ,表名:%s ,分区名:%s " +
