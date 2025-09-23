@@ -611,7 +611,7 @@ public class DataCheckerDao {
             }catch (Exception exception){
                 log.error("node name is {}, ims send message failed: ", nodeName,exception);
             }
-
+            throw new RuntimeException("datachecker node request mask url exception: " + e.getMessage(), e);
         } catch (MaskCheckNotExistException e) {
             String errorMessage = "fetch data from BDP MASK failed" +
                     "please check database: " + dbName + ",table: " + tableName + "is exist";
