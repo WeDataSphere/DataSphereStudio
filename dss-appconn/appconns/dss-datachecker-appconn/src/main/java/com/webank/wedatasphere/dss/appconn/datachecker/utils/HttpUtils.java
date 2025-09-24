@@ -121,15 +121,13 @@ public class HttpUtils {
   public static Response sendIms(Map<String,String> body,String user,String tokenCode,String gatewayUrl) throws IOException{
 
     String url = gatewayUrl + "/api/rest_j/v1/dss/flow/entrance/sendIms";
-    Map<String,String> header = new HashMap<>();
-    header.put("Token-Code", tokenCode);
-    header.put("Token-User", user);
-    header.put("Content-Type", "application/json");
+
+    logger.info("send Ims url is {}", url);
 
     OkHttpClient okHttpClient = new OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .writeTimeout(20, TimeUnit.SECONDS)
-            .readTimeout(20, TimeUnit.SECONDS)
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
             .build();
 
     FormBody.Builder builder =  new FormBody.Builder();
@@ -153,7 +151,7 @@ public class HttpUtils {
 
     Call call = okHttpClient.newCall(request);
     Response response = call.execute();
-    logger.info("mask interface response code：" + response.code());
+    logger.info("send ims interface response code：" + response.code() + ", body is " + response.body().toString());
     return response;
 
   }

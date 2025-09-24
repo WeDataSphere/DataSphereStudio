@@ -616,7 +616,7 @@ public class DataCheckerDao {
                 body.put("jobId", props.getProperty("jobId"));
                 Response response = HttpUtils.sendIms(body,props.getProperty(DataChecker.CONTEXTID_USER),
                         APPCONN_TOKEN.getValue(),GATEWAY_URL.getValue());
-                log.info("send ims response body is {}", response.body());
+                log.info("send ims response code is {}, body is {}",response.code() ,response.body().toString());
             }catch (Exception exception){
                 log.error("node name is {}, ims send message failed: ", nodeName,exception);
             }
