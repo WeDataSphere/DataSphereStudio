@@ -244,15 +244,26 @@ public class FlowEntranceRestfulApi extends EntranceRestfulApi {
 
     @RequestMapping(path = "/sendIms",method=RequestMethod.POST)
     public Message  sendIms(@RequestBody Map<String, Object> json){
-        // send alter    // DSSCommonConf.ALTER_RECEIVER.getValue()
-        logger.info("sendIms json is {}",json);
-        CustomAlter customAlter = new CustomAlter(String.format("%s datachecker node request MASK url timeout", "nodeName"),
-                String.format(" 项目名称: %s, 工作流名称: %s ,%s datachecker节点 请求MASK接口 (%s) 超时, 数据库: %s ,表名:%s ,分区名:%s " +
-                                "具体报错原因: %s ",
-                        "projectName", "flowName", "nodeName", "maskUrl", "dbName", "tableName", "partitionName", "e.getMessage()"),
-                "1", "v_sunpengwang");
-        executeAlter.sendAlter(customAlter);
 
-        return  Message.ok();
+        logger.info("sendIms json is {}",json);
+
+        if(json.get("alterTitle") == null || json.get("alterInfo") == null){
+            return  Message.error("alterTitle or alterInfo params is null");
+        }
+
+        try {
+
+            String alterTitle = json.get("alterTitle").toString();
+            String alterInfo = json.get("alterInfo").toString();
+            CustomAlter customAlter = new CustomAlter(alterTitle,alterInfo,"1", DSSCommonConf.ALTER_RECEIVER.getValue());
+
+            executeAlter.sendAlter(customAlter);
+
+        }catch (Exception e){
+            logger.error("send ims error ,error message is {}",e.getMessage(),e);
+            return  Message.error("send ims error ,error message is " + e.getMessage());
+        }
+
+        return  Message.ok("success send ims");
     }
 }

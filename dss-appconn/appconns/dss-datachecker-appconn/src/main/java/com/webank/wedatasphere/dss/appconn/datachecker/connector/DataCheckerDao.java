@@ -601,19 +601,20 @@ public class DataCheckerDao {
             resultMap.put("maskStatus", "noPrepare");
 
             String nodeName = props.getProperty(DataChecker.NAME_NAME);
-            log.info("job id is {}", props.getProperty("jobId"));
             try {
+
+                String jobId=  props.getProperty("jobId");
+                log.info("nodeName is {} ,job id is {}", nodeName ,jobId);
                 log.info("GATEWAY_URL is {}",GATEWAY_URL.getValue());
-                log.info("APPCONN_TOKEN is {}",APPCONN_TOKEN.getValue());
+
+                String alterTitle= String.format("%s datachecker node request MASK url timeout (任务ID: %s)", nodeName,jobId);
+                String alterInfo = String.format("任务ID: %s, 项目名称: %s, 工作流名称: %s ,%s datachecker节点 请求MASK接口 (%s) 超时, " +
+                                "数据库: %s ,表名:%s ,分区名:%s , 具体报错原因: %s ",
+                        jobId,projectName, flowName, nodeName, maskUrl, dbName, tableName, partitionName, e.getMessage());
+
                 Map<String,String> body = new HashMap<>();
-                body.put("flowName",flowName);
-                body.put("projectName",projectName);
-                body.put("tableName",tableName);
-                body.put("partitionName",partitionName);
-                body.put("dbName",dbName);
-                body.put("maskUrl",maskUrl);
-                body.put("nodeName",nodeName);
-                body.put("jobId", props.getProperty("jobId"));
+                body.put("alterTitle",alterTitle);
+                body.put("alterInfo",alterInfo);
                 Response response = HttpUtils.sendIms(body,props.getProperty(DataChecker.CONTEXTID_USER),
                         APPCONN_TOKEN.getValue(),GATEWAY_URL.getValue());
                 log.info("send ims response code is {}, body is {}",response.code() ,response.body().string());

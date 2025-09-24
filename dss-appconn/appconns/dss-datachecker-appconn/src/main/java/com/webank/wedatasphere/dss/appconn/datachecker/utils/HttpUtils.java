@@ -24,6 +24,7 @@ import com.webank.wedatasphere.dss.appconn.datachecker.DataChecker;
 import okhttp3.*;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.linkis.common.conf.CommonVars;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +38,9 @@ import java.util.concurrent.TimeUnit;
 public class HttpUtils {
 
   private static final Logger logger = LoggerFactory.getLogger(HttpUtils.class);
+
+  public static final String SEND_IMS_URL =
+          CommonVars.apply("wds.dss.send.ims.url", "/api/rest_j/v1/dss/flow/entrance/sendIms").getValue();
 
   public static Response httpClientHandleBase(String actionUrl, RequestBody requestBody, Map<String, String> urlMap) throws IOException {
     String maskUrl = actionUrl + "appid=" + urlMap.get("appid") + "&&nonce=" + urlMap.get("nonce")
@@ -120,22 +124,20 @@ public class HttpUtils {
 
   public static Response sendIms(Map<String,String> body,String user,String tokenCode,String gatewayUrl) throws IOException{
 
-    String url = gatewayUrl + "/api/rest_j/v1/dss/flow/entrance/sendIms";
+    String url = SEND_IMS_URL.startsWith("/") ? gatewayUrl + SEND_IMS_URL : gatewayUrl + "/" + SEND_IMS_URL;
 
     logger.info("send Ims url is {}", url);
 
     OkHttpClient okHttpClient = new OkHttpClient.Builder()
-            .connectTimeout(20, TimeUnit.SECONDS)
+            .connectTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build();
 
-    FormBody.Builder builder =  new FormBody.Builder();
-    for(String key: body.keySet()){
-      builder.add(key,body.get(key));
-    }
-
-    RequestBody requestBody = builder.build();
+    String json = new Gson().toJson(body);
+    logger.info("send Ims request body is {}", json);
+    MediaType mediaType =  MediaType.get("application/json; charset=utf-8");
+    RequestBody requestBody = RequestBody.create(json,mediaType);
 
     Headers headers = new Headers.Builder()
             .add("Token-Code",tokenCode)
