@@ -610,6 +610,7 @@ public class DataCheckerDao {
             try {
                 log.info("GATEWAY_URL is {}",GATEWAY_URL.getValue());
                 log.info("APPCONN_TOKEN is {}",APPCONN_TOKEN.getValue());
+                log.info("dssUrl is {}", props.getProperty("dssUrl"));
                 // DSSCommonConf.ALTER_RECEIVER.getValue()
                 CustomAlter customAlter = new CustomAlter(String.format("%s datachecker node request MASK url timeout", nodeName),
                         String.format(" 项目名称: %s, 工作流名称: %s ,%s datachecker节点 请求MASK接口 (%s) 超时, 数据库: %s ,表名:%s ,分区名:%s " +
