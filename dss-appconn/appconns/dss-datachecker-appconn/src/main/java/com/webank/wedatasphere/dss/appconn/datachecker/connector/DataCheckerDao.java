@@ -592,10 +592,6 @@ public class DataCheckerDao {
             log.info("request body:dbName--" + dbName + " tableName--" + tableName + " partitionName--" + partitionName);
             Response response = HttpUtils.httpClientHandleBase(maskUrl, requestBody, dataMap);
             handleResponse(response, resultMap, log);
-            log.info("alter receiver name is {} ", DSSCommonConf.ALTER_RECEIVER.getValue());
-            if(flowName.equals("test0919")){
-                throw  new SocketTimeoutException("test mask url socket time out");
-            }
         } catch (IOException e) {
             log.error("fetch data from BDP MASK failed ",e);
             resultMap.put("maskStatus", "noPrepare");
@@ -607,8 +603,8 @@ public class DataCheckerDao {
                 log.info("nodeName is {} ,job id is {}", nodeName ,jobId);
                 log.info("GATEWAY_URL is {}",GATEWAY_URL.getValue());
 
-                String alterTitle= String.format("%s datachecker node request MASK url timeout (任务ID: %s)", nodeName,jobId);
-                String alterInfo = String.format("任务ID: %s, 项目名称: %s, 工作流名称: %s ,%s datachecker节点 请求MASK接口 (%s) 超时, " +
+                String alterTitle= String.format("%s datachecker node request MASK url failed (任务ID: %s)", nodeName,jobId);
+                String alterInfo = String.format("任务ID: %s, 项目名称: %s, 工作流名称: %s ,%s datachecker节点 请求MASK接口 (%s) 异常, " +
                                 "数据库: %s ,表名:%s ,分区名:%s , 具体报错原因: %s ",
                         jobId,projectName, flowName, nodeName, maskUrl, dbName, tableName, partitionName, e.getMessage());
 
