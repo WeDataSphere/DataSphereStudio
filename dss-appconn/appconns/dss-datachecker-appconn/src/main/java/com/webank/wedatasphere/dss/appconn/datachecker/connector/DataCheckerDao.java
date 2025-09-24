@@ -26,7 +26,6 @@ import com.webank.wedatasphere.dss.appconn.datachecker.utils.HttpUtils;
 import com.webank.wedatasphere.dss.appconn.datachecker.utils.QualitisUtil;
 import com.webank.wedatasphere.dss.common.alter.ExecuteAlter;
 import com.webank.wedatasphere.dss.common.conf.DSSCommonConf;
-import com.webank.wedatasphere.dss.common.entity.CustomAlter;
 import com.webank.wedatasphere.dss.common.exception.DSSRuntimeException;
 import okhttp3.FormBody;
 import okhttp3.RequestBody;
@@ -36,14 +35,12 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.common.conf.CommonVars;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.SocketTimeoutException;
 import java.sql.*;
-import java.text.MessageFormat;
 import java.util.*;
 import java.util.Date;
 import java.util.function.Predicate;
@@ -74,8 +71,6 @@ public class DataCheckerDao {
 
     private static DataSource dopsDS;
     private static volatile DataCheckerDao instance;
-
-    private ExecuteAlter executeAlter = new ExecuteAlter();
 
     public static final CommonVars<String> GATEWAY_URL =
             CommonVars.apply("wds.linkis.gateway.url", "");
@@ -610,14 +605,18 @@ public class DataCheckerDao {
             try {
                 log.info("GATEWAY_URL is {}",GATEWAY_URL.getValue());
                 log.info("APPCONN_TOKEN is {}",APPCONN_TOKEN.getValue());
-                log.info("dssUrl is {}", props.getProperty("dssUrl"));
-                // DSSCommonConf.ALTER_RECEIVER.getValue()
-                CustomAlter customAlter = new CustomAlter(String.format("%s datachecker node request MASK url timeout", nodeName),
-                        String.format(" 项目名称: %s, 工作流名称: %s ,%s datachecker节点 请求MASK接口 (%s) 超时, 数据库: %s ,表名:%s ,分区名:%s " +
-                                        "具体报错原因: %s ",
-                                projectName, flowName, nodeName, maskUrl, dbName, tableName, partitionName, e.getMessage()),
-                        "1", "v_sunpengwang");
-                executeAlter.sendAlter(customAlter);
+                Map<String,String> body = new HashMap<>();
+                body.put("flowName",flowName);
+                body.put("projectName",projectName);
+                body.put("tableName",tableName);
+                body.put("partitionName",partitionName);
+                body.put("dbName",dbName);
+                body.put("maskUrl",maskUrl);
+                body.put("nodeName",nodeName);
+                body.put("jobId", props.getProperty("jobId"));
+                Response response = HttpUtils.sendIms(body,props.getProperty(DataChecker.CONTEXTID_USER),
+                        APPCONN_TOKEN.getValue(),GATEWAY_URL.getValue());
+                log.info("send ims response body is {}", response.body());
             }catch (Exception exception){
                 log.error("node name is {}, ims send message failed: ", nodeName,exception);
             }

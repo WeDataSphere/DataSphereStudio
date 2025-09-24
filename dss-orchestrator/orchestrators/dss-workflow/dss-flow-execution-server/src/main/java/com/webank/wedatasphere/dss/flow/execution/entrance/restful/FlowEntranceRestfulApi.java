@@ -16,6 +16,9 @@
 
 package com.webank.wedatasphere.dss.flow.execution.entrance.restful;
 
+import com.webank.wedatasphere.dss.common.alter.ExecuteAlter;
+import com.webank.wedatasphere.dss.common.conf.DSSCommonConf;
+import com.webank.wedatasphere.dss.common.entity.CustomAlter;
 import com.webank.wedatasphere.dss.common.entity.DSSWorkspace;
 import com.webank.wedatasphere.dss.common.utils.DSSCommonUtils;
 import com.webank.wedatasphere.dss.flow.execution.entrance.conf.FlowExecutionConf;
@@ -70,6 +73,9 @@ public class FlowEntranceRestfulApi extends EntranceRestfulApi {
         super.setEntranceServer(entranceServer);
         this.entranceServer = entranceServer;
     }
+
+    @Autowired
+    private ExecuteAlter executeAlter;
 
     /**
      * The execute function handles the request submitted by the user to execute the task, and the execution ID is returned to the user.
@@ -234,5 +240,19 @@ public class FlowEntranceRestfulApi extends EntranceRestfulApi {
 
     private void pushLog(String log, Job job) {
         entranceServer.getEntranceContext().getOrCreateLogManager().onLogUpdate(job, log);
+    }
+
+    @RequestMapping(path = "/sendIms",method=RequestMethod.POST)
+    public Message  sendIms(@RequestBody Map<String, Object> json){
+        // send alter    // DSSCommonConf.ALTER_RECEIVER.getValue()
+        logger.info("sendIms json is {}",json);
+        CustomAlter customAlter = new CustomAlter(String.format("%s datachecker node request MASK url timeout", "nodeName"),
+                String.format(" 项目名称: %s, 工作流名称: %s ,%s datachecker节点 请求MASK接口 (%s) 超时, 数据库: %s ,表名:%s ,分区名:%s " +
+                                "具体报错原因: %s ",
+                        "projectName", "flowName", "nodeName", "maskUrl", "dbName", "tableName", "partitionName", "e.getMessage()"),
+                "1", "v_sunpengwang");
+        executeAlter.sendAlter(customAlter);
+
+        return  Message.ok();
     }
 }

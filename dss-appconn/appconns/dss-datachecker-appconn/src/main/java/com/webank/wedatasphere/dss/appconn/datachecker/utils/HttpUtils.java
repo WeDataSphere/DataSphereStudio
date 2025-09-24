@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -114,5 +115,49 @@ public class HttpUtils {
   public static String getMD5(String str){
     return DigestUtils.md5Hex(str.getBytes());
   }
+
+
+
+  public static Response sendIms(Map<String,String> body,String user,String tokenCode,String gatewayUrl) throws IOException{
+
+    String url = gatewayUrl + "/api/rest_j/v1/dss/flow/entrance/sendIms";
+    Map<String,String> header = new HashMap<>();
+    header.put("Token-Code", tokenCode);
+    header.put("Token-User", user);
+    header.put("Content-Type", "application/json");
+
+    OkHttpClient okHttpClient = new OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .writeTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(20, TimeUnit.SECONDS)
+            .build();
+
+    FormBody.Builder builder =  new FormBody.Builder();
+    for(String key: body.keySet()){
+      builder.add(key,body.get(key));
+    }
+
+    RequestBody requestBody = builder.build();
+
+    Headers headers = new Headers.Builder()
+            .add("Token-Code",tokenCode)
+            .add("Token-User",user)
+            .add("Content-Type","application/json")
+            .build();
+
+    Request request = new Request.Builder()
+            .url(url)
+            .headers(headers)
+            .post(requestBody)
+            .build();
+
+    Call call = okHttpClient.newCall(request);
+    Response response = call.execute();
+    logger.info("mask interface response code：" + response.code());
+    return response;
+
+  }
+
+
 
 }
