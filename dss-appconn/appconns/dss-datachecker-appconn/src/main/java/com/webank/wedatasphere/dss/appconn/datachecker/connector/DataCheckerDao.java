@@ -33,6 +33,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.linkis.common.conf.CommonVars;
 import org.slf4j.Logger;
 
@@ -603,7 +604,9 @@ public class DataCheckerDao {
                 log.info("nodeName is {} ,job id is {}", nodeName ,jobId);
                 log.info("GATEWAY_URL is {}",GATEWAY_URL.getValue());
 
-                String alterTitle= String.format("%s datachecker node request MASK url failed (任务ID: %s)", nodeName,jobId);
+                String today = DateFormatUtils.format(new Date(), "yyyy-MM-dd");
+
+                String alterTitle= String.format("[%s] %s datachecker node request MASK url failed (任务ID: %s) ",today, nodeName,jobId);
                 String alterInfo = String.format("任务ID: %s, 项目名称: %s, 工作流名称: %s ,%s datachecker节点 请求MASK接口 (%s) 异常, " +
                                 "数据库: %s ,表名:%s ,分区名:%s , 具体报错原因: %s ",
                         jobId,projectName, flowName, nodeName, maskUrl, dbName, tableName, partitionName, e.getMessage());
@@ -611,13 +614,14 @@ public class DataCheckerDao {
                 Map<String,String> body = new HashMap<>();
                 body.put("alterTitle",alterTitle);
                 body.put("alterInfo",alterInfo);
+                body.put("jobId",jobId);
                 Response response = HttpUtils.sendIms(body,props.getProperty(DataChecker.CONTEXTID_USER),
                         APPCONN_TOKEN.getValue(),GATEWAY_URL.getValue());
                 log.info("send ims response code is {}, body is {}",response.code() ,response.body().string());
             }catch (Exception exception){
                 log.error("node name is {}, ims send message failed: ", nodeName,exception);
             }
-            throw new RuntimeException("datachecker node request mask url exception: " + e.getMessage(), e);
+
         } catch (MaskCheckNotExistException e) {
             String errorMessage = "fetch data from BDP MASK failed" +
                     "please check database: " + dbName + ",table: " + tableName + "is exist";

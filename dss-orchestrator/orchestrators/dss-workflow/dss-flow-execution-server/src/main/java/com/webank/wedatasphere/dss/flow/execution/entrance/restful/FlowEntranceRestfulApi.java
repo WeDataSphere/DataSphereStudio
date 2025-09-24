@@ -22,11 +22,14 @@ import com.webank.wedatasphere.dss.common.entity.CustomAlter;
 import com.webank.wedatasphere.dss.common.entity.DSSWorkspace;
 import com.webank.wedatasphere.dss.common.utils.DSSCommonUtils;
 import com.webank.wedatasphere.dss.flow.execution.entrance.conf.FlowExecutionConf;
+import com.webank.wedatasphere.dss.flow.execution.entrance.dao.SendImsTaskMapper;
 import com.webank.wedatasphere.dss.flow.execution.entrance.dao.TaskMapper;
+import com.webank.wedatasphere.dss.flow.execution.entrance.entity.SendImsTaskInfo;
 import com.webank.wedatasphere.dss.flow.execution.entrance.entity.WorkflowQueryTask;
 import com.webank.wedatasphere.dss.flow.execution.entrance.enums.ExecuteStrategyEnum;
 import com.webank.wedatasphere.dss.flow.execution.entrance.service.WorkflowExecutionInfoService;
 import com.webank.wedatasphere.dss.standard.sso.utils.SSOHelper;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.common.log.LogUtils;
 import org.apache.linkis.entrance.EntranceServer;
@@ -76,6 +79,9 @@ public class FlowEntranceRestfulApi extends EntranceRestfulApi {
 
     @Autowired
     private ExecuteAlter executeAlter;
+
+    @Autowired
+    private SendImsTaskMapper sendImsTaskMapper;
 
     /**
      * The execute function handles the request submitted by the user to execute the task, and the execution ID is returned to the user.
@@ -247,7 +253,7 @@ public class FlowEntranceRestfulApi extends EntranceRestfulApi {
 
         logger.info("sendIms json is {}",json);
 
-        if(json.get("alterTitle") == null || json.get("alterInfo") == null){
+        if(json.get("alterTitle") == null || json.get("alterInfo") == null || json.get("jobId") == null){
             return  Message.error("alterTitle or alterInfo params is null");
         }
 
@@ -255,9 +261,32 @@ public class FlowEntranceRestfulApi extends EntranceRestfulApi {
 
             String alterTitle = json.get("alterTitle").toString();
             String alterInfo = json.get("alterInfo").toString();
+            String jobId = json.get("jobId").toString();
+            // 同一个jobId,同样的异常只会发送一次
+            List<SendImsTaskInfo> taskInfoList = sendImsTaskMapper.selectByJobId(jobId);
+
+            if(CollectionUtils.isNotEmpty(taskInfoList)){
+
+                long count = taskInfoList.stream()
+                        .filter(task -> alterInfo.equals(task.getAlterInfo()) && alterTitle.equals(task.getAlterTitle()))
+                        .count();
+
+                if(count  > 0){
+                    return  Message.error("The same information cannot be sent repeatedly");
+                }
+
+            }
+
             CustomAlter customAlter = new CustomAlter(alterTitle,alterInfo,"1", DSSCommonConf.ALTER_RECEIVER.getValue());
 
             executeAlter.sendAlter(customAlter);
+
+            // save
+            SendImsTaskInfo sendImsTaskInfo = new SendImsTaskInfo();
+            sendImsTaskInfo.setJobId(jobId);
+            sendImsTaskInfo.setAlterTitle(alterTitle);
+            sendImsTaskInfo.setAlterInfo(alterInfo);
+            sendImsTaskMapper.insert(sendImsTaskInfo);
 
         }catch (Exception e){
             logger.error("send ims error ,error message is {}",e.getMessage(),e);

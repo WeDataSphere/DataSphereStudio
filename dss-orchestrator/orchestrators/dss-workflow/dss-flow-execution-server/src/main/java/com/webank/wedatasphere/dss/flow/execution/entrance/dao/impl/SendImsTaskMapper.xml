@@ -1,0 +1,15 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+
+<mapper namespace="com.webank.wedatasphere.dss.flow.execution.entrance.dao.SendImsTaskMapper">
+
+    <select id="selectByJobId" resultType="com.webank.wedatasphere.dss.flow.execution.entrance.entity.SendImsTaskInfo">
+        select job_id,alter_title,alter_info from dss_send_ims_task where job_id = #{jobId}
+    </select>
+
+    <insert id="insert" parameterType="com.webank.wedatasphere.dss.flow.execution.entrance.entity.SendImsTaskInfo">
+        insert into dss_send_ims_task (`job_id`,`alter_title`,`alter_info`,`create_time`,`update_time`)
+        values (#{jobId},#{alterTitle},#{alterInfo},now(),now())
+    </insert>
+
+</mapper>
