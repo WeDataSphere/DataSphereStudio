@@ -151,7 +151,7 @@ public class HttpUtils {
 
     Call call = okHttpClient.newCall(request);
     Response response = call.execute();
-    logger.info("send ims interface response code：" + response.code() + ", body is " + response.body().toString());
+    logger.info("send ims interface response code：" + response.code() + ", body is " + response.body().string());
     return response;
 
   }
