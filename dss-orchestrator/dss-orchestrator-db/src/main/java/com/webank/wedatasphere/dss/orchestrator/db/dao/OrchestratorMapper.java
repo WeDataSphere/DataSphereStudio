@@ -92,6 +92,7 @@ public interface OrchestratorMapper {
     List<DSSOrchestratorVersion> getVersionByOrchestratorId(Long orchestratorId);
 
     OrchestratorInfo getOrcInfoByAppId(@Param("appId") Long appId);
+    List<OrchestratorInfo> getOrcInfosByAppIds(@Param("appIds") List<Long> appIds);
 
     @Select("select max(id) from dss_orchestrator_version_info where `orchestrator_id` = #{orchestratorId}")
     Long findLatestOrcVersionId(@Param("orchestratorId") Long orchestratorId);

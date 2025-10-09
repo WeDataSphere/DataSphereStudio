@@ -134,7 +134,7 @@ public class ImportServiceImpl implements ImportService {
     }
 
     @Override
-    public OrchestratorBatchImportInfo batchImportOrc(String userName, Long projectId, String projectName, String projectPath, String checkCode,
+    public OrchestratorBatchImportInfo batchImportOrc(String userName, Long projectId, String projectName, String projectPath,
                                                       DSSLabel dssLabel, Workspace workspace)
             throws ErrorException{
         String importSaveBasePath = Paths.get(projectPath).getParent().toString();
