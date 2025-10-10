@@ -52,6 +52,7 @@ public class HttpUtils {
             .build();
 
     logger.info("access mask URL is:"+maskUrl);
+    logger.info("request body is {}", requestBody.toString());
     Request request = new Request.Builder()
             .url(maskUrl)
             .post(requestBody)
