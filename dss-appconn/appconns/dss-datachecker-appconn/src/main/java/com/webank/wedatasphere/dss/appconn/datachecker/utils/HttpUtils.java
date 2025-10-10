@@ -22,6 +22,7 @@ import com.google.gson.reflect.TypeToken;
 
 import com.webank.wedatasphere.dss.appconn.datachecker.DataChecker;
 import okhttp3.*;
+import okio.Buffer;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.linkis.common.conf.CommonVars;
@@ -52,7 +53,15 @@ public class HttpUtils {
             .build();
 
     logger.info("access mask URL is:"+maskUrl);
-    logger.info("request body is {}", requestBody.toString());
+
+    try {
+      Buffer buffer = new Buffer();
+      requestBody.writeTo(buffer);
+      logger.info("request body is {}", buffer.readUtf8());
+    }catch (Exception e){
+      logger.warn("request body transformation string error ", e);
+    }
+
     Request request = new Request.Builder()
             .url(maskUrl)
             .post(requestBody)
