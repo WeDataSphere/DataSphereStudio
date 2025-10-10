@@ -139,16 +139,17 @@ public class OrchestratorPluginServiceImpl implements OrchestratorPluginService 
             return new ResponseConvertOrchestrator("-1", responseOperateOrchestrator);
         }
         LOGGER.info("conversion request is called, request is {}.", DSSCommonUtils.COMMON_GSON.toJson(requestConversionOrchestration));
-        Long toPublishOrcId;
+        List<Long> toPublishOrcIds=null;
         if (requestConversionOrchestration.getOrcAppId() != null) {
-            OrchestratorInfo orchestratorInfo = orchestratorMapper.getOrcInfoByAppId(requestConversionOrchestration.getOrcAppId());
-            toPublishOrcId = orchestratorInfo.getOrchestratorId();
+            List<OrchestratorInfo> orchestratorInfo = orchestratorMapper.getOrcInfosByAppIds(requestConversionOrchestration.getOrcAppId());
+            toPublishOrcIds = orchestratorInfo.stream().map(OrchestratorInfo::getOrchestratorId).distinct().collect(Collectors.toList());
         } else if (CollectionUtils.isNotEmpty(requestConversionOrchestration.getOrcIds())) {
-            toPublishOrcId = requestConversionOrchestration.getOrcIds().get(0);
-        } else {
+            toPublishOrcIds = requestConversionOrchestration.getOrcIds().stream().distinct().collect(Collectors.toList());
+        }
+        if(toPublishOrcIds==null || toPublishOrcIds.isEmpty()) {
             return new ResponseConvertOrchestrator("-1", ResponseOperateOrchestrator.failed("Both orcAppId and orcIds are not exists."));
         }
-        DSSOrchestratorInfo dssOrchestratorInfo = orchestratorMapper.getOrchestrator(toPublishOrcId);
+        DSSOrchestratorInfo dssOrchestratorInfo = orchestratorMapper.getOrchestrator(toPublishOrcIds.get(0));
         long projectId = dssOrchestratorInfo.getProjectId();
         //这里的 key 为 DSS 具体编排（如 DSS 工作流）的 id；这里的 value 为 DSS 编排所对应的第三方调度系统的工作流 ID
         //请注意：由于对接的 SchedulerAppConn 调度系统有可能没有实现 OrchestrationService，
@@ -159,12 +160,15 @@ public class OrchestratorPluginServiceImpl implements OrchestratorPluginService 
         if (requestConversionOrchestration.isConvertAllOrcs()) {
             //获取所有的已经发布过的orchestrator
             publishedOrcIds = orchestratorMapper.getAllOrcIdsByProjectId(projectId, 1);
-            if (!publishedOrcIds.contains(toPublishOrcId)) {
-                publishedOrcIds.add(toPublishOrcId);
+            for (Long toPublishOrcId : toPublishOrcIds) {
+                if (!publishedOrcIds.contains(toPublishOrcId)) {
+                    publishedOrcIds.add(toPublishOrcId);
+                }
             }
+
             for (Long orcId : publishedOrcIds) {
                 int validFlag = 1;
-                if (orcId.longValue() == toPublishOrcId.longValue() && !DSSLabelUtil.isDevEnv(labels)) {
+                if (toPublishOrcIds.contains(orcId) && !DSSLabelUtil.isDevEnv(labels)) {
                     validFlag = 0;
                 }
                 DSSOrchestratorVersion dssOrchestratorVersion = orchestratorMapper.getLatestOrchestratorVersionByIdAndValidFlag(orcId, validFlag);
@@ -181,14 +185,17 @@ public class OrchestratorPluginServiceImpl implements OrchestratorPluginService 
         } else {
             publishedOrcIds = new ArrayList<>();
             if (requestConversionOrchestration.getOrcAppId() != null) {
-                publishedOrcIds.add(toPublishOrcId);
-                DSSOrchestratorVersion dssOrchestratorVersion = orchestratorMapper.getLatestOrchestratorVersionByIdAndValidFlag(toPublishOrcId, 1);
-                if (dssOrchestratorVersion != null) {
-                    DSSOrchestratorRefOrchestration dssOrchestratorRefOrchestration = orchestratorMapper.getRefOrchestrationId(toPublishOrcId);
-                    if (dssOrchestratorRefOrchestration != null) {
-                        orchestrationIdMap.put(dssOrchestratorVersion.getAppId(), dssOrchestratorRefOrchestration.getRefOrchestrationId());
-                    } else {
-                        orchestrationIdMap.put(dssOrchestratorVersion.getAppId(), null);
+                publishedOrcIds.addAll(toPublishOrcIds);
+                for (Long toPublishOrcId : toPublishOrcIds) {
+                    DSSOrchestratorVersion dssOrchestratorVersion = orchestratorMapper.getLatestOrchestratorVersionByIdAndValidFlag(toPublishOrcId, 1);
+                    if (dssOrchestratorVersion != null) {
+
+                        DSSOrchestratorRefOrchestration dssOrchestratorRefOrchestration = orchestratorMapper.getRefOrchestrationId(toPublishOrcId);
+                        if (dssOrchestratorRefOrchestration != null) {
+                            orchestrationIdMap.put(dssOrchestratorVersion.getAppId(), dssOrchestratorRefOrchestration.getRefOrchestrationId());
+                        } else {
+                            orchestrationIdMap.put(dssOrchestratorVersion.getAppId(), null);
+                        }
                     }
                 }
             }
@@ -232,7 +239,12 @@ public class OrchestratorPluginServiceImpl implements OrchestratorPluginService 
         job.setConversionJobEntity(entity);
         job.setCommonUpdateConvertJobStatus(commonUpdateConvertJobStatus);
         job.setConversionDSSOrchestratorPlugins(dssOrchestratorContext.getOrchestratorPlugins());
-        job.afterConversion(response -> this.updateDBAfterConversion(toPublishOrcId, response, job.getConversionJobEntity(), requestConversionOrchestration));
+        final List<Long> finalToPublishOrcIds = toPublishOrcIds;
+        job.afterConversion(response -> {
+            for (Long toPublishOrcId : finalToPublishOrcIds) {
+                this.updateDBAfterConversion(toPublishOrcId, response, entity, requestConversionOrchestration);
+            }
+        });
 
         OrchestratorPublishJob orchestratorPublishJob = new OrchestratorPublishJob();
         orchestratorPublishJob.setJobId(job.getId());

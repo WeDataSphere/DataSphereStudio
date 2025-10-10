@@ -523,7 +523,7 @@ public class DSSProjectServiceImpl extends ServiceImpl<DSSProjectMapper, DSSProj
 
     @Override
     public void importProject(ProjectInfoVo projectInfo, BmlResource importResource, String username,
-                              String checkCode, String packageInfo, EnvDSSLabel envLabel, Workspace workspace) throws Exception {
+                              String packageInfo, EnvDSSLabel envLabel, Workspace workspace) throws Exception {
         String projectName = projectInfo.getProjectName();
         //下载到本地处理
         String importSaveBasePath = IoUtils.generateTempIOPath(username);
@@ -545,7 +545,7 @@ public class DSSProjectServiceImpl extends ServiceImpl<DSSProjectMapper, DSSProj
         ZipHelper.unzipFile(importFile, importSaveBasePath, true);
         String projectPath = IoUtils.addFileSeparator(importSaveBasePath, projectName);
         importService.batchImportOrc(username, projectInfo.getId(),
-                projectInfo.getProjectName(), projectPath, checkCode, envLabel, workspace);
+                projectInfo.getProjectName(), projectPath, envLabel, workspace);
 
 
     }

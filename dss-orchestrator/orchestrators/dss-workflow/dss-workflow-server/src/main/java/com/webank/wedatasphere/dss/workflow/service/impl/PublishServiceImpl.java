@@ -245,7 +245,9 @@ public class PublishServiceImpl implements PublishService {
                                                                       SchedulerAppConn schedulerAppConn, Map<String, Object> dssLabel, AppInstance appInstance, List<Long> flowIdList) {
         RequestFrameworkConvertOrchestration requestFrameworkConvertOrchestration = new RequestFrameworkConvertOrchestration();
         requestFrameworkConvertOrchestration.setComment(comment);
-        requestFrameworkConvertOrchestration.setOrcAppId(workflowId);
+        if(workflowId!=null) {
+            requestFrameworkConvertOrchestration.setOrcAppId(Collections.singletonList(workflowId));
+        }
         requestFrameworkConvertOrchestration.setUserName(convertUser);
         requestFrameworkConvertOrchestration.setWorkspace(workspace);
         requestFrameworkConvertOrchestration.setConvertAllOrcs(schedulerAppConn.getOrCreateConversionStandard().getDSSToRelConversionService(appInstance).isConvertAllOrcs());

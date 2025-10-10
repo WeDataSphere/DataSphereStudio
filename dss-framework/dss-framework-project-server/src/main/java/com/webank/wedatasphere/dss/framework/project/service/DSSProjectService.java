@@ -93,14 +93,13 @@ public interface DSSProjectService  extends IService<DSSProjectDO> {
      * @param  projectInfo 要导入的目标工程
      * @param importResource 导入的编排资源
      * @param username 导入人
-     * @param checkCode  校验码
      * @param packageInfo 导入包路径或者文件名
      * @param envLabel 环境标签
      * @param workspace 导入工作空间
 
      */
     void importProject(ProjectInfoVo projectInfo, BmlResource importResource, String username,
-                       String checkCode, String packageInfo, EnvDSSLabel envLabel, Workspace workspace) throws Exception;
+                        String packageInfo, EnvDSSLabel envLabel, Workspace workspace) throws Exception;
 
     BmlResource exportOnlyProjectMeta(ExportAllOrchestratorsReqest exportAllOrchestratorsReqest,
                                   String username, String proxyUser, Workspace workspace) throws Exception;

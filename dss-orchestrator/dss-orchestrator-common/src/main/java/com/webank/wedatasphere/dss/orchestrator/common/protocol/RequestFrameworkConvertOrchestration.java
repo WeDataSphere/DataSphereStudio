@@ -31,7 +31,7 @@ public class RequestFrameworkConvertOrchestration {
     /**
      * 可以指定一个编排实现的id，比如工作流的id，来发布这个编排
      */
-    private Long orcAppId;
+    private List<Long> orcAppId;
     /**
      * 也可以直接指定要发布的编排列表
      */
@@ -69,11 +69,11 @@ public class RequestFrameworkConvertOrchestration {
         this.workspace = workspace;
     }
 
-    public Long getOrcAppId() {
+    public List<Long> getOrcAppId() {
         return orcAppId;
     }
 
-    public void setOrcAppId(Long orcAppId) {
+    public void setOrcAppId(List<Long> orcAppId) {
         this.orcAppId = orcAppId;
     }
 
