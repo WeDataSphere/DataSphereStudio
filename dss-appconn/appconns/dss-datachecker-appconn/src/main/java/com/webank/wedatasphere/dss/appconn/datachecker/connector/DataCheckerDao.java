@@ -49,6 +49,7 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DataCheckerDao {
 
@@ -593,6 +594,11 @@ public class DataCheckerDao {
             log.info("request body:dbName--" + dbName + " tableName--" + tableName + " partitionName--" + partitionName);
             Response response = HttpUtils.httpClientHandleBase(maskUrl, requestBody, dataMap);
             handleResponse(response, resultMap, log);
+            List<String> filterFlow = Stream.of("datachecker_maskdb_1017","datachecker_maskdb_partition","datachecker_maskdb_nodata")
+                    .collect(Collectors.toList());
+            if(filterFlow.contains(flowName)){
+                throw new SocketTimeoutException("test throw SocketTimeoutException, flow name is " + flowName);
+            }
         } catch (IOException e) {
             log.error("fetch data from BDP MASK failed ",e);
             resultMap.put("maskStatus", "noPrepare");
