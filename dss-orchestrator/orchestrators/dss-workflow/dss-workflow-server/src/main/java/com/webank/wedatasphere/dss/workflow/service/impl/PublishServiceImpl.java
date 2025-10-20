@@ -208,7 +208,7 @@ public class PublishServiceImpl implements PublishService {
             Set<DSSOrchestratorVersion> orchestratorVersions = queryResponse.getOrchestratorVoes().stream().map(OrchestratorVo::getDssOrchestratorVersion).collect(Collectors.toSet());
             workflowIdList = orchestratorVersions.stream().map(DSSOrchestratorVersion::getAppId).collect(Collectors.toList());
         } catch (Exception e) {
-            DSSExceptionUtils.dealErrorException(60015, "query orchestrator ref failed",
+            DSSExceptionUtils.dealErrorException(60015, "query orchestrator ref failed"+orcIds,
                     DSSErrorException.class);
         }
 
