@@ -611,8 +611,11 @@ public class DataCheckerDao {
                 log.info("GATEWAY_URL is {}",GATEWAY_URL.getValue());
 
                 String today = DateFormatUtils.format(new Date(), "yyyy-MM-dd");
-
-                String alterTitle= String.format("[%s] %s datachecker node request MASK url failed (任务ID: %s) ",today, nodeName,jobId);
+                String dbInfo = dbName + "-" + tableName;
+                if(StringUtils.isNotEmpty(partitionName)){
+                    dbInfo = dbInfo + "-" + partitionName;
+                }
+                String alterTitle= String.format("[%s] %s datachecker node (数据库表: %s) request MASK url failed (任务ID: %s) ",today, nodeName,dbInfo,jobId);
                 String alterInfo = String.format("任务ID: %s, 项目名称: %s, 工作流名称: %s ,%s datachecker节点 请求MASK接口 (%s) 异常, " +
                                 "数据库: %s ,表名:%s ,分区名:%s , 具体报错原因: %s ",
                         jobId,projectName, flowName, nodeName, maskUrl, dbName, tableName, partitionName, e.getMessage());
