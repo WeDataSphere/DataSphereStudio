@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.dss.workflow.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.*;
 import com.webank.wedatasphere.dss.common.StaffInfoGetter;
@@ -757,6 +758,19 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             nodeContentUIMapper.deleteNodeContentUIByContentList(contentIdList);
             nodeContentMapper.deleteNodeContentById(contentIdList);
         }
+
+        List<Long> nodeContentFlowId = nodeContentMapper.getNodeContentListByOrchestratorId(orchestratorId).stream().map(NodeContentDO::getFlowId)
+                .distinct().collect(Collectors.toList());
+        // 获取未保存的flow信息
+        List<Long> notSaveFlow = flowIdList.stream().filter(flowId -> !nodeContentFlowId.contains(flowId)).collect(Collectors.toList());
+        logger.info("orchestratorId is {}, rootFlowId is {}, notSaveFlow is {}",orchestratorId,rootFlowId,StrUtil.join(",", notSaveFlow));
+        for(Long flowId: notSaveFlow){
+            logger.info("save flow data, orchestratorId is {}, flowID is {}",orchestratorId, flowId);
+            // 保存工作流信息
+            DSSFlow dssFlow = getFlow(flowId);
+            saveFlowMetaData(dssFlow.getId(),dssFlow.getFlowJson(),orchestratorId);
+        }
+
 
     }
 
