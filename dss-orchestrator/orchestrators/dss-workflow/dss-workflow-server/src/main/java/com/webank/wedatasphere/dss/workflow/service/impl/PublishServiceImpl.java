@@ -186,7 +186,7 @@ public class PublishServiceImpl implements PublishService {
     }
 
     @Override
-    public void batchPublish(BatchPublishWorkflowRequest publishWorkflowRequest, Workspace workspace, String convertUser, Map<String, Object> dssLabel) throws Exception{
+    public String batchPublish(BatchPublishWorkflowRequest publishWorkflowRequest, Workspace workspace, String convertUser, Map<String, Object> dssLabel) throws Exception{
         List<Long> orcIds = publishWorkflowRequest.getOrchestratorList();
         String labelStr = publishWorkflowRequest.getLabels().getRoute();
         Map<String, Object> labels = new HashMap<>();
@@ -233,7 +233,7 @@ public class PublishServiceImpl implements PublishService {
             throw new DSSErrorException(50311, response.getResponse().getMessage());
         }
 
-        return ;
+        return response.getId();
     }
 
     /**

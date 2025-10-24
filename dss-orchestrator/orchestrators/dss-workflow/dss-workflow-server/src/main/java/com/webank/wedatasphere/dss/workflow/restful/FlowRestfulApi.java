@@ -182,13 +182,13 @@ public class FlowRestfulApi {
         String publishUser = SecurityFilter.getLoginUsername(httpServletRequest);
         Map<String, Object> labels = new HashMap<>();
         labels.put(EnvDSSLabel.DSS_ENV_LABEL_KEY, publishWorkflowRequest.getLabels().getRoute());
-
+        String taskId;
         try {
-            publishService.batchPublish(publishWorkflowRequest, workspace, publishUser, labels);
+           taskId= publishService.batchPublish(publishWorkflowRequest, workspace, publishUser, labels);
         } catch (Exception e) {
             return Message.error("批量发布失败，原因为：" + e.getMessage());
         }
-        return Message.ok("批量发布提交成功");
+        return Message.ok("批量发布提交成功，返回最后一个工作流的发布任务id").data("releaseTaskId", taskId);
 
     }
 
