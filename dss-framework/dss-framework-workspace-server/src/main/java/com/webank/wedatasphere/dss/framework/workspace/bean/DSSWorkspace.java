@@ -38,6 +38,7 @@ public class DSSWorkspace {
     private String isDefaultReference;
 
     private boolean isDefaultWorkspace;
+    private boolean isQueryTableByAiSql;
 
     public int getAdminPermission() {
         return adminPermission;
@@ -166,5 +167,12 @@ public class DSSWorkspace {
 
     public void setIsDefaultWorkspace(boolean defaultWorkspace) {
         isDefaultWorkspace = defaultWorkspace;
+    }
+    public boolean getIsQueryTableByAiSql() {
+        return isQueryTableByAiSql;
+    }
+
+    public void setIsQueryTableByAiSql(boolean queryTableByAiSql) {
+        isQueryTableByAiSql = queryTableByAiSql;
     }
 }

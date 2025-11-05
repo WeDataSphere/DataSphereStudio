@@ -75,6 +75,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.webank.wedatasphere.dss.framework.workspace.util.DSSWorkspaceConstant.DEFAULT_DEMO_WORKSPACE_NAME;
+import static com.webank.wedatasphere.dss.framework.workspace.util.DSSWorkspaceConstant.WORKSPACE_QUERY_BY_AISQL_LIST;
 
 public class DSSWorkspaceServiceImpl implements DSSWorkspaceService {
     private static final Logger LOGGER = LoggerFactory.getLogger(DSSWorkspaceServiceImpl.class);
@@ -242,6 +243,8 @@ public class DSSWorkspaceServiceImpl implements DSSWorkspaceService {
 
             boolean  isDefaultWorkspace = workspaceId != null && workspace.getId() == workspaceId.intValue();
             workspace.setIsDefaultWorkspace(isDefaultWorkspace);
+            boolean isQueryTableByAiSql = WORKSPACE_QUERY_BY_AISQL_LIST.getValue().contains(workspace.getName());
+            workspace.setIsQueryTableByAiSql(isQueryTableByAiSql);
             retWorkspaces.add(workspace);
         }
 
