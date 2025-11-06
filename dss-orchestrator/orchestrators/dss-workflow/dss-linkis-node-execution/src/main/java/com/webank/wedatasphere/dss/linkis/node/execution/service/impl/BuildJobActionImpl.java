@@ -147,6 +147,16 @@ public class BuildJobActionImpl implements BuildJobAction {
 
         String stringValue = engineTypeLabel.getStringValue();
 
+        logger.info("{} job name, engineType is {}, runType is {}",job.getJobName(),job.getEngineType(),job.getRunType());
+
+        if("ai".equalsIgnoreCase(job.getEngineType())){
+
+            EngineTypeLabel sparkEngineType = new EngineTypeLabel();
+            sparkEngineType.setEngineType(EngineType.SPARK().toString());
+            sparkEngineType.setVersion(SPARK3_ENGINE_VERSION.getValue());
+            stringValue = sparkEngineType.getStringValue();
+            logger.info("{} job name ,ai engineType stringValue is {}", job.getJobName(), stringValue);
+        }
 
         //TODO 当默认引擎为spark3 可以去掉此段if代码
         if (EngineType.SPARK().toString().equalsIgnoreCase(engineTypeLabel.getEngineType())) {
@@ -161,7 +171,7 @@ public class BuildJobActionImpl implements BuildJobAction {
                 sparkEngineType.setEngineType(engineTypeLabel.getEngineType());
                 sparkEngineType.setVersion(SPARK3_ENGINE_VERSION.getValue());
                 stringValue = sparkEngineType.getStringValue();
-                logger.info("{} job name ,spark engineType stringValue is {}", job.getJobName(), stringValue);
+                logger.info("{} job name ,spark engineType stringValue is {},user is {}", job.getJobName(), stringValue,job.getUser());
             }
 
         }
