@@ -55,6 +55,9 @@ public class BuildJobActionImpl implements BuildJobAction {
     private static final CommonVars<String> NEBULA_ENGINE_VERSION =
             CommonVars.apply("wds.linkis.nebula.engine.version", "3.0.0");
 
+    private static final String AI_ENGINE_TYPE = "ai";
+    private static final String SPARK_VERSION_3 = "3";
+
     private BuildJobActionImpl() {
 
     }
@@ -149,11 +152,11 @@ public class BuildJobActionImpl implements BuildJobAction {
 
         logger.info("{} job name, engineType is {}, runType is {}",job.getJobName(),job.getEngineType(),job.getRunType());
 
-        if("ai".equalsIgnoreCase(job.getEngineType())){
+        // aisql 节点使用spark3引擎
+        if(StringUtils.isNotEmpty(job.getEngineType())
+                && job.getEngineType().startsWith(AI_ENGINE_TYPE)){
 
-            EngineTypeLabel sparkEngineType = new EngineTypeLabel();
-            sparkEngineType.setEngineType(EngineType.SPARK().toString());
-            sparkEngineType.setVersion(SPARK3_ENGINE_VERSION.getValue());
+            EngineTypeLabel sparkEngineType = createSpark3EngineLabel(EngineType.SPARK().toString());
             stringValue = sparkEngineType.getStringValue();
             logger.info("{} job name ,ai engineType stringValue is {}", job.getJobName(), stringValue);
         }
@@ -165,11 +168,9 @@ public class BuildJobActionImpl implements BuildJobAction {
 
             // 判断sparkVersion参数为3,则使用spark3的引擎版本,否则使用spark默认引擎版本
             if (StringUtils.isNotEmpty(sparkVersion) &&
-                    StringUtils.equalsIgnoreCase(sparkVersion.trim(), "3")) {
+                    StringUtils.equalsIgnoreCase(sparkVersion.trim(), SPARK_VERSION_3)) {
 
-                EngineTypeLabel sparkEngineType = new EngineTypeLabel();
-                sparkEngineType.setEngineType(engineTypeLabel.getEngineType());
-                sparkEngineType.setVersion(SPARK3_ENGINE_VERSION.getValue());
+                EngineTypeLabel sparkEngineType = createSpark3EngineLabel(engineTypeLabel.getEngineType());
                 stringValue = sparkEngineType.getStringValue();
                 logger.info("{} job name ,spark engineType stringValue is {},user is {}", job.getJobName(), stringValue,job.getUser());
             }
@@ -305,6 +306,14 @@ public class BuildJobActionImpl implements BuildJobAction {
             }
         }
         return sparkVersion;
+    }
+
+    // 提取公共方法：创建 Spark3 引擎标签
+    private EngineTypeLabel createSpark3EngineLabel(String engineType) {
+        EngineTypeLabel sparkEngineType = new EngineTypeLabel();
+        sparkEngineType.setEngineType(engineType);
+        sparkEngineType.setVersion(SPARK3_ENGINE_VERSION.getValue());
+        return sparkEngineType;
     }
 
 }
