@@ -22,10 +22,13 @@ import com.webank.wedatasphere.dss.linkis.node.execution.exception.LinkisJobExec
 import com.webank.wedatasphere.dss.linkis.node.execution.job.Job;
 import com.webank.wedatasphere.dss.linkis.node.execution.job.LinkisJob;
 import com.webank.wedatasphere.dss.linkis.node.execution.service.BuildJobAction;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.common.conf.CommonVars;
+import org.apache.linkis.manager.label.conf.LabelCommonConfig;
 import org.apache.linkis.manager.label.constant.LabelKeyConstant;
+import org.apache.linkis.manager.label.entity.engine.EngineType;
 import org.apache.linkis.manager.label.entity.engine.EngineTypeLabel;
 import org.apache.linkis.manager.label.utils.EngineTypeLabelCreator;
 import org.apache.linkis.protocol.constants.TaskConstant;
@@ -48,9 +51,12 @@ public class BuildJobActionImpl implements BuildJobAction {
 
     private Logger logger = LoggerFactory.getLogger(BuildJobActionImpl.class);
     private static BuildJobAction buildJobAction = new BuildJobActionImpl();
-    private static final  String  NEBULA = "nebula";
+    private static final String NEBULA = "nebula";
     private static final CommonVars<String> NEBULA_ENGINE_VERSION =
             CommonVars.apply("wds.linkis.nebula.engine.version", "3.0.0");
+
+    private static final String AI_ENGINE_TYPE = "ai";
+    private static final String SPARK_VERSION_3 = "3";
 
     private BuildJobActionImpl() {
 
@@ -138,17 +144,48 @@ public class BuildJobActionImpl implements BuildJobAction {
 
         EngineTypeLabel engineTypeLabel = EngineTypeLabelCreator.createEngineTypeLabel(parseAppConnEngineType(job.getEngineType(), job));
         //TODO 升级linkis1.7.0版本之后，这段特殊的硬编码逻辑要去掉
-        if(NEBULA.equalsIgnoreCase( engineTypeLabel.getEngineType())){
+        if (NEBULA.equalsIgnoreCase(engineTypeLabel.getEngineType())) {
             engineTypeLabel.setVersion(NEBULA_ENGINE_VERSION.getValue());
         }
 
-        labels.put(LabelKeyConstant.ENGINE_TYPE_KEY, engineTypeLabel.getStringValue());
+        String stringValue = engineTypeLabel.getStringValue();
+
+        logger.info("{} job name, engineType is {}, runType is {}",job.getJobName(),job.getEngineType(),job.getRunType());
+
+        // aisql 节点使用spark3引擎
+        if(StringUtils.isNotEmpty(job.getEngineType())
+                && job.getEngineType().startsWith(AI_ENGINE_TYPE)){
+
+            EngineTypeLabel sparkEngineType = createSpark3EngineLabel(EngineType.SPARK().toString());
+            stringValue = sparkEngineType.getStringValue();
+            logger.info("{} job name ,ai engineType stringValue is {}", job.getJobName(), stringValue);
+        }
+
+        //TODO 当默认引擎为spark3 可以去掉此段if代码
+        if (EngineType.SPARK().toString().equalsIgnoreCase(engineTypeLabel.getEngineType())) {
+
+            String sparkVersion = getSparkVersion(job.getParams());
+
+            // 判断sparkVersion参数为3,则使用spark3的引擎版本,否则使用spark默认引擎版本
+            if (StringUtils.isNotEmpty(sparkVersion) &&
+                    StringUtils.equalsIgnoreCase(sparkVersion.trim(), SPARK_VERSION_3)) {
+
+                EngineTypeLabel sparkEngineType = createSpark3EngineLabel(engineTypeLabel.getEngineType());
+                stringValue = sparkEngineType.getStringValue();
+                logger.info("{} job name ,spark engineType stringValue is {},user is {}", job.getJobName(), stringValue,job.getUser());
+            }
+
+        }
+
+        logger.info("{} job name ,engineType stringValue is {}", job.getJobName(), stringValue);
+
+        labels.put(LabelKeyConstant.ENGINE_TYPE_KEY, stringValue);
         labels.put(LabelKeyConstant.USER_CREATOR_TYPE_KEY, job.getUser() + "-" + LINKIS_JOB_CREATOR_1_X.getValue(job.getJobProps()));
         labels.put(LabelKeyConstant.CODE_TYPE_KEY, parseRunType(job.getEngineType(), job.getRunType(), job));
 
 
         //是否复用引擎，不复用就为空
-        if(!isAppconnJob(job) && !isReuseEngine(job.getParams())){
+        if (!isAppconnJob(job) && !isReuseEngine(job.getParams())) {
             labels.put("executeOnce", "");
         }
         Map<String, Object> paramMapCopy = (HashMap<String, Object>) SerializationUtils.clone(new HashMap<String, Object>(job.getParams()));
@@ -255,4 +292,27 @@ public class BuildJobActionImpl implements BuildJobAction {
     private void enrichParams(Job job) {
         job.getRuntimeParams().put("nodeType", job.getRunType());
     }
+
+    private String getSparkVersion(Map<String, Object> params) {
+        String sparkVersion = null;
+        if (params.get("configuration") instanceof Map) {
+            Map<String, Object> configurationMap = (Map<String, Object>) params.get("configuration");
+            if (configurationMap.get("runtime") instanceof Map) {
+                Map<String, Object> runtimeMap = (Map<String, Object>) configurationMap.get("runtime");
+                if (runtimeMap.get("sparkVersion") instanceof String) {
+                    sparkVersion = (String) runtimeMap.get("sparkVersion");
+                }
+            }
+        }
+        return sparkVersion;
+    }
+
+    // 提取公共方法：创建 Spark3 引擎标签
+    private EngineTypeLabel createSpark3EngineLabel(String engineType) {
+        EngineTypeLabel sparkEngineType = new EngineTypeLabel();
+        sparkEngineType.setEngineType(engineType);
+        sparkEngineType.setVersion(SPARK3_ENGINE_VERSION.getValue());
+        return sparkEngineType;
+    }
+
 }
