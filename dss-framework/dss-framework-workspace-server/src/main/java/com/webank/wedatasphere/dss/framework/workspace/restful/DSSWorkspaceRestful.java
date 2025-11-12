@@ -68,6 +68,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.webank.wedatasphere.dss.framework.workspace.util.DSSWorkspaceConstant.WORKSPACE_ID_STR;
+import static com.webank.wedatasphere.dss.framework.workspace.util.DSSWorkspaceConstant.WORKSPACE_QUERY_BY_AISQL_LIST;
 import static com.webank.wedatasphere.dss.standard.sso.utils.SSOHelper.USERNAME_NAME_COOKIE_KEY;
 
 @RequestMapping(path = "/dss/framework/workspace", produces = {"application/json"})
@@ -356,6 +357,8 @@ public class DSSWorkspaceRestful {
         DSSWorkspace workspace = null;
         try {
             workspace = dssWorkspaceService.getWorkspacesById(workspaceId, username);
+            boolean isQueryTableByAiSql = WORKSPACE_QUERY_BY_AISQL_LIST.getValue().contains(workspace.getName());
+            workspace.setIsQueryTableByAiSql(isQueryTableByAiSql);
         } catch (DSSErrorException e) {
             LOGGER.error("User {} get workspace {} failed.", username, workspaceId, e);
             return Message.error(e);
