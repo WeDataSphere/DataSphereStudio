@@ -56,6 +56,8 @@ public class BuildJobActionImpl implements BuildJobAction {
             CommonVars.apply("wds.linkis.nebula.engine.version", "3.0.0");
 
     private static final String AI_ENGINE_TYPE = "ai";
+
+    private static final String AI_RUN_TYPE = "aisql";
     private static final String SPARK_VERSION_3 = "3";
 
     private BuildJobActionImpl() {
@@ -158,7 +160,8 @@ public class BuildJobActionImpl implements BuildJobAction {
 
             EngineTypeLabel sparkEngineType = createSpark3EngineLabel(EngineType.SPARK().toString());
             stringValue = sparkEngineType.getStringValue();
-            logger.info("{} job name ,ai engineType stringValue is {}", job.getJobName(), stringValue);
+            job.setRunType(AI_RUN_TYPE);
+            logger.info("{} job name ,ai engineType stringValue is {}， runType is {}", job.getJobName(), stringValue, job.getRunType());
         }
 
         //TODO 当默认引擎为spark3 可以去掉此段if代码
