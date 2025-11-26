@@ -83,6 +83,7 @@ public class NodeInputServiceImpl implements NodeInputService {
                         fileName=Optional.ofNullable(nodeName).orElse("") + extensionName;
                     }
                     String filePath = IoUtils.addFileSeparator(nodePath, fileName);
+                    // upload会负责把inputStream关闭
                     InputStream resourceInputStream = bmlService.readLocalResourceFile(userName, filePath);
                     BmlResource bmlReturnMap = bmlService.upload(userName,
                             resourceInputStream, UUID.randomUUID().toString() + ".json", projectName);
@@ -102,6 +103,7 @@ public class NodeInputServiceImpl implements NodeInputService {
         if (resources != null && resources.size() > 0) {
             resources.forEach(resource -> {
                 if (resource.getVersion() != null && resource.getFileName() != null && resource.getResourceId() != null) {
+                    // upload会负责把inputStream关闭
                     InputStream resourceInputStream = readResource(userName, resource, inputResourcePath);
                     BmlResource bmlReturnMap = bmlService.upload(userName,
                             resourceInputStream, UUID.randomUUID().toString() + ".json", projectName);
@@ -144,6 +146,7 @@ public class NodeInputServiceImpl implements NodeInputService {
         logger.info("nodeResourcePath:{}", nodeResourcePath);
         File file = new File(nodeResourcePath);
         if (file.exists()) {
+            // upload会负责把inputStream关闭
             InputStream resourceInputStream = bmlService.readLocalResourceFile(userName, nodeResourcePath);
             Supplier<Map<String, Object>> bmlResourceMap = () -> {
                 BmlResource resource = bmlService.upload(userName, resourceInputStream, UUID.randomUUID().toString() + ".json",
@@ -209,6 +212,7 @@ public class NodeInputServiceImpl implements NodeInputService {
         logger.info("nodeResourcePath:{}", nodeResourcePath);
         File file = new File(nodeResourcePath);
         if (file.exists()) {
+            // upload会负责把inputStream关闭
             InputStream resourceInputStream = bmlService.readLocalResourceFile(userName, nodeResourcePath);
             Supplier<Map<String, Object>> bmlResourceMap = () -> {
                 BmlResource resource = bmlService.upload(userName, resourceInputStream, UUID.randomUUID().toString() + ".json",

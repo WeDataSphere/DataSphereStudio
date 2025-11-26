@@ -306,6 +306,7 @@ public class ImportDSSOrchestratorPluginImpl extends AbstractDSSOrchestratorPlug
         String flowZipPath = inputPath + File.separator + "orc_flow.zip";
         //3、上传工作流zip包到bml
         InputStream inputStream = bmlService.readLocalResourceFile(userName, flowZipPath);
+        // upload会负责把inputStream关闭
         BmlResource resultMap = bmlService.upload(userName, inputStream, importDssOrchestratorInfo.getName() + "_orc_flow.zip", projectName);
         String orcResourceId = resultMap.getResourceId();
         String orcBmlVersion = resultMap.getVersion();

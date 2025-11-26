@@ -394,9 +394,10 @@ public class ApiServiceQueryServiceImpl implements ApiServiceQueryService {
 
                     AssertUtil.isTrue(resource.isSuccess(), "查询bml错误");
 
-                    InputStream inputStream = resource.inputStream();
 
-                    try (FileSource fileSource = FileSource$.MODULE$.create(new FsPath(scriptPath), inputStream)) {
+
+                    try (  InputStream inputStream = resource.inputStream();
+                           FileSource fileSource = FileSource$.MODULE$.create(new FsPath(scriptPath), inputStream)) {
                         //todo   数组取了第一个
                         collect = fileSource.collect()[0];
                         bmlCache.put(key, collect);

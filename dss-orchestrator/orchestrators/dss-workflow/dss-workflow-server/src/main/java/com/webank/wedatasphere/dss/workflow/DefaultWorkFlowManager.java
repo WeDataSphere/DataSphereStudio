@@ -215,6 +215,7 @@ public class DefaultWorkFlowManager implements WorkFlowManager {
         DSSFlow dssFlow = flowService.getFlowByID(flowId);
         String projectPath = workFlowExportService.exportFlowInfoNew(dssProjectId, projectName, flowId, userName, workspace, dssLabels,exportExternalNodeAppConnResource);
         String exportPath = ZipHelper.zip(projectPath);
+        // upload会负责把inputStream关闭
         InputStream inputStream = bmlService.readLocalResourceFile(userName, exportPath);
         BmlResource bmlResource = bmlService.upload(userName, inputStream, dssFlow.getName() + ".export", projectName);
         logger.info("export workflow success.  flowId:{},bmlResource:{} .",flowId,bmlResource);
@@ -237,6 +238,7 @@ public class DefaultWorkFlowManager implements WorkFlowManager {
                 throw new DSSErrorException(100098, "工作流导出失败，原因为本次导出总大小超过" + limitValue + "GB");
             }
         }
+        // upload会负责把inputStream关闭
         InputStream inputStream = bmlService.readLocalResourceFile(userName, exportPath);
         BmlResource bmlResource = bmlService.upload(userName, inputStream, projectName + ".export", projectName);
         logger.info("export workflow success.  flowId:{},bmlResource:{} .",flowIdList,bmlResource);
@@ -279,6 +281,7 @@ public class DefaultWorkFlowManager implements WorkFlowManager {
                                       List<DSSLabel> dssLabels) throws Exception {
         DSSFlow dssFlow = flowService.getFlowByID(flowId);
         String exportPath = workFlowExportService.exportFlowInfo(dssProjectId, projectName, flowId, userName, workspace, dssLabels);
+        // upload会负责把inputStream关闭
         InputStream inputStream = bmlService.readLocalResourceFile(userName, exportPath);
         BmlResource bmlResource = bmlService.upload(userName, inputStream, dssFlow.getName() + ".export", projectName);
         logger.info("export workflow success. flowId:{},bmlResource:{} .",flowId,bmlResource);

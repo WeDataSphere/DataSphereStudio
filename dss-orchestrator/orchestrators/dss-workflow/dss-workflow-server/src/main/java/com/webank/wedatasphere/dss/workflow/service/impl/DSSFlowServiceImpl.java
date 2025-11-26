@@ -1353,7 +1353,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             //从bml取出resource
             String flowResourcePath = savePath + File.separator + resource.getResourceId() + ".re";
             bmlService.downloadToLocalPath(userName, resource.getResourceId(), resource.getVersion(), flowResourcePath);
-            //重新上传resource
+            //重新上传resource到bml
+            // upload会负责把inputStream关闭
             InputStream resourceInputStream = bmlService.readLocalResourceFile(userName, flowResourcePath);
             BmlResource bmlReturnMap = bmlService.upload(userName, resourceInputStream, UUID.randomUUID().toString() + ".json", projectName);
             resource.setResourceId(bmlReturnMap.getResourceId());

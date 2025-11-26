@@ -162,6 +162,7 @@ public class ImportServiceImpl implements ImportService {
         for (Path path : flowProjectPaths.values()) {
             String zipFilePath = ZipHelper.zip(path.toAbsolutePath().toString());
             File orcZipFile=new File(zipFilePath);
+            // upload会负责把inputStream关闭
             InputStream inputStream = bmlService.readLocalResourceFile(userName, orcZipFile.getAbsolutePath());
             BmlResource uploadResult = bmlService.upload(userName, inputStream,
                     orcZipFile.getName() , projectName);

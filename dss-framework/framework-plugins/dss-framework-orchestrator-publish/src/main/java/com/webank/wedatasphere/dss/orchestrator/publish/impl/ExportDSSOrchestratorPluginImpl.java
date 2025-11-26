@@ -155,6 +155,7 @@ public class ExportDSSOrchestratorPluginImpl extends AbstractDSSOrchestratorPlug
 
             //3、打包新的zip包上传BML
             InputStream inputStream = bmlService.readLocalResourceFile(userName, exportPath);
+            // upload会负责把inputStream关闭
             BmlResource uploadResult = bmlService.upload(userName, inputStream,
                     dssOrchestratorInfo.getName() + ".OrcExport", projectName);
 
@@ -232,6 +233,7 @@ public class ExportDSSOrchestratorPluginImpl extends AbstractDSSOrchestratorPlug
 
             //3、打包新的zip包上传BML
             InputStream inputStream = bmlService.readLocalResourceFile(userName, exportPath);
+            // upload会负责把inputStream关闭
             BmlResource uploadResult = bmlService.upload(userName, inputStream,
                     dssOrchestratorInfo.getName() + ".OrcExport", projectName);
 

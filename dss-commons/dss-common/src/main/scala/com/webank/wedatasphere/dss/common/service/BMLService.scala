@@ -67,13 +67,18 @@ class BMLService extends JavaLog {
    * @return 返回BmlResource
    */
   def upload(userName: String, content: String, fileName: String, projectName: String): util.Map[String, Object] = {
-    val inputStream = new ByteArrayInputStream(content.getBytes("utf-8"))
-    val client: BmlClient = getBmlClient(userName)
-    val resource: BmlUploadResponse = client.uploadShareResource(userName, projectName, fileName, inputStream)
-    if (!resource.isSuccess) throw new DSSErrorException(911113, "上传失败")
-    val map = new util.HashMap[String, Object]
-    map += "resourceId" -> resource.resourceId
-    map += "version" -> resource.version
+    var inputStream: InputStream = null
+    try {
+      inputStream = new ByteArrayInputStream(content.getBytes("utf-8"))
+      val client: BmlClient = getBmlClient(userName)
+      val resource: BmlUploadResponse = client.uploadShareResource(userName, projectName, fileName, inputStream)
+      if (!resource.isSuccess) throw new DSSErrorException(911113, "上传失败")
+      val map = new util.HashMap[String, Object]
+      map += "resourceId" -> resource.resourceId
+      map += "version" -> resource.version
+    } finally {
+      IOUtils.closeQuietly(inputStream)
+    }
   }
 
   /**
@@ -85,10 +90,14 @@ class BMLService extends JavaLog {
    * @return 上传后的结果BmlResource
    */
   def upload(userName: String, inputStream: InputStream, fileName: String, projectName: String): BmlResource = {
-    val client: BmlClient = getBmlClient(userName)
-    val resource: BmlUploadResponse = client.uploadShareResource(userName, projectName, fileName, inputStream)
-    if (!resource.isSuccess) throw new DSSErrorException(911113, "上传失败")
-    new BmlResource(resource.resourceId, resource.version)
+    try {
+      val client: BmlClient = getBmlClient(userName)
+      val resource: BmlUploadResponse = client.uploadShareResource(userName, projectName, fileName, inputStream)
+      if (!resource.isSuccess) throw new DSSErrorException(911113, "上传失败")
+      new BmlResource(resource.resourceId, resource.version)
+    } finally {
+      IOUtils.closeQuietly(inputStream)
+    }
   }
 
   /**
@@ -98,12 +107,16 @@ class BMLService extends JavaLog {
    * @return 更新后的结果BmlResource
    */
   def update(userName: String, resourceId: String, inputStream: InputStream): util.Map[String, Object] = {
-    val client: BmlClient = getBmlClient(userName)
-    val resource: BmlUpdateResponse = client.updateShareResource(userName, resourceId, "", inputStream)
-    if (!resource.isSuccess) throw new DSSErrorException(911114, "更新失败")
-    val map = new util.HashMap[String, Object]
-    map += "resourceId" -> resource.resourceId
-    map += "version" -> resource.version
+    try {
+      val client: BmlClient = getBmlClient(userName)
+      val resource: BmlUpdateResponse = client.updateShareResource(userName, resourceId, "", inputStream)
+      if (!resource.isSuccess) throw new DSSErrorException(911114, "更新失败")
+      val map = new util.HashMap[String, Object]
+      map += "resourceId" -> resource.resourceId
+      map += "version" -> resource.version
+    } finally {
+      IOUtils.closeQuietly(inputStream)
+    }
   }
 
   /**
@@ -114,13 +127,18 @@ class BMLService extends JavaLog {
    * @return 更新后的结果BmlResource
    */
   def update(userName: String, resourceId: String, content: String): util.Map[String, Object] = {
-    val inputStream = new ByteArrayInputStream(content.getBytes("utf-8"))
-    val client: BmlClient = getBmlClient(userName)
-    val resource: BmlUpdateResponse = client.updateShareResource(userName, resourceId, UUID.randomUUID().toString + ".json", inputStream)
-    if (!resource.isSuccess) throw new DSSErrorException(911114, "更新失败")
-    val map = new util.HashMap[String, Object]
-    map += "resourceId" -> resource.resourceId
-    map += "version" -> resource.version
+    var inputStream: InputStream = null
+    try {
+      inputStream = new ByteArrayInputStream(content.getBytes("utf-8"))
+      val client: BmlClient = getBmlClient(userName)
+      val resource: BmlUpdateResponse = client.updateShareResource(userName, resourceId, UUID.randomUUID().toString + ".json", inputStream)
+      if (!resource.isSuccess) throw new DSSErrorException(911114, "更新失败")
+      val map = new util.HashMap[String, Object]
+      map += "resourceId" -> resource.resourceId
+      map += "version" -> resource.version
+    } finally {
+      IOUtils.closeQuietly(inputStream)
+    }
   }
 
   /**
@@ -135,13 +153,24 @@ class BMLService extends JavaLog {
       resource = client.downloadShareResource(userName, resourceId, version)
     }
     if (!resource.isSuccess) throw new DSSErrorException(911115, "下载失败")
+    
+    var inputStream: InputStream = null
+    var content: String = null
+    try {
+      inputStream = resource.inputStream
+      content = inputstremToString(inputStream)
+    } finally {
+      IOUtils.closeQuietly(inputStream)
+    }
+    
     val map = new util.HashMap[String, Object]
     map += "path" -> resource.fullFilePath
-    map += "string" -> inputstremToString(resource.inputStream)
+    map += "string" -> content
   }
 
   /**
    * 下载一个资源
+   * 注意：这里返回的输入流需要由调用者负责关闭
    * @return 资源的路径和输入流
    */
   def download(userName: String, resourceId: String, version: String): util.Map[String, Object] = {
@@ -182,7 +211,7 @@ class BMLService extends JavaLog {
 
   /**
    * 读取本地文件，返回二进制输入流
-   *
+   *注意：这里返回的输入流需要由调用者负责关闭
    * @param userName 用户名
    * @param readPath 本地文件全路径名
    * @return 二进制输入流
@@ -227,7 +256,13 @@ class BMLService extends JavaLog {
 
 
   private def inputstremToString(inputStream: InputStream): String = {
-    scala.io.Source.fromInputStream(inputStream).mkString
+    // 使用try-finally确保Source对象被正确关闭，从而关闭底层的输入流
+    val source = scala.io.Source.fromInputStream(inputStream)
+    try {
+      source.mkString
+    } finally {
+      source.close()
+    }
   }
 
 

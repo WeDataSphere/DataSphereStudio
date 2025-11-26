@@ -483,6 +483,7 @@ public class WorkFlowInputServiceImpl implements WorkFlowInputService {
         //上传文件获取resourceId和version save应该是已经有
         if (resourceList != null) {
             resourceList.forEach(resource -> {
+                // upload会负责把inputStream关闭
                 InputStream resourceInputStream = readFlowResourceNew(userName, resource, flowCodePath);
                 BmlResource bmlReturnMap = bmlService.upload(userName, resourceInputStream, UUID.randomUUID().toString() + ".json", projectName);
                 resource.setResourceId(bmlReturnMap.getResourceId());
@@ -500,6 +501,7 @@ public class WorkFlowInputServiceImpl implements WorkFlowInputService {
         //上传文件获取resourceId和version save应该是已经有
         if (resourceList != null) {
             resourceList.forEach(resource -> {
+                // upload会负责把inputStream关闭
                 InputStream resourceInputStream = readFlowResource(userName, resource, flowResourcePath);
                 BmlResource bmlReturnMap = bmlService.upload(userName, resourceInputStream, UUID.randomUUID().toString() + ".json", projectName);
                 resource.setResourceId(bmlReturnMap.getResourceId());

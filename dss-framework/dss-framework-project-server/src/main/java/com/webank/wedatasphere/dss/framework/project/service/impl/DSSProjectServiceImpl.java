@@ -512,6 +512,7 @@ public class DSSProjectServiceImpl extends ServiceImpl<DSSProjectMapper, DSSProj
         LOGGER.info("export project file locate at {}", zipFile);
         //先上传
         InputStream inputStream = bmlService.readLocalResourceFile(username, zipFile);
+        // upload会负责把inputStream关闭
         BmlResource bmlResource = bmlService.upload(username, inputStream, projectName + ".OrcsExport", projectName);
 
         LOGGER.info("export zip file upload to bmlResourceId:{} bmlResourceVersion:{}",
@@ -600,6 +601,7 @@ public class DSSProjectServiceImpl extends ServiceImpl<DSSProjectMapper, DSSProj
         LOGGER.info("export project file locate at {}", zipFile);
         //先上传
         InputStream inputStream = bmlService.readLocalResourceFile(username, zipFile);
+        // upload会负责把inputStream关闭
         BmlResource bmlResource = bmlService.upload(username, inputStream, projectName + ".OrcsExport", projectName);
 
         LOGGER.info("export zip file upload to bmlResourceId:{} bmlResourceVersion:{}",
