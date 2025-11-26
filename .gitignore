@@ -4,6 +4,7 @@
 .vscode
 .scalafmt.conf
 .bloop
+target/
 
 .DS_Store
 
