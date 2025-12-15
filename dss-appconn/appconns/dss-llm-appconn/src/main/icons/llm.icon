@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- 背景圆形 -->
+  <circle cx="32" cy="32" r="30" fill="#6366f1" opacity="0.1"/>
+
+  <!-- AI芯片外框 -->
+  <rect x="16" y="16" width="32" height="32" rx="4" fill="none" stroke="#6366f1" stroke-width="2"/>
+
+  <!-- 内部电路图案 -->
+  <line x1="32" y1="16" x2="32" y2="24" stroke="#6366f1" stroke-width="2"/>
+  <line x1="32" y1="40" x2="32" y2="48" stroke="#6366f1" stroke-width="2"/>
+  <line x1="16" y1="32" x2="24" y2="32" stroke="#6366f1" stroke-width="2"/>
+  <line x1="40" y1="32" x2="48" y2="32" stroke="#6366f1" stroke-width="2"/>
+
+  <!-- 中心处理器 -->
+  <rect x="26" y="26" width="12" height="12" rx="2" fill="#6366f1"/>
+
+  <!-- 角落装饰点 -->
+  <circle cx="20" cy="20" r="2" fill="#6366f1"/>
+  <circle cx="44" cy="20" r="2" fill="#6366f1"/>
+  <circle cx="20" cy="44" r="2" fill="#6366f1"/>
+  <circle cx="44" cy="44" r="2" fill="#6366f1"/>
+
+  <!-- "LLM"文字标识 -->
+  <text x="32" y="58" font-family="Arial, sans-serif" font-size="8" fill="#6366f1" text-anchor="middle" font-weight="bold">LLM</text>
+</svg>

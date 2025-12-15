@@ -1,0 +1,69 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+    <id>dss-llm-appconn</id>
+    <formats>
+        <format>dir</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+    <baseDirectory>llm</baseDirectory>
+
+    <!-- 依赖jar包 -->
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>llm/lib</outputDirectory>
+            <useProjectArtifact>true</useProjectArtifact>
+            <useTransitiveDependencies>true</useTransitiveDependencies>
+            <unpack>false</unpack>
+            <scope>runtime</scope>
+        </dependencySet>
+    </dependencySets>
+
+    <fileSets>
+        <!-- appconn.properties配置文件 -->
+        <fileSet>
+            <directory>${basedir}/src/main/resources</directory>
+            <includes>
+                <include>appconn.properties</include>
+            </includes>
+            <outputDirectory>llm</outputDirectory>
+        </fileSet>
+
+        <!-- 日志配置文件 -->
+        <fileSet>
+            <directory>${basedir}/src/main/resources</directory>
+            <includes>
+                <include>log4j.properties</include>
+                <include>log4j2.xml</include>
+            </includes>
+            <outputDirectory>llm/conf</outputDirectory>
+        </fileSet>
+
+        <!-- 图标文件 -->
+        <fileSet>
+            <directory>${basedir}/src/main/icons</directory>
+            <includes>
+                <include>*</include>
+            </includes>
+            <outputDirectory>llm/icons</outputDirectory>
+        </fileSet>
+
+        <!-- PNG图标文件 -->
+        <fileSet>
+            <directory>${basedir}/src/main/pngs</directory>
+            <includes>
+                <include>*.png</include>
+            </includes>
+            <outputDirectory>llm/pngs</outputDirectory>
+        </fileSet>
+
+        <!-- 数据库初始化脚本 -->
+        <fileSet>
+            <directory>${basedir}/src/main/resources</directory>
+            <includes>
+                <include>init.sql</include>
+            </includes>
+            <outputDirectory>llm/db</outputDirectory>
+        </fileSet>
+    </fileSets>
+</assembly>
