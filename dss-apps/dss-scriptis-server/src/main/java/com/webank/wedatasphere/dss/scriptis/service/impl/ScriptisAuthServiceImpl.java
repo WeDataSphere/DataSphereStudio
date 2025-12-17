@@ -20,6 +20,9 @@ public class ScriptisAuthServiceImpl implements ScriptisAuthService {
     @Autowired
     private ScriptisAuthMapper authMapper;
 
+    @Autowired
+    private static final String  downloadCount=  "downloadCount";
+
     @Override
     public Map<String, Object> getGlobalLimits(String username) {
         return GlobalLimitsUtils.getAllGlobalLimits();
@@ -35,18 +38,16 @@ public class ScriptisAuthServiceImpl implements ScriptisAuthService {
             res.put(key,retVal);
         });
 
-        // 数据库中未配置用户下载限制,且是联合分析环境,则判断用户后缀
-        if (MapUtils.isEmpty(res) && ServerConfiguration.LINKIE_USERNAME_SUFFIX_ENABLE()){
+        // 数据库中未配置用户下载限制,且是cib数据操作间的用户,则返回下载限制条数
+        if (res.get(downloadCount) == null && ServerConfiguration.LINKIE_USERNAME_SUFFIX_ENABLE()){
 
-            // _cfor_f后缀则是cib数据操作间,_c后缀是普通数据操作间
-            List<String> suffixes = Lists.newArrayList(DSSCommonConf.DSS_USER_NAME_SUFFIX.getValue(),
-                    ServerConfiguration.LINKIE_USERNAME_SUFFIX_NAME());
+            // _cfor_f后缀则是cib数据操作间
+            String suffix = DSSCommonConf.DSS_USER_NAME_SUFFIX.getValue();
 
-            // 用户满足后缀 则返回下载限制条数
-            if(suffixes.stream().anyMatch(suffix -> StringUtils.endsWith(username,suffix))){
-
+            // cib数据操作间的用户
+            if(StringUtils.endsWithIgnoreCase(username,suffix)){
                 Integer limit = DSSCommonConf.DSS_SCRIPTS_DOWNLOAD_LIMIT.getValue();
-                res.put(limitName,limit);
+                res.put(downloadCount,limit);
             }
         }
 
