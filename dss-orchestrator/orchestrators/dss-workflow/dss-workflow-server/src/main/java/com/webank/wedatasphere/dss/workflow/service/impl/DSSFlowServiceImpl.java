@@ -53,6 +53,7 @@ import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlow;
 import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlowRelation;
 import com.webank.wedatasphere.dss.workflow.common.parser.NodeParser;
 import com.webank.wedatasphere.dss.workflow.common.parser.WorkFlowParser;
+import com.webank.wedatasphere.dss.workflow.constant.DSSWorkFlowConstant;
 import com.webank.wedatasphere.dss.workflow.constant.SignalNodeConstant;
 import com.webank.wedatasphere.dss.workflow.constant.WorkflowNodeGroupEnum;
 import com.webank.wedatasphere.dss.workflow.core.WorkflowFactory;
@@ -86,6 +87,7 @@ import com.webank.wedatasphere.dss.workflow.service.WorkflowNodeService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.apache.http.Consts;
 import org.apache.linkis.common.exception.ErrorException;
 import org.apache.linkis.common.io.FsPath;
@@ -108,6 +110,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.DateFormat;
 import java.text.MessageFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -268,17 +271,17 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
     @Override
-    public void getRootFlowProxy(DSSFlow dssFlow){
+    public void getRootFlowProxy(DSSFlow dssFlow) {
 
         try {
 
-            if(Boolean.FALSE.equals(dssFlow.getRootFlow())){
+            if (Boolean.FALSE.equals(dssFlow.getRootFlow())) {
                 Long rootFlowId = getRootFlowId(dssFlow.getId());
-                if(rootFlowId  == null){
+                if (rootFlowId == null) {
                     return;
                 }
                 DSSFlow rootFlow = getFlowByID(rootFlowId);
-                Map<String,Object> json = bmlService.query(rootFlow.getName(), rootFlow.getResourceId(), rootFlow.getBmlVersion());
+                Map<String, Object> json = bmlService.query(rootFlow.getName(), rootFlow.getResourceId(), rootFlow.getBmlVersion());
 
                 List<Map<String, Object>> props = DSSCommonUtils.getFlowAttribute(json.get("string").toString(), "props");
                 String proxyUser = "";
@@ -294,7 +297,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 dssFlow.setDefaultProxyUser(proxyUser);
             }
 
-        }catch (Exception e){
+        } catch (Exception e) {
             logger.error("getRootFlowProxy dssFlow id is {}, error msg is {}", dssFlow.getId(), e.getMessage());
         }
     }
@@ -400,7 +403,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 RpcAskUtils.processAskException(getOrchestratorSender().ask(new RequestOrchestratorVersionUpdateTime(orchestratorId)),
                         Boolean.class, RequestOrchestratorVersionUpdateTime.class);
                 // 保存工作流时, 清理工作流元数据表中的脏数据
-                clearFlowMetaData(orchestratorId,rootFlowId);
+                clearFlowMetaData(orchestratorId, rootFlowId);
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -412,17 +415,23 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         } else {
             logger.info("saveFlow is change");
         }
-        if (StringUtils.isNotEmpty(flowJsonOld) ) {
+        if (StringUtils.isNotEmpty(flowJsonOld)) {
             String rollBackNode = null;
             try {
                 rollBackNode = checkFlowVersionDowngrade(flowJsonOld, jsonFlow);
-            }catch (Exception e){
-                logger.error("check roll back node failed",e);
+            } catch (Exception e) {
+                logger.error("check roll back node failed", e);
             }
             if (rollBackNode != null) {
                 throw new DSSErrorException(80001, "工作流中存在节点：" + rollBackNode + "，此次保存会导致该节点的代码版本被回退，请刷新页面，确认代码无误后再保存");
             }
         }
+
+        if(PYSPARK_PYTHON_ENABLE.getValue()){
+            // 新增的pyspark节点添加spark.python.version=python3,强制使用python3环境
+            jsonFlow = updatePysparkPythonVersion(jsonFlow);
+        }
+
 
         checkSubflowDependencies(userName, flowID, jsonFlow);
         String resourceId = dssFlow.getResourceId();
@@ -446,7 +455,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             contextService.checkAndSaveContext(jsonFlow, String.valueOf(parentFlowID));
         } catch (DSSErrorException e) {
             logger.error("Failed to saveContext: ", e);
-            throw new DSSRuntimeException(e.getErrCode(), "保存ContextId失败，您可以尝试重新发布工作流！flowID："+flowID+"原因：" + ExceptionUtils.getRootCauseMessage(e), e);
+            throw new DSSRuntimeException(e.getErrCode(), "保存ContextId失败，您可以尝试重新发布工作流！flowID：" + flowID + "原因：" + ExceptionUtils.getRootCauseMessage(e), e);
         }
         saveFlowHook.afterSave(jsonFlow, dssFlow, parentFlowID);
         String version = bmlReturnMap.get("version").toString();
@@ -456,6 +465,88 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         return version;
     }
+
+
+    public String updatePysparkPythonVersion(String jsonFlow) {
+
+        try {
+
+            String pythonDateTime = PYSPARK_PYTHON_DATETIME.getValue();
+            long pythonDateTimeLong = DateUtils.parseDate(pythonDateTime,new String[]{"yyyy-MM-dd HH:mm:ss"}).getTime();
+            String pythonVersion = PYSPARK_PYTHON_VERSION.getValue();
+
+            logger.info("pyspark python3 enable,python version is {}, pyspark python time is [{},{}]",
+                    pythonVersion, pythonDateTime,pythonDateTimeLong);
+
+            // 新增的pyspark节点添加spark.python.version=python3,强制使用python3环境
+            List<DSSNodeDefault> workFlowNodes = DSSCommonUtils.getWorkFlowNodes(jsonFlow);
+
+            List<DSSNodeDefault> updateNodes = new ArrayList<>();
+
+            for (DSSNodeDefault node : workFlowNodes) {
+
+                if (!node.getJobType().equalsIgnoreCase("linkis.spark.py")) {
+                    continue;
+                }
+
+
+                if (node.getCreateTime() == null || node.getCreateTime() < pythonDateTimeLong) {
+                    logger.info("{} Not new nodes, node createTime is [{}], python3DateTime is [{},{}]",
+                            node.getTitle(),node.getCreateTime(),pythonDateTimeLong,pythonDateTime);
+                    continue;
+                }
+
+                if (node.getParams() == null) {
+                    node.setParams(new HashMap<>());
+                }
+
+                Map<String, Object> configuration = (Map<String, Object>) node.getParams().get("configuration");
+
+                if (configuration == null) {
+                    configuration = new HashMap<>();
+                    configuration.put("special", new HashMap<>());
+                    configuration.put("runtime", new HashMap<>());
+                    configuration.put("startup", new HashMap<>());
+                }
+
+                Map<String, Object> startup = (Map<String, Object>) configuration.get("startup");
+
+                if (startup == null) {
+                    startup = new HashMap<>();
+                }
+
+                if (pythonVersion.equals(startup.get("spark.python.version"))) {
+                    continue;
+                }
+
+                startup.put("spark.python.version", pythonVersion);
+
+                updateNodes.add(node);
+
+                logger.info("node is {}", DSSCommonUtils.COMMON_GSON.toJson(node));
+            }
+
+            logger.info("update pyspark node is {}",DSSCommonUtils.COMMON_GSON.toJson(updateNodes));
+
+            if (CollectionUtils.isNotEmpty(updateNodes)) {
+
+                JsonParser parser = new JsonParser();
+                JsonObject jsonObject = parser.parse(jsonFlow).getAsJsonObject();
+                jsonObject.addProperty("node", DSSCommonUtils.COMMON_GSON.toJson(workFlowNodes));
+                jsonFlow = jsonObject.toString();
+
+                logger.info("pyspark update json flow is {}",jsonFlow);
+            }
+
+
+        } catch (Exception e) {
+            logger.info("jsonFlow is {}", jsonFlow);
+            logger.error("updatePysparkPythonVersion failed", e);
+        }
+
+        return jsonFlow;
+    }
+
 
     @Override
     public void updateTOSaveStatus(Long projectId, Long flowID, Long orchestratorId) throws Exception {
@@ -742,19 +833,18 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
 
-
-    private void clearFlowMetaData(Long orchestratorId, Long rootFlowId){
+    private void clearFlowMetaData(Long orchestratorId, Long rootFlowId) {
 
         // 保存时 清理node_content表的脏数据
         // 获取编排目前的所有的flowID
-        List<Long> flowIdList  = getFlowIdListByOrchestratorId(rootFlowId);
+        List<Long> flowIdList = getFlowIdListByOrchestratorId(rootFlowId);
         // 获取编排不存在的工作流信息
         List<Long> contentIdList = nodeContentMapper.getNodeContentListByOrchestratorId(orchestratorId).stream()
                 .filter(nodeContentDO -> !flowIdList.contains(nodeContentDO.getFlowId()))
                 .map(NodeContentDO::getId)
                 .collect(Collectors.toList());
         // 删除node_content表多余的节点信息
-        if(CollectionUtils.isNotEmpty(contentIdList)){
+        if (CollectionUtils.isNotEmpty(contentIdList)) {
             nodeContentUIMapper.deleteNodeContentUIByContentList(contentIdList);
             nodeContentMapper.deleteNodeContentById(contentIdList);
         }
@@ -763,18 +853,18 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 .distinct().collect(Collectors.toList());
         // 获取未保存的flow信息
         List<Long> notSaveFlow = flowIdList.stream().filter(flowId -> !nodeContentFlowId.contains(flowId)).collect(Collectors.toList());
-        logger.info("orchestratorId is {}, rootFlowId is {}, notSaveFlow is {}",orchestratorId,rootFlowId,StrUtil.join(",", notSaveFlow));
-        for(Long flowId: notSaveFlow){
-            logger.info("save flow data, orchestratorId is {}, flowID is {}",orchestratorId, flowId);
+        logger.info("orchestratorId is {}, rootFlowId is {}, notSaveFlow is {}", orchestratorId, rootFlowId, StrUtil.join(",", notSaveFlow));
+        for (Long flowId : notSaveFlow) {
+            logger.info("save flow data, orchestratorId is {}, flowID is {}", orchestratorId, flowId);
             // 保存工作流信息
             DSSFlow dssFlow = getFlow(flowId);
-            saveFlowMetaData(dssFlow.getId(),dssFlow.getFlowJson(),orchestratorId);
+            saveFlowMetaData(dssFlow.getId(), dssFlow.getFlowJson(), orchestratorId);
         }
 
 
     }
 
-    private List<Long> getFlowIdListByOrchestratorId(Long rootFlowId){
+    private List<Long> getFlowIdListByOrchestratorId(Long rootFlowId) {
 
         List<Long> flowIdList = new ArrayList<>();
 
@@ -786,18 +876,17 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
     }
 
-    private void getFlowIdList(DSSFlow dssFlow,List<Long> flowIdList){
+    private void getFlowIdList(DSSFlow dssFlow, List<Long> flowIdList) {
 
         flowIdList.add(dssFlow.getId());
 
-        if(dssFlow.getChildren() != null){
+        if (dssFlow.getChildren() != null) {
 
-            for(DSSFlow flow: dssFlow.getChildren()){
-                getFlowIdList(flow,flowIdList);
+            for (DSSFlow flow : dssFlow.getChildren()) {
+                getFlowIdList(flow, flowIdList);
             }
         }
     }
-
 
 
     private void deleteFlowMetaDataByFlowId(Long flowID) {
@@ -954,7 +1043,6 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
 
-
     // 比较版本号
     private int compareVersions(String version1, String version2) {
         String v1 = version1.substring(1);
@@ -1026,23 +1114,23 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     public DSSFlow copyRootFlow(Long rootFlowId, String userName, Workspace workspace,
                                 String projectName, String version, String contextIdStr,
                                 String description, List<DSSLabel> dssLabels, String nodeSuffix,
-                                String newFlowName, Long newProjectId,List<String> enableNodeList,
-                                String flowProxyUser,boolean skipThirdAppconn, boolean copyOrchestrator) throws DSSErrorException, IOException {
+                                String newFlowName, Long newProjectId, List<String> enableNodeList,
+                                String flowProxyUser, boolean skipThirdAppconn, boolean copyOrchestrator) throws DSSErrorException, IOException {
         DSSFlow dssFlow = flowMapper.selectFlowByID(rootFlowId);
         Sender orcSender = DSSSenderServiceFactory.getOrCreateServiceInstance().getOrcSender(dssLabels);
         OrchestratorVo orchestratorVo = RpcAskUtils.processAskException(orcSender.ask(new RequestQuertByAppIdOrchestrator(dssFlow.getId())),
                 OrchestratorVo.class, RequestQueryByIdOrchestrator.class);
         Long orchestratorId = orchestratorVo.getDssOrchestratorInfo().getId();
         logger.info("copyRootFlow orchestrator id is {}, name is {}, flowId is {}, copyOrchestrator is {}",
-                orchestratorId,dssFlow.getName(), dssFlow.getId(), copyOrchestrator);
-        if(!copyOrchestrator){
+                orchestratorId, dssFlow.getName(), dssFlow.getId(), copyOrchestrator);
+        if (!copyOrchestrator) {
             logger.info("delete flow metadata , orchestratorId is {}", orchestratorId);
             // 不是复制工作流,就删除元数据信息
             deleteFlowMetaData(orchestratorId);
         }
         DSSFlow rootFlowWithSubFlows = copyFlowAndSetSubFlowInDB(dssFlow, userName, description, nodeSuffix, newFlowName, newProjectId);
         updateFlowJson(userName, projectName, rootFlowWithSubFlows, version, null,
-                contextIdStr, workspace, dssLabels, nodeSuffix, orchestratorId,enableNodeList,flowProxyUser, skipThirdAppconn,copyOrchestrator);
+                contextIdStr, workspace, dssLabels, nodeSuffix, orchestratorId, enableNodeList, flowProxyUser, skipThirdAppconn, copyOrchestrator);
         DSSFlow copyFlow = flowMapper.selectFlowByID(rootFlowWithSubFlows.getId());
         copyFlow.setFlowIdParamConfTemplateIdTuples(rootFlowWithSubFlows.getFlowIdParamConfTemplateIdTuples());
         return copyFlow;
@@ -1157,7 +1245,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     private void updateFlowJson(String userName, String projectName, DSSFlow rootFlow,
                                 String version, Long parentFlowId, String contextIdStr,
                                 Workspace workspace, List<DSSLabel> dssLabels, String nodeSuffix,
-                                Long orchestratorId,List<String> enableNodeList,String flowProxyUser,
+                                Long orchestratorId, List<String> enableNodeList, String flowProxyUser,
                                 boolean skipThirdAppconn, boolean copyOrchestrator) throws DSSErrorException, IOException {
         String flowJson = bmlService.readTextFromBML(userName, rootFlow.getResourceId(), rootFlow.getBmlVersion());
         //如果包含subflow,需要一同导入subflow内容，并更新parrentflow的json内容
@@ -1169,21 +1257,21 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         }
         String updateFlowJson = updateFlowContextIdAndVersion(flowJson, contextIdStr, version);
         if (StringUtils.isNotBlank(nodeSuffix)) {
-            updateFlowJson = addFLowNodeSuffix(updateFlowJson, nodeSuffix,enableNodeList);
+            updateFlowJson = addFLowNodeSuffix(updateFlowJson, nodeSuffix, enableNodeList);
         }
 
-        if(StringUtils.isNotBlank(flowProxyUser) && copyOrchestrator){
-            updateFlowJson = updateFlowProxyUser(updateFlowJson,flowProxyUser,orchestratorId,rootFlow);
+        if (StringUtils.isNotBlank(flowProxyUser) && copyOrchestrator) {
+            updateFlowJson = updateFlowProxyUser(updateFlowJson, flowProxyUser, orchestratorId, rootFlow);
         }
 
         //重新上传工作流资源
         updateFlowJson = uploadFlowResourceToBml(userName, updateFlowJson, projectName, rootFlow);
         //上传节点的资源或调用appconn的copyRef
         updateFlowJson = updateWorkFlowNodeJsonForMultiThread(userName, projectName, updateFlowJson, rootFlow,
-                version, workspace, dssLabels,skipThirdAppconn);
+                version, workspace, dssLabels, skipThirdAppconn);
 
         // 不是复制工作流 就保存元数据信息
-        if(!copyOrchestrator){
+        if (!copyOrchestrator) {
             // 更新对应节点的FlowJson
             saveFlowMetaData(rootFlow.getId(), updateFlowJson, orchestratorId);
         }
@@ -1193,7 +1281,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         if (subFlows != null) {
             for (DSSFlow subflow : subFlows) {
                 updateFlowJson(userName, projectName, subflow, version, rootFlow.getId(),
-                        contextIdStr, workspace, dssLabels, nodeSuffix, orchestratorId,enableNodeList,flowProxyUser,
+                        contextIdStr, workspace, dssLabels, nodeSuffix, orchestratorId, enableNodeList, flowProxyUser,
                         skipThirdAppconn, copyOrchestrator);
                 templateIds.addAll(subflow.getFlowIdParamConfTemplateIdTuples());
             }
@@ -1211,7 +1299,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         contextService.checkAndSaveContext(updateFlowJson, String.valueOf(parentFlowId));
     }
 
-    private String addFLowNodeSuffix(String flowJson, String nodeSuffix,List<String> enableNodeList) throws IOException {
+    private String addFLowNodeSuffix(String flowJson, String nodeSuffix, List<String> enableNodeList) throws IOException {
         List<String> nodeJsonList = workFlowParser.getWorkFlowNodesJson(flowJson);
         List<DSSEdge> edgeList = workFlowParser.getWorkFlowEdges(flowJson);
         if (CollectionUtils.isEmpty(nodeJsonList)) {
@@ -1224,7 +1312,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             List<Resource> resourceList = nodeParser.getNodeResource(nodeJson);
             String oldId = nodeJsonMap.get("id").toString();
             if (CollectionUtils.isNotEmpty(resourceList)) {
-                String oldKey =  nodeJsonMap.get("key").toString();
+                String oldKey = nodeJsonMap.get("key").toString();
                 final String newKey = UUID.randomUUID().toString();
                 //需要替换resource的fileName
                 resourceList.forEach(resource -> {
@@ -1252,34 +1340,34 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 }
             }
 
-            Map<String,Object> params = (Map) nodeJsonMap.get("params");
+            Map<String, Object> params = (Map) nodeJsonMap.get("params");
 
             // enableNodeList 不为空,且不包含节点Id，则添加禁用节点 auto.disabled=true
-            if(CollectionUtils.isNotEmpty(enableNodeList) && !enableNodeList.contains(oldId)){
+            if (CollectionUtils.isNotEmpty(enableNodeList) && !enableNodeList.contains(oldId)) {
 
-                if(params == null){
+                if (params == null) {
                     params = new HashMap<>();
                 }
 
-                Map<String,Object> configuration = (Map) params.get("configuration");
-                if(configuration == null){
+                Map<String, Object> configuration = (Map) params.get("configuration");
+                if (configuration == null) {
                     configuration = new HashMap<>();
-                    configuration.put("special",new HashMap<>());
-                    configuration.put("runtime",new HashMap<>());
-                    configuration.put("startup",new HashMap<>());
+                    configuration.put("special", new HashMap<>());
+                    configuration.put("runtime", new HashMap<>());
+                    configuration.put("startup", new HashMap<>());
                 }
 
-                Map<String,Object> special = (Map) configuration.get("special");
+                Map<String, Object> special = (Map) configuration.get("special");
 
-                if(special == null){
+                if (special == null) {
                     special = new HashMap<>();
                 }
                 // auto.disabled = true
-                special.put("auto.disabled","true");
+                special.put("auto.disabled", "true");
 
-                configuration.put("special",special);
+                configuration.put("special", special);
 
-                params.put("configuration",configuration);
+                params.put("configuration", configuration);
 
                 nodeJsonMap.put("params", params);
 
@@ -1291,12 +1379,12 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         return workFlowParser.updateFlowJsonWithKey(flowJson, "nodes", nodeList);
     }
 
-    private String updateFlowProxyUser(String flowJson,String flowProxyUser,Long orchestratorId,DSSFlow dssFlow) throws IOException{
+    private String updateFlowProxyUser(String flowJson, String flowProxyUser, Long orchestratorId, DSSFlow dssFlow) throws IOException {
 
         List<Map<String, Object>> props = DSSCommonUtils.getFlowAttribute(flowJson, "props");
 
         logger.info("start updateFlowProxyUser, origin orchestratorId is {}, origin flow is [{},{}], flowProxyUser is {} ",
-                orchestratorId,dssFlow.getId(),dssFlow.getName(),flowProxyUser);
+                orchestratorId, dssFlow.getId(), dssFlow.getName(), flowProxyUser);
 
         if (CollectionUtils.isNotEmpty(props)) {
 
@@ -1306,36 +1394,34 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 if (prop.containsKey("user.to.proxy") && prop.get("user.to.proxy") != null) {
                     // 代理用户不为空,替换代理用户
                     proxyUser = prop.get("user.to.proxy").toString();
-                    prop.put("user.to.proxy",flowProxyUser);
+                    prop.put("user.to.proxy", flowProxyUser);
                     break;
                 }
             }
 
             logger.info("origin orchestratorId is {},origin flow is [{},{}], origin proxy user is {}, flowProxyUser is {}",
-                    orchestratorId,dssFlow.getId(),dssFlow.getName(),proxyUser,flowProxyUser);
+                    orchestratorId, dssFlow.getId(), dssFlow.getName(), proxyUser, flowProxyUser);
 
             // 原工作流代理用户不为空,拷贝后的工作流 代理用户信息则进行替换
-            if(StringUtils.isNotEmpty(proxyUser)){
+            if (StringUtils.isNotEmpty(proxyUser)) {
 
                 flowJson = workFlowParser.updateFlowJsonWithKey(flowJson, "props", props);
 
-                Map<String,Object> scheduleParams = new HashMap<>();
-                scheduleParams.put("proxyuser",flowProxyUser);
+                Map<String, Object> scheduleParams = new HashMap<>();
+                scheduleParams.put("proxyuser", flowProxyUser);
                 flowJson = workFlowParser.updateFlowJsonWithKey(flowJson, "scheduleParams", scheduleParams);
 
                 logger.info("origin orchestratorId is {},flow is [{},{}], update proxy user  flowJson is {}",
-                        orchestratorId,dssFlow.getId(),dssFlow.getName(),flowJson);
+                        orchestratorId, dssFlow.getId(), dssFlow.getName(), flowJson);
 
             }
 
         }
 
         logger.info("end updateFlowProxyUser, origin orchestratorId is {},origin flow is [{},{}],flowProxyUser is {} ",
-                orchestratorId,dssFlow.getId(),dssFlow.getName(),flowProxyUser);
+                orchestratorId, dssFlow.getId(), dssFlow.getName(), flowProxyUser);
 
         return flowJson;
-
-
 
 
     }
@@ -1459,11 +1545,9 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
 
-
-
     private String updateWorkFlowNodeJsonForMultiThread(String userName, String projectName,
                                                         String flowJson, DSSFlow dssFlow,
-                                                        String version, Workspace workspace, List<DSSLabel> dssLabels,boolean skipThirdAppconn) throws DSSErrorException, IOException{
+                                                        String version, Workspace workspace, List<DSSLabel> dssLabels, boolean skipThirdAppconn) throws DSSErrorException, IOException {
 
         if (StringUtils.isEmpty(version)) {
             logger.warn("version id is null when updateWorkFlowNodeJson");
@@ -1487,7 +1571,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         for (String nodeJson : nodeJsonList) {
 
-            Future<Map<String, Object>> future = DssJobThreadPool.nodeUploadThreadPool.submit( ()-> {
+            Future<Map<String, Object>> future = DssJobThreadPool.nodeUploadThreadPool.submit(() -> {
 
                 try {
                     //重新上传一份jar文件到bml
@@ -1539,7 +1623,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
                     return nodeJsonMap;
 
-                }catch (IOException e){
+                } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             });
@@ -1550,8 +1634,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
 
         for (Future<Map<String, Object>> future : futures) {
-            try{
-                Map<String, Object> nodeJsonMap=future.get();
+            try {
+                Map<String, Object> nodeJsonMap = future.get();
                 nodeJsonListRes.add(nodeJsonMap);
             } catch (InterruptedException | ExecutionException e) {
                 logger.error("upload-flow-node thread fail msg is ｛｝ ", e);
@@ -1560,7 +1644,6 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         }
 
         return workFlowParser.updateFlowJsonWithKey(flowJson, "nodes", nodeJsonListRes);
-
 
 
     }
@@ -1649,7 +1732,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 List<String> nodeUIValues = nodeUIList.stream().map(NodeContentUIDO::getNodeUIValue).collect(Collectors.toList());
 
                 Map<String, String> nodeMap = CollUtil.zip(nodeUIKeys, nodeUIValues);
-                NodeBaseInfo nodeBaseInfo = getNodeBaseInfo(dssFlowNodeInfo, dssProject, nodeMap,username);
+                NodeBaseInfo nodeBaseInfo = getNodeBaseInfo(dssFlowNodeInfo, dssProject, nodeMap, username);
                 BeanUtils.copyProperties(nodeBaseInfo, dataDevelopNodeInfo);
 
                 dataDevelopNodeInfo.setResource(nodeMap.get("resources"));
@@ -1674,31 +1757,31 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                     dataDevelopNodeInfo.setReuseEngine(Boolean.valueOf(nodeMap.get("ReuseEngine")));
                 }
 
-                if(nodeMap.containsKey("script") && StringUtils.isNotEmpty(nodeMap.get("script"))){
+                if (nodeMap.containsKey("script") && StringUtils.isNotEmpty(nodeMap.get("script"))) {
                     dataDevelopNodeInfo.setScript(nodeMap.get("script"));
                 }
 
 
                 // 未引用资源模板时, 获取属性
-                if(!dataDevelopNodeInfo.getRefTemplate()){
+                if (!dataDevelopNodeInfo.getRefTemplate()) {
 
-                    if(nodeMap.containsKey("spark.driver.memory") && StringUtils.isNotEmpty(nodeMap.get("spark.driver.memory"))){
+                    if (nodeMap.containsKey("spark.driver.memory") && StringUtils.isNotEmpty(nodeMap.get("spark.driver.memory"))) {
                         dataDevelopNodeInfo.setSparkDriverMemory(nodeMap.get("spark.driver.memory"));
                     }
 
-                    if(nodeMap.containsKey("spark.executor.memory") && StringUtils.isNotEmpty(nodeMap.get("spark.executor.memory"))){
+                    if (nodeMap.containsKey("spark.executor.memory") && StringUtils.isNotEmpty(nodeMap.get("spark.executor.memory"))) {
                         dataDevelopNodeInfo.setSparkExecutorMemory(nodeMap.get("spark.executor.memory"));
                     }
 
-                    if(nodeMap.containsKey("spark.executor.cores") && StringUtils.isNotEmpty(nodeMap.get("spark.executor.cores"))){
+                    if (nodeMap.containsKey("spark.executor.cores") && StringUtils.isNotEmpty(nodeMap.get("spark.executor.cores"))) {
                         dataDevelopNodeInfo.setSparkExecutorCore(nodeMap.get("spark.executor.cores"));
                     }
 
-                    if(nodeMap.containsKey("spark.conf") && StringUtils.isNotEmpty(nodeMap.get("spark.conf"))){
+                    if (nodeMap.containsKey("spark.conf") && StringUtils.isNotEmpty(nodeMap.get("spark.conf"))) {
                         dataDevelopNodeInfo.setSparkConf(nodeMap.get("spark.conf"));
                     }
 
-                    if(nodeMap.containsKey("spark.executor.instances") && StringUtils.isNotEmpty(nodeMap.get("spark.executor.instances"))){
+                    if (nodeMap.containsKey("spark.executor.instances") && StringUtils.isNotEmpty(nodeMap.get("spark.executor.instances"))) {
                         dataDevelopNodeInfo.setSparkExecutorInstances(nodeMap.get("spark.executor.instances"));
                     }
 
@@ -1711,7 +1794,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
                 dataDevelopNodeInfoList.add(dataDevelopNodeInfo);
             } catch (Exception e) {
-                logger.error("queryDataDevelopNodeList error content id is {}, error message is {}", contentId,e.getMessage(),e);
+                logger.error("queryDataDevelopNodeList error content id is {}, error message is {}", contentId, e.getMessage(), e);
 
             }
         }
@@ -1832,11 +1915,11 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             List<String> nodeUIValues = nodeUIList.stream().map(NodeContentUIDO::getNodeUIValue).collect(Collectors.toList());
             Map<String, String> nodeMap = CollUtil.zip(nodeUIKeys, nodeUIValues);
 
-            NodeBaseInfo nodeBaseInfo = getNodeBaseInfo(dssFlowNodeInfo, dssProject, nodeMap,username);
+            NodeBaseInfo nodeBaseInfo = getNodeBaseInfo(dssFlowNodeInfo, dssProject, nodeMap, username);
             BeanUtils.copyProperties(nodeBaseInfo, dataViewNodeInfo);
 
             dataViewNodeInfo.setNodeDesc(nodeMap.get("desc"));
-            if(nodeMap.containsKey("viewId")){
+            if (nodeMap.containsKey("viewId")) {
                 dataViewNodeInfo.setViewId(nodeMap.get("viewId"));
             } else if (nodeMap.containsKey("datasourceId")) {
                 dataViewNodeInfo.setViewId(nodeMap.get("datasourceId"));
@@ -2180,9 +2263,9 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         // 获取StarRocks集群配置信息
         List<DSSStarRocksCluster> starRocksClusterList = getStarRocksCluster(workspace);
 
-        Map<String,DSSStarRocksCluster> starRocksClusterMap = new HashMap<>();
+        Map<String, DSSStarRocksCluster> starRocksClusterMap = new HashMap<>();
 
-        if(CollectionUtils.isNotEmpty(starRocksClusterList)){
+        if (CollectionUtils.isNotEmpty(starRocksClusterList)) {
             starRocksClusterMap = starRocksClusterList.stream()
                     .collect(Collectors.toMap(DSSStarRocksCluster::getClusterName, cluster -> cluster));
         }
@@ -2195,7 +2278,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 DSSFlow dssFlow = getFlow(flowId);
                 DSSFlowEditLock flowEditLock = lockMapper.getFlowEditLockByID(flowId);
                 if (flowEditLock != null && !flowEditLock.getOwner().equals(ticketId)) {
-                    throw new DSSErrorException(80001, "当前工作流" + dssFlow.getName() +"被用户" + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
+                    throw new DSSErrorException(80001, "当前工作流" + dssFlow.getName() + "被用户" + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
                 }
 
                 lockFlow(dssFlow, userName, ticketId);
@@ -2208,8 +2291,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                             editFlowRequestTOFlowIDMap.get(targetFlowId) : new ArrayList<>();
 
                     //  处理starrocks节点
-                    if("linkis.jdbc.starrocks".equals(nodeContentByContentId.getJobType())){
-                        starRocksNodeParamsHandle(editFlowRequest,starRocksClusterMap);
+                    if ("linkis.jdbc.starrocks".equals(nodeContentByContentId.getJobType())) {
+                        starRocksNodeParamsHandle(editFlowRequest, starRocksClusterMap);
                     }
 
                     editFlowRequestsList.add(editFlowRequest);
@@ -2250,13 +2333,13 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
 
-    private void validNodeDisableEdit(List<Long> contentIdList){
+    private void validNodeDisableEdit(List<Long> contentIdList) {
 
         List<String> disableEditNodeList = new ArrayList<>();
-        if(CollectionUtils.isNotEmpty(contentIdList)){
+        if (CollectionUtils.isNotEmpty(contentIdList)) {
 
-            Map<Long, List<NodeContentUIDO>>  nodeContentUIGroup = getNodeContentUIGroup(contentIdList);
-            for(Long contentId: nodeContentUIGroup.keySet() ){
+            Map<Long, List<NodeContentUIDO>> nodeContentUIGroup = getNodeContentUIGroup(contentIdList);
+            for (Long contentId : nodeContentUIGroup.keySet()) {
 
                 List<NodeContentUIDO> nodeUIList = nodeContentUIGroup.get(contentId);
 
@@ -2264,15 +2347,15 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 List<String> nodeUIValues = nodeUIList.stream().map(NodeContentUIDO::getNodeUIValue).collect(Collectors.toList());
                 Map<String, String> nodeMap = CollUtil.zip(nodeUIKeys, nodeUIValues);
                 // 节点disableEdit属性为true,则不允许编辑
-                if(nodeMap.containsKey("disableEdit") && Boolean.parseBoolean(nodeMap.get("disableEdit"))){
+                if (nodeMap.containsKey("disableEdit") && Boolean.parseBoolean(nodeMap.get("disableEdit"))) {
                     disableEditNodeList.add(nodeMap.get("title"));
                 }
             }
         }
 
-        if(CollectionUtils.isNotEmpty(disableEditNodeList)){
-            String nodeNames = String.join(",",disableEditNodeList);
-            throw new DSSErrorException(80001, String.format("%s 节点禁止编辑!!",nodeNames));
+        if (CollectionUtils.isNotEmpty(disableEditNodeList)) {
+            String nodeNames = String.join(",", disableEditNodeList);
+            throw new DSSErrorException(80001, String.format("%s 节点禁止编辑!!", nodeNames));
         }
 
 
@@ -2426,7 +2509,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             List<String> nodeUIValues = nodeUIList.stream().map(NodeContentUIDO::getNodeUIValue).collect(Collectors.toList());
             Map<String, String> nodeMap = CollUtil.zip(nodeUIKeys, nodeUIValues);
 
-            NodeBaseInfo nodeBaseInfo = getNodeBaseInfo(dssFlowNodeInfo, dssProject, nodeMap,username);
+            NodeBaseInfo nodeBaseInfo = getNodeBaseInfo(dssFlowNodeInfo, dssProject, nodeMap, username);
             BeanUtils.copyProperties(nodeBaseInfo, dataCheckerNodeInfo);
 
             dataCheckerNodeInfo.setMaxCheckHours(nodeMap.get("max.check.hours"));
@@ -2569,7 +2652,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             List<String> nodeUIValues = nodeUIList.stream().map(NodeContentUIDO::getNodeUIValue).collect(Collectors.toList());
             Map<String, String> nodeMap = CollUtil.zip(nodeUIKeys, nodeUIValues);
 
-            NodeBaseInfo nodeBaseInfo = getNodeBaseInfo(dssFlowNodeInfo, dssProject, nodeMap,username);
+            NodeBaseInfo nodeBaseInfo = getNodeBaseInfo(dssFlowNodeInfo, dssProject, nodeMap, username);
             BeanUtils.copyProperties(nodeBaseInfo, eventSenderNodeInfo);
             eventSenderNodeInfo.setNodeDesc(nodeMap.get("desc"));
             eventSenderNodeInfo.setMsgType(nodeMap.get("msg.type"));
@@ -2602,8 +2685,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     @Override
     public QueryNodeInfoByPathResponse queryNodeInfo(Long projectId, String orchestratorName, String nodeName) {
         QueryNodeInfoByPathResponse result = new QueryNodeInfoByPathResponse();
-        DSSFlowNodeInfoOfFlow info= nodeContentMapper.getNodeInfoOfFLow(projectId, orchestratorName, nodeName);
-        if(info==null){
+        DSSFlowNodeInfoOfFlow info = nodeContentMapper.getNodeInfoOfFLow(projectId, orchestratorName, nodeName);
+        if (info == null) {
             return null;
         }
         result.setAppId(info.getAppId());
@@ -2723,7 +2806,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             List<String> nodeUIValues = nodeUIList.stream().map(NodeContentUIDO::getNodeUIValue).collect(Collectors.toList());
             Map<String, String> nodeMap = CollUtil.zip(nodeUIKeys, nodeUIValues);
 
-            NodeBaseInfo nodeBaseInfo = getNodeBaseInfo(dssFlowNodeInfo, dssProject, nodeMap,username);
+            NodeBaseInfo nodeBaseInfo = getNodeBaseInfo(dssFlowNodeInfo, dssProject, nodeMap, username);
             BeanUtils.copyProperties(nodeBaseInfo, eventReceiverNodeInfo);
             eventReceiverNodeInfo.setNodeDesc(nodeMap.get("desc"));
             eventReceiverNodeInfo.setMsgType(nodeMap.get("msg.type"));
@@ -2927,9 +3010,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
 
-
-
-    public NodeBaseInfo getNodeBaseInfo(DSSFlowNodeInfo dssFlowNodeInfo, DSSProject dssProject, Map<String, String> nodeMap,String username) {
+    public NodeBaseInfo getNodeBaseInfo(DSSFlowNodeInfo dssFlowNodeInfo, DSSProject dssProject, Map<String, String> nodeMap, String username) {
 
         NodeBaseInfo nodeBaseInfo = new NodeBaseInfo();
 
@@ -2971,38 +3052,38 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
 
-    public Map<Long,DSSFlow> getFlowMap(List<DSSFlowNodeInfo> flowNodeInfoList){
+    public Map<Long, DSSFlow> getFlowMap(List<DSSFlowNodeInfo> flowNodeInfoList) {
 
-        Map<Long,DSSFlow> flowMap = new HashMap<>();
+        Map<Long, DSSFlow> flowMap = new HashMap<>();
 
         List<Long> orchestratorIdList = flowNodeInfoList.stream().map(DSSFlowNodeInfo::getOrchestratorId)
                 .collect(Collectors.toList());
 
-        if(CollectionUtils.isEmpty(orchestratorIdList)){
+        if (CollectionUtils.isEmpty(orchestratorIdList)) {
             logger.error("getFlowMap orchestratorIdList is empty");
             return flowMap;
         }
 
         List<DSSFlow> dssFlowList = flowMapper.selectFlowListByOrchestratorId(orchestratorIdList);
 
-        if(CollectionUtils.isEmpty(dssFlowList)){
-            logger.error("example orchestratorId is {}",orchestratorIdList.get(0));
+        if (CollectionUtils.isEmpty(dssFlowList)) {
+            logger.error("example orchestratorId is {}", orchestratorIdList.get(0));
             logger.error("getFlowMap dssFlow list is empty");
             return flowMap;
         }
 
-        Map<Long,List<DSSFlow>> dssFlowMap = dssFlowList.stream().collect(Collectors.groupingBy(DSSFlow::getOrchestratorId));
+        Map<Long, List<DSSFlow>> dssFlowMap = dssFlowList.stream().collect(Collectors.groupingBy(DSSFlow::getOrchestratorId));
 
 
-        for(Long orchestratorId : dssFlowMap.keySet()){
+        for (Long orchestratorId : dssFlowMap.keySet()) {
 
             DSSFlow dssFlow = dssFlowMap.get(orchestratorId).stream().max(Comparator.comparing(DSSFlow::getId)).orElse(null);
 
-            if(dssFlow == null){
+            if (dssFlow == null) {
                 continue;
             }
 
-            flowMap.put(orchestratorId,dssFlow);
+            flowMap.put(orchestratorId, dssFlow);
         }
 
         return flowMap;
@@ -3011,35 +3092,35 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
 
     @Override
-    public void editNodeContent(EditNodeContentRequest editNodeContentRequest,String ticketId) throws Exception {
+    public void editNodeContent(EditNodeContentRequest editNodeContentRequest, String ticketId) throws Exception {
 
         Workspace workspace = new Workspace();
         workspace.setWorkspaceId(editNodeContentRequest.getWorkspaceId());
         String username = editNodeContentRequest.getUsername();
         String nodeName = editNodeContentRequest.getNodeName();
         String nodeContent = editNodeContentRequest.getNodeContent();
-        Map<String,Object> nodeMetadata = editNodeContentRequest.getNodeMetadata();
+        Map<String, Object> nodeMetadata = editNodeContentRequest.getNodeMetadata();
         String modifyNodeName = editNodeContentRequest.getModifyNodeName();
         boolean isUnlock = editNodeContentRequest.getUnlock();
 
-        if(StringUtils.isEmpty(nodeContent) && MapUtils.isEmpty(nodeMetadata) && StringUtils.isEmpty(modifyNodeName)){
-            DSSExceptionUtils.dealErrorException(90003, String.format("节点内容和节点配置信息、需修改节点名称都为空,%s节点不做更新",nodeName), DSSErrorException.class);
+        if (StringUtils.isEmpty(nodeContent) && MapUtils.isEmpty(nodeMetadata) && StringUtils.isEmpty(modifyNodeName)) {
+            DSSExceptionUtils.dealErrorException(90003, String.format("节点内容和节点配置信息、需修改节点名称都为空,%s节点不做更新", nodeName), DSSErrorException.class);
         }
 
         // 鉴权
-       DSSProject  dssProject = validateOperation(editNodeContentRequest.getProjectId(),username);
+        DSSProject dssProject = validateOperation(editNodeContentRequest.getProjectId(), username);
 
-       if(!editNodeContentRequest.getWorkspaceId().equals(Long.valueOf(dssProject.getWorkspaceId()))){
-           DSSExceptionUtils.dealErrorException(90003, "传入的工作空间与项目所属工作空间不一致", DSSErrorException.class);
-       }
+        if (!editNodeContentRequest.getWorkspaceId().equals(Long.valueOf(dssProject.getWorkspaceId()))) {
+            DSSExceptionUtils.dealErrorException(90003, "传入的工作空间与项目所属工作空间不一致", DSSErrorException.class);
+        }
 
-        RequestQueryByIdOrchestrator RequestQueryByIdOrchestrator =  new  RequestQueryByIdOrchestrator();
+        RequestQueryByIdOrchestrator RequestQueryByIdOrchestrator = new RequestQueryByIdOrchestrator();
         RequestQueryByIdOrchestrator.setOrchestratorId(editNodeContentRequest.getOrchestratorId());
 
         OrchestratorVo orchestratorVo = RpcAskUtils.processAskException(getOrchestratorSender().ask(RequestQueryByIdOrchestrator),
                 OrchestratorVo.class, RequestQueryByIdOrchestrator.class);
 
-        if(orchestratorVo.getDssOrchestratorInfo() == null || orchestratorVo.getDssOrchestratorVersion() == null){
+        if (orchestratorVo.getDssOrchestratorInfo() == null || orchestratorVo.getDssOrchestratorVersion() == null) {
 
             DSSExceptionUtils.dealErrorException(90003, "工作流不存在", DSSErrorException.class);
         }
@@ -3049,36 +3130,36 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         // 获取主工作流下的节点和所有子工作流
         DSSFlow rootFlow = genDSSFlowTree(dssOrchestratorVersion.getAppId());
 
-        DSSFlow flow = getFLowByNode(rootFlow,nodeName);
+        DSSFlow flow = getFLowByNode(rootFlow, nodeName);
 
-        if(flow == null){
+        if (flow == null) {
             DSSExceptionUtils.dealErrorException(90003, "工作流下未找到相关节点", DSSErrorException.class);
         }
 
         // 强制解锁工作流
-        forceUnlockWorkflow(rootFlow, ticketId,username,isUnlock,workspace);
+        forceUnlockWorkflow(rootFlow, ticketId, username, isUnlock, workspace);
 
         lockFlow(rootFlow, username, ticketId);
 
         try {
 
-            DSSNodeDefault node = updateNodeContent(flow,nodeName,nodeContent,nodeMetadata,dssProject.getName(),username,modifyNodeName);
+            DSSNodeDefault node = updateNodeContent(flow, nodeName, nodeContent, nodeMetadata, dssProject.getName(), username, modifyNodeName);
             node.setModifyNodeName(modifyNodeName);
 
             // 校验修改的节点名称是否符合要求
             validModifyNodeName(node);
 
-            updateSubFlowName(node,username,flow);
+            updateSubFlowName(node, username, flow);
 
-            saveFlow(flow.getId(),flow.getFlowJson(),flow.getDescription(),flow.getCreator(),
-                    dssProject.getWorkspaceName(),dssProject.getName(),null);
+            saveFlow(flow.getId(), flow.getFlowJson(), flow.getDescription(), flow.getCreator(),
+                    dssProject.getWorkspaceName(), dssProject.getName(), null);
 
-        }catch (Exception e){
+        } catch (Exception e) {
             logger.error("保存工作流失败", e);
-            throw new DSSErrorException(80001,"保存失败，原因为：" + e.getMessage());
+            throw new DSSErrorException(80001, "保存失败，原因为：" + e.getMessage());
         } finally {
             // 解锁工作流
-            workFlowManager.unlockWorkflow(username,dssOrchestratorVersion.getAppId(),true,workspace);
+            workFlowManager.unlockWorkflow(username, dssOrchestratorVersion.getAppId(), true, workspace);
         }
 
 
@@ -3086,7 +3167,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
 
     @Override
-    public BatchEditNodeContentResponse batchEditNodeContent(BatchEditNodeContentRequest batchEditNodeContentRequest,String ticketId) throws Exception {
+    public BatchEditNodeContentResponse batchEditNodeContent(BatchEditNodeContentRequest batchEditNodeContentRequest, String ticketId) throws Exception {
 
         String username = batchEditNodeContentRequest.getUsername();
         Long projectId = batchEditNodeContentRequest.getProjectId();
@@ -3096,14 +3177,14 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         boolean isUnlock = batchEditNodeContentRequest.getUnlock();
 
         // 鉴权
-        DSSProject  dssProject = validateOperation(projectId,username);
+        DSSProject dssProject = validateOperation(projectId, username);
 
-        if(!workspaceId.equals(Long.valueOf(dssProject.getWorkspaceId()))){
+        if (!workspaceId.equals(Long.valueOf(dssProject.getWorkspaceId()))) {
             DSSExceptionUtils.dealErrorException(90003, "传入的工作空间与项目所属工作空间不一致", DSSErrorException.class);
         }
 
         // 判断是否有传入更新的节点信息
-        if(CollectionUtils.isEmpty(nodeContentList)){
+        if (CollectionUtils.isEmpty(nodeContentList)) {
             DSSExceptionUtils.dealErrorException(90003, "未输入需要更新的节点信息", DSSErrorException.class);
         }
 
@@ -3125,7 +3206,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         DSSFlow rootFlow = genDSSFlowTree(dssOrchestratorVersion.getAppId());
 
         // 强制解锁工作流
-        forceUnlockWorkflow(rootFlow, ticketId,username,isUnlock,workspace);
+        forceUnlockWorkflow(rootFlow, ticketId, username, isUnlock, workspace);
 
 
         BatchEditNodeContentResponse batchEditNodeContentResponse = new BatchEditNodeContentResponse();
@@ -3137,38 +3218,38 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         try {
 
-            Map<Long,DSSFlow> flowMap = new HashMap<>();
+            Map<Long, DSSFlow> flowMap = new HashMap<>();
 
-            Map<Long,List<DSSNodeDefault>> flowNodeMap = new HashMap<>();
+            Map<Long, List<DSSNodeDefault>> flowNodeMap = new HashMap<>();
             // 查找出节点所属的工作流 并分组
-            for(BatchEditNodeContentRequest.NodeContent nodeContent: nodeContentList){
+            for (BatchEditNodeContentRequest.NodeContent nodeContent : nodeContentList) {
 
-                if(StringUtils.isEmpty(nodeContent.getNodeContent()) && MapUtils.isEmpty(nodeContent.getNodeMetadata())
-                  && StringUtils.isEmpty(nodeContent.getModifyNodeName())){
+                if (StringUtils.isEmpty(nodeContent.getNodeContent()) && MapUtils.isEmpty(nodeContent.getNodeMetadata())
+                        && StringUtils.isEmpty(nodeContent.getModifyNodeName())) {
                     DSSExceptionUtils.dealErrorException(90003,
-                            String.format("节点内容和节点配置信息、需修改节点名称 都为空,%s节点不做更新",nodeContent.getNodeName()), DSSErrorException.class);
+                            String.format("节点内容和节点配置信息、需修改节点名称 都为空,%s节点不做更新", nodeContent.getNodeName()), DSSErrorException.class);
                 }
 
-                DSSFlow flow = getFLowByNode(rootFlow,nodeContent.getNodeName());
+                DSSFlow flow = getFLowByNode(rootFlow, nodeContent.getNodeName());
 
-                if(flow == null){
+                if (flow == null) {
                     DSSExceptionUtils.dealErrorException(90003,
-                            String.format("%s工作流下未找到%s节点",dssOrchestratorInfo.getName(),nodeContent.getNodeName()), DSSErrorException.class);
+                            String.format("%s工作流下未找到%s节点", dssOrchestratorInfo.getName(), nodeContent.getNodeName()), DSSErrorException.class);
                 }
 
-                if(flowMap.containsKey(flow.getId())){
+                if (flowMap.containsKey(flow.getId())) {
                     flow = flowMap.get(flow.getId());
                 }
 
-                DSSNodeDefault node = updateNodeContent(flow,nodeContent.getNodeName(),nodeContent.getNodeContent(),nodeContent.getNodeMetadata(),
-                        dssProject.getName(),username,nodeContent.getModifyNodeName());
+                DSSNodeDefault node = updateNodeContent(flow, nodeContent.getNodeName(), nodeContent.getNodeContent(), nodeContent.getNodeMetadata(),
+                        dssProject.getName(), username, nodeContent.getModifyNodeName());
                 node.setModifyNodeName(nodeContent.getModifyNodeName());
 
 
-                flowMap.put(flow.getId(),flow);
+                flowMap.put(flow.getId(), flow);
 
-                if(!flowNodeMap.containsKey(flow.getId())){
-                    flowNodeMap.put(flow.getId(),new ArrayList<>());
+                if (!flowNodeMap.containsKey(flow.getId())) {
+                    flowNodeMap.put(flow.getId(), new ArrayList<>());
                 }
                 flowNodeMap.get(flow.getId()).add(node);
 
@@ -3176,30 +3257,29 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
 
             // 保存工作流
-            for(Long flowId: flowMap.keySet()){
-                List<DSSNodeDefault> dssNodeDefaultList =  flowNodeMap.get(flowId);
+            for (Long flowId : flowMap.keySet()) {
+                List<DSSNodeDefault> dssNodeDefaultList = flowNodeMap.get(flowId);
                 List<String> nodeNameList = dssNodeDefaultList.stream().map(DSSNodeDefault::getName).collect(Collectors.toList());
                 try {
                     DSSFlow dssFlow = flowMap.get(flowId);
                     logger.info("orchestrator is [{},{}],flow is [{},{}],update dssFlow json is {}",
-                            dssOrchestratorInfo.getName(),dssOrchestratorInfo.getId(),
-                            flowId,dssFlow.getName(),
+                            dssOrchestratorInfo.getName(), dssOrchestratorInfo.getId(),
+                            flowId, dssFlow.getName(),
                             dssFlow.getFlowJson());
 
 
-
-                    for(DSSNodeDefault node: dssNodeDefaultList){
+                    for (DSSNodeDefault node : dssNodeDefaultList) {
 
                         validModifyNodeName(node);
 
-                        updateSubFlowName(node,username,dssFlow);
+                        updateSubFlowName(node, username, dssFlow);
                     }
 
-                    saveFlow(flowId,dssFlow.getFlowJson(),username,dssFlow.getDescription(),
-                            dssProject.getWorkspaceName(),dssProject.getName(),null);
+                    saveFlow(flowId, dssFlow.getFlowJson(), username, dssFlow.getDescription(),
+                            dssProject.getWorkspaceName(), dssProject.getName(), null);
 
                     batchEditNodeContentResponse.setSuccessNodeName(nodeNameList);
-                }catch (Exception e){
+                } catch (Exception e) {
                     batchEditNodeContentResponse.setFailNodeName(nodeNameList);
                     batchEditNodeContentResponse.setErrorMsg(e.getMessage());
                     logger.error("保存工作流失败", e);
@@ -3208,19 +3288,20 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
             }
 
-        }catch (Exception e){
+        } catch (Exception e) {
             logger.error("保存编排失败", e);
-            throw new DSSErrorException(80001,"保存失败，原因为：" + e.getMessage());
-        }finally {
-            workFlowManager.unlockWorkflow(username,dssOrchestratorVersion.getAppId(),true,workspace);
+            throw new DSSErrorException(80001, "保存失败，原因为：" + e.getMessage());
+        } finally {
+            workFlowManager.unlockWorkflow(username, dssOrchestratorVersion.getAppId(), true, workspace);
         }
-        
+
         return batchEditNodeContentResponse;
 
     }
 
     /**
      * 校验工作流是否锁定
+     *
      * @param rootFlow 根工作流对象
      * @param ticketId 票据 ID
      * @throws DSSErrorException 工作流被锁定时抛出异常
@@ -3235,6 +3316,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
     /**
      * 检查节点名称是否重复
+     *
      * @param nodeContentList 节点内容列表
      * @throws DSSErrorException 存在重复节点名称时抛出异常
      */
@@ -3252,6 +3334,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
     /**
      * 获取工作流信息
+     *
      * @param orchestratorId 编排器 ID
      * @return 工作流信息对象
      * @throws DSSErrorException 获取失败时抛出异常
@@ -3265,6 +3348,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
     /**
      * 验证工作流信息是否有效
+     *
      * @param orchestratorVo 工作流信息对象
      * @throws DSSErrorException 验证失败时抛出异常
      */
@@ -3275,83 +3359,83 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         }
     }
 
-    public DSSFlow getFLowByNode(DSSFlow dssFlow,String nodeName){
+    public DSSFlow getFLowByNode(DSSFlow dssFlow, String nodeName) {
 
         List<DSSNodeDefault> nodeList = DSSCommonUtils.getWorkFlowNodes(dssFlow.getFlowJson());
 
-        if(CollectionUtils.isNotEmpty(nodeList)){
+        if (CollectionUtils.isNotEmpty(nodeList)) {
 
-            DSSNodeDefault dssNodeDefault = getNode(dssFlow,nodeName);
+            DSSNodeDefault dssNodeDefault = getNode(dssFlow, nodeName);
 
-            if(dssNodeDefault != null){
-                return  dssFlow;
+            if (dssNodeDefault != null) {
+                return dssFlow;
             }
 
         }
 
-        if(CollectionUtils.isNotEmpty(dssFlow.getChildren())){
+        if (CollectionUtils.isNotEmpty(dssFlow.getChildren())) {
 
-            for(DSSFlow flow: dssFlow.getChildren()){
+            for (DSSFlow flow : dssFlow.getChildren()) {
 
-                DSSFlow childFlow = getFLowByNode(flow,nodeName);
-                if (null != childFlow){
+                DSSFlow childFlow = getFLowByNode(flow, nodeName);
+                if (null != childFlow) {
                     return childFlow;
                 }
             }
         }
 
-        return  null;
+        return null;
     }
 
 
-    public DSSNodeDefault updateNodeContent(DSSFlow dssFlow,String nodeName,String nodeContent,Map<String,Object> nodeMetaData,
-                                  String projectName,String username,String modifyNodeName) throws DSSErrorException,IOException {
+    public DSSNodeDefault updateNodeContent(DSSFlow dssFlow, String nodeName, String nodeContent, Map<String, Object> nodeMetaData,
+                                            String projectName, String username, String modifyNodeName) throws DSSErrorException, IOException {
 
-        DSSNodeDefault dssNodeDefault = getNode(dssFlow,nodeName);
+        DSSNodeDefault dssNodeDefault = getNode(dssFlow, nodeName);
 
         // 节点不存在
-        if(dssNodeDefault == null){
-            DSSExceptionUtils.dealErrorException(90003, String.format("工作流下未找到 %s 节点",nodeName), DSSErrorException.class);
+        if (dssNodeDefault == null) {
+            DSSExceptionUtils.dealErrorException(90003, String.format("工作流下未找到 %s 节点", nodeName), DSSErrorException.class);
         }
 
         Resource resource = null;
 
-        if(StringUtils.isNotEmpty(nodeContent)){
+        if (StringUtils.isNotEmpty(nodeContent)) {
             // 修改脚本内容
-            resource = updateScriptContent(dssFlow,dssNodeDefault,nodeContent,projectName,username,nodeMetaData);
+            resource = updateScriptContent(dssFlow, dssNodeDefault, nodeContent, projectName, username, nodeMetaData);
         }
 
         // 修改json信息
-        updateNodeMetadata(dssFlow,dssNodeDefault,nodeMetaData,resource,username,modifyNodeName);
+        updateNodeMetadata(dssFlow, dssNodeDefault, nodeMetaData, resource, username, modifyNodeName);
 
 
-        logger.info("flow id is {}, {} workflow json is {}",dssFlow.getId(),dssFlow.getName(),dssFlow.getFlowJson());
+        logger.info("flow id is {}, {} workflow json is {}", dssFlow.getId(), dssFlow.getName(), dssFlow.getFlowJson());
 
         return dssNodeDefault;
 
     }
 
-    public Resource updateScriptContent(DSSFlow dssFlow,DSSNodeDefault dssNodeDefault,String nodeContent,
-                                        String projectName,String username,Map<String,Object> nodeMetaData) throws IOException{
+    public Resource updateScriptContent(DSSFlow dssFlow, DSSNodeDefault dssNodeDefault, String nodeContent,
+                                        String projectName, String username, Map<String, Object> nodeMetaData) throws IOException {
 
-        logger.info("update script node info is {}",dssNodeDefault.toString());
+        logger.info("update script node info is {}", dssNodeDefault.toString());
 
         // 节点是否在脚本信息
-        if(dssNodeDefault.getJobContent() == null || !dssNodeDefault.getJobContent().containsKey("script") ){
+        if (dssNodeDefault.getJobContent() == null || !dssNodeDefault.getJobContent().containsKey("script")) {
             logger.error("{} node jobContent not contains script key ", dssNodeDefault.getTitle());
-            DSSExceptionUtils.dealErrorException(90003, String.format("%s 节点不存在内容信息,不能进行内容修改",dssNodeDefault.getTitle()), DSSErrorException.class);
+            DSSExceptionUtils.dealErrorException(90003, String.format("%s 节点不存在内容信息,不能进行内容修改", dssNodeDefault.getTitle()), DSSErrorException.class);
         }
 
         Object script = dssNodeDefault.getJobContent().get("script");
 
-        if(script == null || StringUtils.isEmpty(String.valueOf(script))){
+        if (script == null || StringUtils.isEmpty(String.valueOf(script))) {
             logger.error("{} node script info is empty", dssNodeDefault.getTitle());
-            DSSExceptionUtils.dealErrorException(90003, String.format("%s 节点不存在内容信息,不能进行内容修改",dssNodeDefault.getTitle()), DSSErrorException.class);
+            DSSExceptionUtils.dealErrorException(90003, String.format("%s 节点不存在内容信息,不能进行内容修改", dssNodeDefault.getTitle()), DSSErrorException.class);
         }
 
-        logger.info("{} node start upload bml {} script content",dssNodeDefault.getTitle(),script);
+        logger.info("{} node start upload bml {} script content", dssNodeDefault.getTitle(), script);
         // 更改脚本内容
-        if(dssNodeDefault.getResources() == null){
+        if (dssNodeDefault.getResources() == null) {
             dssNodeDefault.setResources(new ArrayList<>());
         }
 
@@ -3362,22 +3446,22 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 .findFirst().orElse(null);
 
 
-        Map<String,Object> params;
+        Map<String, Object> params;
 
         // 深度拷贝map
-        if(!MapUtils.isEmpty(nodeMetaData)){
+        if (!MapUtils.isEmpty(nodeMetaData)) {
             params = new HashMap<>(nodeMetaData);
-        }else{
-            params =  new HashMap<>(dssNodeDefault.getParams());
+        } else {
+            params = new HashMap<>(dssNodeDefault.getParams());
         }
 
         // 清空startup信息后,在保存bml内容。防止脚本头部 带有参数
-        if(params.containsKey("configuration")){
-            Map<String,Object> configuration = (Map) params.get("configuration");
-            if(MapUtils.isNotEmpty(configuration)){
-                Map<String,Object> copyConfiguration = new HashMap<>(configuration);
+        if (params.containsKey("configuration")) {
+            Map<String, Object> configuration = (Map) params.get("configuration");
+            if (MapUtils.isNotEmpty(configuration)) {
+                Map<String, Object> copyConfiguration = new HashMap<>(configuration);
                 copyConfiguration.put("startup", new HashMap<>());
-                params.put("configuration",copyConfiguration);
+                params.put("configuration", copyConfiguration);
             }
 
         }
@@ -3404,24 +3488,24 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         try (InputStream inputStream = writer.getInputStream()) {
 
             if (source == null) {
-                logger.info("{} node upload script content, content is {}",dssNodeDefault.getTitle(),nodeContent);
+                logger.info("{} node upload script content, content is {}", dssNodeDefault.getTitle(), nodeContent);
                 //  新增文件
-                BmlResource bmlResource =  bmlService.upload(dssFlow.getCreator(),inputStream,String.valueOf(script),projectName);
-                map.put("resourceId",bmlResource.getResourceId());
-                map.put("version",bmlResource.getVersion());
+                BmlResource bmlResource = bmlService.upload(dssFlow.getCreator(), inputStream, String.valueOf(script), projectName);
+                map.put("resourceId", bmlResource.getResourceId());
+                map.put("version", bmlResource.getVersion());
 
             } else {
-                logger.info("{} node update script content,content is {}",dssNodeDefault.getTitle(),nodeContent);
+                logger.info("{} node update script content,content is {}", dssNodeDefault.getTitle(), nodeContent);
                 //  更新文件
-                map = bmlService.update(dssFlow.getCreator(),source.getResourceId(),inputStream);
+                map = bmlService.update(dssFlow.getCreator(), source.getResourceId(), inputStream);
             }
         }
 
         logger.info("{} node end upload bml {} script content, resourceId is {}, version is {}",
-                dssNodeDefault.getTitle(),script,map.get("resourceId"),map.get("version"));
+                dssNodeDefault.getTitle(), script, map.get("resourceId"), map.get("version"));
 
-        if(map.get("resourceId") == null || map.get("version") == null){
-            DSSExceptionUtils.dealErrorException(90003, String.format("%s 节点修改失败,bml response data is empty",dssNodeDefault.getTitle()), DSSErrorException.class);
+        if (map.get("resourceId") == null || map.get("version") == null) {
+            DSSExceptionUtils.dealErrorException(90003, String.format("%s 节点修改失败,bml response data is empty", dssNodeDefault.getTitle()), DSSErrorException.class);
         }
 
         Resource resource = new Resource();
@@ -3433,53 +3517,53 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
     }
 
-    public void updateNodeMetadata(DSSFlow dssFlow,DSSNodeDefault dssNodeDefault,Map<String,Object> nodeMetaData,
-                                   Resource resource,String username,String modifyNodeName){
+    public void updateNodeMetadata(DSSFlow dssFlow, DSSNodeDefault dssNodeDefault, Map<String, Object> nodeMetaData,
+                                   Resource resource, String username, String modifyNodeName) {
 
 
-        logger.info("node info is {}, input meta data is {}",dssNodeDefault.toString(),DSSCommonUtils.COMMON_GSON.toJson(nodeMetaData));
+        logger.info("node info is {}, input meta data is {}", dssNodeDefault.toString(), DSSCommonUtils.COMMON_GSON.toJson(nodeMetaData));
 
         JsonObject jsonObject = new JsonParser().parse(dssFlow.getFlowJson()).getAsJsonObject();
         JsonArray nodeJsonArray = jsonObject.getAsJsonArray("nodes");
 
-        for(JsonElement nodeJson: nodeJsonArray){
+        for (JsonElement nodeJson : nodeJsonArray) {
             JsonObject json = nodeJson.getAsJsonObject();
             String title = json.get("title").getAsString();
 
-            if(title.equals(dssNodeDefault.getTitle())){
+            if (title.equals(dssNodeDefault.getTitle())) {
                 // 修改配置
-                if(!MapUtils.isEmpty(nodeMetaData)){
+                if (!MapUtils.isEmpty(nodeMetaData)) {
                     JsonObject params = new Gson().toJsonTree(nodeMetaData).getAsJsonObject();
                     handleFlowJsonParams(params);
                     json.add("params", params);
-                } else{
+                } else {
                     logger.warn("input meta data is empty , node is {}", dssNodeDefault.getTitle());
                 }
 
-                if(resource != null && json.keySet().contains("resources")){
+                if (resource != null && json.keySet().contains("resources")) {
                     // 修改内容后 更新 resource版本
                     JsonArray resources = json.getAsJsonArray("resources");
                     // 更改resource版本
-                    for(JsonElement element: resources){
+                    for (JsonElement element : resources) {
                         JsonObject sourceJson = element.getAsJsonObject();
-                        if(resource.getFileName().equals(sourceJson.get("fileName").getAsString())
-                                && resource.getResourceId().equals(sourceJson.get("resourceId").getAsString())){
+                        if (resource.getFileName().equals(sourceJson.get("fileName").getAsString())
+                                && resource.getResourceId().equals(sourceJson.get("resourceId").getAsString())) {
 
-                            sourceJson.addProperty("version",resource.getVersion());
+                            sourceJson.addProperty("version", resource.getVersion());
                         }
                     }
                 }
 
                 // 修改节点名称
-                if(StringUtils.isNotEmpty(modifyNodeName)
-                        && !modifyNodeName.equals(title)){
+                if (StringUtils.isNotEmpty(modifyNodeName)
+                        && !modifyNodeName.equals(title)) {
 
                     json.addProperty("title", modifyNodeName);
 
                 }
 
                 // 修改节点的更新时间
-                json.addProperty("modifyTime",System.currentTimeMillis());
+                json.addProperty("modifyTime", System.currentTimeMillis());
                 json.addProperty("modifyUser", username);
 
 
@@ -3497,20 +3581,19 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
     }
 
-    public DSSNodeDefault getNode(DSSFlow dssFlow, String nodeName){
+    public DSSNodeDefault getNode(DSSFlow dssFlow, String nodeName) {
 
         List<DSSNodeDefault> nodeList = DSSCommonUtils.getWorkFlowNodes(dssFlow.getFlowJson());
 
-        if(CollectionUtils.isNotEmpty(nodeList)){
+        if (CollectionUtils.isNotEmpty(nodeList)) {
 
-            return  nodeList.stream()
-                    .filter(node-> node.getTitle().equals(nodeName)).findFirst().orElse(null);
+            return nodeList.stream()
+                    .filter(node -> node.getTitle().equals(nodeName)).findFirst().orElse(null);
         }
 
-        return  null;
+        return null;
 
     }
-
 
 
     private static DSSProject validateOperation(long projectId, String username) {
@@ -3539,13 +3622,13 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
 
-    private void starRocksNodeParamsHandle(EditFlowRequest editFlowRequest,Map<String,DSSStarRocksCluster> starRocksClusterMap){
+    private void starRocksNodeParamsHandle(EditFlowRequest editFlowRequest, Map<String, DSSStarRocksCluster> starRocksClusterMap) {
 
         try {
-            logger.info(" {} starrocks node params is {}",editFlowRequest.getTitle(),editFlowRequest.getParams());
+            logger.info(" {} starrocks node params is {}", editFlowRequest.getTitle(), editFlowRequest.getParams());
 
-            if(StringUtils.isEmpty(editFlowRequest.getParams())){
-                logger.warn("{} starrocks node params is empty",editFlowRequest.getTitle());
+            if (StringUtils.isEmpty(editFlowRequest.getParams())) {
+                logger.warn("{} starrocks node params is empty", editFlowRequest.getTitle());
                 return;
             }
 
@@ -3555,13 +3638,13 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
             JsonObject configuration = params.get("configuration").getAsJsonObject();
 
-            JsonObject runtime= configuration.get("runtime").getAsJsonObject();
+            JsonObject runtime = configuration.get("runtime").getAsJsonObject();
 
             JsonElement executeCluster = runtime.get("executeCluster");
 
 
-            if(executeCluster == null || executeCluster.isJsonNull()){
-                logger.warn("{} starrocks node , executeCluster value is empty",editFlowRequest.getTitle());
+            if (executeCluster == null || executeCluster.isJsonNull()) {
+                logger.warn("{} starrocks node , executeCluster value is empty", editFlowRequest.getTitle());
                 return;
             }
 
@@ -3569,95 +3652,95 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
             DSSStarRocksCluster dssStarRocksCluster = starRocksClusterMap.get(clusterName);
 
-            if(dssStarRocksCluster == null){
+            if (dssStarRocksCluster == null) {
                 logger.warn("{} starrocks node , executeCluster value is {}, not find cluster info",
-                        editFlowRequest.getTitle(),clusterName);
+                        editFlowRequest.getTitle(), clusterName);
                 return;
             }
 
             JsonElement dataSourceHost = runtime.get("linkis.datasource.params.host");
             JsonElement dataSourcePort = runtime.get("linkis.datasource.params.port");
 
-            if(dataSourceHost == null || dataSourceHost.isJsonNull()
-                    || dataSourcePort == null || dataSourcePort.isJsonNull()){
+            if (dataSourceHost == null || dataSourceHost.isJsonNull()
+                    || dataSourcePort == null || dataSourcePort.isJsonNull()) {
 
                 runtime.addProperty("linkis.datasource.params.host", dssStarRocksCluster.getClusterIp());
                 runtime.addProperty("linkis.datasource.params.port", dssStarRocksCluster.getTcpPort());
                 runtime.addProperty("linkis.datasource.type", "starrocks");
-                logger.info("{} starrocks node params is {}",editFlowRequest.getTitle(),params.toString());
+                logger.info("{} starrocks node params is {}", editFlowRequest.getTitle(), params.toString());
                 editFlowRequest.setParams(params.toString());
             }
 
-            logger.info("{} starrocks node, handle after params is {}",editFlowRequest.getTitle(), editFlowRequest.getParams());
+            logger.info("{} starrocks node, handle after params is {}", editFlowRequest.getTitle(), editFlowRequest.getParams());
 
-        }catch (Exception e){
+        } catch (Exception e) {
             logger.error("{} starrocks node update  params fail, error message is [{}]",
-                    editFlowRequest.getTitle(),e.getMessage(),e);
+                    editFlowRequest.getTitle(), e.getMessage(), e);
         }
 
     }
 
-    private List<DSSStarRocksCluster> getStarRocksCluster(Workspace workspace){
+    private List<DSSStarRocksCluster> getStarRocksCluster(Workspace workspace) {
 
-       try {
+        try {
 
-           StarRocksClusterListResponse response = RpcAskUtils.processAskException(DSSSenderServiceFactory.getOrCreateServiceInstance()
-                           .getProjectServerSender().ask(new StarRocksClusterListRequest(workspace.getWorkspaceId())),
-                   StarRocksClusterListResponse.class, StarRocksClusterListRequest.class);
+            StarRocksClusterListResponse response = RpcAskUtils.processAskException(DSSSenderServiceFactory.getOrCreateServiceInstance()
+                            .getProjectServerSender().ask(new StarRocksClusterListRequest(workspace.getWorkspaceId())),
+                    StarRocksClusterListResponse.class, StarRocksClusterListRequest.class);
 
-           return response.getList();
+            return response.getList();
 
-       }catch (Exception e){
+        } catch (Exception e) {
 
-           logger.error("workspace id is {}, name is {},getStarRocksCluster fail, error message is {}",
-                   workspace.getWorkspaceId(),workspace.getWorkspaceName(),e.getMessage(),e);
-       }
+            logger.error("workspace id is {}, name is {},getStarRocksCluster fail, error message is {}",
+                    workspace.getWorkspaceId(), workspace.getWorkspaceName(), e.getMessage(), e);
+        }
 
-       return new ArrayList<>();
+        return new ArrayList<>();
 
     }
 
 
-    private void handleFlowJsonParams(JsonObject params){
+    private void handleFlowJsonParams(JsonObject params) {
 
-        if(!params.has("configuration") || params.get("configuration").isJsonNull()){
-            params.add("configuration",new JsonObject());
+        if (!params.has("configuration") || params.get("configuration").isJsonNull()) {
+            params.add("configuration", new JsonObject());
         }
 
-        JsonObject  configuration = params.get("configuration").getAsJsonObject();
+        JsonObject configuration = params.get("configuration").getAsJsonObject();
 
-        if(!configuration.has("runtime") || configuration.get("runtime").isJsonNull()){
-            configuration.add("runtime",new JsonObject());
+        if (!configuration.has("runtime") || configuration.get("runtime").isJsonNull()) {
+            configuration.add("runtime", new JsonObject());
         }
 
-        if(!configuration.has("special") || configuration.get("special").isJsonNull()){
-            configuration.add("special",new JsonObject());
+        if (!configuration.has("special") || configuration.get("special").isJsonNull()) {
+            configuration.add("special", new JsonObject());
         }
 
-        if(!configuration.has("startup") || configuration.get("startup").isJsonNull()){
-            configuration.add("startup",new JsonObject());
+        if (!configuration.has("startup") || configuration.get("startup").isJsonNull()) {
+            configuration.add("startup", new JsonObject());
         }
 
     }
 
 
     @Override
-    public List<DSSNodeDefault> getNodeInfoByName(QueryNodeInfoByNameRequest queryNodeInfoByNameRequest){
+    public List<DSSNodeDefault> getNodeInfoByName(QueryNodeInfoByNameRequest queryNodeInfoByNameRequest) {
 
         Long orchestratorId = queryNodeInfoByNameRequest.getOrchestratorId();
         List<String> nodeNameList = queryNodeInfoByNameRequest.getNodeNameList();
-        if(CollectionUtils.isEmpty(nodeNameList)){
+        if (CollectionUtils.isEmpty(nodeNameList)) {
             DSSExceptionUtils.dealErrorException(90003, "查找的节点列表为空", DSSErrorException.class);
         }
 
         List<DSSNodeDefault> dssNodeDefaultList = new ArrayList<>();
-        RequestQueryByIdOrchestrator RequestQueryByIdOrchestrator =  new  RequestQueryByIdOrchestrator();
+        RequestQueryByIdOrchestrator RequestQueryByIdOrchestrator = new RequestQueryByIdOrchestrator();
         RequestQueryByIdOrchestrator.setOrchestratorId(orchestratorId);
 
         OrchestratorVo orchestratorVo = RpcAskUtils.processAskException(getOrchestratorSender().ask(RequestQueryByIdOrchestrator),
                 OrchestratorVo.class, RequestQueryByIdOrchestrator.class);
 
-        if(orchestratorVo == null || orchestratorVo.getDssOrchestratorInfo() == null || orchestratorVo.getDssOrchestratorVersion() == null){
+        if (orchestratorVo == null || orchestratorVo.getDssOrchestratorInfo() == null || orchestratorVo.getDssOrchestratorVersion() == null) {
 
             DSSExceptionUtils.dealErrorException(90003, "工作流不存在", DSSErrorException.class);
         }
@@ -3667,25 +3750,25 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         // 获取主工作流下的节点和所有子工作流
         DSSFlow rootFlow = genDSSFlowTree(dssOrchestratorVersion.getAppId());
-        for(String nodeName: nodeNameList){
+        for (String nodeName : nodeNameList) {
 
             // 获取节点所属工作流
-            DSSFlow flow = getFLowByNode(rootFlow,nodeName);
+            DSSFlow flow = getFLowByNode(rootFlow, nodeName);
 
-            if(flow == null){
-                logger.error("dssOrchestratorInfo is [{},{}],not find flow info by {} node ",dssOrchestratorInfo.getName(),
-                        dssOrchestratorInfo.getId(),nodeName);
+            if (flow == null) {
+                logger.error("dssOrchestratorInfo is [{},{}],not find flow info by {} node ", dssOrchestratorInfo.getName(),
+                        dssOrchestratorInfo.getId(), nodeName);
                 DSSExceptionUtils.dealErrorException(90003, String.format("%s 工作流中未找到%s节点信息",
-                        dssOrchestratorInfo.getName(),nodeName), DSSErrorException.class);
+                        dssOrchestratorInfo.getName(), nodeName), DSSErrorException.class);
             }
 
-            DSSNodeDefault dssNodeDefault = getNode(flow,nodeName);
+            DSSNodeDefault dssNodeDefault = getNode(flow, nodeName);
 
-            if(dssNodeDefault == null){
-                logger.error("dssOrchestratorInfo is [{},{}], not find {} node, flow is [{},{}] ",dssOrchestratorInfo.getName(),
-                        dssOrchestratorInfo.getId(),nodeName,flow.getName(),flow.getId());
+            if (dssNodeDefault == null) {
+                logger.error("dssOrchestratorInfo is [{},{}], not find {} node, flow is [{},{}] ", dssOrchestratorInfo.getName(),
+                        dssOrchestratorInfo.getId(), nodeName, flow.getName(), flow.getId());
                 DSSExceptionUtils.dealErrorException(90003,
-                        String.format("%s 工作流下未找到 %s 节点",dssOrchestratorInfo.getName(),nodeName), DSSErrorException.class);
+                        String.format("%s 工作流下未找到 %s 节点", dssOrchestratorInfo.getName(), nodeName), DSSErrorException.class);
             }
 
             dssNodeDefaultList.add(dssNodeDefault);
@@ -3698,18 +3781,18 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
 
-    public void forceUnlockWorkflow(DSSFlow rootFlow,String ticketId, String username,boolean isUnlock,Workspace workspace){
+    public void forceUnlockWorkflow(DSSFlow rootFlow, String ticketId, String username, boolean isUnlock, Workspace workspace) {
 
         // 校验工作流是否锁定
         DSSFlowEditLock flowEditLock = lockMapper.getFlowEditLockByID(rootFlow.getId());
         if (flowEditLock != null && !flowEditLock.getOwner().equals(ticketId)) {
             // 工作流如果锁定编辑, isUnlock = true 则强制解锁
-            if (isUnlock){
-                logger.info("force unlock workflow is [{},{}], username is {}",rootFlow.getName(),
-                        rootFlow.getId(),username);
-                workFlowManager.unlockWorkflow(username,rootFlow.getId(),true,workspace);
-            }else{
-                throw new DSSErrorException(80001, "当前工作流" + rootFlow.getName() +"被用户" + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
+            if (isUnlock) {
+                logger.info("force unlock workflow is [{},{}], username is {}", rootFlow.getName(),
+                        rootFlow.getId(), username);
+                workFlowManager.unlockWorkflow(username, rootFlow.getId(), true, workspace);
+            } else {
+                throw new DSSErrorException(80001, "当前工作流" + rootFlow.getName() + "被用户" + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
             }
 
         }
@@ -3730,20 +3813,20 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
     }
 
-    public void updateSubFlowName(DSSNodeDefault node,String username, DSSFlow dssFlow){
+    public void updateSubFlowName(DSSNodeDefault node, String username, DSSFlow dssFlow) {
 
 
-        if("workflow.subflow".equalsIgnoreCase(node.getJobType()) &&
-                StringUtils.isNotEmpty(node.getModifyNodeName())){
+        if ("workflow.subflow".equalsIgnoreCase(node.getJobType()) &&
+                StringUtils.isNotEmpty(node.getModifyNodeName())) {
 
             Object embeddedFlowId = node.getJobContent().get("embeddedFlowId");
-            logger.info("node is {}, type is {}, embeddedFlowId is {}",node.getTitle(),node.getJobType(), embeddedFlowId);
-            if(embeddedFlowId == null){
-                logger.info("json is {}",  dssFlow.getFlowJson());
-                DSSExceptionUtils.dealErrorException(91003, "get subflow "+ node.getTitle()+" node flowId is empty", DSSErrorException.class);
+            logger.info("node is {}, type is {}, embeddedFlowId is {}", node.getTitle(), node.getJobType(), embeddedFlowId);
+            if (embeddedFlowId == null) {
+                logger.info("json is {}", dssFlow.getFlowJson());
+                DSSExceptionUtils.dealErrorException(91003, "get subflow " + node.getTitle() + " node flowId is empty", DSSErrorException.class);
             }
 
-            Long subFlowId = Long.valueOf(objectNumToString(embeddedFlowId)) ;
+            Long subFlowId = Long.valueOf(objectNumToString(embeddedFlowId));
 
             DSSFlow subFlow = new DSSFlow();
             subFlow.setId(subFlowId);
@@ -3755,11 +3838,11 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
 
-    public void validModifyNodeName(DSSNodeDefault node){
+    public void validModifyNodeName(DSSNodeDefault node) {
 
-        if(StringUtils.isNotEmpty(node.getModifyNodeName())){
+        if (StringUtils.isNotEmpty(node.getModifyNodeName())) {
 
-            if(node.getModifyNodeName().length() >= 128){
+            if (node.getModifyNodeName().length() >= 128) {
                 DSSExceptionUtils.dealErrorException(91004,
                         String.format(" %s modifyNodeName length cannot exceed 128 (名称长度超过了128)", node.getModifyNodeName()), DSSErrorException.class);
             }
@@ -3767,7 +3850,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             // 校验是否字母、数字、下划线
             Matcher matcher = pattern.matcher(node.getModifyNodeName());
 
-            if(!matcher.find()){
+            if (!matcher.find()) {
                 DSSExceptionUtils.dealErrorException(91004, String.format("%s modifyNodeName must be Started with alphabetic characters, " +
                                 "only alphanumeric and underscore are allowed! (必须以字母开头，且只支持字母、数字、下划线！) ", node.getModifyNodeName()),
                         DSSErrorException.class);

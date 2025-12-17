@@ -65,4 +65,17 @@ public class DSSWorkFlowConstant {
      */
     public static final CommonVars<String> DEFAULT_ZIP_FILE_LIMIT = CommonVars.apply("wds.dss.workflow.export.default.zip.limit", "5");
 
+    /***
+     * 是否启用新增的pyspark节点使用python3环境
+     */
+    public static final CommonVars<Boolean>  PYSPARK_PYTHON_ENABLE = CommonVars.apply("wds.dss.pyspark.python.enable", true);
+
+
+    /***
+     * pyspark节点使用python3环境的默认时间
+     */
+    public static final CommonVars<String> PYSPARK_PYTHON_DATETIME = CommonVars.apply("wds.dss.pyspark.python.time", "2026-01-01 00:00:00");
+
+    public static final CommonVars<String> PYSPARK_PYTHON_VERSION = CommonVars.apply("wds.dss.pyspark.python.version", "python3");
+
 }
