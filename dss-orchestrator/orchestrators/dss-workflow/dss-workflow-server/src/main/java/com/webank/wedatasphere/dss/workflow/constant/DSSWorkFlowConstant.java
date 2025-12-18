@@ -19,8 +19,12 @@ package com.webank.wedatasphere.dss.workflow.constant;
 import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
 import com.webank.wedatasphere.dss.common.conf.DSSCommonConf;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.linkis.common.conf.CommonVars;
 import org.apache.linkis.common.conf.CommonVars$;
+
+import java.util.Date;
 
 
 public class DSSWorkFlowConstant {
@@ -74,7 +78,7 @@ public class DSSWorkFlowConstant {
     /***
      * pyspark节点使用python3环境的默认时间
      */
-    public static final CommonVars<String> PYSPARK_PYTHON_DATETIME = CommonVars.apply("wds.dss.pyspark.python.time", "2026-01-01 00:00:00");
+    public static final CommonVars<String> PYSPARK_PYTHON_DATETIME = CommonVars.apply("wds.dss.pyspark.python.time", DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
 
     public static final CommonVars<String> PYSPARK_PYTHON_VERSION = CommonVars.apply("wds.dss.pyspark.python.version", "python3");
 

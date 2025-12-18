@@ -87,6 +87,8 @@ import com.webank.wedatasphere.dss.workflow.service.WorkflowNodeService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.http.Consts;
 import org.apache.linkis.common.exception.ErrorException;
@@ -467,80 +469,94 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
 
-    public String updatePysparkPythonVersion(String jsonFlow) {
+    private String updatePysparkPythonVersion(String jsonFlow) {
 
         try {
 
+            logger.info("updatePysparkPythonVersion json flow is {}", jsonFlow);
             String pythonDateTime = PYSPARK_PYTHON_DATETIME.getValue();
             long pythonDateTimeLong = DateUtils.parseDate(pythonDateTime,new String[]{"yyyy-MM-dd HH:mm:ss"}).getTime();
             String pythonVersion = PYSPARK_PYTHON_VERSION.getValue();
 
-            logger.info("pyspark python3 enable,python version is {}, pyspark python time is [{},{}]",
+            logger.info("pyspark python enable,python version is {}, pyspark python time is [{},{}]",
                     pythonVersion, pythonDateTime,pythonDateTimeLong);
 
             // 新增的pyspark节点添加spark.python.version=python3,强制使用python3环境
-            List<DSSNodeDefault> workFlowNodes = DSSCommonUtils.getWorkFlowNodes(jsonFlow);
+            JsonParser parser = new JsonParser();
+            JsonObject jsonObject = parser.parse(jsonFlow).getAsJsonObject();
+            JsonArray nodeJsonArray = jsonObject.getAsJsonArray("nodes");
 
-            List<DSSNodeDefault> updateNodes = new ArrayList<>();
+            if(nodeJsonArray == null || nodeJsonArray.isEmpty()){
+                logger.info("nodes is empty");
+                return jsonFlow;
+            }
 
-            for (DSSNodeDefault node : workFlowNodes) {
+            List<JsonObject> updateNodes = new ArrayList<>();
+            for(JsonElement nodeJson: nodeJsonArray){
 
-                if (!node.getJobType().equalsIgnoreCase("linkis.spark.py")) {
+                JsonObject node = nodeJson.getAsJsonObject();
+
+                // 过滤非pyspark节点
+                if (node.get("jobType") == null || !"linkis.spark.py".equalsIgnoreCase(node.get("jobType").getAsString())){
+                    continue;
+                }
+
+                // 过滤非新增节点
+                if (node.get("createTime") == null || node.get("createTime").getAsLong() < pythonDateTimeLong) {
+
+                    String createDateTime =  node.get("createTime") == null ?
+                            null :
+                            DateFormatUtils.format(new Date(node.get("createTime").getAsLong()),"yyyy-MM-dd HH:mm:ss");
+
+                    logger.info("{} Not new nodes, node createTime is [{},{}], python3DateTime is [{},{}]",
+                            node.get("title"),node.get("createTime"),createDateTime,pythonDateTimeLong,pythonDateTime);
                     continue;
                 }
 
 
-                if (node.getCreateTime() == null || node.getCreateTime() < pythonDateTimeLong) {
-                    logger.info("{} Not new nodes, node createTime is [{}], python3DateTime is [{},{}]",
-                            node.getTitle(),node.getCreateTime(),pythonDateTimeLong,pythonDateTime);
+                if (node.get("params") == null) {
+                    node.add("params",new JsonObject());
+                }
+
+                if(node.get("params").getAsJsonObject().get("configuration") == null) {
+
+                    node.get("params").getAsJsonObject().add("configuration",new JsonObject());
+                }
+
+                JsonObject configuration =node.get("params").getAsJsonObject().get("configuration").getAsJsonObject();
+
+                if(configuration.get("startup") == null){
+                    configuration.add("startup",new JsonObject());
+                }
+
+                JsonObject startup =  configuration.get("startup").getAsJsonObject();
+
+                logger.info("{} node spark.python.version  is {}, python version is {}",
+                        node.get("title"),startup.get("spark.python.version"),pythonVersion);
+
+                if (startup.get("spark.python.version") != null
+                        && pythonVersion.equals(startup.get("spark.python.version").getAsString())) {
+                    logger.info("{} node python version is {}",
+                            node.get("title"),startup.get("spark.python.version"));
                     continue;
                 }
 
-                if (node.getParams() == null) {
-                    node.setParams(new HashMap<>());
-                }
+                // 更新python版本
+                startup.addProperty("spark.python.version", pythonVersion);
 
-                Map<String, Object> configuration = (Map<String, Object>) node.getParams().get("configuration");
-
-                if (configuration == null) {
-                    configuration = new HashMap<>();
-                    configuration.put("special", new HashMap<>());
-                    configuration.put("runtime", new HashMap<>());
-                    configuration.put("startup", new HashMap<>());
-                }
-
-                Map<String, Object> startup = (Map<String, Object>) configuration.get("startup");
-
-                if (startup == null) {
-                    startup = new HashMap<>();
-                }
-
-                if (pythonVersion.equals(startup.get("spark.python.version"))) {
-                    continue;
-                }
-
-                startup.put("spark.python.version", pythonVersion);
-
+                logger.info("update node is {}", node);
                 updateNodes.add(node);
-
-                logger.info("node is {}", DSSCommonUtils.COMMON_GSON.toJson(node));
             }
 
-            logger.info("update pyspark node is {}",DSSCommonUtils.COMMON_GSON.toJson(updateNodes));
+            logger.info("updatePysparkPythonVersion update node is {}",DSSCommonUtils.COMMON_GSON.toJson(updateNodes));
 
-            if (CollectionUtils.isNotEmpty(updateNodes)) {
-
-                JsonParser parser = new JsonParser();
-                JsonObject jsonObject = parser.parse(jsonFlow).getAsJsonObject();
-                jsonObject.addProperty("node", DSSCommonUtils.COMMON_GSON.toJson(workFlowNodes));
-                jsonFlow = jsonObject.toString();
-
-                logger.info("pyspark update json flow is {}",jsonFlow);
+            if (CollectionUtils.isNotEmpty(updateNodes)){
+                logger.info("updatePysparkPythonVersion success, jsonFlow is {}", jsonObject);
+                return jsonObject.toString();
             }
-
 
         } catch (Exception e) {
-            logger.info("jsonFlow is {}", jsonFlow);
+            logger.error("updatePysparkPythonVersion failed, jsonFlow is {}", jsonFlow);
             logger.error("updatePysparkPythonVersion failed", e);
         }
 
