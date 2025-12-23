@@ -30,8 +30,13 @@ import com.webank.wedatasphere.dss.common.protocol.project.ProjectInfoRequest;
 import com.webank.wedatasphere.dss.common.utils.AuditLogUtils;
 import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
 import com.webank.wedatasphere.dss.common.utils.RpcAskUtils;
+import com.webank.wedatasphere.dss.framework.project.entity.DSSProjectDO;
+import com.webank.wedatasphere.dss.framework.project.service.DSSProjectService;
+import com.webank.wedatasphere.dss.framework.workspace.bean.itsm.ItsmRequest;
+import com.webank.wedatasphere.dss.framework.workspace.bean.itsm.ItsmResponse;
 import com.webank.wedatasphere.dss.framework.workspace.service.DSSWorkspaceRoleService;
 import com.webank.wedatasphere.dss.framework.workspace.service.DSSWorkspaceService;
+import com.webank.wedatasphere.dss.framework.workspace.util.WorkspaceUtils;
 import com.webank.wedatasphere.dss.git.common.protocol.GitTree;
 import com.webank.wedatasphere.dss.git.common.protocol.config.GitServerConfig;
 import com.webank.wedatasphere.dss.git.common.protocol.constant.GitConstant;
@@ -62,8 +67,10 @@ import com.webank.wedatasphere.dss.workflow.common.protocol.ResponseLockWorkflow
 import com.webank.wedatasphere.dss.workflow.constant.DSSWorkFlowConstant;
 import com.webank.wedatasphere.dss.workflow.dao.LockMapper;
 import com.webank.wedatasphere.dss.workflow.entity.DSSFlowEditLock;
+import com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite;
 import com.webank.wedatasphere.dss.workflow.lock.DSSFlowEditLockManager;
 import com.webank.wedatasphere.dss.workflow.service.DSSFlowService;
+import com.webank.wedatasphere.dss.workflow.service.impl.ProjectOrchestratorWhiteService;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.apache.linkis.rpc.Sender;
@@ -114,6 +121,14 @@ public class DSSFrameworkOrchestratorRestful {
 
     @Autowired
     private DSSWorkspaceService dssWorkspaceService;
+
+
+    @Autowired
+    private ProjectOrchestratorWhiteService projectOrchestratorWhiteService;
+    @Autowired
+    private DSSProjectService dssProjectService;
+
+
 
     private final  String encryptCopyWorkflowSuffix = "copy_cib";
 
@@ -892,4 +907,97 @@ public class DSSFrameworkOrchestratorRestful {
         return Message.ok("删除工作流编排模式成功");
     }
 
+
+    @RequestMapping(path = "addOrchestratorWhite", method = RequestMethod.POST)
+    public ItsmResponse addProjectAndOrchestratorWhite(@RequestBody ItsmRequest itsmRequest, HttpServletRequest req, HttpServletResponse resp){
+
+        LOGGER.info("itsm try to add orchestrator white, itsm id:{}.", itsmRequest.getExternalId());
+        // 获取请求头中的timestamp和sign字段
+        String timestamp = req.getHeader("timeStamp");
+        String sign = req.getHeader("sign");
+        // 验证鉴权
+        if (!WorkspaceUtils.validateAuth(timestamp, sign)) {
+            // 鉴权失败，返回错误信息
+            LOGGER.error("Authentication failed.");
+            // 设置HTTP状态码为403
+            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            return ItsmResponse.error().retDetail("Authentication failed.");
+        }
+
+        // 鉴权成功，处理请求
+        LOGGER.info("Authentication success.");
+
+        List<Map<String, String>> dataList = itsmRequest.getDataList();
+
+        if (dataList.isEmpty()) {
+            return ItsmResponse.error().retDetail("data is empty");
+        }
+
+        String createUser = itsmRequest.getCreateUser();
+
+        for (Map<String, String> table : dataList) {
+
+            String projectName = table.get("projectName");
+            String orchestratorName = table.get("orchestratorName");
+
+            if(StringUtils.isEmpty(projectName)){
+                LOGGER.error("project is empty");
+                return ItsmResponse.error().retDetail("项目信息不能为空！");
+            }
+
+            if(StringUtils.isEmpty(orchestratorName)){
+                LOGGER.error("flow is empty");
+                return ItsmResponse.error().retDetail("工作流信息不能为空！");
+            }
+
+            try {
+
+
+               DSSProjectDO dbProject = dssProjectService.getProjectByName(projectName);
+
+               if (dbProject == null) {
+                   String msg = String.format("project %s does not exist.", projectName);
+                   LOGGER.error(msg);
+                   return ItsmResponse.error().retDetail(msg);
+               }
+
+               Long orchestratorId = null;
+
+               if(!"*".equalsIgnoreCase(orchestratorName.trim())){
+
+                   List<DSSOrchestratorInfo> orchestratorInfoList = orchestratorMapper.getByNameAndProjectId(dbProject.getId(),orchestratorName);
+
+                   if(CollectionUtils.isEmpty(orchestratorInfoList)){
+                       String msg = String.format("flow %s does not exist.", orchestratorName);
+                       LOGGER.error(msg);
+                       return ItsmResponse.error().retDetail(msg);
+                   }
+
+                   orchestratorId = orchestratorInfoList.get(0).getProjectId();
+
+               }
+
+               ProjectOrchestratorWhite projectOrchestratorWhite = new ProjectOrchestratorWhite();
+               projectOrchestratorWhite.setOrchestratorId(orchestratorId);
+               projectOrchestratorWhite.setOrchestratorName(orchestratorName);
+               projectOrchestratorWhite.setProjectName(projectName);
+               projectOrchestratorWhite.setProjectId(dbProject.getId());
+               projectOrchestratorWhite.setCreateBy(createUser);
+
+               projectOrchestratorWhiteService.addProjectOrchestratorWhite(projectOrchestratorWhite);
+
+
+           }catch (Exception e){
+               LOGGER.info("project is {}, orchestrator is {}, add white fail: {} ",projectName,orchestratorName,e);
+               String errorMsg = String.format("project is %s, orchestrator is %s, add white fail: %s",
+                       projectName,orchestratorName,e.getMessage());
+               return  ItsmResponse.error().retDetail(errorMsg);
+           }
+
+        }
+
+        LOGGER.info("success to add orchestrator white, itsm id:{}.", itsmRequest.getExternalId());
+        return ItsmResponse.ok().retDetail("Success to add orchestrator white");
+
+    }
 }

@@ -38,6 +38,7 @@ import com.webank.wedatasphere.dss.workflow.entity.vo.NodeUiVO;
 import com.webank.wedatasphere.dss.workflow.entity.vo.NodeUiValidateVO;
 import com.webank.wedatasphere.dss.workflow.service.DSSFlowService;
 import com.webank.wedatasphere.dss.workflow.service.WorkflowNodeService;
+import com.webank.wedatasphere.dss.workflow.service.impl.ProjectOrchestratorWhiteService;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -68,24 +69,51 @@ public class NodeRestfulApi {
     @Autowired
     private WorkFlowParser workFlowParser;
 
+
+    @Autowired
+    private ProjectOrchestratorWhiteService projectOrchestratorWhiteService;
+
+
     @RequestMapping(value = "/listNodeType", method = RequestMethod.GET)
-    public Message listNodeType(HttpServletRequest req) {
+    public Message listNodeType(HttpServletRequest req,
+                                @RequestParam(value = "projectId", required = false) Long projectId,
+                                @RequestParam(value = "orchestratorId",required = false) Long orchestratorId){
         Function<NodeGroup, String> supplier = internationalization(req, NodeGroup::getNameEn, NodeGroup::getName);
         List<NodeGroupVO> groupVos = new ArrayList<>();
+        boolean isWhite = projectOrchestratorWhiteService.checkProjectAndOrchestratorIsWhite(projectId, orchestratorId);
+        logger.info("projectId is {}, orchestratorId is {} ,isWhite is {}", projectId,orchestratorId,isWhite);
         //cache
         List<NodeGroup> groups = workflowNodeService.listNodeGroups();
         for (NodeGroup group : groups) {
             NodeGroupVO nodeGroupVO = new NodeGroupVO();
             BeanUtils.copyProperties(group, nodeGroupVO);
             nodeGroupVO.setTitle(supplier.apply(group));
-            nodeGroupVO.setChildren(group.getNodes().stream().map(n -> {
+            nodeGroupVO.setChildren(new ArrayList<>());
+
+            for(NodeInfo nodeInfo: group.getNodes()){
+
+                // 跳过aisql节点
+                if (isWhite && "linkis.ai.sql".equalsIgnoreCase(nodeInfo.getNodeType())){
+                    continue;
+                }
+
                 try {
-                    return transfer(n, req);
+                    nodeGroupVO.getChildren().add(transfer(nodeInfo, req, isWhite));
                 } catch (IOException e) {
-                    logger.error("ListNodeType get AppConn {} icons failed.", n.getAppConnName(), e);
+                    logger.error("ListNodeType get AppConn {} icons failed.", nodeInfo.getAppConnName(), e);
                     throw new DSSRuntimeException(81200, e.getMessage(), e);
                 }
-            }).collect(Collectors.toList()));
+
+            }
+//
+//            nodeGroupVO.setChildren(group.getNodes().stream().map(n -> {
+//                try {
+//                    return transfer(n, req);
+//                } catch (IOException e) {
+//                    logger.error("ListNodeType get AppConn {} icons failed.", n.getAppConnName(), e);
+//                    throw new DSSRuntimeException(81200, e.getMessage(), e);
+//                }
+//            }).collect(Collectors.toList()));
             groupVos.add(nodeGroupVO);
         }
         groupVos = groupVos.stream().sorted(NodeGroupVO::compareTo).collect(Collectors.toList());
@@ -115,7 +143,7 @@ public class NodeRestfulApi {
         return nodeUiValidateVO;
     }
 
-    private NodeInfoVO transfer(NodeInfo nodeInfo, HttpServletRequest req) throws IOException {
+    private NodeInfoVO transfer(NodeInfo nodeInfo, HttpServletRequest req, boolean isWhite) throws IOException {
         NodeInfoVO nodeInfoVO = new NodeInfoVO();
         BeanUtils.copyProperties(nodeInfo, nodeInfoVO);
         nodeInfoVO.setTitle(nodeInfo.getName());
@@ -130,6 +158,12 @@ public class NodeRestfulApi {
             if (keySet.contains(nodeUi.getKey())) {
                 continue;
             }
+
+            // 取消sparkVersion选项
+            if(isWhite && "sparkVersion".equalsIgnoreCase(nodeUi.getKey())){
+                continue;
+            }
+
             NodeUiVO nodeUiVO = new NodeUiVO();
             BeanUtils.copyProperties(nodeUi, nodeUiVO);
             nodeUiVO.setDesc(descriptionSupplier.apply(nodeUi));
