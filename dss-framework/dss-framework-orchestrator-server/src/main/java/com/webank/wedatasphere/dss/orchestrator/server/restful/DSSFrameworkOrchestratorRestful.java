@@ -30,8 +30,6 @@ import com.webank.wedatasphere.dss.common.protocol.project.ProjectInfoRequest;
 import com.webank.wedatasphere.dss.common.utils.AuditLogUtils;
 import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
 import com.webank.wedatasphere.dss.common.utils.RpcAskUtils;
-import com.webank.wedatasphere.dss.framework.project.entity.DSSProjectDO;
-import com.webank.wedatasphere.dss.framework.project.service.DSSProjectService;
 import com.webank.wedatasphere.dss.framework.workspace.bean.itsm.ItsmRequest;
 import com.webank.wedatasphere.dss.framework.workspace.bean.itsm.ItsmResponse;
 import com.webank.wedatasphere.dss.framework.workspace.service.DSSWorkspaceRoleService;
@@ -125,10 +123,6 @@ public class DSSFrameworkOrchestratorRestful {
 
     @Autowired
     private ProjectOrchestratorWhiteService projectOrchestratorWhiteService;
-    @Autowired
-    private DSSProjectService dssProjectService;
-
-
 
     private final  String encryptCopyWorkflowSuffix = "copy_cib";
 
@@ -952,10 +946,9 @@ public class DSSFrameworkOrchestratorRestful {
 
             try {
 
+                DSSProject dssProject = orchestratorFrameworkService.getProjectByName(projectName);
 
-               DSSProjectDO dbProject = dssProjectService.getProjectByName(projectName);
-
-               if (dbProject == null) {
+               if (dssProject == null) {
                    String msg = String.format("project %s does not exist.", projectName);
                    LOGGER.error(msg);
                    return ItsmResponse.error().retDetail(msg);
@@ -965,7 +958,7 @@ public class DSSFrameworkOrchestratorRestful {
 
                if(!"*".equalsIgnoreCase(orchestratorName.trim())){
 
-                   List<DSSOrchestratorInfo> orchestratorInfoList = orchestratorMapper.getByNameAndProjectId(dbProject.getId(),orchestratorName);
+                   List<DSSOrchestratorInfo> orchestratorInfoList = orchestratorMapper.getByNameAndProjectId(dssProject.getId(),orchestratorName);
 
                    if(CollectionUtils.isEmpty(orchestratorInfoList)){
                        String msg = String.format("flow %s does not exist.", orchestratorName);
@@ -981,7 +974,7 @@ public class DSSFrameworkOrchestratorRestful {
                projectOrchestratorWhite.setOrchestratorId(orchestratorId);
                projectOrchestratorWhite.setOrchestratorName(orchestratorName);
                projectOrchestratorWhite.setProjectName(projectName);
-               projectOrchestratorWhite.setProjectId(dbProject.getId());
+               projectOrchestratorWhite.setProjectId(dssProject.getId());
                projectOrchestratorWhite.setCreateBy(createUser);
 
                projectOrchestratorWhiteService.addProjectOrchestratorWhite(projectOrchestratorWhite);

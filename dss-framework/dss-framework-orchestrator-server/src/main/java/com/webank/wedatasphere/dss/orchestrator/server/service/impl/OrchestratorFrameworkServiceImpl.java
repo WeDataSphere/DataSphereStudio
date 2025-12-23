@@ -1158,4 +1158,17 @@ public class OrchestratorFrameworkServiceImpl implements OrchestratorFrameworkSe
     }
 
 
+
+    @Override
+    public DSSProject getProjectByName(String projectName){
+
+        List<String> projects = Collections.singletonList(projectName);
+        ProjectInfoListRequest request = new ProjectInfoListRequest();
+        request.setProjectNames(projects);
+
+        ProjectInfoListResponse response = RpcAskUtils.processAskException(DSSSenderServiceFactory.getOrCreateServiceInstance()
+                .getProjectServerSender().ask(request), ProjectInfoListResponse.class, ProjectInfoListRequest.class);
+
+        return  CollectionUtils.isEmpty(response.getDssProjects()) ? null : response.getDssProjects().get(0);
+    }
 }

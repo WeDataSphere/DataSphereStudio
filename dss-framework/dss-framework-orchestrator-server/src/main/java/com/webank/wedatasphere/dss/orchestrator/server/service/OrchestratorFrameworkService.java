@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.dss.orchestrator.server.service;
 
+import com.webank.wedatasphere.dss.common.entity.project.DSSProject;
 import com.webank.wedatasphere.dss.common.exception.DSSErrorException;
 import com.webank.wedatasphere.dss.common.label.LabelRouteVO;
 import com.webank.wedatasphere.dss.git.common.protocol.GitTree;
@@ -67,5 +68,8 @@ public interface OrchestratorFrameworkService {
 
 
     DSSEncryptOrchestratorCopyInfo getDSSEncryptOrchestratorCopyInfo(String copyInfoId);
+
+
+    DSSProject getProjectByName(String projectName);
 
 }
