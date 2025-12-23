@@ -27,8 +27,14 @@
 
 
     <insert id="addProjectOrchestratorWhite">
-        insert into dss_project_orchestrator_white (project_id,project_name,orchestrator_id,orchestrator_name)
-        values(#{projectId},#{projectName},#{orchestratorId},#{orchestratorName})
+        insert into dss_project_orchestrator_white (project_id,project_name,orchestrator_id,orchestrator_name,create_by,update_by)
+        values(#{projectId},#{projectName},#{orchestratorId},#{orchestratorName},#{createBy},#{updateBy})
     </insert>
+
+    <update id="updateById" parameterType="com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite">
+        update dss_project_orchestrator_white set project_name= #{projectName}, orchestrator_name = #{orchestratorName},
+        orchestrator_name = #{orchestrator_name},update_by= #{updateBy}
+        where id = #{id}
+    </update>
 
 </mapper>

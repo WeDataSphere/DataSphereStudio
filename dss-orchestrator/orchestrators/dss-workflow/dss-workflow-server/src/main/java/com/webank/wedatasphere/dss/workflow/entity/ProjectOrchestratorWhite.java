@@ -18,6 +18,8 @@ public class ProjectOrchestratorWhite {
 
     private String createBy;
 
+    private String updateBy;
+
     public Long getId() {
         return id;
     }
@@ -82,17 +84,12 @@ public class ProjectOrchestratorWhite {
         this.createBy = createBy;
     }
 
-    @Override
-    public String toString() {
-        return "ProjectOrchestratorWhite{" +
-                "id=" + id +
-                ", projectId=" + projectId +
-                ", projectName='" + projectName + '\'' +
-                ", orchestratorId=" + orchestratorId +
-                ", orchestratorName='" + orchestratorName + '\'' +
-                ", createTime='" + createTime + '\'' +
-                ", updateTime='" + updateTime + '\'' +
-                ", createBy='" + createBy + '\'' +
-                '}';
+
+    public String getUpdateBy() {
+        return updateBy;
+    }
+
+    public void setUpdateBy(String updateBy) {
+        this.updateBy = updateBy;
     }
 }

@@ -976,6 +976,7 @@ public class DSSFrameworkOrchestratorRestful {
                projectOrchestratorWhite.setProjectName(projectName);
                projectOrchestratorWhite.setProjectId(dssProject.getId());
                projectOrchestratorWhite.setCreateBy(createUser);
+               projectOrchestratorWhite.setUpdateBy(createUser);
 
                projectOrchestratorWhiteService.addProjectOrchestratorWhite(projectOrchestratorWhite);
 

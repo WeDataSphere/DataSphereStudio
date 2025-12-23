@@ -14,4 +14,7 @@ public interface ProjectOrchestratorWhiteMapper {
 
     void addProjectOrchestratorWhite(ProjectOrchestratorWhite projectOrchestratorWhite);
 
+
+    void updateById(ProjectOrchestratorWhite projectOrchestratorWhite);
+
 }
