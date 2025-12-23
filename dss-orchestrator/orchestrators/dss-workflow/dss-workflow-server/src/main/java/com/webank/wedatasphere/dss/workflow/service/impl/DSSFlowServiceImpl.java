@@ -525,6 +525,14 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
                 JsonObject configuration =node.get("params").getAsJsonObject().get("configuration").getAsJsonObject();
 
+                if (configuration.get("special") == null){
+                    configuration.add("special",new JsonObject());
+                }
+
+                if (configuration.get("runtime") == null){
+                    configuration.add("runtime",new JsonObject());
+                }
+
                 if(configuration.get("startup") == null){
                     configuration.add("startup",new JsonObject());
                 }
