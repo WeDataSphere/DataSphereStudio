@@ -53,10 +53,8 @@ public class ProjectOrchestratorWhiteServiceImpl implements ProjectOrchestratorW
             projectOrchestratorWhiteMapper.addProjectOrchestratorWhite(projectOrchestratorWhite);
         }else{
 
-            orchestratorWhite.setUpdateBy(projectOrchestratorWhite.getUpdateBy());
-            orchestratorWhite.setOrchestratorName(projectOrchestratorWhite.getOrchestratorName());
-            orchestratorWhite.setProjectName(projectOrchestratorWhite.getProjectName());
-            projectOrchestratorWhiteMapper.updateById(orchestratorWhite);
+            projectOrchestratorWhite.setId(orchestratorWhite.getId());
+            projectOrchestratorWhiteMapper.updateById(projectOrchestratorWhite);
         }
 
     }

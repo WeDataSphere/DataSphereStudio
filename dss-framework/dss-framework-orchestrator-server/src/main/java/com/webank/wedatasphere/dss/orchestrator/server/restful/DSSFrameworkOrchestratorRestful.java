@@ -954,7 +954,7 @@ public class DSSFrameworkOrchestratorRestful {
                    return ItsmResponse.error().retDetail(msg);
                }
 
-               Long orchestratorId = null;
+               long orchestratorId = 0L;
 
                if(!"*".equalsIgnoreCase(orchestratorName.trim())){
 
@@ -966,7 +966,7 @@ public class DSSFrameworkOrchestratorRestful {
                        return ItsmResponse.error().retDetail(msg);
                    }
 
-                   orchestratorId = orchestratorInfoList.get(0).getProjectId();
+                   orchestratorId = orchestratorInfoList.get(0).getId();
 
                }
 

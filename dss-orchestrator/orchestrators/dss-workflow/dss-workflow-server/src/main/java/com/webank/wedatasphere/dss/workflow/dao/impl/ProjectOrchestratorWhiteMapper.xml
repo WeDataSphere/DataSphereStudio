@@ -33,7 +33,7 @@
 
     <update id="updateById" parameterType="com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite">
         update dss_project_orchestrator_white set project_name= #{projectName}, orchestrator_name = #{orchestratorName},
-        orchestrator_name = #{orchestratorName},update_by= #{updateBy}
+        orchestrator_name = #{orchestratorName},update_by= #{updateBy},update_time=now()
         where id = #{id}
     </update>
 
