@@ -25,6 +25,8 @@ public class ItsmRequest {
     private String style;
     private String taskId;
 
+    private String formId;
+
 
     // getters和setters
     public String getCreateDate() {
@@ -97,6 +99,14 @@ public class ItsmRequest {
 
     public void setTaskId(String taskId) {
         this.taskId = taskId;
+    }
+
+    public String getFormId() {
+        return formId;
+    }
+
+    public void setFormId(String formId) {
+        this.formId = formId;
     }
 
     public List<Map<String,String>> getDataList(){
