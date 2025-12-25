@@ -92,8 +92,8 @@ public class NodeRestfulApi {
 
             for(NodeInfo nodeInfo: group.getNodes()){
 
-                // 跳过aisql节点
-                if (isWhite && "linkis.ai.sql".equalsIgnoreCase(nodeInfo.getNodeType())){
+                // // 不在白名单, 跳过aisql节点
+                if (!isWhite && "linkis.ai.sql".equalsIgnoreCase(nodeInfo.getNodeType())){
                     continue;
                 }
 
@@ -159,8 +159,8 @@ public class NodeRestfulApi {
                 continue;
             }
 
-            // 取消sparkVersion选项
-            if(isWhite && "sparkVersion".equalsIgnoreCase(nodeUi.getKey())){
+            // 不在白名单, 则取消sparkVersion选项
+            if(!isWhite && "sparkVersion".equalsIgnoreCase(nodeUi.getKey())){
                 continue;
             }
 
