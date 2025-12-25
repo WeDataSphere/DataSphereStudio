@@ -21,6 +21,7 @@ import com.webank.wedatasphere.dss.common.entity.node.DSSNode;
 import com.webank.wedatasphere.dss.common.exception.DSSErrorException;
 import com.webank.wedatasphere.dss.common.exception.DSSRuntimeException;
 import com.webank.wedatasphere.dss.common.label.EnvDSSLabel;
+import com.webank.wedatasphere.dss.common.utils.DSSCommonUtils;
 import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
 import com.webank.wedatasphere.dss.standard.app.development.utils.DSSJobContentConstant;
 import com.webank.wedatasphere.dss.standard.app.sso.Workspace;
@@ -76,11 +77,19 @@ public class NodeRestfulApi {
 
     @RequestMapping(value = "/listNodeType", method = RequestMethod.GET)
     public Message listNodeType(HttpServletRequest req,
+                                @RequestParam( value = "labels", required = false) String labels,
                                 @RequestParam(value = "projectId", required = false) Long projectId,
                                 @RequestParam(value = "orchestratorId",required = false) Long orchestratorId){
         Function<NodeGroup, String> supplier = internationalization(req, NodeGroup::getNameEn, NodeGroup::getName);
         List<NodeGroupVO> groupVos = new ArrayList<>();
-        boolean isWhite = projectOrchestratorWhiteService.checkProjectAndOrchestratorIsWhite(projectId, orchestratorId);
+        boolean isWhite;
+        if(DSSCommonUtils.ENV_LABEL_VALUE_PROD.equalsIgnoreCase(labels)){
+            isWhite = true;
+        }else{
+            // 开发中心做白名单判断
+            isWhite = projectOrchestratorWhiteService.checkProjectAndOrchestratorIsWhite(projectId, orchestratorId);
+        }
+
         logger.info("projectId is {}, orchestratorId is {} ,isWhite is {}", projectId,orchestratorId,isWhite);
         //cache
         List<NodeGroup> groups = workflowNodeService.listNodeGroups();
@@ -92,7 +101,7 @@ public class NodeRestfulApi {
 
             for(NodeInfo nodeInfo: group.getNodes()){
 
-                // // 不在白名单, 跳过aisql节点
+                // 不在白名单, 跳过aisql节点
                 if (!isWhite && "linkis.ai.sql".equalsIgnoreCase(nodeInfo.getNodeType())){
                     continue;
                 }
@@ -105,15 +114,6 @@ public class NodeRestfulApi {
                 }
 
             }
-//
-//            nodeGroupVO.setChildren(group.getNodes().stream().map(n -> {
-//                try {
-//                    return transfer(n, req);
-//                } catch (IOException e) {
-//                    logger.error("ListNodeType get AppConn {} icons failed.", n.getAppConnName(), e);
-//                    throw new DSSRuntimeException(81200, e.getMessage(), e);
-//                }
-//            }).collect(Collectors.toList()));
             groupVos.add(nodeGroupVO);
         }
         groupVos = groupVos.stream().sorted(NodeGroupVO::compareTo).collect(Collectors.toList());
