@@ -1294,12 +1294,6 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         updateFlowJson = updateWorkFlowNodeJsonForMultiThread(userName, projectName, updateFlowJson, rootFlow,
                 version, workspace, dssLabels, skipThirdAppconn);
 
-        // 不是复制工作流 就保存元数据信息
-        if (!copyOrchestrator) {
-            // 更新对应节点的FlowJson
-            saveFlowMetaData(rootFlow.getId(), updateFlowJson, orchestratorId);
-        }
-
         List<? extends DSSFlow> subFlows = rootFlow.getChildren();
         List<String[]> templateIds = new ArrayList<>();
         if (subFlows != null) {
@@ -1321,6 +1315,13 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         //todo add dssflow to database
         flowMapper.updateFlowInputInfo(updateDssFlow);
         contextService.checkAndSaveContext(updateFlowJson, String.valueOf(parentFlowId));
+
+        //  待保存完bml后,在做元数据保存,防止bml更新失败,编排对应的flowId未更改。而工作流元数据的flowId 却更改了
+        // 不是复制工作流 就保存元数据信息
+        if (!copyOrchestrator) {
+            // 更新对应节点的FlowJson
+            saveFlowMetaData(rootFlow.getId(), updateFlowJson, orchestratorId);
+        }
     }
 
     private String addFLowNodeSuffix(String flowJson, String nodeSuffix, List<String> enableNodeList) throws IOException {
