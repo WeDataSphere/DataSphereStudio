@@ -163,9 +163,6 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     @Autowired
     private StaffInfoGetter staffInfoGetter;
 
-    @Autowired
-    private ProjectOrchestratorWhiteService projectOrchestratorWhiteService;
-
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private static ContextService contextService = ContextServiceImpl.getInstance();
@@ -2321,28 +2318,6 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                     //  处理starrocks节点
                     if ("linkis.jdbc.starrocks".equals(nodeContentByContentId.getJobType())) {
                         starRocksNodeParamsHandle(editFlowRequest, starRocksClusterMap);
-                    }
-
-
-                    // 只匹配 spark 和sql节点
-                    if("linkis.spark.sql".equals(nodeContentByContentId.getJobType())
-                            || "linkis.spark.py".equals(nodeContentByContentId.getJobType())){
-
-                        // 不在白名单不能编辑sparkVersion
-                        if (!projectOrchestratorWhiteService.checkProjectAndOrchestratorIsWhite(dssOrchestratorVersion.getProjectId(),orchestratorId)){
-
-                            String params = editFlowRequest.getParams();
-
-                            if (StringUtils.isNotEmpty(params)) {
-                                JsonObject paramsObject = JsonParser.parseString(params).getAsJsonObject();
-                                //  节点的中不能编辑sparkVersion参数
-                                if (paramsObject.get("sparkVersion") != null ){
-                                    // 抛错,编排不在白名单中,不能编辑spark版本
-                                    throw new DSSErrorException(80001, String.format("%s 工作流不在白名单中,不能批量编辑spark版本。",dssFlow.getName()));
-                                }
-                            }
-
-                        }
                     }
 
                     editFlowRequestsList.add(editFlowRequest);
