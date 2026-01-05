@@ -57,5 +57,5 @@ public class DSSCommonConf {
     public static final CommonVars<String>  DSS_USER_NAME_SUFFIX = CommonVars.apply("wds.dss.username.suffix.name","_cfor_f");
 
 
-    public static final CommonVars<Integer>  DSS_SCRIPTS_DOWNLOAD_LIMIT = CommonVars.apply("wds.dss.scriptis.download.limit",50000);
+    public static final CommonVars<Integer>  DSS_SCRIPTS_DOWNLOAD_LIMIT = CommonVars.apply("wds.dss.scriptis.download.limit",5000);
 }
