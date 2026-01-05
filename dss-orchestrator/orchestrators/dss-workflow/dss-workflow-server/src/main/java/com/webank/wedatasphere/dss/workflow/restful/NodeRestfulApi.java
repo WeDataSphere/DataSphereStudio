@@ -77,11 +77,10 @@ public class NodeRestfulApi {
 
     @RequestMapping(value = "/listNodeType", method = RequestMethod.GET)
     public Message listNodeType(HttpServletRequest req,
-                                @RequestParam( value = "labels", required = false) String labels,
+                                @RequestParam(value = "labels", required = false) String labels,
                                 @RequestParam(value = "projectId", required = false) Long projectId,
                                 @RequestParam(value = "orchestratorId",required = false) Long orchestratorId){
-        Function<NodeGroup, String> supplier = internationalization(req, NodeGroup::getNameEn, NodeGroup::getName);
-        List<NodeGroupVO> groupVos = new ArrayList<>();
+
         boolean isWhite;
         if(DSSCommonUtils.ENV_LABEL_VALUE_PROD.equalsIgnoreCase(labels)){
             isWhite = true;
@@ -89,6 +88,50 @@ public class NodeRestfulApi {
             // 开发中心做白名单判断
             isWhite = projectOrchestratorWhiteService.checkProjectAndOrchestratorIsWhite(projectId, orchestratorId);
         }
+
+        logger.info("projectId is {}, orchestratorId is {} ,isWhite is {}", projectId,orchestratorId,isWhite);
+
+        List<NodeGroupVO> groupVos = getNodeGroup(req,isWhite);
+        return Message.ok().data("nodeTypes", groupVos);
+    }
+
+    /****
+     * 用于工作流元数据,批量编辑节点时,取节点属性
+     * @param req
+     * @param listNodeTypeRequest
+     * @return
+     */
+    @RequestMapping(value = "/listNodeType", method = RequestMethod.POST)
+    public Message listNodeType(HttpServletRequest req,
+                                @RequestBody ListNodeTypeRequest listNodeTypeRequest){
+
+
+        logger.info("listNodeTypeRequest is {}", listNodeTypeRequest);
+        boolean isWhite = true;
+
+        for(ListNodeTypeRequest.BatchOrchestrator params: listNodeTypeRequest.getBatchOrchestratorInfo()){
+
+            isWhite = projectOrchestratorWhiteService.checkProjectAndOrchestratorIsWhite(params.getProjectId(), params.getOrchestratorId());
+
+            if(!isWhite){
+                break;
+            }
+
+        }
+
+        logger.info("listNodeTypeRequest is {},isWhite is {}",listNodeTypeRequest,isWhite);
+        // 传入的项目和工作流没有在白名单,则取消sparkVersion的属性筛选
+        List<NodeGroupVO> groupVos = getNodeGroup(req,isWhite);
+        return Message.ok().data("nodeTypes", groupVos);
+    }
+
+
+    private List<NodeGroupVO> getNodeGroup(HttpServletRequest req,boolean isWhite){
+
+
+        Function<NodeGroup, String> supplier = internationalization(req, NodeGroup::getNameEn, NodeGroup::getName);
+        List<NodeGroupVO> groupVos = new ArrayList<>();
+
 
         logger.info("projectId is {}, orchestratorId is {} ,isWhite is {}", projectId,orchestratorId,isWhite);
         //cache
@@ -117,7 +160,8 @@ public class NodeRestfulApi {
             groupVos.add(nodeGroupVO);
         }
         groupVos = groupVos.stream().sorted(NodeGroupVO::compareTo).collect(Collectors.toList());
-        return Message.ok().data("nodeTypes", groupVos);
+
+        return  groupVos;
     }
 
     private <P, T> Function<P, T> internationalization(HttpServletRequest req,
