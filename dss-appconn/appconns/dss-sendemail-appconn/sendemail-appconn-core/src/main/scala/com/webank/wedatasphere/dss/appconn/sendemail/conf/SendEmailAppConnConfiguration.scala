@@ -29,7 +29,7 @@ object SendEmailAppConnConfiguration {
       "com.webank.wedatasphere.dss.appconn.sendemail.hook.SendEmailSendReportHook," +
       "com.webank.wedatasphere.dss.appconn.sendemail.hook.SendEmailVisualisContentLimitHook," +
       "com.webank.wedatasphere.dss.appconn.sendemail.hook.SendEmailTableauCheckHook," +
-      "com.webank.wedatasphere.dss.appconn.sendemail.hook.SendEmailMetaBaseCheckHook" +
+      "com.webank.wedatasphere.dss.appconn.sendemail.hook.SendEmailMetaBaseCheckHook," +
       "com.webank.wedatasphere.dss.appconn.sendemail.hook.SendEmailMlssv2CheckHook")
 
   val EMAIL_IMAGE_MAXSIZE = CommonVars("wds.dss.appconn.email.image.maxsize", 5000*30000)
