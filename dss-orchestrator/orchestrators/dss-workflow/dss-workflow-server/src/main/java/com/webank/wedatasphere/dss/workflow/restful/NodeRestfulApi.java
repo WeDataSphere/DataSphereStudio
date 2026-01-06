@@ -131,9 +131,6 @@ public class NodeRestfulApi {
 
         Function<NodeGroup, String> supplier = internationalization(req, NodeGroup::getNameEn, NodeGroup::getName);
         List<NodeGroupVO> groupVos = new ArrayList<>();
-
-
-        logger.info("projectId is {}, orchestratorId is {} ,isWhite is {}", projectId,orchestratorId,isWhite);
         //cache
         List<NodeGroup> groups = workflowNodeService.listNodeGroups();
         for (NodeGroup group : groups) {
