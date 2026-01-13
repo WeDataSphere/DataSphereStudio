@@ -11,4 +11,11 @@ public interface ProjectOrchestratorWhiteService {
 
 
     public void addProjectOrchestratorWhite(ProjectOrchestratorWhite projectOrchestratorWhite);
+
+
+    void deleteProjectOrchestratorWhite(Long projectId, Long orchestratorId);
+
+
+    void deleteProjectWhite(Long projectId);
+
 }

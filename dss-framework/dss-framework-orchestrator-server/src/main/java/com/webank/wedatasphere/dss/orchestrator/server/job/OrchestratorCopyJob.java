@@ -23,6 +23,7 @@ import com.webank.wedatasphere.dss.standard.app.development.standard.Development
 import com.webank.wedatasphere.dss.standard.app.sso.Workspace;
 
 import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlow;
+import com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -74,9 +75,15 @@ public class OrchestratorCopyJob implements Runnable {
         newOrchestrator.setUpdateUser(null);
 
         try {
+
+            // 判断如果是白名单 则添加复制后的编排到白名单中
+            boolean isWhite = orchestratorCopyEnv.getProjectOrchestratorWhiteService()
+                    .checkProjectAndOrchestratorIsWhite(sourceOrchestrator.getProjectId(),sourceOrchestrator.getId());
+
             doOrchestratorCopy(orchestratorCopyVo.getUsername(), orchestratorCopyVo.getWorkspace(), newOrchestrator,
                     orchestratorCopyVo.getTargetProjectName(), Lists.newArrayList(orchestratorCopyVo.getDssLabel()), appId,
-                    orchestratorCopyVo.getEnableNodeIdList(),orchestratorCopyVo.getFlowProxyUser(),orchestratorCopyVo.getSkipThirdNode());
+                    orchestratorCopyVo.getEnableNodeIdList(),orchestratorCopyVo.getFlowProxyUser(),orchestratorCopyVo.getSkipThirdNode(),
+                    isWhite);
         } catch (Exception e) {
             //保存错误信息
             String errorMsg = "CopyOrcError: " + e.getMessage();
@@ -107,7 +114,8 @@ public class OrchestratorCopyJob implements Runnable {
                                     List<DSSLabel> dssLabels, Long appId,
                                     List<String> enableNodeIdList,
                                     String flowProxyUser,
-                                    boolean skipThirdNode) throws Exception {
+                                    boolean skipThirdNode,
+                                    boolean isWhite) throws Exception {
         String copyInitVersion = OrchestratorUtils.generateNewCopyVersion(orchestratorCopyVo.getWorkflowNodeSuffix());
         String contextId = orchestratorCopyEnv.getContextService().createContextID(workspace.getWorkspaceName(), projectName, dssOrchestratorInfo.getName(), copyInitVersion, userName);
         DSSOrchestratorVersion dssOrchestratorVersion = new DSSOrchestratorVersion();
@@ -161,6 +169,24 @@ public class OrchestratorCopyJob implements Runnable {
                 orchestratorCopyEnv.getFlowService().updateTOSaveStatus(targetProject.getId(), flowByID.getId(), orchestratorId);
             }
         }
+
+
+        boolean targetProjectIsWhite = orchestratorCopyEnv.getProjectOrchestratorWhiteService()
+                .checkProjectAndOrchestratorIsWhite(orchestratorCopyVo.getTargetProjectId(),0L);
+
+        // 校验目标项目(所有的编排)是否在白名单中，如果在白名单中，则不添加复制后的编排到白名单中，否则添加到白名单中
+        if(isWhite && !targetProjectIsWhite){
+
+            ProjectOrchestratorWhite projectOrchestratorWhite = new ProjectOrchestratorWhite();
+            projectOrchestratorWhite.setProjectId(orchestratorCopyVo.getTargetProjectId());
+            projectOrchestratorWhite.setProjectName(orchestratorCopyVo.getTargetProjectName());
+            projectOrchestratorWhite.setOrchestratorId(dssOrchestratorInfo.getId());
+            projectOrchestratorWhite.setOrchestratorName(dssOrchestratorInfo.getName());
+            projectOrchestratorWhite.setUpdateBy(userName);
+            projectOrchestratorWhite.setCreateBy(userName);
+            orchestratorCopyEnv.getProjectOrchestratorWhiteService().addProjectOrchestratorWhite(projectOrchestratorWhite);
+        }
+
     }
 
 

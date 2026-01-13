@@ -37,4 +37,12 @@
         where id = #{id}
     </update>
 
+    <delete id="deleteProjectWhite">
+        delete from dss_project_orchestrator_white where project_id = #{projectId}
+    </delete>
+
+    <delete id="deleteProjectOrchestratorWhite">
+        delete from dss_project_orchestrator_white where project_id = #{projectId} and orchestrator_id = #{orchestratorId}
+    </delete>
+
 </mapper>

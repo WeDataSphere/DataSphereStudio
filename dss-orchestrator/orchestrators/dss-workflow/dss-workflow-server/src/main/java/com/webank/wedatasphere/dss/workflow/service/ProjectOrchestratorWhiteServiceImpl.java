@@ -59,4 +59,14 @@ public class ProjectOrchestratorWhiteServiceImpl implements ProjectOrchestratorW
 
     }
 
+    @Override
+    public void deleteProjectOrchestratorWhite(Long projectId, Long orchestratorId) {
+        projectOrchestratorWhiteMapper.deleteProjectOrchestratorWhite(projectId,orchestratorId);
+    }
+
+    @Override
+    public void deleteProjectWhite(Long projectId) {
+        projectOrchestratorWhiteMapper.deleteProjectWhite(projectId);
+    }
+
 }

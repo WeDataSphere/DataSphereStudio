@@ -17,4 +17,10 @@ public interface ProjectOrchestratorWhiteMapper {
 
     void updateById(ProjectOrchestratorWhite projectOrchestratorWhite);
 
+
+    void deleteProjectOrchestratorWhite(@Param("projectId") Long projectId,@Param("orchestratorId") Long orchestratorId);
+
+
+    void deleteProjectWhite(@Param("projectId") Long projectId);
+
 }

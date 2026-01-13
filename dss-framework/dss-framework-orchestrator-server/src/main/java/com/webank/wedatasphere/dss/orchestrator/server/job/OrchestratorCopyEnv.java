@@ -12,6 +12,7 @@ import com.webank.wedatasphere.dss.orchestrator.server.service.OrchestratorFrame
 import com.webank.wedatasphere.dss.workflow.dao.FlowMapper;
 import com.webank.wedatasphere.dss.workflow.dao.LockMapper;
 import com.webank.wedatasphere.dss.workflow.service.DSSFlowService;
+import com.webank.wedatasphere.dss.workflow.service.impl.ProjectOrchestratorWhiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -43,6 +44,10 @@ public class OrchestratorCopyEnv {
 
     @Autowired
     AddOrchestratorVersionHook addOrchestratorVersionHook;
+
+    @Autowired
+    private ProjectOrchestratorWhiteService projectOrchestratorWhiteService;
+
 
     @Autowired
     private DSSFlowService flowService;
@@ -140,5 +145,13 @@ public class OrchestratorCopyEnv {
 
     public void setLockMapper(LockMapper lockMapper) {
         this.lockMapper = lockMapper;
+    }
+
+    public ProjectOrchestratorWhiteService getProjectOrchestratorWhiteService() {
+        return projectOrchestratorWhiteService;
+    }
+
+    public void setProjectOrchestratorWhiteService(ProjectOrchestratorWhiteService projectOrchestratorWhiteService) {
+        this.projectOrchestratorWhiteService = projectOrchestratorWhiteService;
     }
 }
