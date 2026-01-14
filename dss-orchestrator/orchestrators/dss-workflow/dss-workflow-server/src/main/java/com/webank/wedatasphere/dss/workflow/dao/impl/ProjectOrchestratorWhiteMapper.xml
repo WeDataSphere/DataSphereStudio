@@ -45,4 +45,8 @@
         delete from dss_project_orchestrator_white where project_id = #{projectId} and orchestrator_id = #{orchestratorId}
     </delete>
 
+    <select id="getWhiteListByProjectId" resultType="com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite">
+        select * from dss_project_orchestrator_white where project_id = #{projectId}
+    </select>
+
 </mapper>

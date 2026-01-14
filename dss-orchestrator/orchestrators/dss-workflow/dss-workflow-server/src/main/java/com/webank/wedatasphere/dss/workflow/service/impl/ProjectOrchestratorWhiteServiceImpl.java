@@ -1,12 +1,14 @@
-package com.webank.wedatasphere.dss.workflow.service;
+package com.webank.wedatasphere.dss.workflow.service.impl;
 
 import com.webank.wedatasphere.dss.workflow.dao.ProjectOrchestratorWhiteMapper;
 import com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite;
-import com.webank.wedatasphere.dss.workflow.service.impl.ProjectOrchestratorWhiteService;
+import com.webank.wedatasphere.dss.workflow.service.ProjectOrchestratorWhiteService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class ProjectOrchestratorWhiteServiceImpl implements ProjectOrchestratorWhiteService {
@@ -67,6 +69,11 @@ public class ProjectOrchestratorWhiteServiceImpl implements ProjectOrchestratorW
     @Override
     public void deleteProjectWhite(Long projectId) {
         projectOrchestratorWhiteMapper.deleteProjectWhite(projectId);
+    }
+
+    @Override
+    public List<ProjectOrchestratorWhite> getWhiteListByProjectId(Long projectId) {
+        return projectOrchestratorWhiteMapper.getWhiteListByProjectId(projectId);
     }
 
 }

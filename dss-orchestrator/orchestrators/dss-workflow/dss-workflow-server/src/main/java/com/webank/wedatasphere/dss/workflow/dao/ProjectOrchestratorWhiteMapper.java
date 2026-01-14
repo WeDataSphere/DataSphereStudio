@@ -4,6 +4,8 @@ import com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
 @Mapper
 public interface ProjectOrchestratorWhiteMapper {
 
@@ -22,5 +24,8 @@ public interface ProjectOrchestratorWhiteMapper {
 
 
     void deleteProjectWhite(@Param("projectId") Long projectId);
+
+
+    List<ProjectOrchestratorWhite> getWhiteListByProjectId(@Param("projectId") Long projectId);
 
 }

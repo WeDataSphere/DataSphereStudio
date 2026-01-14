@@ -1,6 +1,8 @@
-package com.webank.wedatasphere.dss.workflow.service.impl;
+package com.webank.wedatasphere.dss.workflow.service;
 
 import com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite;
+
+import java.util.List;
 
 public interface ProjectOrchestratorWhiteService {
 
@@ -17,5 +19,7 @@ public interface ProjectOrchestratorWhiteService {
 
 
     void deleteProjectWhite(Long projectId);
+
+    List<ProjectOrchestratorWhite> getWhiteListByProjectId(Long projectId);
 
 }
