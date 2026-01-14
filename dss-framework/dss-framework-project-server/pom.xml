@@ -126,6 +126,12 @@
             <artifactId>jersey-bean-validation</artifactId>
             <version>${jersey.version}</version>
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>hibernate-validator</artifactId>
+                    <groupId>org.hibernate</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.linkis</groupId>
@@ -136,6 +142,10 @@
                 <exclusion>
                     <artifactId>linkis-common</artifactId>
                     <groupId>org.apache.linkis</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>hibernate-validator</artifactId>
+                    <groupId>org.hibernate</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
