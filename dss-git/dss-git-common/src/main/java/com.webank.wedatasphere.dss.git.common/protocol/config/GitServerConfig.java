@@ -23,6 +23,4 @@ public class GitServerConfig {
     public static final CommonVars<String> GIT_SEARCH_EXCLUDE_FILE = CommonVars.apply("wds.dss.server.git.search.exclude.file", ".properties,.projectmeta");
 
     public static final CommonVars<String> LINKIS_MYSQL_PRI_KEY = CommonVars.apply("wds.linkis.mysql.pri.key", "abc");
-
-    public static final CommonVars<Boolean> GIT_USE_ENTITY_UTILS_FOR_RESPONSE = CommonVars.apply("wds.dss.git.use.entity.utils", false);
 }

@@ -449,8 +449,6 @@ public class DSSGitUtils {
     public static String getUserIdByUsername(String gitUrl, String gitToken, String username) throws GitErrorException, IOException {
         String url = gitUrl + "/api/v4/users?username=" + username;
         BufferedReader in = null;
-        boolean useEntityUtils = GitServerConfig.GIT_USE_ENTITY_UTILS_FOR_RESPONSE.getValue();
-        
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpGet request = new HttpGet(url);
             request.addHeader("PRIVATE-TOKEN", gitToken);
@@ -458,24 +456,16 @@ public class DSSGitUtils {
             try (CloseableHttpResponse response = httpClient.execute(request)) {
                 int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode == 200) {
-                    String responseBody;
-                    
-                    if (useEntityUtils) {
-                        // 使用 EntityUtils.toString() 方式读取响应
-                        responseBody = EntityUtils.toString(response.getEntity());
-                        logger.info("Response Body (using EntityUtils): " + responseBody);
-                    } else {
-                        // 保留原有的手动读取流方式
-                        in = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-                        String inputLine;
-                        StringBuilder content = new StringBuilder();
+                    in = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+                    String inputLine;
+                    StringBuilder content = new StringBuilder();
 
-                        while ((inputLine = in.readLine()) != null) {
-                            content.append(inputLine);
-                        }
-                        responseBody = content.toString();
-                        logger.info("Response Body (using manual stream reading): " + responseBody);
+                    while ((inputLine = in.readLine()) != null) {
+                        content.append(inputLine);
                     }
+
+                    String responseBody = content.toString();
+                    logger.info("Response Body: " + responseBody);
 
                     JsonArray jsonArray = JsonParser.parseString(responseBody).getAsJsonArray();
 
@@ -489,9 +479,6 @@ public class DSSGitUtils {
                     throw new GitErrorException(80109, "获取userId失败，请检查编辑用户token是否过期或git服务是否正常");
                 }
             }
-        } catch (org.apache.http.MalformedChunkCodingException e) {
-            logger.error("HTTP chunked transfer encoding error: " + e.getMessage(), e);
-            throw new GitErrorException(80109, "HTTP响应解析错误，服务器返回的分块数据格式不正确", e);
         } catch (Exception e) {
             throw new GitErrorException(80109, "获取该git用户Id失败，原因为", e);
         } finally {
