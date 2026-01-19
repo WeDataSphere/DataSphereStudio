@@ -53,10 +53,6 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-log4j2</artifactId>
                 </exclusion>
-                <exclusion>
-                    <artifactId>hibernate-validator</artifactId>
-                    <groupId>org.hibernate</groupId>
-                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

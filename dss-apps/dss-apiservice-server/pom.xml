@@ -186,10 +186,6 @@
                     <artifactId>spring-web</artifactId>
                     <groupId>org.springframework</groupId>
                 </exclusion>
-                <exclusion>
-                    <artifactId>hibernate-validator</artifactId>
-                    <groupId>org.hibernate</groupId>
-                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

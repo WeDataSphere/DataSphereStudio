@@ -94,10 +94,6 @@
                     <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
                     <groupId>org.springframework.cloud</groupId>
                 </exclusion>
-                <exclusion>
-                    <artifactId>hibernate-validator</artifactId>
-                    <groupId>org.hibernate</groupId>
-                </exclusion>
             </exclusions>
         </dependency>
 

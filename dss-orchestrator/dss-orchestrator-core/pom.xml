@@ -63,12 +63,6 @@
             <artifactId>linkis-rpc</artifactId>
             <version>${linkis.version}</version>
             <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <artifactId>hibernate-validator</artifactId>
-                    <groupId>org.hibernate</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.webank.wedatasphere.dss</groupId>
