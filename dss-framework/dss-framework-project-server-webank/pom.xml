@@ -97,7 +97,7 @@
 
         <dependency>
             <groupId>com.webank.wedatasphere.dss</groupId>
-            <artifactId>dss-schedulis-appconn-webank</artifactId>
+            <artifactId>dss-schedulis-appconn</artifactId>
             <version>${dss.version}</version>
             <scope>provided</scope>
         </dependency>

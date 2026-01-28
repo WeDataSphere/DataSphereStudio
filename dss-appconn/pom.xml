@@ -34,6 +34,7 @@
         <module>dss-appconn-loader</module>
         <module>dss-appconn-manager</module>
         <module>dss-scheduler-appconn</module>
+        <module>dss-scheduler-appconn-webank</module>
         <module>linkis-appconn-engineplugin</module>
         <module>appconns/dss-datachecker-appconn</module>
         <module>appconns/dss-eventchecker-appconn</module>
