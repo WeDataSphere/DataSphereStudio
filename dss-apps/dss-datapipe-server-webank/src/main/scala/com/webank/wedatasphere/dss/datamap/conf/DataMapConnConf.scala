@@ -23,7 +23,7 @@ object DataMapConnConf {
                                        "eyJ1aWQiOiJsamZxaW5sdW8iLCJhcHBrZXkiOiI0OTBhYTg5NTI4YTAyOThhMmMzY" +
                                        "jIxZGU4ODllZDkxOSIsImlhdCI6MTUzMjU5MDAwMzM0MH0.C_AuUiTjWdgZHZJsfVTkl4nuSfkAInVLP_K6RjUTtc0").getValue
   // datamap服务已做拆分，此处连接的实际是datashapis服务
-  val DATAMAP_IP_ADDRESS = CommonVars.apply("wds.linkis.metadata.datamap.ip", "172.21.0.230").getValue
+  val DATAMAP_IP_ADDRESS = CommonVars.apply("wds.linkis.metadata.datamap.ip", "127.0.0.1").getValue
   val DATAMAP_IP_PORT = CommonVars.apply("wds.linkis.metadata.datamap.ip.port", 8001).getValue
   val DATAMAP_REQUEST_BASE_PATH = CommonVars.apply("wds.linkis.metadata.datamap.request.base.path", "/api/v1/isolate/metadata-service").getValue
 
