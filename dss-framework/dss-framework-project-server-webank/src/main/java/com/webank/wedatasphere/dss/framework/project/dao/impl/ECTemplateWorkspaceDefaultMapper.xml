@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webank.wedatasphere.dss.framework.project.dao.ECTemplateWorkspaceDefaultMapper">
+
+    <resultMap id="BaseResultMap" type="com.webank.wedatasphere.dss.framework.project.dao.entity.ECTemplateWorkspaceDefaultDO">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="templateId" column="template_id" jdbcType="VARCHAR"/>
+        <result property="templateName" column="template_name" jdbcType="VARCHAR"/>
+        <result property="workspaceId" column="workspace_id" jdbcType="BIGINT"/>
+        <result property="createUser" column="create_user" jdbcType="VARCHAR"/>
+        <result property="updateUser" column="update_user" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,template_id,workspace_id,create_user,update_user,create_time,update_time
+    </sql>
+
+    <select id="getWorkspaceDefaultTemplates" resultMap="BaseResultMap">
+        select t1.id
+              ,t1.template_id
+              ,t2.name  as template_name
+              ,t1.workspace_id
+              ,t1.create_user
+              ,t1.update_user
+        from dss_workspace_default_template t1
+        left join dss_ec_config_template t2 on t1.template_id = t2.template_id
+        where t1.workspace_id = #{workspaceId}
+    </select>
+
+    <delete id="deleteWorkspaceTemplateRef">
+        delete from dss_workspace_default_template where workspace_id =#{workspaceId}
+        and template_id in
+        <foreach collection="templateIdList" item="templateId" open="("  separator=","  close=")">
+            #{templateId}
+        </foreach>
+    </delete>
+
+
+    <insert id="batchInsert" parameterType="com.webank.wedatasphere.dss.framework.project.dao.entity.ECTemplateWorkspaceDefaultDO">
+
+        insert into dss_workspace_default_template
+        (template_id,
+        workspace_id,
+        create_user,
+        update_user,
+        create_time,
+        update_time)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.templateId},
+            #{item.workspaceId},
+            #{item.createUser},
+            #{item.updateUser},
+            now(),
+            now()
+            )
+        </foreach>
+
+    </insert>
+
+
+
+
+</mapper>

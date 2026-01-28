@@ -1,0 +1,200 @@
+/*
+ *
+ *  * Copyright 2019 WeBank
+ *  *
+ *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  you may not use this file except in compliance with the License.
+ *  * You may obtain a copy of the License at
+ *  *
+ *  * http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  * See the License for the specific language governing permissions and
+ *  * limitations under the License.
+ *
+ */
+
+package com.webank.wedatasphere.dss.apiservice.core.vo;
+
+import java.util.Date;
+
+/**
+ * @author: jinyangrao
+ * @date: 2020-08-26 18:13:41
+ */
+public class ApprovalVo {
+    Long id;
+    Long apiId;
+    Long apiVersionId;
+    String approvalName;
+    String applyUser;
+    String executeUser;
+    String creator;
+    Integer status;
+    Date createTime;
+    Date updateTime;
+    String approvalNo;
+
+    //授权期限，单位天
+    Long duration;
+    //背景描述
+    String backgroundDesc;
+    //重要程度。1：重要
+    Long importance;
+    //关注人，逗号分割
+    String attentionUser;
+    //是否涉及一级数据。1："是"，0："否"
+    Integer sensitiveLevel;
+
+    // 产品信息
+    String productInfo;
+
+    // 库表负责人
+    String devPrincipals;
+
+    public String getCreator() {
+        return creator;
+    }
+
+    public Long getApiVersionId() {
+        return apiVersionId;
+    }
+
+    public void setApiVersionId(Long apiVersionId) {
+        this.apiVersionId = apiVersionId;
+    }
+
+    public void setCreator(String creator) {
+        this.creator = creator;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getApiId() {
+        return apiId;
+    }
+
+    public void setApiId(Long apiId) {
+        this.apiId = apiId;
+    }
+
+    public String getApprovalName() {
+        return approvalName;
+    }
+
+    public void setApprovalName(String approvalName) {
+        this.approvalName = approvalName;
+    }
+
+    public String getApplyUser() {
+        return applyUser;
+    }
+
+    public void setApplyUser(String applyUser) {
+        this.applyUser = applyUser;
+    }
+
+    public String getExecuteUser() {
+        return executeUser;
+    }
+
+    public void setExecuteUser(String executeUser) {
+        this.executeUser = executeUser;
+    }
+
+    public Integer getStatus() {
+        return status;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
+    }
+
+    public Date getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
+    }
+
+    public String getApprovalNo() {
+        return approvalNo;
+    }
+
+    public void setApprovalNo(String approvalNo) {
+        this.approvalNo = approvalNo;
+    }
+
+    public Long getDuration() {
+        return duration;
+    }
+
+    public void setDuration(Long duration) {
+        this.duration = duration;
+    }
+
+    public String getBackgroundDesc() {
+        return backgroundDesc;
+    }
+
+    public void setBackgroundDesc(String backgroundDesc) {
+        this.backgroundDesc = backgroundDesc;
+    }
+
+    public Long getImportance() {
+        return importance;
+    }
+
+    public void setImportance(Long importance) {
+        this.importance = importance;
+    }
+
+    public String getAttentionUser() {
+        return attentionUser;
+    }
+
+    public void setAttentionUser(String attentionUser) {
+        this.attentionUser = attentionUser;
+    }
+
+    public Integer getSensitiveLevel() {
+        return sensitiveLevel;
+    }
+
+    public void setSensitiveLevel(Integer sensitiveLevel) {
+        this.sensitiveLevel = sensitiveLevel;
+    }
+
+    public String getProductInfo() {
+        return productInfo;
+    }
+
+    public void setProductInfo(String productInfo) {
+        this.productInfo = productInfo;
+    }
+
+    public String getDevPrincipals() {
+        return devPrincipals;
+    }
+
+    public void setDevPrincipals(String devPrincipals) {
+        this.devPrincipals = devPrincipals;
+    }
+}

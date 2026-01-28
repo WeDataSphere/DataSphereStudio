@@ -1,0 +1,49 @@
+package com.webank.wedatasphere.dss.framework.workspace.bean.request;
+
+import javax.validation.constraints.NotNull;
+
+/**
+ * Author: xlinliu
+ * Date: 2023/6/20
+ */
+public class RulePermissionUsersGetRequest {
+    @NotNull
+    private String ruleId;
+    @NotNull
+    private Integer pageNow;
+    @NotNull
+    private Integer pageSize;
+    private String username;
+
+    public String getRuleId() {
+        return ruleId;
+    }
+
+    public void setRuleId(String ruleId) {
+        this.ruleId = ruleId;
+    }
+
+    public Integer getPageNow() {
+        return pageNow;
+    }
+
+    public void setPageNow(Integer pageNow) {
+        this.pageNow = pageNow;
+    }
+
+    public Integer getPageSize() {
+        return pageSize;
+    }
+
+    public void setPageSize(Integer pageSize) {
+        this.pageSize = pageSize;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+}

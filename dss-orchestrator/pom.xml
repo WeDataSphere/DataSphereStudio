@@ -36,6 +36,8 @@
         <module>dss-orchestrator-loader</module>
         <module>orchestrators/dss-workflow</module>
         <module>dss-orchestrator-conversion-standard</module>
+        <module>dss-orchestrator-common-webank</module>
+        <module>dss-orchestrator-db-webank</module>
     </modules>
 
 </project>

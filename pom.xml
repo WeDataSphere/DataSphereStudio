@@ -33,10 +33,10 @@
         <module>dss-framework</module>
         <module>dss-apps</module>
         <module>dss-server</module>
-        <module>plugins/azkaban/linkis-jobtype</module>
         <module>plugins/linkis/dss-gateway-support</module>
-        <module>assembly</module>
+        <module>plugins/azkaban/linkis-jobtype</module>
         <module>plugins/dolphinscheduler</module>
+        <module>assembly</module>
         <module>dss-git</module>
     </modules>
 

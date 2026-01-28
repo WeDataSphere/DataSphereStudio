@@ -33,6 +33,10 @@
         <module>dss-common</module>
         <module>dss-contextservice</module>
         <module>dss-sender-service</module>
+        <module>dss-common-server-webank</module>
+        <module>dss-sender-service-webank</module>
+        <module>dss-error-code</module>
+        <module>dss-detectionservice</module>
     </modules>
 
 </project>

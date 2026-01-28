@@ -39,6 +39,13 @@
         <module>dss-framework-admin-service</module>
         <module>framework-plugins/dss-framework-migrate-server</module>
         <module>dss-framework-proxy-user-service</module>
+        <module>dss-framework-compute-resource-manager-webank</module>
+        <module>dss-framework-orchestrator-server-webank</module>
+        <module>dss-framework-project-server-webank</module>
+        <module>dss-framework-release-server-webank</module>
+        <module>dss-framework-workspace-server-webank</module>
+        <module>framework-plugins/dss-framework-migrate-server-webank</module>
+        <module>framework-plugins/dws-migrate-to-dss</module>
     </modules>
 
 </project>

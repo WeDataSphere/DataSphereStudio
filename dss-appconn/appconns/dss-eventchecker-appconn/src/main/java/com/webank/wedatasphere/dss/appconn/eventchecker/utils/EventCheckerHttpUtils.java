@@ -151,7 +151,7 @@ public class EventCheckerHttpUtils {
     }
 
     public static void main(String[] args) throws IOException {
-        Response response = get("http://10.107.116.246:8088/api/rest_j/v1/dss/scriptis/proxy/addUserProxy", null, null);
+        Response response = get("http://127.0.0.1:8088/api/rest_j/v1/dss/scriptis/proxy/addUserProxy", null, null);
         System.out.println(response.body().string());
     }
 

@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webank.wedatasphere.dss.mide.dao.DemandsMapper">
+
+    <resultMap id="BaseResultMap" type="com.webank.wedatasphere.dss.mide.entity.Demands">
+        <id column="id" jdbcType="BIGINT" property="id" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="content" jdbcType="VARCHAR" property="content" />
+        <result column="business" jdbcType="VARCHAR" property="business" />
+        <result column="usage" jdbcType="VARCHAR" property="usage" />
+        <result column="developer" jdbcType="VARCHAR" property="developer" />
+        <result column="project_id" jdbcType="BIGINT" property="projectId" />
+    </resultMap>
+
+
+    <sql id="Base_Column_List">
+        id, name, content, business, `usage`, developer, creator, modifier, project_id
+    </sql>
+
+
+    <delete id="delete" parameterType="java.lang.Long">
+        delete from dss_mide_demands
+        where id = #{id,jdbcType=BIGINT}
+    </delete>
+
+
+    <insert id="insert" flushCache="true" useGeneratedKeys="true" keyProperty="id"  parameterType="com.webank.wedatasphere.dss.mide.entity.Demands">
+        insert into dss_mide_demands (name, content,
+        business, `usage`, developer,creator,
+        project_id)
+        values (#{name,jdbcType=VARCHAR}, #{content,jdbcType=VARCHAR},
+        #{business,jdbcType=VARCHAR}, #{usage,jdbcType=VARCHAR}, #{developer,jdbcType=VARCHAR}, #{creator,jdbcType=VARCHAR},
+        #{projectId,jdbcType=BIGINT})
+    </insert>
+
+
+    <insert id="insertDynamic" parameterType="com.webank.wedatasphere.dss.mide.entity.Demands">
+        insert into dss_mide_demands
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">
+                id,
+            </if>
+            <if test="name != null">
+                name,
+            </if>
+            <if test="content != null">
+                content,
+            </if>
+            <if test="business != null">
+                business,
+            </if>
+            <if test="usage != null">
+                `usage`,
+            </if>
+            <if test="developer != null">
+                developer,
+            </if>
+            <if test="projectId != null">
+                project_id,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">
+                #{id,jdbcType=BIGINT},
+            </if>
+            <if test="name != null">
+                #{name,jdbcType=VARCHAR},
+            </if>
+            <if test="content != null">
+                #{content,jdbcType=VARCHAR},
+            </if>
+            <if test="business != null">
+                #{business,jdbcType=VARCHAR},
+            </if>
+            <if test="usage != null">
+                #{usage,jdbcType=VARCHAR},
+            </if>
+            <if test="developer != null">
+                #{developer,jdbcType=VARCHAR},
+            </if>
+            <if test="projectId != null">
+                #{projectId,jdbcType=BIGINT},
+            </if>
+        </trim>
+    </insert>
+
+
+    <update id="updateDynamic" parameterType="com.webank.wedatasphere.dss.mide.entity.Demands">
+        update dss_mide_demands
+        <set>
+            <if test="name != null">
+                name = #{name,jdbcType=VARCHAR},
+            </if>
+            <if test="content != null">
+                content = #{content,jdbcType=VARCHAR},
+            </if>
+            <if test="business != null">
+                business = #{business,jdbcType=VARCHAR},
+            </if>
+            <if test="usage != null">
+                `usage` = #{usage,jdbcType=VARCHAR},
+            </if>
+            <if test="developer != null">
+                developer = #{developer,jdbcType=VARCHAR},
+            </if>
+            <if test="modifier != null">
+                modifier = #{modifier,jdbcType=VARCHAR},
+            </if>
+            <if test="projectId != null">
+                project_id = #{projectId,jdbcType=BIGINT},
+            </if>
+        </set>
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+
+
+    <update id="update" parameterType="com.webank.wedatasphere.dss.mide.entity.Demands">
+        update dss_mide_demands
+        set name = #{name,jdbcType=VARCHAR},
+        content = #{content,jdbcType=VARCHAR},
+        business = #{business,jdbcType=VARCHAR},
+        `usage` = #{usage,jdbcType=VARCHAR},
+        developer = #{developer,jdbcType=VARCHAR},
+        modifier = #{modifier,jdbcType=VARCHAR},
+        project_id = #{projectId,jdbcType=BIGINT}
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from  dss_mide_demands
+        where id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <select id="listDemandsByProjectId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from  dss_mide_demands
+        where project_id = #{projectId,jdbcType=BIGINT}
+    </select>
+
+    <sql id="findPageWithWhere">
+        <where> 1=1
+            <if test="id != null" >
+                and id = #{id,jdbcType=BIGINT}
+            </if>
+            <if test="name != null and name != ''" >
+                and name = #{name,jdbcType=VARCHAR}
+            </if>
+            <if test="content != null and content != ''" >
+                and content = #{content,jdbcType=VARCHAR}
+            </if>
+            <if test="business != null and business != ''" >
+                and business = #{business,jdbcType=VARCHAR}
+            </if>
+            <if test="usage != null and usage != ''" >
+                and `usage` = #{usage,jdbcType=VARCHAR}
+            </if>
+            <if test="developer != null and developer != ''" >
+                and developer = #{developer,jdbcType=VARCHAR}
+            </if>
+            <if test="projectId != null" >
+                and project_id = #{projectId,jdbcType=BIGINT}
+            </if>
+        </where>
+    </sql>
+
+
+   <!-- <select id="findPageWithResult" parameterType="com.webank.wedatasphere.dss.mide.entity.dto.DemandsDTO" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from  dss_mide_demands
+        <include refid="findPageWithWhere" />
+        limit #{start},#{pageSize}
+    </select>
+
+
+    <select id="findPageWithCount" parameterType="com.webank.wedatasphere.dss.mide.entity.dto.DemandsDTO" resultType="Integer">
+        select count(1)
+        from dss_mide_demands
+        <include refid="findPageWithWhere" />
+    </select>-->
+
+</mapper>

@@ -36,6 +36,8 @@
         <module>dss-workflow-server</module>
         <module>dss-workflow-sdk</module>
         <module>dss-workflow-conversion-standard</module>
+        <module>dss-workflow-server-webank</module>
+        <module>dss-flow-execution-server-webank</module>
     </modules>
 
 </project>

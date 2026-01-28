@@ -122,3 +122,52 @@ CLAUDE.md
 /plugins/dolphinscheduler/dss-dolphinscheduler-client/target
 /plugins/dolphinscheduler/dolphinscheduler-prod-metrics/target
 /plugins/dolphinscheduler/dss-dolphinscheduler-token/target
+
+# dss-appconn-webank
+dss-appconn/appconns/dss-datachecker-appconn-webank/target
+dss-appconn/appconns/dss-eventchecker-appconn-webank/target
+dss-appconn/appconns/dss-orchestrator-framework-appconn-webank/target
+dss-appconn/appconns/dss-schedulis-appconn-webank/target
+dss-appconn/appconns/dss-scriptis-appconn-webank/target
+dss-appconn/appconns/dss-sendemail-appconn-webank/target
+dss-appconn/appconns/dss-sendemail-appconn-webank/dss-sendemail-appconn-esb-support/target
+dss-appconn/appconns/dss-sendemail-appconn-webank/dss-sendemail-appconn-itsm-support/target
+dss-appconn/appconns/dss-sso-appconn-webank/target
+dss-appconn/appconns/dss-workflow-appconn-webank/target
+dss-appconn/dss-scheduler-appconn-webank/target
+
+# dss-apps-webank
+dss-apps/dss-apiservice-server-webank/target
+dss-apps/dss-scriptis-server-webank/target
+dss-apps/dss-apps-server-webank/target
+dss-apps/dss-user-guide/dss-user-guide-server-webank/target
+dss-apps/dss-datapipe-server-webank/target
+dss-apps/dss-mide-server/target
+dss-server-webank/target
+
+# dss-commons-webank
+dss-commons/dss-common-server-webank/target
+dss-commons/dss-sender-service-webank/target
+dss-commons/dss-error-code/dss-error-code-common/target
+dss-commons/dss-error-code/dss-error-code-client/target
+dss-commons/dss-error-code/dss-error-code-server/target
+dss-commons/dss-error-code/target
+dss-commons/dss-detectionservice/target
+
+# dss-framework-webank
+dss-framework/dss-framework-compute-resource-manager-webank/target
+dss-framework/dss-framework-orchestrator-server-webank/target
+dss-framework/dss-framework-project-server-webank/target
+dss-framework/dss-framework-release-server-webank/target
+dss-framework/dss-framework-workspace-server-webank/target
+dss-framework/framework-plugins/dss-framework-migrate-server-webank/target
+dss-framework/framework-plugins/dws-migrate-to-dss/target
+
+# dss-orchestrator-webank
+dss-orchestrator/dss-orchestrator-common-webank/target
+dss-orchestrator/dss-orchestrator-db-webank/target
+dss-orchestrator/orchestrators/dss-workflow/dss-workflow-server-webank/target
+dss-orchestrator/orchestrators/dss-workflow/dss-flow-execution-server-webank/target
+
+# plugins-webank
+plugins/dss-bes/target

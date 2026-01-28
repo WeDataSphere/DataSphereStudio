@@ -34,6 +34,11 @@
         <module>dss-scriptis-server</module>
         <module>dss-user-guide</module>
         <module>dss-apps-server</module>
+        <module>dss-apiservice-server-webank</module>
+        <module>dss-scriptis-server-webank</module>
+        <module>dss-user-guide/dss-user-guide-server-webank</module>
+        <module>dss-datapipe-server-webank</module>
+        <!-- dss-mide-server omitted due to compilation errors -->
     </modules>
 
 </project>

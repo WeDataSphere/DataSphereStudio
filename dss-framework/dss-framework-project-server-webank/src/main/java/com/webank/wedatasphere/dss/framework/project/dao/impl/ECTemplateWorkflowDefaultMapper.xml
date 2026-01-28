@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webank.wedatasphere.dss.framework.project.dao.ECTemplateWorkflowDefaultMapper">
+
+    <resultMap id="BaseResultMap" type="com.webank.wedatasphere.dss.framework.project.dao.entity.ECTemplateWorkflowDefaultDO">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="templateId" column="template_id" jdbcType="VARCHAR"/>
+        <result property="templateName" column="template_name" jdbcType="VARCHAR"/>
+        <result property="workspaceId" column="workspace_id" jdbcType="BIGINT"/>
+        <result property="projectId" column="project_id" jdbcType="BIGINT"/>
+        <result property="orchestratorId" column="orchestrator_id" jdbcType="BIGINT"/>
+        <result property="createUser" column="create_user" jdbcType="VARCHAR"/>
+        <result property="updateUser" column="update_user" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,template_id,workspace_id,project_id,orchestrator_id,create_user,update_user,create_time,update_time
+    </sql>
+
+    <insert id="insert" keyColumn="id" keyProperty="id" parameterType="com.webank.wedatasphere.dss.framework.project.dao.entity.ECTemplateWorkflowDefaultDO" useGeneratedKeys="true">
+        insert into dss_workflow_default_template
+        (template_id,workspace_id,project_id,orchestrator_id,create_user,update_user,create_time,update_time)
+        values (#{templateId,jdbcType=VARCHAR},#{workspaceId,jdbcType=BIGINT}
+        ,#{projectId,jdbcType=BIGINT},#{orchestratorId,jdbcType=BIGINT},#{createUser,jdbcType=VARCHAR},#{updateUser,jdbcType=VARCHAR}
+        ,NOW(),NOW())
+    </insert>
+
+    <insert id="batchInsert" keyColumn="id" keyProperty="id" useGeneratedKeys="true">
+        insert into dss_workflow_default_template
+        (template_id,
+        project_id,
+        orchestrator_id,
+        create_user,
+        update_user,
+        create_time,
+        update_time)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.templateId},
+            #{item.projectId},
+            #{item.orchestratorId},
+            #{item.createUser},
+            #{item.createUser},
+            now(),
+            now()
+            )
+        </foreach>
+    </insert>
+
+    <delete id="deleteWorkflowTemplateRef">
+        delete from dss_workflow_default_template where orchestrator_id = #{orchestratorId}
+    </delete>
+
+    <select id="getWorkflowDefaultTemplates"
+            resultType="com.webank.wedatasphere.dss.framework.project.dao.entity.ECTemplateWorkflowDefaultDO">
+        select
+            d.id,
+            d.template_id as templateId,
+            c.name as templateName,
+            d.project_id,
+            d.orchestrator_id
+        from
+            dss_workflow_default_template d left join dss_ec_config_template c
+        on
+            d.template_id = c.template_id
+        where
+            d.orchestrator_id = #{orchestratorId}
+    </select>
+
+    <update id="updateDefaultTemplate" parameterType="com.webank.wedatasphere.dss.framework.project.dao.entity.ECTemplateWorkflowDefaultDO">
+        update dss_workflow_default_template
+        <set>
+            <if test="projectId != null and projectId !=''">
+                project_id = #{projectId},
+            </if>
+            <if test="projectName != null and projectName != ''">
+                project_name = #{projectName},
+            </if>
+            <if test="orchestratorId != null and orchestratorId !=''">
+                orchestrator_id = #{orchestratorId},
+            </if>
+            <if test="flow_id != null and flow_id != ''">
+                flow_id = #{flowId},
+            </if>
+            <if test="flow_name != null and flow_name !=''">
+                flow_name = #{flowName},
+            </if>
+            update_time = now()
+        </set>
+        where template_id = #{templateId}
+    </update>
+
+</mapper>
