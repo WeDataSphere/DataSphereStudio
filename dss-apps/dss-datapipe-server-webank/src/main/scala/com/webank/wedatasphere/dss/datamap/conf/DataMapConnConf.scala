@@ -19,9 +19,7 @@ object DataMapConnConf {
   // datamap认证的需要的appid
   val DATAMAP_APPID = CommonVars.apply("wds.linkis.datamap.appid", "490aa89528a0298a2c3b21de889ed919").getValue
   // datamap认证需要的token信息
-  val DATAMAP_TOKEN = CommonVars.apply("wds.linkis.datamap.token", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9." +
-                                       "eyJ1aWQiOiJsamZxaW5sdW8iLCJhcHBrZXkiOiI0OTBhYTg5NTI4YTAyOThhMmMzY" +
-                                       "jIxZGU4ODllZDkxOSIsImlhdCI6MTUzMjU5MDAwMzM0MH0.C_AuUiTjWdgZHZJsfVTkl4nuSfkAInVLP_K6RjUTtc0").getValue
+  val DATAMAP_TOKEN = CommonVars.apply("wds.linkis.datamap.token", "dataMapToken").getValue
   // datamap服务已做拆分，此处连接的实际是datashapis服务
   val DATAMAP_IP_ADDRESS = CommonVars.apply("wds.linkis.metadata.datamap.ip", "127.0.0.1").getValue
   val DATAMAP_IP_PORT = CommonVars.apply("wds.linkis.metadata.datamap.ip.port", 8001).getValue
@@ -42,7 +40,7 @@ object DataMapConnConf {
 
 
   val TRANSFEROR_CLASS = CommonVars.apply("wds.dss.datapipe.tables.owner.transferor.class", "com.webank.wedatasphere.dss.datamap.datamap.transferor.ITSMTransferor").getValue
-  val ITSM_REQUEST_URL =CommonVars.apply("wds.dss.datapipe.itsm.request.url", "https://itsm.weoa.com/itsm/request/insertRequestAuth.any").getValue
+  val ITSM_REQUEST_URL =CommonVars.apply("wds.dss.datapipe.itsm.request.url", "https://localhost/itsm/request/insertRequestAuth.any").getValue
   val DB_CLUSTER_NAME = CommonVars.apply("wds.dss.datapipe.db.cluster.name", "HDP-DG-BDAP-MAIN").getValue
   val DB_ENV = CommonVars.apply("wds.dss.datapipe.db.env.name", "test").getValue
   val ITSM_ENV = CommonVars.apply("wds.dss.datapipe.itsm.env.name", "test").getValue
