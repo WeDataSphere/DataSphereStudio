@@ -12,16 +12,16 @@
 
 ### 1.3 项目信息
 
-| 属性 | 源项目 | 目标项目 |
-|------|-------|---------|
-| **路径** | `C:/Users/v_sunpengwang/Project/wedatasphere-dataspherestudio` | `C:/Users/v_sunpengwang/Project/dataspherestudio-wedatasphere-sync` |
-| **ArtifactId** | `dss-webank` | `dss` |
-| **当前分支** | - | `dev-1.19.0-merge-webank` |
-| **版本** | `1.19.0-merge-webank` | `1.19.0-merge-webank-SNAPSHOT` |
-| **Linkis版本** | `1.14.2-wds` | `1.14.2-wds` |
-| **Java版本** | 1.8 | 1.8 |
-| **Scala版本** | 2.11.12 | 2.11.12 |
-| **Spring Boot** | 2.7.11 | 2.7.18 |
+| 属性 | 源项目                             | 目标项目 |
+|------|---------------------------------|---------|
+| **路径** | `wedatasphere-dataspherestudio` | `dataspherestudio-wedatasphere-sync` |
+| **ArtifactId** | `dss-webank`                    | `dss` |
+| **当前分支** | `1.19.0-webank-merge`             | `dev-1.19.0-merge-webank` |
+| **版本** | `1.19.0-merge-webank`           | `1.19.0-merge-webank-SNAPSHOT` |
+| **Linkis版本** | `1.14.2-wds`                    | `1.14.2-wds` |
+| **Java版本** | 1.8                             | 1.8 |
+| **Scala版本** | 2.11.12                         | 2.11.12 |
+| **Spring Boot** | 2.7.11                          | 2.7.18 |
 
 ### 1.4 合并目标
 将源项目中的特有webank模块合并到目标项目，形成统一的DSS项目结构。
