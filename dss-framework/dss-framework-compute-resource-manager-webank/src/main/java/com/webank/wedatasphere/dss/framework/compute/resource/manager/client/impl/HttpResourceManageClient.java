@@ -142,9 +142,9 @@ public class HttpResourceManageClient implements ResourceManageClient {
             JsonObject dataObj = new JsonParser().parse(response.getBody()).getAsJsonObject()
                     .getAsJsonObject("data");
             if (dataObj != null && dataObj.has("queueInfos")) {
-                JsonArray queueInfoArray = dataObj.getAsJsonArray("queueInfos");
-                for (JsonElement element : queueInfoArray) {
-                    QueueInfo queueInfo = DSSCommonUtils.COMMON_GSON.fromJson(element, QueueInfo.class);
+                JsonObject queueInfosObj = dataObj.getAsJsonObject("queueInfos");
+                for (Map.Entry<String, JsonElement> entry : queueInfosObj.entrySet()) {
+                    QueueInfo queueInfo = DSSCommonUtils.COMMON_GSON.fromJson(entry.getValue(), QueueInfo.class);
                     if (queueInfo != null && queueInfo.getQueuename() != null) {
                         String queueName = queueInfo.getQueuename().getQueueName();
                         result.put(queueName, queueInfo);
