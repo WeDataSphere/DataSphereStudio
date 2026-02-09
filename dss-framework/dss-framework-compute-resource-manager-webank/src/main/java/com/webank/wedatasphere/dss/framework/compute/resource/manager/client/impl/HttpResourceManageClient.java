@@ -138,17 +138,21 @@ public class HttpResourceManageClient implements ResourceManageClient {
             logger.error("batch get queue info failed. message:{}", response.getBody());
             throw new DSSRuntimeException("batch get queue info failed：" + response.getBody());
         }
-        JsonObject dataObj = new JsonParser().parse(response.getBody()).getAsJsonObject()
-                .getAsJsonObject("data");
-        if (dataObj != null && dataObj.has("queueInfos")) {
-            JsonArray queueInfoArray = dataObj.getAsJsonArray("queueInfos");
-            for (JsonElement element : queueInfoArray) {
-                QueueInfo queueInfo = DSSCommonUtils.COMMON_GSON.fromJson(element, QueueInfo.class);
-                if (queueInfo != null && queueInfo.getQueuename() != null) {
-                    String queueName = queueInfo.getQueuename().getQueueName();
-                    result.put(queueName, queueInfo);
+        try {
+            JsonObject dataObj = new JsonParser().parse(response.getBody()).getAsJsonObject()
+                    .getAsJsonObject("data");
+            if (dataObj != null && dataObj.has("queueInfos")) {
+                JsonArray queueInfoArray = dataObj.getAsJsonArray("queueInfos");
+                for (JsonElement element : queueInfoArray) {
+                    QueueInfo queueInfo = DSSCommonUtils.COMMON_GSON.fromJson(element, QueueInfo.class);
+                    if (queueInfo != null && queueInfo.getQueuename() != null) {
+                        String queueName = queueInfo.getQueuename().getQueueName();
+                        result.put(queueName, queueInfo);
+                    }
                 }
             }
+        } catch (Exception e) {
+            logger.error("parse queue info failed. message:{}", response.getBody());
         }
         return result;
     }
