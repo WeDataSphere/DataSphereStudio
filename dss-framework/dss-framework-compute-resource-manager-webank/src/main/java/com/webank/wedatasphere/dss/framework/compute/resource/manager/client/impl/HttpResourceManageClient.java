@@ -132,7 +132,7 @@ public class HttpResourceManageClient implements ResourceManageClient {
         map.put("queueNames", request.getQueueNames());
         map.put("crossCluster", request.getCrossCluster());
         String bodyParam = DSSCommonUtils.COMMON_GSON.toJson(map);
-        SimpleHttpResponse response = HttpClientUtil.postJsonBody(QUERY_QUEUE_INFO, headers, bodyParam, "utf-8");
+        SimpleHttpResponse response = HttpClientUtil.postJsonBody(BATCH_QUERY_QUEUE_INFO, headers, bodyParam, "utf-8");
 
         if (response.getStatusCode() != 200) {
             logger.error("batch get queue info failed. message:{}", response.getBody());

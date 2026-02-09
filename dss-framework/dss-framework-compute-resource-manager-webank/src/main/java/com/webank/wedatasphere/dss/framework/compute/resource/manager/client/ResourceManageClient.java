@@ -26,6 +26,7 @@ public interface ResourceManageClient {
     String TEST_USER_INITIATED_PATH = LinkisConnConf.LINKIS_URL + "/api/rest_j/v1/filesystem/getUserRootPath";
 
     String QUERY_QUEUE_INFO=LinkisConnConf.LINKIS_URL+"/api/rest_j/v1/linkisManager/rm/queueresources";
+    String BATCH_QUERY_QUEUE_INFO=LinkisConnConf.LINKIS_URL+"/api/rest_j/v1/linkisManager/rm/batchqueueresources";
     String CONF_ALL_ENGINE_TYPE = LinkisConnConf.LINKIS_URL + "/api/rest_j/v1/configuration/engineType";
     String CONF_CATEGORY_PATH = LinkisConnConf.LINKIS_URL + "/api/rest_j/v1/configuration/getCategory";
     String CONF_TEMPLATE_ADD_PATH = LinkisConnConf.LINKIS_URL + "/api/rest_j/v1/configuration/template/updateKeyMapping";
