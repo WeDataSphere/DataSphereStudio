@@ -130,7 +130,7 @@ public class HttpResourceManageClient implements ResourceManageClient {
         Map<String, Object> map = new HashMap<>();
         map.put("clustername", "default");
         map.put("queueNames", request.getQueueNames());
-        map.put("crossCluster", request.getCrossCluster());
+        map.put("crossCluster", String.valueOf(request.getCrossCluster()));
         String bodyParam = DSSCommonUtils.COMMON_GSON.toJson(map);
         SimpleHttpResponse response = HttpClientUtil.postJsonBody(BATCH_QUERY_QUEUE_INFO, headers, bodyParam, "utf-8");
 
