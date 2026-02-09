@@ -153,6 +153,7 @@ public class HttpResourceManageClient implements ResourceManageClient {
             }
         } catch (Exception e) {
             logger.error("parse queue info failed. message:{}", response.getBody());
+            throw  e;
         }
         return result;
     }
