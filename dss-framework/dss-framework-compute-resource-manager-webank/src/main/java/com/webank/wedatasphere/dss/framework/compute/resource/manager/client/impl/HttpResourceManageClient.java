@@ -1,6 +1,7 @@
 package com.webank.wedatasphere.dss.framework.compute.resource.manager.client.impl;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
@@ -10,6 +11,7 @@ import com.webank.wedatasphere.dss.framework.compute.resource.manager.client.Res
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.conf.LinkisConnConf;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.ConfigurationTemplate;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.request.ApplyECConfTemplateRequest;
+import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.request.BatchQueueInfoRequest;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.request.ECInstanceKillRequest;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.request.ECInstanceRequest;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.request.UpdateKeyMappingRequest;
@@ -114,6 +116,41 @@ public class HttpResourceManageClient implements ResourceManageClient {
                 .getAsJsonObject("data")
                 .getAsJsonObject("queueInfo");
         return DSSCommonUtils.COMMON_GSON.fromJson(obj, QueueInfo.class);
+    }
+
+    @Override
+    public Map<String, QueueInfo> batchGetQueueInfo(BatchQueueInfoRequest request, String operateUser) {
+        Map<String, QueueInfo> result = new HashMap<>();
+        if (CollectionUtils.isEmpty(request.getQueueNames())) {
+            return result;
+        }
+        Map<String, String> headers = new HashMap<>();
+        headers.put(LinkisConnConf.LINKIS_RESOURCE_ADMIN_TOKEN_KEY, LinkisConnConf.LINKIS_RESOURCE_ADMIN_TOKEN_VALUE);
+        headers.put(LinkisConnConf.LINKIS_RESOURCE_ADMIN_TOKEN_USER_KEY, operateUser);
+        Map<String, Object> map = new HashMap<>();
+        map.put("clustername", "default");
+        map.put("queueNames", request.getQueueNames());
+        map.put("crossCluster", request.getCrossCluster());
+        String bodyParam = DSSCommonUtils.COMMON_GSON.toJson(map);
+        SimpleHttpResponse response = HttpClientUtil.postJsonBody(QUERY_QUEUE_INFO, headers, bodyParam, "utf-8");
+
+        if (response.getStatusCode() != 200) {
+            logger.error("batch get queue info failed. message:{}", response.getBody());
+            throw new DSSRuntimeException("batch get queue info failed：" + response.getBody());
+        }
+        JsonObject dataObj = new JsonParser().parse(response.getBody()).getAsJsonObject()
+                .getAsJsonObject("data");
+        if (dataObj != null && dataObj.has("queueInfos")) {
+            JsonArray queueInfoArray = dataObj.getAsJsonArray("queueInfos");
+            for (JsonElement element : queueInfoArray) {
+                QueueInfo queueInfo = DSSCommonUtils.COMMON_GSON.fromJson(element, QueueInfo.class);
+                if (queueInfo != null && queueInfo.getQueuename() != null) {
+                    String queueName = queueInfo.getQueuename().getQueueName();
+                    result.put(queueName, queueInfo);
+                }
+            }
+        }
+        return result;
     }
 
     @Override

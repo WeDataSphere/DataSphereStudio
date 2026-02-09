@@ -4,6 +4,7 @@ import com.webank.wedatasphere.dss.common.conf.DSSCommonConf;
 import com.webank.wedatasphere.dss.common.exception.DSSRuntimeException;
 import com.webank.wedatasphere.dss.common.utils.DSSCommonUtils;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.client.ResourceManageClient;
+import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.request.BatchQueueInfoRequest;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.request.ECInstanceKillRequest;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.request.ECInstanceRequest;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.vo.QueueInfo;
@@ -85,6 +86,8 @@ public class ECInstanceReleaseExecuteTask {
             LOGGER.info("start to execute ec release task.execute instance name:{}", thisInstanceName);
             String operator = KILLER_NAME;
             List<ECReleaseStrategyJob> strategies = getNeedProcessingStrategyList();
+            // 批量获取队列信息
+            Map<String, Map<String, QueueInfo>> queueInfoMapByCluster = batchGetQueueInfoMap(strategies, operator);
             for (ECReleaseStrategyJob strategy : strategies) {
                 String strategyId = strategy.getStrategyId();
                 String expectExecuteInstance = strategy.getExecuteInstance();
@@ -95,7 +98,11 @@ public class ECInstanceReleaseExecuteTask {
                         , expectExecuteTime, thisInstanceName) > 0) {
                     try {
                         LOGGER.info("start to execute ec release strategy.  {}", DSSCommonUtils.COMMON_GSON.toJson(strategy));
-                        processStrategy(strategy, operator, thisInstanceName);
+                        Map<String, QueueInfo> queueInfoMap = queueInfoMapByCluster.get(String.valueOf(strategy.getCrossCluster()));
+                        QueueInfo queueInfo = Optional.ofNullable(queueInfoMap)
+                                .map(m -> m.get(strategy.getQueue()))
+                                .orElseThrow(() -> new DSSRuntimeException("fetch queue info from linkis failed, queueName: " + strategy.getQueue()));
+                        processStrategy(strategy, operator, thisInstanceName, queueInfo);
                         LOGGER.info("success to execute ec release strategy. strategyId:{},strategyName:{}", strategyId, strategy.getName());
                     } catch (Exception e) {
                         String msg = String.format("fail to execute ec release strategy. strategyId:%s,strategyName:%s", strategyId, strategy.getName());
@@ -118,11 +125,42 @@ public class ECInstanceReleaseExecuteTask {
         List<ECReleaseStrategyDO> dos=webankDSSWorkspaceECReleaseStrategyMapper.getStrategiesNeedProcessing(KILL_PERIOD*KILL_TIME_OUT_PERIOD_EPOCH);
         return dos.stream().map(ECReleaseStrategyJob::fromDO).collect(Collectors.toList());
     }
-    private void processStrategy(ECReleaseStrategy strategy, String operator,String executeInstance){
+
+    /**
+     * 批量获取队列信息
+     * @param strategies 策略列表
+     * @param operator 操作人
+     * @return Map<crossCluster, Map<queueName, QueueInfo>>
+     */
+    private Map<String, Map<String, QueueInfo>> batchGetQueueInfoMap(List<ECReleaseStrategyJob> strategies, String operator) {
+        Map<String, Map<String, QueueInfo>> result = new HashMap<>();
+        if (strategies == null || strategies.isEmpty()) {
+            return result;
+        }
+        // 按 crossCluster 分组
+        Map<Boolean, List<String>> queueNamesByCrossCluster = strategies.stream()
+                .collect(Collectors.groupingBy(
+                        ECReleaseStrategyJob::getCrossCluster,
+                        Collectors.mapping(ECReleaseStrategyJob::getQueue, Collectors.toList())
+                ));
+        // 批量获取队列信息
+        for (Map.Entry<Boolean, List<String>> entry : queueNamesByCrossCluster.entrySet()) {
+            Boolean crossCluster = entry.getKey();
+            List<String> queueNames = entry.getValue();
+            if (queueNames == null || queueNames.isEmpty()) {
+                continue;
+            }
+            BatchQueueInfoRequest request = new BatchQueueInfoRequest(queueNames, crossCluster);
+            Map<String, QueueInfo> queueInfoMap = resourceManageClient.batchGetQueueInfo(request, operator);
+            result.put(String.valueOf(crossCluster), queueInfoMap);
+        }
+        return result;
+    }
+
+    private void processStrategy(ECReleaseStrategy strategy, String operator,String executeInstance, QueueInfo queueInfo){
         //第一步，查询队列当前的状态
         String queueName = strategy.getQueue();
-        boolean crossCluster=strategy.getCrossCluster();
-        QueueInfo queueInfo= resourceManageClient.getQueueInfo(queueName,crossCluster,operator);
+        boolean crossCluster = strategy.getCrossCluster();
         int maxCores = Optional.ofNullable(queueInfo)
                 .map(QueueInfo::getMaxResources)
                 .map(QueueInfo.Resource::getCores)

@@ -3,6 +3,7 @@ package com.webank.wedatasphere.dss.framework.compute.resource.manager.client;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.conf.LinkisConnConf;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.ConfigurationTemplate;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.request.ApplyECConfTemplateRequest;
+import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.request.BatchQueueInfoRequest;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.request.ECInstanceKillRequest;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.request.ECInstanceRequest;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.request.UpdateKeyMappingRequest;
@@ -12,10 +13,7 @@ import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.res
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.domain.response.GovernanceStationAdminResponse;
 import com.webank.wedatasphere.dss.framework.compute.resource.manager.vo.QueueInfo;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 资源管理客户端
@@ -66,6 +64,14 @@ public interface ResourceManageClient {
      * @param operateUser 操作人
      */
     QueueInfo getQueueInfo(String queueName,boolean isCrossCluster,String operateUser);
+
+    /**
+     * 批量获取队列信息
+     * @param request 批量请求参数
+     * @param operateUser 操作人
+     * @return 队列名 -> QueueInfo 的映射
+     */
+    Map<String, QueueInfo> batchGetQueueInfo(BatchQueueInfoRequest request, String operateUser);
 
     /**
      * 获取所有引擎类型
