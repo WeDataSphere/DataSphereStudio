@@ -2320,9 +2320,6 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                         starRocksNodeParamsHandle(editFlowRequest, starRocksClusterMap);
                     }
 
-                    // 批量编辑 白名单项目中的节点和非白名单中的节点(非白名单的节点没有spark版本属性), 会修改白名单节点的spark版本
-                    handleWhiteNodeParams(editFlowRequest);
-
                     editFlowRequestsList.add(editFlowRequest);
                     editFlowRequestTOFlowIDMap.put(targetFlowId, editFlowRequestsList);
                 }
@@ -3887,49 +3884,6 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         }
 
     }
-
-
-    private void handleWhiteNodeParams(EditFlowRequest editFlowRequest) {
-
-       try {
-
-           JsonObject params = JsonParser.parseString(editFlowRequest.getParams()).getAsJsonObject();
-
-           JsonObject configuration = params.get("configuration").getAsJsonObject();
-
-           JsonObject runtime = configuration.get("runtime").getAsJsonObject();
-
-           String sparkVersionKey = "sparkVersion";
-           // 页面如果有修改sparkVersion 参数,则直接跳过
-           if(runtime.get(sparkVersionKey) != null){
-               return;
-           }
-
-           List<NodeContentUIDO> nodeContentUIDOList = nodeContentUIMapper.queryNodeContentUIList(Collections.singletonList(editFlowRequest.getId()));
-
-           if(CollectionUtils.isNotEmpty(nodeContentUIDOList)){
-
-               NodeContentUIDO nodeContentUIDO = nodeContentUIDOList.stream()
-                       .filter(nodeUi -> sparkVersionKey.equalsIgnoreCase(nodeUi.getNodeUIKey()))
-                       .findFirst().orElse(null);
-
-               if(nodeContentUIDO != null) {
-                   runtime.addProperty(nodeContentUIDO.getNodeUIKey(), nodeContentUIDO.getNodeUIValue());
-                   logger.info("{} node ,add sparkVersion to runtime, value is {}",editFlowRequest.getTitle(), nodeContentUIDO.getNodeUIValue());
-
-                   editFlowRequest.setParams(params.toString());
-
-                   logger.info("{} node params is {}", editFlowRequest.getTitle(),editFlowRequest.getParams());
-               }
-
-           }
-
-       }catch (Exception e){
-           logger.error("[{},{}] node handleWhiteNodeParams err msg is {}",editFlowRequest.getId(),editFlowRequest.getTitle(),e);
-       }
-
-    }
-
 
 }
 
