@@ -4,7 +4,7 @@
 2026年2月11日
 
 ## 回退原因
-回退有关 spark 版本的代码。
+工作流节点的spark版本属性取消白名单限制
 
 ## 涉及文件
 
@@ -80,5 +80,5 @@ editFlowRequestsList.add(editFlowRequest);
 
 ## 影响范围
 
-- 所有相关节点都会展示spark版本配置
+- 所有相关节点都会展示spark版本配置,之前的需求确定 aisql节点强制使用spark3版本, 没有spark版本配置。
 - 白名单节点 spark 版本自动添加功能已移除
