@@ -249,4 +249,15 @@
         id = #{id}
     </delete>
 
+    <!-- 查询某个API版本的所有有效Token -->
+    <select id="queryByVersionIdWithValidStatus" resultMap="tokenManagerMap">
+        SELECT
+        <include refid="fields_query"/>
+        FROM dss_apiservice_token_manager
+        WHERE api_version_id = #{apiVersionId}
+          AND `apply_source` = #{approvalNo}
+          AND status = #{status}
+        ORDER BY apply_time DESC
+    </select>
+
 </mapper>

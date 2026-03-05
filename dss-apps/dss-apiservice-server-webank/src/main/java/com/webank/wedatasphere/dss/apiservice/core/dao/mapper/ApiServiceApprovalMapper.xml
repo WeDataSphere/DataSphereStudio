@@ -119,5 +119,18 @@
         </where>
     </select>
 
+    <select id="queryByApiIdAndStatus" resultMap="approvalMap">
+        <![CDATA[SELECT]]>
+        <include refid="fields_query"/>
+        <![CDATA[ FROM `dss_apiservice_approval` ]]>
+        <where>
+            `api_id` = #{apiId}
+            <if test="status != null">
+                AND `status` = #{status}
+            </if>
+        </where>
+        ORDER BY `create_time` DESC
+    </select>
+
 
 </mapper>

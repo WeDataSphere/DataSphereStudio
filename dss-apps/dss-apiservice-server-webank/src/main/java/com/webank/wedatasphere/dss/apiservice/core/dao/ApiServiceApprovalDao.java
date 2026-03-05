@@ -71,4 +71,12 @@ public interface ApiServiceApprovalDao {
      * 通过版本ID查询审批单
      */
     ApprovalVo queryByVersionId(@Param("apiVersionId") Long apiVersionId);
+
+    /**
+     * 查询API的所有审批记录（指定状态）
+     * @param apiId API ID
+     * @param status 审批状态
+     * @return 审批记录列表
+     */
+    List<ApprovalVo> queryByApiIdAndStatus(@Param("apiId") Long apiId, @Param("status") Integer status);
 }

@@ -38,4 +38,8 @@ public interface ApprovalService {
     List<ApprovalVo> refreshStatus(String approvalNo) throws Exception;
 
     void registerApprovalStatusListener(ApprovalStatusListener approvalStatusListener);
+
+    ApprovalVo getSecondApproval(long apiId);
+
+    List<ApprovalVo> queryByApiIdAndStatus(long apiId,int status);
 }

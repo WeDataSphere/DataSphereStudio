@@ -23,4 +23,7 @@ public interface TokenAuth {
     SaveTokenEnum saveTokensToDb(List<TokenManagerVo> tokenManagerVos, String approvalNo) throws ApiServiceTokenException;
 
     List<TokenManagerVo>  genTokenRecord(ApprovalVo approvalVo);
+
+    void  updateTokenStatusBeforeVersionId(ApprovalVo approvalVo);
+
 }

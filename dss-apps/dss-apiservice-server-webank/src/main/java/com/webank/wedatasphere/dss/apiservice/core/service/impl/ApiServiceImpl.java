@@ -242,7 +242,7 @@ public class ApiServiceImpl implements ApiService, ApprovalStatusListener {
             // 将该api小于此版本的历史版本状态改为禁用
             apiServiceVersionDao.updateApiVersionStatusBeforeId(approvalVo.getApiVersionId(), approvalVo.getApiId(), ApiVersionStatusEnum.DISABLE.getIndex());
             //将历史版本token禁用
-            apiServiceTokenManagerDao.updateTokenStatusBeforeVersionId(approvalVo.getApiVersionId(), approvalVo.getApiId(), ApiCommonConstant.API_DISABLE_STATUS);
+            // apiServiceTokenManagerDao.updateTokenStatusBeforeVersionId(approvalVo.getApiVersionId(), approvalVo.getApiId(), ApiCommonConstant.API_DISABLE_STATUS);
             //将此版本改为运行中
             apiServiceVersionDao.updateApiVersionStatusById(approvalVo.getApiVersionId(), ApiVersionStatusEnum.ENABLE.getIndex());
         } else {

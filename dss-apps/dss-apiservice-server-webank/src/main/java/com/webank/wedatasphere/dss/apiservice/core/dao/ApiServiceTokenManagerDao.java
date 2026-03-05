@@ -102,6 +102,14 @@ public interface ApiServiceTokenManagerDao {
      */
     void enableTokenStatus(@Param("id") Long id);
 
+    /**
+     * 查询某个API版本的所有有效Token
+     */
+    List<TokenManagerVo> queryByVersionIdWithValidStatus(@Param("apiVersionId") Long apiVersionId,
+                                                         @Param("approvalNo") String approvalNo,
+                                                   @Param("status") Integer status);
+
+
     void enableTokenStatusByVersionId(@Param("apiVersionId") Long apiVersionId);
 
     void enableTokenStatusByApiId(@Param("apiId") Long apiId);

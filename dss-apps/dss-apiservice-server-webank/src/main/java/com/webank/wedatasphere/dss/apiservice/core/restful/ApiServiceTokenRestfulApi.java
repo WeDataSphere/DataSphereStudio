@@ -118,6 +118,9 @@ public class ApiServiceTokenRestfulApi {
                         //生成该apiversion所有授权用户的token
                         List<TokenManagerVo> tokenManagerVoList = tokenAuth.genTokenRecord(approvalVo);
                         try {
+                            // 将历史版本token禁用
+                            tokenAuth.updateTokenStatusBeforeVersionId(approvalVo);
+                            // 添加新版本token
                             tokenAuth.saveTokensToDb(tokenManagerVoList, approvalNo);
                         } catch (ApiServiceTokenException e) {
                             LOG.error("token save to db failed for ", e);

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -89,4 +90,31 @@ public class ApprovalServiceImpl implements ApprovalService {
             return Collections.emptyList();
         }
     }
+
+
+    @Override
+    public List<ApprovalVo> queryByApiIdAndStatus(long apiId,int status) {
+        return  apiServiceApprovalDao.queryByApiIdAndStatus(apiId,status);
+    }
+
+
+    /**
+     * 获取上一个通过的审批单
+     * @param apiId
+     * @return
+     */
+    @Override
+    public ApprovalVo getSecondApproval(long apiId) {
+        List<ApprovalVo> approvalVoList = queryByApiIdAndStatus(apiId,DataMapStatus.SUCCESS.getIndex());
+
+        if(approvalVoList.size() <= 1){
+            return  null;
+        }
+
+        approvalVoList.sort(Comparator.comparing(ApprovalVo::getCreateTime));
+        ApprovalVo approvalVo = approvalVoList.get(approvalVoList.size() - 2);
+        LOG.info("api id is {} , the secondary approval is :{},{}",apiId, approvalVo.getId(),approvalVo.getApprovalNo());
+        return approvalVoList.get(approvalVoList.size() - 2);
+    }
+
 }
