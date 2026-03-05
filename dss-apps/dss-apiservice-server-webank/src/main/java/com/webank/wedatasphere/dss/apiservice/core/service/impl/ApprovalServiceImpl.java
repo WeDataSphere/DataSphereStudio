@@ -99,21 +99,38 @@ public class ApprovalServiceImpl implements ApprovalService {
 
 
     /**
-     * 获取上一个通过的审批单
-     * @param apiId
-     * @return
+     * 获取上一个通过的审批单（用于增量授权）
+     * 
+     * 业务场景：
+     * 当 API V2 提交审批时，如果需要保留 V1 的授权用户，就需要获取 V1 的审批单信息。
+     * 通过查询所有审批通过的记录并排序，返回倒数第二个审批单（最新的前一个）。
+     * 
+     * 使用示例：
+     * API V1 审批通过（2026-01-01），授权用户：user1, user2
+     * API V2 提交审批（2026-02-01），申请用户：user1, user3
+     * 调用此方法获取 V1 的审批单，查询 user1, user2 的 Token 配置
+     * 将 user2 的配置复制到 V2，实现增量授权（user1, user2, user3 都有权限）
+     * 
+     * @param apiId API ID
+     * @return 上一个通过的审批单，如果不存在返回 null
      */
     @Override
     public ApprovalVo getSecondApproval(long apiId) {
+        // 查询该 API 所有审批通过的审批单（status=3）
         List<ApprovalVo> approvalVoList = queryByApiIdAndStatus(apiId,DataMapStatus.SUCCESS.getIndex());
 
+        // 如果审批通过的记录少于等于 1 条，说明没有上一个审批单（首次提单或只有一次审批）
         if(approvalVoList.size() <= 1){
             return  null;
         }
 
+        // 按创建时间升序排序，最新的审批单在列表最后
         approvalVoList.sort(Comparator.comparing(ApprovalVo::getCreateTime));
+        
+        // 获取倒数第二个审批单（最新的前一个），即上一次审批通过的记录
         ApprovalVo approvalVo = approvalVoList.get(approvalVoList.size() - 2);
-        LOG.info("api id is {} , the secondary approval is :{},{}",apiId, approvalVo.getId(),approvalVo.getApprovalNo());
+        LOG.info("获取上一个通过的审批单 - API ID: {}, 审批单ID: {}, 审批单号: {}", 
+                 apiId, approvalVo.getId(), approvalVo.getApprovalNo());
         return approvalVoList.get(approvalVoList.size() - 2);
     }
 
