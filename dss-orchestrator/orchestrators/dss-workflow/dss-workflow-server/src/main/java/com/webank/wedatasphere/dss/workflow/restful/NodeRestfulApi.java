@@ -196,6 +196,11 @@ public class NodeRestfulApi {
                 continue;
             }
 
+            // 不在白名单, 则取消sparkVersion选项
+            if(!isWhite && "sparkVersion".equalsIgnoreCase(nodeUi.getKey())){
+                continue;
+            }
+
             NodeUiVO nodeUiVO = new NodeUiVO();
             BeanUtils.copyProperties(nodeUi, nodeUiVO);
             nodeUiVO.setDesc(descriptionSupplier.apply(nodeUi));
