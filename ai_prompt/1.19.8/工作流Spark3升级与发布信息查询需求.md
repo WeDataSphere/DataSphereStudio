@@ -140,10 +140,6 @@ public class ReleaseInfoRequest {
 - `workspaceId`：必填，工作空间ID
 - `projectId`：必填，项目ID
 - `orchestratorIds`：必填，编排ID列表，支持批量查询，所有编排必须属于同一个项目
-- `releaseUser`：可选，发布人筛选条件
-- `startTime`：可选，发布开始时间筛选条件
-- `endTime`：可选，发布结束时间筛选条件
-- `comment`：可选，版本描述筛选条件
 
 **响应格式：**
 ```json
@@ -255,7 +251,7 @@ Pair<Integer, List<ReleaseHistoryDetail>> getReleaseHistory(ReleaseHistoryReques
 | 查询范围 | 单个编排的历史发布记录 | 批量编排的最新发布成功版本 |
 | 分页 | 支持（currentPage, pageSize） | 不支持 |
 | 返回值 | Pair\<Integer, List\> | List\<ReleaseInfoVO\> |
-| 查询条件 | orchestratorId, releaseUser, 时间范围 | projectId, orchestratorIds[], releaseUser, 时间范围, comment |
+| 查询条件 | orchestratorId, releaseUser, 时间范围 | projectId, orchestratorIds[] |
 | 返回字段 | 基础发布信息 | 基础发布信息 + orchestratorId, orchestratorName, projectId, workspaceId |
 | 结果数量 | 可能多条历史记录 | 每个编排最多一条（最新发布成功） |
 
@@ -333,10 +329,7 @@ Pair<Integer, List<ReleaseHistoryDetail>> getReleaseHistory(ReleaseHistoryReques
 4. 验证orchestratorId属于不同projectId时抛出异常
 5. 验证每个编排只返回最新发布成功的一条记录
 6. 验证响应包含orchestratorId、orchestratorName等新增字段
-7. 按发布人（releaseUser）筛选
-8. 按时间范围（startTime、endTime）筛选
-9. 按版本描述（comment）筛选
-10. 组合条件筛选
+7. 组合条件筛选
 
 ---
 
