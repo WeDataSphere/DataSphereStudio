@@ -137,11 +137,6 @@ public class NodeRestfulApi {
 
             for(NodeInfo nodeInfo: group.getNodes()){
 
-                // 不在白名单, 跳过aisql节点
-                if (!isWhite && "linkis.ai.sql".equalsIgnoreCase(nodeInfo.getNodeType())){
-                    continue;
-                }
-
                 try {
                     nodeGroupVO.getChildren().add(transfer(nodeInfo, req, isWhite));
                 } catch (IOException e) {
