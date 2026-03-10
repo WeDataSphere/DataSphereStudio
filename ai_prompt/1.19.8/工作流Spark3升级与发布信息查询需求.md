@@ -23,7 +23,7 @@
 
 1. **恢复白名单限制**：重新添加工作流节点Spark版本的白名单限制
 2. **AISQL节点特殊处理**：AISQL节点取消白名单限制（始终不显示Spark版本配置）
-3. **新增发布信息查询接口**：提供工作流发布信息查询接口
+3. **新增发布信息查询接口**：提供根据项目名称和编排名称查询工作流发布信息的接口
 
 ---
 
@@ -114,7 +114,7 @@ if (!isWhite && "linkis.ai.sql".equalsIgnoreCase(nodeInfo.getNodeType())){
 ### 需求点3：提供工作流发布信息查询接口
 
 #### 需求描述
-新增API接口，用于查询工作流发布信息。可以传入批量orchestratorId查询，取每个编排最新发布成功的一个版本，编排必须在同一个项目中。
+新增API接口，用于查询工作流发布信息。可以传入项目名称和批量编排名称查询，取每个编排最新发布成功的一个版本。
 
 #### 接口设计
 
@@ -125,21 +125,14 @@ if (!isWhite && "linkis.ai.sql".equalsIgnoreCase(nodeInfo.getNodeType())){
 **请求参数：**
 ```java
 public class ReleaseInfoRequest {
-    private Integer workspaceId;                       // 工作空间ID（必填）
-    private Integer projectId;                         // 项目ID（必填）
-    private List<Long> orchestratorIds;                // 编排ID列表（必填，支持批量查询）
-    private HashMap<String, Object> labels;            // 标签信息
-    private String releaseUser;                        // 发布人
-    private String startTime;                          // 发布开始时间
-    private String endTime;                            // 发布结束时间
-    private String comment;                            // 描述
+    private String projectName;                       // 项目名称（必填）
+    private List<String> orchestratorNames;          // 编排名称列表（必填，支持批量查询）
 }
 ```
 
 **请求参数说明：**
-- `workspaceId`：必填，工作空间ID
-- `projectId`：必填，项目ID
-- `orchestratorIds`：必填，编排ID列表，支持批量查询，所有编排必须属于同一个项目
+- `projectName`：必填，项目名称
+- `orchestratorNames`：必填，编排名称列表，支持批量查询
 
 **响应格式：**
 ```json
@@ -150,20 +143,13 @@ public class ReleaseInfoRequest {
     "data": {
         "releaseInfoList": [
             {
-                "id": 1,
-                "status": "发布成功",
-                "recode": "版本描述",
-                "releaseUser": "发布用户",
-                "version": "v1.0.0",
-                "lastModifyUser": "修改用户",
-                "releaseTime": "2024-01-01 12:00:00",
-                "errorMessage": null,
-                "orchestratorVersionId": 100,
-                "appId": 1000,
                 "orchestratorId": 100,
                 "orchestratorName": "编排名称",
+                "status": "Success",
+                "releaseUser": "发布用户",
+                "releaseTime": "2024-01-01 12:00:00",
                 "projectId": 1000,
-                "workspaceId": 224
+                "projectName": "项目名称"
             }
         ]
     }
@@ -173,98 +159,74 @@ public class ReleaseInfoRequest {
 **响应字段说明：**
 | 字段名 | 类型 | 说明 |
 |--------|------|------|
-| id | Integer | 发布记录ID |
+| orchestratorId | Long | 编排ID |
+| orchestratorName | String | 编排名称 |
 | status | String | 发布状态 |
-| recode | String | 版本描述 |
 | releaseUser | String | 发布用户 |
-| version | String | 版本号 |
-| lastModifyUser | String | 最后修改用户 |
 | releaseTime | String | 发布时间 |
-| errorMessage | String | 错误信息（如果发布失败） |
-| orchestratorVersionId | Long | 编排版本ID |
-| appId | Long | 应用ID |
-| **orchestratorId** | Long | **编排ID（新增）** |
-| **orchestratorName** | String | **编排名称（新增）** |
-| **projectId** | Integer | **项目ID（新增）** |
-| **workspaceId** | Integer | **工作空间ID（新增）** |
-
-#### 参考接口：getReleaseHistory
-
-**接口路径：** `/dss/framework/orchestrator/getReleaseHistory`
-
-**服务层位置：**
-- 接口：`WebankAppService` (`WebankOrchestratorServer`)
-- 实现：`WebankAppServiceImpl`
-
-**现有方法签名：**
-```java
-Pair<Integer, List<ReleaseHistoryDetail>> getReleaseHistory(ReleaseHistoryRequest request) throws DSSErrorException;
-```
+| projectId | Long | 项目ID |
+| projectName | String | 项目名称 |
 
 #### 实现要点
 
-1. **新增Service方法**：在 `WebankAppService` 接口中添加新方法
+1. **新增请求类 `ReleaseInfoRequest`**：
+   - 位置：`dss-orchestrator/dss-orchestrator-common-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/common/protocol/ReleaseInfoRequest.java`
+   - 字段：`projectName`、`orchestratorNames`
+
+2. **新增响应VO类 `ReleaseInfoVO`**：
+   - 位置：`dss-orchestrator/dss-orchestrator-common-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/common/entity/ReleaseInfoVO.java`
+   - 字段：`orchestratorId`、`orchestratorName`、`status`、`releaseUser`、`releaseTime`、`projectId`、`projectName`
+
+3. **新增Service方法**：在 `WebankAppService` 接口中添加新方法
    ```java
    List<ReleaseInfoVO> getReleaseInfo(ReleaseInfoRequest request) throws DSSErrorException;
    ```
 
-2. **新增Restful接口**：在 `WebankOrchestratorRestful` 中添加新端点
+4. **新增Restful接口**：在 `WebankOrchestratorRestful` 中添加新端点
    ```java
    @RequestMapping(path = "/getReleaseInfo", method = RequestMethod.POST)
    public Message getReleaseInfo(@RequestBody ReleaseInfoRequest request)
    ```
 
-3. **新增响应VO类**：`ReleaseInfoVO`，在 `ReleaseHistoryDetail` 基础上新增字段
+5. **新增Mapper方法**：在 `WebankOrchestratorMapper` 中添加查询方法
    ```java
-   public class ReleaseInfoVO extends ReleaseHistoryDetail {
-       private Long orchestratorId;        // 编排ID
-       private String orchestratorName;    // 编排名称
-       private Integer projectId;          // 项目ID
-       private Integer workspaceId;        // 工作空间ID
-   }
+   List<ReleaseInfoVO> getReleaseInfoByNames(ReleaseInfoRequest request);
    ```
 
-4. **实现Service方法**：在 `WebankAppServiceImpl` 中实现查询逻辑
-   - 校验所有orchestratorId是否属于同一个projectId
-   - 对每个orchestratorId查询最新发布成功的版本
-   - 不使用 PageHelper 分页
-   - 通过 RPC 调用 `ReleaseService` 或 `ProjectServer`
-
-5. **Mapper查询**：扩展现有的 `ReleaseTaskMapper`，添加批量查询方法
-
-6. **SQL查询逻辑**：对每个orchestratorId，查询state状态为"success"的最新一条发布记录
-
+6. **SQL查询逻辑**：
    ```sql
-   SELECT * FROM release_task
-   WHERE orchestrator_id = ?
-     AND state = 'success'
-   ORDER BY release_time DESC
-   LIMIT 1
+   select a.id as orchestrator_id,
+          a.name as orchestrator_name,
+          b.status,
+          b.release_user,
+          b.release_time,
+          c.id as project_id,
+          c.name as project_name
+   from dss_orchestrator_info a
+   join dss_project c on a.project_id = c.id
+   left join (
+     select orchestrator_id,
+            release_user,
+            status,
+            DATE_FORMAT(max(update_time),'%Y-%m-%d %T') AS release_time
+     from dss_release_task
+     where status = 'Success'
+     group by orchestrator_id
+   ) b on a.id = b.orchestrator_id
+   where a.name in (#{orchestratorNames})
+     and c.name = #{projectName}
    ```
 
-7. **关联查询编排信息**：从 `dss_orchestrator_info` 表获取 `orchestratorName`
-
-#### 关键区别（对比getReleaseHistory）
-
-| 对比项 | getReleaseHistory | getReleaseInfo（新增） |
-|--------|------------------|------------------------|
-| 查询范围 | 单个编排的历史发布记录 | 批量编排的最新发布成功版本 |
-| 分页 | 支持（currentPage, pageSize） | 不支持 |
-| 返回值 | Pair\<Integer, List\> | List\<ReleaseInfoVO\> |
-| 查询条件 | orchestratorId, releaseUser, 时间范围 | projectId, orchestratorIds[] |
-| 返回字段 | 基础发布信息 | 基础发布信息 + orchestratorId, orchestratorName, projectId, workspaceId |
-| 结果数量 | 可能多条历史记录 | 每个编排最多一条（最新发布成功） |
 
 #### 业务规则
 
-1. **编排校验**：所有传入的 `orchestratorIds` 必须属于同一个 `projectId`，否则抛出异常
-2. **发布状态**：只返回发布成功（state = 'success'）的记录
+1. **编排校验**：所有传入的编排名称必须属于指定的项目（通过SQL join自动校验）
+2. **发布状态**：只返回发布成功（status = 'Success'）的记录
 3. **最新版本**：每个编排只返回最新的一条发布成功记录
 4. **参数校验**：
-   - `workspaceId` 必填
-   - `projectId` 必填
-   - `orchestratorIds` 不能为空
-   - `orchestratorIds` 列表大小建议不超过100
+   - `projectName` 必填
+   - `orchestratorNames` 不能为空
+   - `orchestratorNames` 列表大小建议不超过100
 
 ---
 
@@ -282,12 +244,11 @@ Pair<Integer, List<ReleaseHistoryDetail>> getReleaseHistory(ReleaseHistoryReques
 
 ### 验收点3：发布信息查询接口
 - [ ] 接口正常响应，返回发布信息列表
-- [ ] 支持批量传入orchestratorIds查询
-- [ ] 校验所有orchestratorId必须属于同一个projectId
+- [ ] 支持批量传入orchestratorNames查询
+- [ ] 根据projectName和orchestratorNames查询
 - [ ] 每个编排只返回最新发布成功的一条记录
-- [ ] 响应包含新增字段：orchestratorId、orchestratorName、projectId、workspaceId
-- [ ] 无分页参数
-- [ ] 接口返回数据格式正确
+- [ ] 响应只包含7个指定字段：orchestratorId、orchestratorName、status、releaseUser、releaseTime、projectId、projectName
+- [ ] 无分页参数，接口返回数据格式正确
 
 ---
 
@@ -299,14 +260,16 @@ Pair<Integer, List<ReleaseHistoryDetail>> getReleaseHistory(ReleaseHistoryReques
 3. `dss-framework/dss-framework-orchestrator-server-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/server/restful/WebankOrchestratorRestful.java`
 4. `dss-framework/dss-framework-orchestrator-server-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/server/service/WebankAppService.java`
 5. `dss-framework/dss-framework-orchestrator-server-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/server/service/impl/WebankAppServiceImpl.java`
-6. `dss-framework/dss-framework-orchestrator-server-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/server/entity/request/ReleaseInfoRequest.java` (新增)
-7. `dss-framework/dss-framework-release-server-webank/src/main/java/com/webank/wedatasphere/dss/framework/release/dao/ReleaseTaskMapper.java` (修改)
-8. `dss-framework/dss-framework-release-server-webank/src/main/java/com/webank/wedatasphere/dss/framework/release/dao/impl/releaseTaskMapper.xml` (修改)
+6. `dss-orchestrator/dss-orchestrator-db-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/db/dao/WebankOrchestratorMapper.java`
+7. `dss-orchestrator/dss-orchestrator-db-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/db/dao/impl/WebankOrchestratorMapper.xml`
+8. `dss-framework/dss-framework-release-server-webank/src/main/java/com/webank/wedatasphere/dss/framework/release/dao/ProjectMapper.java`
+9. `dss-framework/dss-framework-release-server-webank/src/main/java/com/webank/wedatasphere/dss/framework/release/dao/impl/projectMapper.xml`
 
-### 实体类
-1. `dss-orchestrator/dss-orchestrator-common-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/common/entity/ReleaseHistoryDetail.java`
-2. `dss-orchestrator/orchestrators/dss-workflow/dss-workflow-server/src/main/java/com/webank/wedatasphere/dss/workflow/entity/ProjectOrchestratorWhite.java`
-3. `dss-framework/dss-framework-orchestrator-server-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/server/entity/response/ReleaseInfoVO.java` (新增)
+### 实体类（新增/修改）
+1. `dss-orchestrator/dss-orchestrator-common-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/common/protocol/ReleaseInfoRequest.java` (新增)
+2. `dss-orchestrator/dss-orchestrator-common-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/common/entity/ReleaseInfoVO.java` (新增)
+3. `dss-orchestrator/dss-orchestrator-common-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/common/entity/ReleaseHistoryDetail.java`
+4. `dss-orchestrator/orchestrators/dss-workflow/dss-workflow-server/src/main/java/com/webank/wedatasphere/dss/workflow/entity/ProjectOrchestratorWhite.java`
 
 ---
 
@@ -323,13 +286,11 @@ Pair<Integer, List<ReleaseHistoryDetail>> getReleaseHistory(ReleaseHistoryReques
 3. 创建SQL节点，在白名单项目中显示Spark版本，非白名单项目不显示
 
 ### 测试场景3：发布信息查询接口
-1. 调用接口查询单个编排的最新发布信息
-2. 调用接口查询多个编排（批量orchestratorIds）的最新发布信息
-3. 验证所有orchestratorId属于同一个projectId时正常返回
-4. 验证orchestratorId属于不同projectId时抛出异常
-5. 验证每个编排只返回最新发布成功的一条记录
-6. 验证响应包含orchestratorId、orchestratorName等新增字段
-7. 组合条件筛选
+1. 调用接口根据projectName和单个orchestratorName查询发布信息
+2. 调用接口根据projectName和多个orchestratorName（批量）查询发布信息
+3. 验证返回的数据只包含7个指定字段
+4. 验证每个编排只返回最新发布成功的一条记录
+5. 验证orchestratorName不属于指定projectName时不会返回错误数据
 
 ---
 
@@ -337,3 +298,4 @@ Pair<Integer, List<ReleaseHistoryDetail>> getReleaseHistory(ReleaseHistoryReques
 - 需求版本：1.19.8
 - 参考版本：1.19.6（Spark版本白名单取消）
 - 文档创建时间：2026-03-06
+- 文档更新时间：2026-03-10
