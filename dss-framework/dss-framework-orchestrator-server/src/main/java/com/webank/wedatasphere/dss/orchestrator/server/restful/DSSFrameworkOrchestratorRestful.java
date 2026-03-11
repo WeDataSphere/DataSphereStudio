@@ -988,7 +988,6 @@ public class DSSFrameworkOrchestratorRestful {
     @RequestMapping(path = "addOrchestratorWhiteSimple", method = RequestMethod.POST)
     public Message addOrchestratorWhiteSimple(@RequestBody AddOrchestratorWhiteRequest request) {
         String username = SecurityFilter.getLoginUsername(httpServletRequest);
-        Workspace workspace = SSOHelper.getWorkspace(httpServletRequest);
 
         LOGGER.info("user {} try to add orchestrator white, request:{}", username, request);
 
