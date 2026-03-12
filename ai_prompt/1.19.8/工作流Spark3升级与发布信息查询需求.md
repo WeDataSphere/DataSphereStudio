@@ -24,6 +24,7 @@
 1. **恢复白名单限制**：重新添加工作流节点Spark版本的白名单限制
 2. **AISQL节点特殊处理**：AISQL节点取消白名单限制（始终不显示Spark版本配置）
 3. **新增发布信息查询接口**：提供根据项目名称和编排名称查询工作流发布信息的接口
+4. **新增白名单管理接口**：提供ITSM鉴权接口和普通接口，用于添加工作流白名单
 
 ---
 
@@ -59,6 +60,8 @@ public class ProjectOrchestratorWhite {
     private String projectName;       // 项目名称
     private Long orchestratorId;      // 编排ID，0表示整个项目
     private String orchestratorName;  // 编排名称
+    private String reason;            // 原因（新增）
+    private String type;              // 类型（新增，如 schedulis）
     private String createTime;
     private String updateTime;
     private String createBy;
@@ -230,6 +233,158 @@ public class ReleaseInfoRequest {
 
 ---
 
+### 需求点4：提供工作流白名单管理接口
+
+#### 需求描述
+新增API接口，用于管理工作流白名单。提供两个接口：
+1. ITSM鉴权接口：供ITSM系统调用，支持批量添加白名单
+2. 普通接口：供用户界面调用，支持单条添加白名单
+
+#### 接口设计
+
+##### 接口1：addOrchestratorWhite（ITSM鉴权接口）
+
+**接口信息：**
+| 项目 | 值 |
+|------|-----|
+| 接口路径 | `/dss/framework/orchestrator/addOrchestratorWhite` |
+| 请求方式 | POST |
+| Content-Type | application/json |
+
+**请求参数：**
+```json
+{
+  "createDate": "2024-03-10",
+  "createUser": "hadoop",
+  "data": "{\"dataList\":[{\"projectName\":\"项目名称\",\"orchestratorName\":\"工作流名称\"}]}",
+  "externalId": "ITSM流程ID"
+}
+```
+
+**请求头：**
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| timeStamp | String | 是 | 时间戳 |
+| sign | String | 是 | 签名 |
+
+**参数说明：**
+- `createUser`：创建用户名
+- `data`：JSON字符串，包含dataList数组
+- `dataList`：批量添加的白名单项列表
+  - `projectName`：项目名称（必填）
+  - `orchestratorName`：工作流名称（必填，支持通配符 `*` 表示项目下所有工作流）
+
+**响应格式：**
+```json
+{
+  "retCode": 0,
+  "retDetail": "Success to add orchestrator white"
+}
+```
+
+**鉴权逻辑：**
+1. 从请求头获取 `timeStamp` 和 `sign` 参数
+2. 调用 `WorkspaceUtils.validateAuth(timestamp, sign)` 进行鉴权验证
+3. 鉴权失败返回403状态码和错误信息
+
+##### 接口2：addOrchestratorWhiteSimple（普通接口）
+
+**接口信息：**
+| 项目 | 值 |
+|------|-----|
+| 接口路径 | `/dss/framework/orchestrator/addOrchestratorWhiteSimple` |
+| 请求方式 | POST |
+| Content-Type | application/json |
+
+**请求类定义：**
+```java
+public class AddOrchestratorWhiteRequest {
+    private String projectName;       // 项目名称（必填）
+    private String orchestratorName;  // 工作流名称（可选，空值时自动设置为*）
+    private String reason;            // 原因（可选）
+}
+```
+
+**请求参数：**
+```json
+{
+  "projectName": "项目名称",
+  "orchestratorName": "工作流名称",
+  "reason": "添加原因"
+}
+```
+
+**参数说明：**
+- `projectName`：必填，项目名称
+- `orchestratorName`：可选，工作流名称
+  - 不传或传空值时，自动设置为通配符 `*`
+- `reason`：可选，添加白名单的原因
+
+**响应格式：**
+```json
+{
+  "method": "/dss/framework/orchestrator/addOrchestratorWhiteSimple",
+  "status": 0,
+  "message": "添加工作流白名单成功"
+}
+```
+
+#### 实现要点
+
+1. **新增请求类 `AddOrchestratorWhiteRequest`**：
+   - 位置：`dss-framework/dss-framework-orchestrator-server/src/main/java/com/webank/wedatasphere/dss/orchestrator/server/entity/request/AddOrchestratorWhiteRequest.java`
+   - 字段：`projectName`、`orchestratorName`、`reason`
+
+2. **新增Restful接口**：在 `DSSFrameworkOrchestratorRestful` 中添加新端点
+   ```java
+   // ITSM鉴权接口
+   @RequestMapping(path = "addOrchestratorWhite", method = RequestMethod.POST)
+   public ItsmResponse addProjectAndOrchestratorWhite(@RequestBody ItsmRequest itsmRequest, HttpServletRequest req, HttpServletResponse resp)
+
+   // 普通接口
+   @RequestMapping(path = "addOrchestratorWhiteSimple", method = RequestMethod.POST)
+   public Message addOrchestratorWhiteSimple(@RequestBody AddOrchestratorWhiteRequest request)
+   ```
+
+3. **业务逻辑**：
+   - 参数验证（projectName必填）
+   - 查询项目信息
+   - 查询工作流ID（支持通配符）
+   - 创建白名单记录
+     - 设置 `reason` 字段为请求参数中的 reason
+     - 设置 `type` 字段为固定值 "schedulis"
+   - 调用 `projectOrchestratorWhiteService.addProjectOrchestratorWhite()` 保存
+
+4. **数据库变更**：
+   - 在 `dss_project_orchestrator_white` 表中添加 `reason` 字段：`VARCHAR(255) COMMENT '原因'`
+   - 在 `dss_project_orchestrator_white` 表中添加 `type` 字段：`VARCHAR(50) COMMENT '类型'`
+   - 更新 MyBatis 映射文件中的 insert 语句，包含 `reason` 和 `type` 字段
+
+#### 业务规则
+
+1. **通配符支持**
+   - `orchestratorName` 为 `*` 时，表示该项目的所有工作流都在白名单中
+   - 此时 `orchestratorId` 设置为 0
+
+2. **项目验证**
+   - 必须传入有效的 `projectName`
+   - 项目不存在时返回错误
+
+3. **工作流验证**
+   - 当 `orchestratorName` 不是通配符时，必须传入有效的 `orchestratorName`
+   - 工作流不存在时返回错误
+   - 工作流必须属于指定的项目
+
+4. **ITSM批量处理**
+   - ITSM接口支持批量添加，会收集所有错误统一返回
+   - 普通接口只支持单条添加
+
+5. **用户身份**
+   - ITSM接口：从请求中获取createUser
+   - 普通接口：从SecurityFilter.getLoginUsername()获取登录用户
+
+---
+
 ## 验收标准
 
 ### 验收点1：Spark版本白名单限制
@@ -250,6 +405,19 @@ public class ReleaseInfoRequest {
 - [ ] 响应只包含7个指定字段：orchestratorId、orchestratorName、status、releaseUser、releaseTime、projectId、projectName
 - [ ] 无分页参数，接口返回数据格式正确
 
+### 验收点4：白名单管理接口
+- [ ] ITSM接口鉴权功能正常，timestamp和sign验证正确
+- [ ] ITSM接口支持批量添加白名单，dataList正确处理
+- [ ] 普通接口正常响应，使用登录用户身份
+- [ ] 支持通配符 `*` 添加项目下所有工作流到白名单
+- [ ] 普通接口orchestratorName为空时自动转为通配符
+- [ ] 项目不存在时返回正确错误信息
+- [ ] 工作流不存在时返回正确错误信息
+- [ ] 白名单记录正确插入数据库，字段值正确
+- [ ] 普通接口的 `reason` 字段正确保存到数据库
+- [ ] 普通接口的 `type` 字段固定设置为 "schedulis"
+- [ ] 审计日志正常记录
+
 ---
 
 ## 涉及文件清单
@@ -264,12 +432,14 @@ public class ReleaseInfoRequest {
 7. `dss-orchestrator/dss-orchestrator-db-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/db/dao/impl/WebankOrchestratorMapper.xml`
 8. `dss-framework/dss-framework-release-server-webank/src/main/java/com/webank/wedatasphere/dss/framework/release/dao/ProjectMapper.java`
 9. `dss-framework/dss-framework-release-server-webank/src/main/java/com/webank/wedatasphere/dss/framework/release/dao/impl/projectMapper.xml`
+10. `dss-framework/dss-framework-orchestrator-server/src/main/java/com/webank/wedatasphere/dss/orchestrator/server/restful/DSSFrameworkOrchestratorRestful.java` (修改)
 
 ### 实体类（新增/修改）
 1. `dss-orchestrator/dss-orchestrator-common-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/common/protocol/ReleaseInfoRequest.java` (新增)
 2. `dss-orchestrator/dss-orchestrator-common-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/common/entity/ReleaseInfoVO.java` (新增)
 3. `dss-orchestrator/dss-orchestrator-common-webank/src/main/java/com/webank/wedatasphere/dss/orchestrator/common/entity/ReleaseHistoryDetail.java`
-4. `dss-orchestrator/orchestrators/dss-workflow/dss-workflow-server/src/main/java/com/webank/wedatasphere/dss/workflow/entity/ProjectOrchestratorWhite.java`
+4. `dss-orchestrator/orchestrators/dss-workflow/dss-workflow-server/src/main/java/com/webank/wedatasphere/dss/workflow/entity/ProjectOrchestratorWhite.java` (修改，添加reason和type字段)
+5. `dss-framework/dss-framework-orchestrator-server/src/main/java/com/webank/wedatasphere/dss/orchestrator/server/entity/request/AddOrchestratorWhiteRequest.java` (新增)
 
 ---
 
@@ -291,6 +461,26 @@ public class ReleaseInfoRequest {
 3. 验证返回的数据只包含7个指定字段
 4. 验证每个编排只返回最新发布成功的一条记录
 5. 验证orchestratorName不属于指定projectName时不会返回错误数据
+
+### 测试场景4：白名单管理接口
+
+#### ITSM接口测试
+1. 调用ITSM接口，传入正确的timestamp和sign，验证鉴权成功
+2. 调用ITSM接口，传入错误的timestamp或sign，验证鉴权失败返回403
+3. 调用ITSM接口，批量添加多个白名单记录，验证所有记录都正确添加
+4. 调用ITSM接口，dataList中包含错误数据（如项目不存在），验证错误信息被正确收集和返回
+5. 调用ITSM接口，orchestratorName为通配符*，验证项目下所有工作流都被添加到白名单
+
+#### 普通接口测试
+1. 调用普通接口，传入projectName和orchestratorName，验证白名单添加成功
+2. 调用普通接口，传入projectName但orchestratorName为空，验证自动转为通配符*
+3. 调用普通接口，传入不存在的projectName，验证返回正确的错误信息
+4. 调用普通接口，传入不存在的orchestratorName，验证返回正确的错误信息
+5. 验证普通接口使用登录用户身份作为createUser
+6. 验证普通接口正确记录审计日志
+7. 调用普通接口，传入reason参数，验证reason字段正确保存到数据库
+8. 调用普通接口，验证type字段固定设置为"schedulis"
+9. 查询数据库，验证reason和type字段正确插入
 
 ---
 
