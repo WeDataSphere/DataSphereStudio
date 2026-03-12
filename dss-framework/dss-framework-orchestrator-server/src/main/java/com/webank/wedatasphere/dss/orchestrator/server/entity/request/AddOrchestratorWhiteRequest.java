@@ -22,6 +22,9 @@ public class AddOrchestratorWhiteRequest {
 
     private String orchestratorName;
 
+    private String reason;
+
+
     public String getProjectName() {
         return projectName;
     }
@@ -38,11 +41,20 @@ public class AddOrchestratorWhiteRequest {
         this.orchestratorName = orchestratorName;
     }
 
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
     @Override
     public String toString() {
         return "AddOrchestratorWhiteRequest{" +
                 "projectName='" + projectName + '\'' +
                 ", orchestratorName='" + orchestratorName + '\'' +
+                ", reason='" + reason + '\'' +
                 '}';
     }
 }

@@ -982,7 +982,7 @@ public class DSSFrameworkOrchestratorRestful {
     /**
      * 添加工作流白名单（普通接口，无需ITSM鉴权）
      *
-     * @param request 包含项目名称和工作流名称的请求
+     * @param request 包含项目名称、工作流名称和原因的请求
      * @return Message
      */
     @RequestMapping(path = "addOrchestratorWhiteSimple", method = RequestMethod.POST)
@@ -993,6 +993,7 @@ public class DSSFrameworkOrchestratorRestful {
 
         String projectName = request.getProjectName();
         String orchestratorName = request.getOrchestratorName();
+        String reason = request.getReason();
 
         if(StringUtils.isEmpty(projectName)){
             LOGGER.error("project is empty");
@@ -1033,6 +1034,8 @@ public class DSSFrameworkOrchestratorRestful {
             projectOrchestratorWhite.setProjectId(dssProject.getId());
             projectOrchestratorWhite.setCreateBy(username);
             projectOrchestratorWhite.setUpdateBy(username);
+            projectOrchestratorWhite.setReason(reason);
+            projectOrchestratorWhite.setType("schedulis");
 
             projectOrchestratorWhiteService.addProjectOrchestratorWhite(projectOrchestratorWhite);
 
