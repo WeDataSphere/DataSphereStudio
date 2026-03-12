@@ -28,4 +28,7 @@ public interface ProjectOrchestratorWhiteMapper {
 
     List<ProjectOrchestratorWhite> getWhiteListByProjectId(@Param("projectId") Long projectId);
 
+
+    ProjectOrchestratorWhite selectByProjectIdAndOrchestratorId(@Param("projectId") Long projectId,@Param("orchestratorId") Long orchestratorId);
+
 }

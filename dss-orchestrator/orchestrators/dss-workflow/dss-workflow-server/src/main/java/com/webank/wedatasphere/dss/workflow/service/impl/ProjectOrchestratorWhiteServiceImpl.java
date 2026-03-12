@@ -48,7 +48,7 @@ public class ProjectOrchestratorWhiteServiceImpl implements ProjectOrchestratorW
     @Override
     public void addProjectOrchestratorWhite(ProjectOrchestratorWhite projectOrchestratorWhite) {
 
-        ProjectOrchestratorWhite  orchestratorWhite = selectByProjectId(projectOrchestratorWhite.getProjectId(),
+        ProjectOrchestratorWhite  orchestratorWhite = projectOrchestratorWhiteMapper.selectByProjectIdAndOrchestratorId(projectOrchestratorWhite.getProjectId(),
                 projectOrchestratorWhite.getOrchestratorId());
 
         if(orchestratorWhite == null){
