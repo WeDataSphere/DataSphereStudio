@@ -77,7 +77,7 @@ public class NodeRestfulApi {
                                 @RequestParam(value = "projectId", required = false) Long projectId,
                                 @RequestParam(value = "orchestratorId",required = false) Long orchestratorId){
 
-        boolean isWhite;
+        boolean isWhite = false;
         if(DSSCommonUtils.ENV_LABEL_VALUE_PROD.equalsIgnoreCase(labels)){
             isWhite = true;
         }else{
@@ -88,7 +88,7 @@ public class NodeRestfulApi {
         logger.info("projectId is {}, orchestratorId is {} ,isWhite is {}", projectId,orchestratorId,isWhite);
 
         List<NodeGroupVO> groupVos = getNodeGroup(req,isWhite);
-        return Message.ok().data("nodeTypes", groupVos);
+        return Message.ok().data("nodeTypes", groupVos).data("isWhite",isWhite);
     }
 
     /****
@@ -103,7 +103,7 @@ public class NodeRestfulApi {
 
 
         logger.info("listNodeTypeRequest is {}", listNodeTypeRequest);
-        boolean isWhite = true;
+        boolean isWhite = false;
 
         for(ListNodeTypeRequest.BatchOrchestrator params: listNodeTypeRequest.getBatchOrchestratorInfo()){
 
@@ -118,7 +118,7 @@ public class NodeRestfulApi {
         logger.info("listNodeTypeRequest is {},isWhite is {}",listNodeTypeRequest,isWhite);
         // 传入的项目和工作流没有在白名单,则取消sparkVersion的属性筛选
         List<NodeGroupVO> groupVos = getNodeGroup(req,isWhite);
-        return Message.ok().data("nodeTypes", groupVos);
+        return Message.ok().data("nodeTypes", groupVos).data("isWhite",isWhite);
     }
 
 
@@ -188,11 +188,6 @@ public class NodeRestfulApi {
         for (NodeUi nodeUi : nodeInfo.getNodeUis()) {
             //避免重复的ui key，因为第三方组件可能会重复配置。
             if (keySet.contains(nodeUi.getKey())) {
-                continue;
-            }
-
-            // 不在白名单, 则取消sparkVersion选项
-            if(!isWhite && "sparkVersion".equalsIgnoreCase(nodeUi.getKey())){
                 continue;
             }
 
