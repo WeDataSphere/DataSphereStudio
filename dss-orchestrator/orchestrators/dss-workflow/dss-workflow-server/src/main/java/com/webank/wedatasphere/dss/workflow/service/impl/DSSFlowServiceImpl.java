@@ -542,7 +542,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 logger.info("{} node spark.python.version  is {}, python version is {}",
                         node.get("title"),startup.get("spark.python.version"),pythonVersion);
 
-                if (startup.get("spark.python.version") != null) {
+                if (startup.get("spark.python.version") != null
+                        && pythonVersion.equals(startup.get("spark.python.version").getAsString())) {
                     logger.info("{} node python version is {}",
                             node.get("title"),startup.get("spark.python.version"));
                     continue;
