@@ -502,16 +502,16 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 }
 
                 // 过滤非新增节点
-                if (node.get("createTime") == null || node.get("createTime").getAsLong() < pythonDateTimeLong) {
-
-                    String createDateTime =  node.get("createTime") == null ?
-                            null :
-                            DateFormatUtils.format(new Date(node.get("createTime").getAsLong()),"yyyy-MM-dd HH:mm:ss");
-
-                    logger.info("{} Not new nodes, node createTime is [{},{}], python3DateTime is [{},{}]",
-                            node.get("title"),node.get("createTime"),createDateTime,pythonDateTimeLong,pythonDateTime);
-                    continue;
-                }
+//                if (node.get("createTime") == null || node.get("createTime").getAsLong() < pythonDateTimeLong) {
+//
+//                    String createDateTime =  node.get("createTime") == null ?
+//                            null :
+//                            DateFormatUtils.format(new Date(node.get("createTime").getAsLong()),"yyyy-MM-dd HH:mm:ss");
+//
+//                    logger.info("{} Not new nodes, node createTime is [{},{}], python3DateTime is [{},{}]",
+//                            node.get("title"),node.get("createTime"),createDateTime,pythonDateTimeLong,pythonDateTime);
+//                    continue;
+//                }
 
 
                 if (node.get("params") == null) {
