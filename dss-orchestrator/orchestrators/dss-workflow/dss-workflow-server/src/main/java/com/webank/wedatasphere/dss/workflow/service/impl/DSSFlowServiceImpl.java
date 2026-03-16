@@ -82,6 +82,7 @@ import com.webank.wedatasphere.dss.workflow.lock.Lock;
 import com.webank.wedatasphere.dss.common.service.BMLService;
 import com.webank.wedatasphere.dss.workflow.scheduler.DssJobThreadPool;
 import com.webank.wedatasphere.dss.workflow.service.DSSFlowService;
+import com.webank.wedatasphere.dss.workflow.service.ProjectOrchestratorWhiteService;
 import com.webank.wedatasphere.dss.workflow.service.SaveFlowHook;
 import com.webank.wedatasphere.dss.workflow.service.WorkflowNodeService;
 import org.apache.commons.collections.CollectionUtils;
@@ -186,6 +187,9 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     public DSSFlow getFlowWithJsonAndSubFlowsByID(Long rootFlowId) {
         return genDSSFlowTree(rootFlowId);
     }
+
+    @Autowired
+    public ProjectOrchestratorWhiteService projectOrchestratorWhiteService;
 
     private DSSFlow genDSSFlowTree(Long parentFlowId) {
         DSSFlow cyFlow = flowMapper.selectFlowByID(parentFlowId);
@@ -2297,7 +2301,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         for (OrchestratorVo orchestratorVo : orchestratorVoes) {
             DSSOrchestratorVersion dssOrchestratorVersion = orchestratorVo.getDssOrchestratorVersion();
-            if (dssOrchestratorVersion != null) {
+            DSSOrchestratorInfo dssOrchestratorInfo = orchestratorVo.getDssOrchestratorInfo();
+            if (dssOrchestratorVersion != null && dssOrchestratorInfo != null) {
                 Long orchestratorId = dssOrchestratorVersion.getOrchestratorId();
                 Long flowId = dssOrchestratorVersion.getAppId();
                 DSSFlow dssFlow = getFlow(flowId);
@@ -2321,7 +2326,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                     }
 
                     // 批量编辑 白名单项目中的节点和非白名单中的节点(非白名单的节点没有spark版本属性), 会修改白名单节点的spark版本
-                    handleWhiteNodeParams(editFlowRequest);
+                    handleWhiteNodeParams(editFlowRequest,dssOrchestratorInfo);
 
                     editFlowRequestsList.add(editFlowRequest);
                     editFlowRequestTOFlowIDMap.put(targetFlowId, editFlowRequestsList);
@@ -3889,9 +3894,12 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
 
-    private void handleWhiteNodeParams(EditFlowRequest editFlowRequest) {
+    private void handleWhiteNodeParams(EditFlowRequest editFlowRequest,DSSOrchestratorInfo dssOrchestratorInfo) {
 
        try {
+
+           boolean isWhite = projectOrchestratorWhiteService.checkProjectAndOrchestratorIsWhite(dssOrchestratorInfo.getProjectId(),dssOrchestratorInfo.getId());
+
 
            JsonObject params = JsonParser.parseString(editFlowRequest.getParams()).getAsJsonObject();
 
@@ -3900,28 +3908,33 @@ public class DSSFlowServiceImpl implements DSSFlowService {
            JsonObject runtime = configuration.get("runtime").getAsJsonObject();
 
            String sparkVersionKey = "sparkVersion";
-           // 页面如果有修改sparkVersion 参数,则直接跳过
-           if(runtime.get(sparkVersionKey) != null){
-               return;
+           // 不在白名单 ,且修改了sparkVersion抛错
+           if(!isWhite && runtime.get(sparkVersionKey) != null){
+               throw new DSSErrorException(90003, dssOrchestratorInfo.getName() + "工作流不支持修改sparkVersion参数");
            }
 
-           List<NodeContentUIDO> nodeContentUIDOList = nodeContentUIMapper.queryNodeContentUIList(Collections.singletonList(editFlowRequest.getId()));
 
-           if(CollectionUtils.isNotEmpty(nodeContentUIDOList)){
+           if (runtime.get(sparkVersionKey) == null ||
+                   StringUtils.isEmpty(runtime.get(sparkVersionKey).getAsString())){
 
-               NodeContentUIDO nodeContentUIDO = nodeContentUIDOList.stream()
-                       .filter(nodeUi -> sparkVersionKey.equalsIgnoreCase(nodeUi.getNodeUIKey()))
-                       .findFirst().orElse(null);
+               List<NodeContentUIDO> nodeContentUIDOList = nodeContentUIMapper.queryNodeContentUIList(Collections.singletonList(editFlowRequest.getId()));
 
-               if(nodeContentUIDO != null) {
-                   runtime.addProperty(nodeContentUIDO.getNodeUIKey(), nodeContentUIDO.getNodeUIValue());
-                   logger.info("{} node ,add sparkVersion to runtime, value is {}",editFlowRequest.getTitle(), nodeContentUIDO.getNodeUIValue());
+               if(CollectionUtils.isNotEmpty(nodeContentUIDOList)){
 
-                   editFlowRequest.setParams(params.toString());
+                   NodeContentUIDO nodeContentUIDO = nodeContentUIDOList.stream()
+                           .filter(nodeUi -> sparkVersionKey.equalsIgnoreCase(nodeUi.getNodeUIKey()))
+                           .findFirst().orElse(null);
 
-                   logger.info("{} node params is {}", editFlowRequest.getTitle(),editFlowRequest.getParams());
+                   if(nodeContentUIDO != null) {
+                       runtime.addProperty(nodeContentUIDO.getNodeUIKey(), nodeContentUIDO.getNodeUIValue());
+                       logger.info("{} node ,add sparkVersion to runtime, value is {}",editFlowRequest.getTitle(), nodeContentUIDO.getNodeUIValue());
+
+                       editFlowRequest.setParams(params.toString());
+
+                       logger.info("{} node params is {}", editFlowRequest.getTitle(),editFlowRequest.getParams());
+                   }
+
                }
-
            }
 
        }catch (Exception e){
