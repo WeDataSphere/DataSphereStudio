@@ -3897,46 +3897,65 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     private void handleWhiteNodeParams(EditFlowRequest editFlowRequest,DSSOrchestratorInfo dssOrchestratorInfo) {
 
        try {
+           // 检查项目和工作流编排器是否在白名单中
+           boolean isWhite = projectOrchestratorWhiteService.checkProjectAndOrchestratorIsWhite(dssOrchestratorInfo.getProjectId(), dssOrchestratorInfo.getId());
 
-           boolean isWhite = projectOrchestratorWhiteService.checkProjectAndOrchestratorIsWhite(dssOrchestratorInfo.getProjectId(),dssOrchestratorInfo.getId());
-
-
-           JsonObject params = JsonParser.parseString(editFlowRequest.getParams()).getAsJsonObject();
-
-           JsonObject configuration = params.get("configuration").getAsJsonObject();
-
-           JsonObject runtime = configuration.get("runtime").getAsJsonObject();
-
-           String sparkVersionKey = "sparkVersion";
-           // 不在白名单 ,且修改了sparkVersion抛错
-           if(!isWhite && runtime.get(sparkVersionKey) != null){
-               throw new DSSErrorException(90003, dssOrchestratorInfo.getName() + "工作流不支持修改sparkVersion参数");
+           // 如果在白名单中，则跳过处理，直接返回
+           if(isWhite){
+               return;
            }
 
+           // 解析工作流参数为JSON对象
+           JsonObject params = JsonParser.parseString(editFlowRequest.getParams()).getAsJsonObject();
 
-           if (runtime.get(sparkVersionKey) == null ||
-                   StringUtils.isEmpty(runtime.get(sparkVersionKey).getAsString())){
+           // 获取配置对象
+           JsonObject configuration = params.get("configuration").getAsJsonObject();
 
-               List<NodeContentUIDO> nodeContentUIDOList = nodeContentUIMapper.queryNodeContentUIList(Collections.singletonList(editFlowRequest.getId()));
+           // 获取运行时配置对象
+           JsonObject runtime = configuration.get("runtime").getAsJsonObject();
 
-               if(CollectionUtils.isNotEmpty(nodeContentUIDOList)){
+           // 定义Spark版本参数的键名
+           String sparkVersionKey = "sparkVersion";
+           // 从运行时配置中获取Spark版本参数值
+           String sparkVersion = runtime.get(sparkVersionKey) == null ? null : runtime.get(sparkVersionKey).getAsString();
 
-                   NodeContentUIDO nodeContentUIDO = nodeContentUIDOList.stream()
-                           .filter(nodeUi -> sparkVersionKey.equalsIgnoreCase(nodeUi.getNodeUIKey()))
-                           .findFirst().orElse(null);
+           // 查询节点的UI配置列表
+           List<NodeContentUIDO> nodeContentUIDOList = nodeContentUIMapper.queryNodeContentUIList(Collections.singletonList(editFlowRequest.getId()));
 
-                   if(nodeContentUIDO != null) {
+           // 如果节点UI配置列表不为空
+           if (CollectionUtils.isNotEmpty(nodeContentUIDOList)) {
+
+               // 从配置列表中查找sparkVersion对应的配置项
+               NodeContentUIDO nodeContentUIDO = nodeContentUIDOList.stream()
+                       .filter(nodeUi -> sparkVersionKey.equalsIgnoreCase(nodeUi.getNodeUIKey()))
+                       .findFirst().orElse(null);
+
+               // 如果找到了sparkVersion的配置项
+               if (nodeContentUIDO != null) {
+
+                   // 如果请求中的sparkVersion不为空，且与数据库中存储的值不一致，则抛出异常
+                   // 说明不允许修改sparkVersion参数
+                   if(sparkVersion != null && !nodeContentUIDO.getNodeUIValue().equals(sparkVersion)) {
+                       throw new DSSErrorException(90003, dssOrchestratorInfo.getName() + "工作流不支持修改sparkVersion参数");
+                   }
+
+                   // 如果请求中的sparkVersion为空，则将数据库中的默认值添加到运行时配置中
+                   if(sparkVersion == null ){
                        runtime.addProperty(nodeContentUIDO.getNodeUIKey(), nodeContentUIDO.getNodeUIValue());
                        logger.info("{} node ,add sparkVersion to runtime, value is {}",editFlowRequest.getTitle(), nodeContentUIDO.getNodeUIValue());
 
+                       // 更新请求参数
                        editFlowRequest.setParams(params.toString());
 
                        logger.info("{} node params is {}", editFlowRequest.getTitle(),editFlowRequest.getParams());
                    }
 
                }
-           }
 
+           }
+       } catch (DSSErrorException e){
+           logger.error("[{},{}] node handleWhiteNodeParams err msg is {}",editFlowRequest.getId(),editFlowRequest.getTitle(),e);
+           throw e;
        }catch (Exception e){
            logger.error("[{},{}] node handleWhiteNodeParams err msg is {}",editFlowRequest.getId(),editFlowRequest.getTitle(),e);
        }
