@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2019 WeBank
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.webank.wedatasphere.dss.flow.execution.entrance.job
+
+import java.util
 
 import com.webank.wedatasphere.dss.flow.execution.entrance.exception.FlowExecutionErrorException
 import com.webank.wedatasphere.dss.flow.execution.entrance.listener.NodeRunnerListener
@@ -34,14 +36,13 @@ import org.apache.linkis.scheduler.queue.{Job, SchedulerEventState}
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 
-class FlowEntranceJob(persistManager:PersistenceManager) extends EntranceExecutionJob(persistManager) with NodeRunnerListener {
+class FlowEntranceJob(persistManager: PersistenceManager) extends EntranceExecutionJob(persistManager) with NodeRunnerListener {
 
   private var flow: Workflow = _
 
   private val flowContext: FlowContext = new FlowContextImpl
 
-
-//   @BeanProperty   var dwsProject: DWSProject = _
+  private val selectedBranchRoutes = new util.HashMap[String, String]()
 
   def setFlow(flow: Workflow): Unit = this.flow = flow
 
@@ -51,15 +52,12 @@ class FlowEntranceJob(persistManager:PersistenceManager) extends EntranceExecuti
 
   private val STATUS_CHANGED_LOCK = "STATUS_CHANGED_LOCK".intern()
 
-  override def  init():Unit = {
-
-  }
+  override def init(): Unit = {}
 
   override def jobToExecuteRequest(): ExecuteRequest = {
     new ExecuteRequest with StorePathExecuteRequest with FlowExecutionRequest {
       override val code: String = FlowEntranceJob.this.getJobRequest.getExecutionCode
       override val storePath: String = FlowEntranceJob.this.getJobRequest match {
-//        case requestPersistTask: RequestPersistTask => requestPersistTask.getResultLocation
         case _ => ""
       }
       override val job: Job = FlowEntranceJob.this
@@ -72,29 +70,45 @@ class FlowEntranceJob(persistManager:PersistenceManager) extends EntranceExecuti
     startTime = System.currentTimeMillis
     Utils.tryAndWarn(transition(Running))
     getExecutor.execute(jobToExecuteRequest())
-    }
+  }
 
+  def recordBranchSelection(branchNodeId: String, targetNodeId: String): Unit = {
+    this.selectedBranchRoutes.synchronized {
+      if (targetNodeId == null) this.selectedBranchRoutes.remove(branchNodeId)
+      else this.selectedBranchRoutes.put(branchNodeId, targetNodeId)
+    }
+  }
+
+  def hasBranchSelection(branchNodeId: String): Boolean = this.selectedBranchRoutes.synchronized {
+    this.selectedBranchRoutes.containsKey(branchNodeId)
+  }
+
+  def isBranchTargetSelected(branchNodeId: String, targetNodeId: String): Boolean = this.selectedBranchRoutes.synchronized {
+    targetNodeId != null && targetNodeId == this.selectedBranchRoutes.get(branchNodeId)
+  }
 
   override def onStatusChanged(fromState: NodeExecutionState, toState: NodeExecutionState, node: WorkflowNode): Unit = {
-
     val nodeName = node.getDSSNode.getName
     toState match {
       case NodeExecutionState.Failed =>
         printLog(s"Failed to execute node($nodeName),prepare to kill flow job", "ERROR")
-        if(NodeExecutionState.isRunning(fromState))
+        if (NodeExecutionState.isRunning(fromState))
           FlowContext.changedNodeState(this.getFlowContext.getRunningNodes, this.getFlowContext.getFailedNodes, node, "node execute fail")
         this.kill()
         info(s"Succeed to kill flow job")
       case NodeExecutionState.Cancelled =>
         printLog(s"node($nodeName) has cancelled execution", "WARN")
-        if(NodeExecutionState.isRunning(fromState))
+        if (NodeExecutionState.isRunning(fromState))
           FlowContext.changedNodeState(this.getFlowContext.getRunningNodes, this.getFlowContext.getFailedNodes, node, "node has cancelled")
-        if(NodeExecutionState.isScheduled(fromState))
+        if (NodeExecutionState.isScheduled(fromState))
           FlowContext.changedNodeState(this.getFlowContext.getScheduledNodes, this.getFlowContext.getFailedNodes, node, "node has cancelled")
       case NodeExecutionState.Skipped =>
         printLog(s"node($nodeName) has skipped execution from $fromState", "WARN")
-        FlowContext.changedNodeState(this.getFlowContext.getScheduledNodes, this.getFlowContext.getSkippedNodes, node, "node has skipped")
-        //Trigger the next execution
+        if (NodeExecutionState.isScheduled(fromState)) {
+          FlowContext.changedNodeState(this.getFlowContext.getScheduledNodes, this.getFlowContext.getSkippedNodes, node, "node has skipped")
+        } else if (NodeExecutionState.isInited(fromState)) {
+          FlowContext.changedNodeState(this.getFlowContext.getPendingNodes, this.getFlowContext.getSkippedNodes, node, "node has skipped")
+        }
         this.STATUS_CHANGED_LOCK.synchronized {
           getExecutor.execute(jobToExecuteRequest())
         }
@@ -102,25 +116,23 @@ class FlowEntranceJob(persistManager:PersistenceManager) extends EntranceExecuti
         printLog(s"Succeed to execute node($nodeName)", "INFO")
         if (NodeExecutionState.isRunning(fromState))
           FlowContext.changedNodeState(this.getFlowContext.getRunningNodes, this.getFlowContext.getSucceedNodes, node, "node execute success")
-        //Trigger the next execution
         this.STATUS_CHANGED_LOCK.synchronized {
           getExecutor.execute(jobToExecuteRequest())
         }
       case NodeExecutionState.Running =>
         printLog(s"Start to execute node($nodeName) ", "INFO")
-        if(NodeExecutionState.isScheduled(fromState))
+        if (NodeExecutionState.isScheduled(fromState))
           FlowContext.changedNodeState(this.getFlowContext.getScheduledNodes, this.getFlowContext.getRunningNodes, node, "node in running")
-
       case NodeExecutionState.Scheduled =>
         printLog(s"node($nodeName) from inited to scheduled", "INFO")
-        if(NodeExecutionState.isInited(fromState))
+        if (NodeExecutionState.isInited(fromState))
           FlowContext.changedNodeState(this.getFlowContext.getPendingNodes, this.getFlowContext.getScheduledNodes, node, "node in scheduled")
       case _ =>
     }
     tryCompleted
   }
 
-  def printLog(log:String, level:String): Unit = level match {
+  def printLog(log: String, level: String): Unit = level match {
     case "INFO" =>
       info(log)
       getLogListener.foreach(_.onLogUpdate(this, LogUtils.generateInfo(log)))
@@ -133,30 +145,28 @@ class FlowEntranceJob(persistManager:PersistenceManager) extends EntranceExecuti
     case _ =>
   }
 
-  override def kill(): Unit = if (! SchedulerEventState.isCompleted(this.getState)) this synchronized  {
-    if(! SchedulerEventState.isCompleted(this.getState)){
+  override def kill(): Unit = if (!SchedulerEventState.isCompleted(this.getState)) this synchronized {
+    if (!SchedulerEventState.isCompleted(this.getState)) {
       super.kill()
       Utils.tryAndWarn(this.killNodes)
       Utils.tryAndWarn(transitionCompleted(ErrorExecuteResponse(s"execute job(${getId}) failed!", new FlowExecutionErrorException(90101, s"This Flow killed by user"))))
     }
   }
 
-  override def cancel(): Unit = if (! SchedulerEventState.isCompleted(this.getState)) this synchronized  {
-      if(! SchedulerEventState.isCompleted(this.getState)){
-        Utils.tryAndWarn(this.killNodes)
-        super.cancel()
-        Utils.tryAndWarn(transitionCompleted(ErrorExecuteResponse(s"cancel job(${getId}) execution!", new FlowExecutionErrorException(90101, s"This Flow killed by user"))))
-      }
+  override def cancel(): Unit = if (!SchedulerEventState.isCompleted(this.getState)) this synchronized {
+    if (!SchedulerEventState.isCompleted(this.getState)) {
+      Utils.tryAndWarn(this.killNodes)
+      super.cancel()
+      Utils.tryAndWarn(transitionCompleted(ErrorExecuteResponse(s"cancel job(${getId}) execution!", new FlowExecutionErrorException(90101, s"This Flow killed by user"))))
+    }
   }
 
   def isFlowCompleted: Boolean = this.getFlowContext.getRunningNodes.isEmpty && this.getFlowContext.getPendingNodes.isEmpty && this.getFlowContext.getScheduledNodes.isEmpty
 
-
   def tryCompleted: Unit = {
     if (this.isFlowCompleted) {
       info(s"This Flow(${getId}) is Completed")
-      /*transition(SchedulerEventState.Succeed)*/
-      if(! SchedulerEventState.isCompleted(this.getState))
+      if (!SchedulerEventState.isCompleted(this.getState))
         transitionCompleted(SuccessExecuteResponse())
     }
   }
@@ -167,11 +177,7 @@ class FlowEntranceJob(persistManager:PersistenceManager) extends EntranceExecuti
     for (node <- runners) {
       Utils.tryAndWarn(node.cancel())
     }
-
-
   }
 
-   override def clear(): Unit = {
-   }
-
+  override def clear(): Unit = {}
 }

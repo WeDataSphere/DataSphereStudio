@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2019 WeBank
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,12 @@ import java.util
 
 import com.webank.wedatasphere.dss.flow.execution.entrance.FlowContext
 import com.webank.wedatasphere.dss.flow.execution.entrance.job.FlowEntranceJob
+import com.webank.wedatasphere.dss.flow.execution.entrance.utils.BranchExpressionUtils
+import com.webank.wedatasphere.dss.workflow.core.entity.WorkflowNode
 import org.apache.linkis.common.utils.Logging
 import org.springframework.stereotype.Component
 
 import scala.collection.JavaConversions._
-
 
 @Component
 class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
@@ -33,29 +34,62 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
     info(s"${flowJob.getId} Start to get executable node")
 
     val flowContext: FlowContext = flowJob.getFlowContext
-    val nodes  = flowContext.getPendingNodes.toMap.values.map(_.getNode)
+    val flow = flowJob.getFlow
+    val nodes = flowContext.getPendingNodes.toMap.values.map(_.getNode)
+    val workflowNodesById = flow.getWorkflowNodes.map(node => node.getId -> node).toMap
+    val workflowEdges = flow.getWorkflowNodeEdges.map(_.getDSSEdge)
 
-    def  isAllParentDependencyCompleted(parents:util.List[String]): Boolean = {
-      for (parent <- parents){
-        if( ! flowContext.isNodeCompleted(parent)) return false
+    def incomingEdges(node: WorkflowNode) = workflowEdges.filter(_.getTarget == node.getId)
+
+    def isAllParentDependencyCompleted(parents: util.List[String]): Boolean = {
+      for (parent <- parents) {
+        if (!flowContext.isNodeCompleted(parent)) return false
       }
       true
     }
-    nodes.foreach{ node =>
+
+    def shouldSkipByBranch(node: WorkflowNode): Boolean = {
+      incomingEdges(node).exists { edge =>
+        workflowNodesById.get(edge.getSource).exists { sourceNode =>
+          BranchExpressionUtils.isBranchNode(sourceNode) &&
+            flowContext.isNodeCompleted(sourceNode.getName) &&
+            flowJob.hasBranchSelection(sourceNode.getId) &&
+            !flowJob.isBranchTargetSelected(sourceNode.getId, node.getId)
+        }
+      }
+    }
+
+    def isBranchRouteMatched(node: WorkflowNode): Boolean = {
+      incomingEdges(node).forall { edge =>
+        workflowNodesById.get(edge.getSource) match {
+          case Some(sourceNode) if BranchExpressionUtils.isBranchNode(sourceNode) =>
+            flowJob.hasBranchSelection(sourceNode.getId) && flowJob.isBranchTargetSelected(sourceNode.getId, node.getId)
+          case _ => true
+        }
+      }
+    }
+
+    nodes.foreach { node =>
       val nodeName = node.getName
       def isCanExecutable: Boolean = {
-        (flowContext.getPendingNodes.containsKey(nodeName)
-          && !FlowContext.isNodeRunning(nodeName, flowContext)
-          && !flowContext.isNodeCompleted(nodeName)
-          && isAllParentDependencyCompleted(node.getDependencys))
+        flowContext.getPendingNodes.containsKey(nodeName) &&
+          !FlowContext.isNodeRunning(nodeName, flowContext) &&
+          !flowContext.isNodeCompleted(nodeName) &&
+          isAllParentDependencyCompleted(node.getDependencys) &&
+          isBranchRouteMatched(node)
       }
-      if (isCanExecutable) flowContext synchronized {
-        if (isCanExecutable) flowContext.getPendingNodes.get(nodeName).tunToScheduled()
+      if (flowContext.getPendingNodes.containsKey(nodeName) && !flowContext.isNodeCompleted(nodeName) && isAllParentDependencyCompleted(node.getDependencys) && shouldSkipByBranch(node)) {
+        flowContext synchronized {
+          if (flowContext.getPendingNodes.containsKey(nodeName) && shouldSkipByBranch(node)) {
+            flowContext.getPendingNodes.get(nodeName).tunToSkipped()
+          }
+        }
+      } else if (isCanExecutable) {
+        flowContext synchronized {
+          if (isCanExecutable) flowContext.getPendingNodes.get(nodeName).tunToScheduled()
+        }
       }
     }
     info(s"${flowJob.getId} Finished to get executable node(${flowContext.getScheduledNodes.size()})")
-
   }
-
-
 }

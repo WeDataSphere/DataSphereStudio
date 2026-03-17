@@ -1,14 +1,10 @@
-DELETE FROM dss_appconn;
-INSERT INTO `dss_appconn` (`id`, `appconn_name`, `is_user_need_init`, `level`, `if_iframe`, `is_external`, `reference`, `class_name`, `appconn_class_path`, `resource`)
+﻿DELETE FROM dss_appconn;
 VALUES (1,'sso',0,1,0,0,NULL,"com.webank.wedatasphere.dss.appconn.sso.SSOAppConn",NULL,NULL),
 (2,'scriptis',0,1,0,0,"sso",NULL,NULL,NULL),
 (3,'workflow',0,1,1,0,NULL,'com.webank.wedatasphere.dss.appconn.workflow.WorkflowAppConn','/appcom/Install/dss/dss-appconns/workflow',NULL),
 (4,'apiservice',0,1,0,0,"sso",NULL,NULL,NULL);
 
 DELETE FROM dss_appconn_instance;
-select @scriptis_appconn_id:= id from dss_appconn where appconn_name="scriptis";
-select @workflow_appconn_id:= id from dss_appconn where appconn_name="workflow";
-select @apiservice_appconn_id:= id from dss_appconn where appconn_name="apiservice";
 INSERT INTO `dss_appconn_instance` (`id`, `appconn_id`, `label`, `url`, `enhance_json`, `homepage_uri`)
 VALUES (2, @scriptis_appconn_id, 'DEV', '/home', '', ''),
 (3, @workflow_appconn_id,'DEV','/workspaceHome','',''),
@@ -98,6 +94,7 @@ insert into `dss_workflow_node` (`id`, `name`, `appconn_name`, `node_type`, `jum
 insert into `dss_workflow_node` (`id`, `name`, `appconn_name`, `node_type`, `jump_type`, `support_jump`, `submit_to_scheduler`, `enable_copy`, `should_creation_before_node`, `icon_path`) values('7','shell','scriptis','linkis.shell.sh','2','1','1','1','0','svgs/shell.svg');
 insert into `dss_workflow_node` (`id`, `name`, `appconn_name`, `node_type`, `jump_type`, `support_jump`, `submit_to_scheduler`, `enable_copy`, `should_creation_before_node`, `icon_path`) values('10','connector','scriptis','linkis.control.empty','2','0','1','1','0','icons/connector.icon');
 insert into `dss_workflow_node` (`id`, `name`, `appconn_name`, `node_type`, `jump_type`, `support_jump`, `submit_to_scheduler`, `enable_copy`, `should_creation_before_node`, `icon_path`) values('12','subFlow','scriptis','workflow.subflow','2','1','1','0','1','svgs/subflow.svg');
+insert into `dss_workflow_node` (`id`, `name`, `appconn_name`, `node_type`, `jump_type`, `support_jump`, `submit_to_scheduler`, `enable_copy`, `should_creation_before_node`, `icon_path`) values('13','branch','workflow','workflow.branch','0','0','0','1','0','svgs/subflow.svg');
 
 DELETE FROM dss_workflow_node_group;
 insert  into `dss_workflow_node_group`(`id`,`name`,`name_en`,`description`,`order`) values (1,'数据交换','Data exchange',NULL,1);
@@ -121,6 +118,7 @@ insert  into `dss_workflow_node_to_group`(`node_id`,`group_id`) values (6, @scri
 insert  into `dss_workflow_node_to_group`(`node_id`,`group_id`) values (7, @scriptis_node_groupId);
 insert  into `dss_workflow_node_to_group`(`node_id`,`group_id`) values (10, @function_node_groupId);
 insert  into `dss_workflow_node_to_group`(`node_id`,`group_id`) values (12, @function_node_groupId);
+insert  into `dss_workflow_node_to_group`(`node_id`,`group_id`) values (13, @function_node_groupId);
 
 DELETE FROM dss_workflow_node_ui;
 -- todo msg.topic在receiver和sender使用了重复key
@@ -174,7 +172,8 @@ select @workflow_node_hql:=id from dss_workflow_node where name='hql';
 select @workflow_node_shell:=id from dss_workflow_node where name='shell';
 select @workflow_node_jdbc:=id from dss_workflow_node where name='jdbc';
 select @workflow_node_connector:=id from dss_workflow_node where name='connector';
-select @workflow_node_subFlow:=id from dss_workflow_node where name='subFlow';
+
+select @workflow_node_branch:=id from dss_workflow_node where name='branch';
 
 select @node_ui_title:=id from dss_workflow_node_ui where `key`='title' limit 1;
 select @node_ui_desc:=id from dss_workflow_node_ui where `key`='desc' limit 1;
@@ -280,6 +279,10 @@ insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@work
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_subFlow,@node_ui_businessTag);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_subFlow,@node_ui_appTag);
 INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (@workflow_node_subFlow,@node_ui_ReuseEngine);
+insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_branch,@node_ui_title);
+insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_branch,@node_ui_desc);
+insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_branch,@node_ui_businessTag);
+insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_branch,@node_ui_appTag);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_hql,@node_ui_DriverMemory);
 
 DELETE FROM dss_workflow_node_ui_validate;
@@ -419,3 +422,8 @@ INSERT INTO `dss_workspace_appconn_role` (`workspace_id`, `appconn_id`, `role_id
 
 
 INSERT INTO `dss_workspace_admin_dept` (`id`, `parent_id`, `ancestors`, `dept_name`, `order_num`, `leader`, `phone`, `email`, `status`, `del_flag`, `create_by`, `create_time`, `update_by`, `update_time`) VALUES('100','0','0','基础科技','0','leader01','1888888888','123@qq.com','0','0','admin',now(),'admin',now());
+
+
+
+
+

@@ -1,5 +1,5 @@
-/**
- * 转换原工作流数据到新工作流数据，处理节点和连线
+﻿/**
+ * Convert flow json to editor data.
  */
 export default function convertFlowJson(flowjson) {
   const elements = {
@@ -28,15 +28,22 @@ export default function convertFlowJson(flowjson) {
       elements.nodes.push(item)
     })
     const hasNode = (target) => {
-      return flowjson.nodes.some(it => (it.id || it.key ) === target)
+      return flowjson.nodes.some(it => (it.id || it.key) === target)
     }
-    (flowjson.edges || []).forEach((element, index) => {
+    ;(flowjson.edges || []).forEach((element, index) => {
       if (element.source && element.target && hasNode(element.source) && hasNode(element.target)) {
         elements.edges.push({
           data: {
             id: `${index}`,
             source: element.source,
             target: element.target,
+            branchKey: element.branchKey,
+            branchLabel: element.branchLabel,
+            condition: element.condition,
+            priority: element.priority,
+            isDefault: `${!!element.isDefault}`,
+            lineColor: element.lineColor,
+            lineType: element.lineType,
           },
         })
       }

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2019 WeBank
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,11 @@ public class DSSEdgeDefault implements DSSEdge {
     private String target;
     private String sourceLocation;
     private String targetLocation;
+    private String branchKey;
+    private String branchLabel;
+    private String condition;
+    private Integer priority;
+    private Boolean isDefault;
 
     @Override
     public String getSource() {
@@ -63,12 +68,67 @@ public class DSSEdgeDefault implements DSSEdge {
     }
 
     @Override
+    public String getBranchKey() {
+        return branchKey;
+    }
+
+    @Override
+    public void setBranchKey(String branchKey) {
+        this.branchKey = branchKey;
+    }
+
+    @Override
+    public String getBranchLabel() {
+        return branchLabel;
+    }
+
+    @Override
+    public void setBranchLabel(String branchLabel) {
+        this.branchLabel = branchLabel;
+    }
+
+    @Override
+    public String getCondition() {
+        return condition;
+    }
+
+    @Override
+    public void setCondition(String condition) {
+        this.condition = condition;
+    }
+
+    @Override
+    public Integer getPriority() {
+        return priority;
+    }
+
+    @Override
+    public void setPriority(Integer priority) {
+        this.priority = priority;
+    }
+
+    @Override
+    public Boolean getDefault() {
+        return isDefault;
+    }
+
+    @Override
+    public void setDefault(Boolean aDefault) {
+        isDefault = aDefault;
+    }
+
+    @Override
     public String toString() {
         return "DWSEdge{" +
                 "source='" + source + '\'' +
                 ", target='" + target + '\'' +
                 ", sourceLocation='" + sourceLocation + '\'' +
                 ", targetLocation='" + targetLocation + '\'' +
+                ", branchKey='" + branchKey + '\'' +
+                ", branchLabel='" + branchLabel + '\'' +
+                ", condition='" + condition + '\'' +
+                ", priority=" + priority +
+                ", isDefault=" + isDefault +
                 '}';
     }
 }

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2019 WeBank
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,4 +33,24 @@ public interface DSSEdge {
     String getTargetLocation();
 
     void setTargetLocation(String targetLocation);
+
+    String getBranchKey();
+
+    void setBranchKey(String branchKey);
+
+    String getBranchLabel();
+
+    void setBranchLabel(String branchLabel);
+
+    String getCondition();
+
+    void setCondition(String condition);
+
+    Integer getPriority();
+
+    void setPriority(Integer priority);
+
+    Boolean getDefault();
+
+    void setDefault(Boolean isDefault);
 }

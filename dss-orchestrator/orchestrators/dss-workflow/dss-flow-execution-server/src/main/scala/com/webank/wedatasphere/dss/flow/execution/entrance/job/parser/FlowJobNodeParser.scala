@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2019 WeBank
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import com.webank.wedatasphere.dss.flow.execution.entrance.conf.FlowExecutionEnt
 import com.webank.wedatasphere.dss.flow.execution.entrance.conf.FlowExecutionEntranceConfiguration._
 import com.webank.wedatasphere.dss.flow.execution.entrance.exception.FlowExecutionErrorException
 import com.webank.wedatasphere.dss.flow.execution.entrance.job.FlowEntranceJob
-import com.webank.wedatasphere.dss.flow.execution.entrance.node.DefaultNodeRunner
-import com.webank.wedatasphere.dss.flow.execution.entrance.utils.FlowExecutionUtils
+import com.webank.wedatasphere.dss.flow.execution.entrance.node.{BranchNodeRunner, DefaultNodeRunner}
+import com.webank.wedatasphere.dss.flow.execution.entrance.utils.{BranchExpressionUtils, FlowExecutionUtils}
 import com.webank.wedatasphere.dss.linkis.node.execution.conf.LinkisJobExecutionConfiguration
 import com.webank.wedatasphere.dss.linkis.node.execution.entity.BMLResource
 import com.webank.wedatasphere.dss.linkis.node.execution.utils.LinkisJobExecutionUtils
@@ -114,8 +114,10 @@ class FlowJobNodeParser extends FlowEntranceJobParser with Logging{
 
       val pendingNodeMap = flowContext.getPendingNodes
 
-      val nodeRunner = pendingNodeMap.getOrDefault(nodeName, new DefaultNodeRunner)
+      val defaultRunner = if (BranchExpressionUtils.isBranchNode(node)) new BranchNodeRunner(flow) else new DefaultNodeRunner
+      val nodeRunner = pendingNodeMap.getOrDefault(nodeName, defaultRunner)
       nodeRunner.setNodeRunnerListener(flowEntranceJob)
+      nodeRunner.setFlowContext(flowContext)
       nodeRunner.setNode(node)
       pendingNodeMap.put(nodeName, nodeRunner)
     }

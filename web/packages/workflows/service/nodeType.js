@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2019 WeBank
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,6 +33,7 @@ const NODETYPE = {
   DATACHECKER: 'linkis.appconn.datachecker',
   RMBSENDER: 'azkaban.rmbsender',
   FLOW: 'workflow.subflow',
+  BRANCH: 'workflow.branch',
   EXCHANGE: 'linkis.data.exchange',
   QUALITIS: 'linkis.appconn.qualitis',
   PROJECTNODE: 'projectNode',
@@ -52,4 +53,4 @@ const ext = {
   [NODETYPE.NEBULA]: 'nebula'
 }
 
-export { NODETYPE, ext};
+export { NODETYPE, ext };

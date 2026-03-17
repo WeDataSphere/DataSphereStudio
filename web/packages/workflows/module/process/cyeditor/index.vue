@@ -1,10 +1,10 @@
-<template>
+﻿<template>
   <div :class="[{ 'fullScreenCyeditor': fullScreen }, 'cyeditor']">
     <div ref="cyeditorel" class="cy-editor-container"></div>
     <div v-show="hoverTitle" class="hover-title" :style="titlePos.pos">
       {{ hoverTitle }}
     </div>
-    <!-- 【0：未执行；1：运行中；2：已成功；3：已失败；4：已跳过】 -->
+    <!-- 銆?锛氭湭鎵ц锛?锛氳繍琛屼腑锛?锛氬凡鎴愬姛锛?锛氬凡澶辫触锛?锛氬凡璺宠繃銆?-->
     <div ref="nodestaus" style="position:absolute;top: 0">
       <template v-for="(node) in value.nodes">
         <div class="run-status" :key="node.key" :data-key="node.key" >
@@ -171,9 +171,9 @@ export default {
               menus = this.disabled ? [] : [
                 {
                   id: 'delete',
-                  content: '删除',
+                  content: '鍒犻櫎',
                   value: 'delete',
-                  text: '删除',
+                  text: '鍒犻櫎',
                   icon: 'shanchu'
                 }
               ]
@@ -253,8 +253,7 @@ export default {
         editor = this.instance.editor
         cy = this.instance.cy
         let timer
-        // 初始化
-        this.updataNodeStatuStyle()
+        // 鍒濆鍖?        this.updataNodeStatuStyle()
         cy.on('mouseover', 'node', (e) => {
           clearTimeout(timer)
           // hover title
@@ -346,7 +345,7 @@ export default {
           })
         })
         editor.on('addlink', ({ target }) => {
-          // 环形
+          // 鐜舰
           let parents =[]
           let getParentNodes = (node, parents) => {
             this.value.edges.forEach(link => {
@@ -366,7 +365,7 @@ export default {
               msg: this.$t('message.workflow.vueProcess.closed-loop')
             });
           }
-          // 重复连线
+          // 閲嶅杩炵嚎
           const hasEdge = this.value.edges.find(it => {
             return it.source === target.source && it.target === target.target
           })
@@ -388,6 +387,11 @@ export default {
             const node = this.findNodeById(e.target.data().id)
             if (node) {
               this.$emit('node-click', node)
+            }
+          } else if (e.target.isEdge && e.target.isEdge()) {
+            const edge = this.findLinkById(e.target.data().id) || e.target.data()
+            if (edge) {
+              this.$emit('edge-click', edge)
             }
           }
         })
@@ -412,8 +416,7 @@ export default {
         zoom: this.zoomSize
       })
 
-      // 设置禁用的样式
-      const nodeThemeColor = getThemeColorConsants()
+      // 璁剧疆绂佺敤鐨勬牱寮?      const nodeThemeColor = getThemeColorConsants()
       cy.style().selector('.disabled-node').style({
         'background-color': nodeThemeColor.nodeDisabledBg,
         'color': nodeThemeColor.nodeDisabledColor
@@ -559,11 +562,11 @@ export default {
       this.fullScreen = !this.fullScreen
       this.$emit('screenSizeChange', this.fullScreen)
     },
-    // 切换模式
+    // 鍒囨崲妯″紡
     modeChange(mode) {
       this.$emit('changeViewMode', 'changeViewMode', mode)
     },
-    // 主题切换
+    // 涓婚鍒囨崲
     changeTheme(theme) {
       const themeColor = getThemeColorConsants(theme)
       this.instance.cy.style().selector('node[name]').style({
@@ -576,7 +579,7 @@ export default {
     },
     nodeScroolIntoView(id) {
       const cy = this.instance.cy;
-      const new_node = cy.getElementById(id); // 通过nodeId获取
+      const new_node = cy.getElementById(id); // 閫氳繃nodeId鑾峰彇
       cy.animate({
         center: {
           eles: new_node,
@@ -704,3 +707,5 @@ export default {
   @include font-color($text-color, $dark-workflow-font-color);
 }
 </style>
+
+

@@ -1,4 +1,4 @@
-export function getThemeColorConsants(theme) {
+﻿export function getThemeColorConsants(theme) {
   const themeInfo = theme ? theme : window.document.documentElement.getAttribute('data-theme')
   const isDark = themeInfo == 'dark'
   const themeColor = isDark ? {
@@ -14,11 +14,7 @@ export function getThemeColorConsants(theme) {
   }
   return themeColor
 }
-/**
- *
- * @param {*} nodeTypes
- * @returns
- */
+
 export default function (nodeTypes) {
   const themeColor = getThemeColorConsants()
   return [
@@ -31,11 +27,15 @@ export default function (nodeTypes) {
         'background-width': '24px',
         'background-height': '24px',
         'background-image': (e) => {
-          const nodeItem = nodeTypes.find(
-            (it) => it.type === e.data('type')
-          );
+          const nodeItem = nodeTypes.find((it) => it.type === e.data('type'));
           return (nodeItem && nodeItem.image) || { value: '' };
         },
+      },
+    },
+    {
+      selector: 'node[type = "workflow.branch"]',
+      style: {
+        shape: 'diamond',
       },
     },
     {
@@ -55,7 +55,7 @@ export default function (nodeTypes) {
       style: {
         label: 'data(name)',
         'background-color': themeColor.nodeBg,
-        'color': themeColor.nodeColor,
+        color: themeColor.nodeColor,
         'text-valign': 'center',
         'text-wrap': 'ellipsis',
         'text-max-width': '120px',
@@ -92,6 +92,22 @@ export default function (nodeTypes) {
       selector: 'edge[lineType]',
       style: {
         'curve-style': 'data(lineType)',
+      },
+    },
+    {
+      selector: 'edge[branchLabel]',
+      style: {
+        label: 'data(branchLabel)',
+        'font-size': '10px',
+        'text-background-color': '#fff',
+        'text-background-opacity': 0.8,
+        'text-background-padding': '2px',
+      },
+    },
+    {
+      selector: 'edge[isDefault = "true"]',
+      style: {
+        'line-style': 'dashed',
       },
     },
     {
@@ -140,7 +156,7 @@ export default function (nodeTypes) {
         height: 12,
         shape: 'ellipse',
         'overlay-opacity': 0,
-        'border-width': 12, // makes the handle easier to hit
+        'border-width': 12,
         'border-opacity': 0,
         'background-opacity': 0.5,
       },

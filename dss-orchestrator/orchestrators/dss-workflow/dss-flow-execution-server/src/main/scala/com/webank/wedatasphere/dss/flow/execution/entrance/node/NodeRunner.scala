@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2019 WeBank
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,24 +25,21 @@ import com.webank.wedatasphere.dss.linkis.node.execution.job.LinkisJob
 import com.webank.wedatasphere.dss.workflow.core.entity.WorkflowNode
 import org.apache.linkis.common.utils.{Logging, Utils}
 
-
-abstract class NodeRunner extends Runnable with Logging{
+abstract class NodeRunner extends Runnable with Logging {
 
   private[flow] var future: Future[_] = _
 
-  private var flowContext:FlowContext = _
+  private var flowContext: FlowContext = _
 
-
-
-  def getFlowContext:FlowContext = this.flowContext
+  def getFlowContext: FlowContext = this.flowContext
 
   def setFlowContext(flowContext: FlowContext): Unit = {
-     this.flowContext = flowContext
+    this.flowContext = flowContext
   }
 
   def getNode: WorkflowNode
 
-  def setNode(node: WorkflowNode):Unit
+  def setNode(node: WorkflowNode): Unit
 
   def getLinkisJob: LinkisJob
 
@@ -66,37 +63,41 @@ abstract class NodeRunner extends Runnable with Logging{
 
   def getNodeExecutedInfo(): String
 
-  def setNodeExecutedInfo(info: String ):Unit
+  def setNodeExecutedInfo(info: String): Unit
 
   def getStartTime(): Long
 
   def setStartTime(startTime: Long): Unit
 
-  def getNowTime():Long
+  def getNowTime(): Long
 
-  def setNowTime(nowTime: Long):Unit
+  def setNowTime(nowTime: Long): Unit
 
-  protected def transitionState(toState: NodeExecutionState): Unit = Utils.tryAndWarn{
+  protected def transitionState(toState: NodeExecutionState): Unit = Utils.tryAndWarn {
     if (getStatus == toState) return
     info(s"from state $getStatus to $toState")
     this.getNodeRunnerListener.onStatusChanged(getStatus, toState, this.getNode)
     this.setStatus(toState)
   }
 
-
-  def tunToScheduled(): Boolean = if (! NodeExecutionState.isInited(this.getStatus)) false else this synchronized {
-    if (! NodeExecutionState.isInited(this.getStatus)) false else {
+  def tunToScheduled(): Boolean = if (!NodeExecutionState.isInited(this.getStatus)) false else this synchronized {
+    if (!NodeExecutionState.isInited(this.getStatus)) false else {
       transitionState(NodeExecutionState.Scheduled)
       true
     }
   }
 
-  def fromScheduledTunToState(state: NodeExecutionState): Boolean = if (! NodeExecutionState.isScheduled(this.getStatus) ) false else this synchronized {
-    if (! NodeExecutionState.isScheduled(this.getStatus)) false else {
-      transitionState(state)
+  def tunToSkipped(): Boolean = if (NodeExecutionState.isCompleted(this.getStatus)) false else this synchronized {
+    if (NodeExecutionState.isCompleted(this.getStatus)) false else {
+      transitionState(NodeExecutionState.Skipped)
       true
     }
   }
 
-
+  def fromScheduledTunToState(state: NodeExecutionState): Boolean = if (!NodeExecutionState.isScheduled(this.getStatus)) false else this synchronized {
+    if (!NodeExecutionState.isScheduled(this.getStatus)) false else {
+      transitionState(state)
+      true
+    }
+  }
 }
