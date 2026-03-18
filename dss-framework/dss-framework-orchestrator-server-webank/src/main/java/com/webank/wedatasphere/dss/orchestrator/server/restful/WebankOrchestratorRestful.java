@@ -93,7 +93,7 @@ public class WebankOrchestratorRestful {
             LOGGER.error("Failed to get release history, because {}", e);
             return Message.error("Orchestrator id is null![编排ID为空]");
         }
-        return Message.ok("获取执行历史成功")
+        return Message.ok("获取发布历史成功")
                 .data("releaseDetails", releaseHistory.getSecond())
                 .data("totalPage", releaseHistory.getFirst());
     }
