@@ -47,6 +47,7 @@ class FlowJobNodeParser extends FlowEntranceJobParser with Logging{
     val flowContext = flowEntranceJob.getFlowContext
     if(null == flow) throw new FlowExecutionErrorException(90101, "This fow of job is empty ")
     val nodes = flow.getWorkflowNodes
+    val flowVar = initializeFlowVariables(flowEntranceJob)
     for (node <- nodes) {
 
       val nodeName = node.getName
@@ -68,13 +69,6 @@ class FlowJobNodeParser extends FlowEntranceJobParser with Logging{
         params = new util.HashMap[String,AnyRef]()
         node.getDSSNode.setParams(params)
       }
-      val flowVar = new util.HashMap[String, AnyRef]()
-      val properties = flow.getFlowProperties
-      if(properties != null) {
-        for(proper <- properties){
-          flowVar.putAll(proper)
-        }
-      }
 
       propsMap.put(FlowExecutionEntranceConfiguration.FLOW_EXEC_ID, flowEntranceJob.getId)
 
@@ -83,29 +77,6 @@ class FlowJobNodeParser extends FlowEntranceJobParser with Logging{
           propsMap.put(CONTEXT_ID, workflow.getContextID)
         case _ =>
       }
-      var run_date: CustomDateType = null
-      if (!flowVar.containsKey("run_date")) {
-        //如果用户没有在工作流里定义run_date，则取工作流开始运行的时间，自动加到参数里
-        run_date = new CustomDateType(getYesterday(false), false)
-        flowVar.put("run_date", run_date.toString())
-      } else {
-        //如果用户自定义了run_date，则以用户自定义为准
-        Utils.tryCatch {
-          val run_date_str = flowVar.get("run_date").asInstanceOf[String]
-          run_date = new CustomDateType(run_date_str, false)
-        }(t => {
-          logger.error("parse run_date  failed, we will get System run_date ", t)
-          run_date = new CustomDateType(getYesterday(false), false)
-        })
-      }
-      val run_today = new CustomDateType(getToday(std = false, run_date + 1), false)
-      val cur_hour=getCurHour(std = false, run_today.toString)
-      val run_today_h = new CustomHourType(cur_hour, false)
-      flowVar.put("run_today_h", run_today_h.toString())
-      flowVar.put("run_today_hour", run_today_h.toString())
-      val run_today_h_std = new CustomHourType(cur_hour, true)
-      flowVar.put("run_today_h_std", run_today_h_std.toString())
-      flowVar.put("run_today_hour_std", run_today_h_std.toString())
       params.put(PROPS_MAP, propsMap)
       params.put(FLOW_VAR_MAP, flowVar)
       val flowNameAndResources = new util.HashMap[String, util.List[BMLResource]]()
@@ -124,4 +95,40 @@ class FlowJobNodeParser extends FlowEntranceJobParser with Logging{
     info(s"${flowEntranceJob.getId} finished to parse node of flow")
   }
 
+  private def initializeFlowVariables(flowEntranceJob: FlowEntranceJob): util.Map[String, AnyRef] = {
+    val flowVar = flowEntranceJob.getFlowVariables
+    flowVar.synchronized {
+      if (flowVar.isEmpty) {
+        val properties = flowEntranceJob.getFlow.getFlowProperties
+        if (properties != null) {
+          for (proper <- properties) {
+            flowVar.putAll(proper)
+          }
+        }
+      }
+      var runDate: CustomDateType = null
+      if (!flowVar.containsKey("run_date")) {
+        runDate = new CustomDateType(getYesterday(false), false)
+        flowVar.put("run_date", runDate.toString())
+      } else {
+        Utils.tryCatch {
+          val runDateStr = flowVar.get("run_date").asInstanceOf[String]
+          runDate = new CustomDateType(runDateStr, false)
+        }(t => {
+          logger.error("parse run_date failed, we will get System run_date", t)
+          runDate = new CustomDateType(getYesterday(false), false)
+          flowVar.put("run_date", runDate.toString())
+        })
+      }
+      val runToday = new CustomDateType(getToday(std = false, runDate + 1), false)
+      val curHour = getCurHour(std = false, runToday.toString)
+      val runTodayH = new CustomHourType(curHour, false)
+      flowVar.put("run_today_h", runTodayH.toString())
+      flowVar.put("run_today_hour", runTodayH.toString())
+      val runTodayHStd = new CustomHourType(curHour, true)
+      flowVar.put("run_today_h_std", runTodayHStd.toString())
+      flowVar.put("run_today_hour_std", runTodayHStd.toString())
+    }
+    flowVar
+  }
 }

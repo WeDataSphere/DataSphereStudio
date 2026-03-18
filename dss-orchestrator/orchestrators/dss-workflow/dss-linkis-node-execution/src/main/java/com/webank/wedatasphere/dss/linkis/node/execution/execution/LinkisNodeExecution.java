@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2019 WeBank
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.webank.wedatasphere.dss.linkis.node.execution.execution;
 
 import com.webank.wedatasphere.dss.linkis.node.execution.job.Job;
 import java.io.Closeable;
+import java.util.Map;
 
 
 public interface LinkisNodeExecution extends Closeable {
@@ -39,6 +40,8 @@ public interface LinkisNodeExecution extends Closeable {
     int getResultSize(Job job);
 
     String getResult(Job job, int index, int maxSize);
+
+    Map<String, String> getResultVariables(Job job, int maxSize);
 
 
 }

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2019 WeBank
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Arrays;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
 
@@ -340,6 +341,52 @@ public class LinkisNodeExecutionImpl implements LinkisNodeExecution , LinkisExec
         return resultContent;
     }
 
+
+    @Override
+    public Map<String, String> getResultVariables(Job job, int maxSize) {
+        Map<String, String> variables = new LinkedHashMap<>();
+        Object fileContent = getResultFileContent(job, 0, maxSize);
+        if (!(fileContent instanceof ArrayList)) {
+            return variables;
+        }
+        ArrayList<ArrayList<String>> rows = (ArrayList<ArrayList<String>>) fileContent;
+        if (rows == null || rows.isEmpty()) {
+            return variables;
+        }
+        if (rows.size() >= 2 && rows.get(0) != null && rows.get(1) != null) {
+            ArrayList<String> headers = rows.get(0);
+            ArrayList<String> values = rows.get(1);
+            int size = Math.min(headers.size(), values.size());
+            for (int i = 0; i < size; i++) {
+                String key = headers.get(i);
+                String value = values.get(i);
+                if (StringUtils.isNotBlank(key) && value != null) {
+                    variables.put(key.trim(), value);
+                }
+            }
+            if (!variables.isEmpty()) {
+                return variables;
+            }
+        }
+        for (ArrayList<String> row : rows) {
+            if (row != null && row.size() >= 2 && StringUtils.isNotBlank(row.get(0)) && row.get(1) != null) {
+                variables.put(row.get(0).trim(), row.get(1));
+            }
+        }
+        return variables;
+    }
+
+    private Object getResultFileContent(Job job, int index, int maxSize) {
+        JobInfoResult jobInfo = getClient(job).getJobInfo(job.getJobExecuteResult());
+        String[] resultSetList = jobInfo.getResultSetList(getClient(job));
+        if (resultSetList != null && resultSetList.length > index) {
+            return getClient(job).resultSet(ResultSetAction.builder()
+                    .setPath(resultSetList[index])
+                    .setUser(job.getJobExecuteResult().getUser())
+                    .setPageSize(maxSize).build()).getFileContent();
+        }
+        return null;
+    }
     @Override
     public void onStatusChanged(String fromState, String toState, Job job) {
     }
