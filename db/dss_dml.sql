@@ -1,10 +1,14 @@
 ﻿DELETE FROM dss_appconn;
+INSERT INTO `dss_appconn` (`id`, `appconn_name`, `is_user_need_init`, `level`, `if_iframe`, `is_external`, `reference`, `class_name`, `appconn_class_path`, `resource`)
 VALUES (1,'sso',0,1,0,0,NULL,"com.webank.wedatasphere.dss.appconn.sso.SSOAppConn",NULL,NULL),
 (2,'scriptis',0,1,0,0,"sso",NULL,NULL,NULL),
 (3,'workflow',0,1,1,0,NULL,'com.webank.wedatasphere.dss.appconn.workflow.WorkflowAppConn','/appcom/Install/dss/dss-appconns/workflow',NULL),
 (4,'apiservice',0,1,0,0,"sso",NULL,NULL,NULL);
 
 DELETE FROM dss_appconn_instance;
+select @scriptis_appconn_id:= id from dss_appconn where appconn_name="scriptis";
+select @workflow_appconn_id:= id from dss_appconn where appconn_name="workflow";
+select @apiservice_appconn_id:= id from dss_appconn where appconn_name="apiservice";
 INSERT INTO `dss_appconn_instance` (`id`, `appconn_id`, `label`, `url`, `enhance_json`, `homepage_uri`)
 VALUES (2, @scriptis_appconn_id, 'DEV', '/home', '', ''),
 (3, @workflow_appconn_id,'DEV','/workspaceHome','',''),

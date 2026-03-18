@@ -4,7 +4,7 @@
     <div v-show="hoverTitle" class="hover-title" :style="titlePos.pos">
       {{ hoverTitle }}
     </div>
-    <!-- 銆?锛氭湭鎵ц锛?锛氳繍琛屼腑锛?锛氬凡鎴愬姛锛?锛氬凡澶辫触锛?锛氬凡璺宠繃銆?-->
+    <!-- 【0：未执行；1：运行中；2：已成功；3：已失败；4：已跳过】 -->
     <div ref="nodestaus" style="position:absolute;top: 0">
       <template v-for="(node) in value.nodes">
         <div class="run-status" :key="node.key" :data-key="node.key" >
@@ -171,9 +171,9 @@ export default {
               menus = this.disabled ? [] : [
                 {
                   id: 'delete',
-                  content: '鍒犻櫎',
+                  content: '删除',
                   value: 'delete',
-                  text: '鍒犻櫎',
+                  text: '删除',
                   icon: 'shanchu'
                 }
               ]
@@ -253,7 +253,8 @@ export default {
         editor = this.instance.editor
         cy = this.instance.cy
         let timer
-        // 鍒濆鍖?        this.updataNodeStatuStyle()
+        // 初始化
+        this.updataNodeStatuStyle()
         cy.on('mouseover', 'node', (e) => {
           clearTimeout(timer)
           // hover title
@@ -345,7 +346,7 @@ export default {
           })
         })
         editor.on('addlink', ({ target }) => {
-          // 鐜舰
+          // 环形
           let parents =[]
           let getParentNodes = (node, parents) => {
             this.value.edges.forEach(link => {
@@ -365,7 +366,7 @@ export default {
               msg: this.$t('message.workflow.vueProcess.closed-loop')
             });
           }
-          // 閲嶅杩炵嚎
+          // 重复连线
           const hasEdge = this.value.edges.find(it => {
             return it.source === target.source && it.target === target.target
           })
@@ -416,7 +417,8 @@ export default {
         zoom: this.zoomSize
       })
 
-      // 璁剧疆绂佺敤鐨勬牱寮?      const nodeThemeColor = getThemeColorConsants()
+      // 设置禁用的样式
+      const nodeThemeColor = getThemeColorConsants()
       cy.style().selector('.disabled-node').style({
         'background-color': nodeThemeColor.nodeDisabledBg,
         'color': nodeThemeColor.nodeDisabledColor
@@ -562,11 +564,11 @@ export default {
       this.fullScreen = !this.fullScreen
       this.$emit('screenSizeChange', this.fullScreen)
     },
-    // 鍒囨崲妯″紡
+    // 切换模式
     modeChange(mode) {
       this.$emit('changeViewMode', 'changeViewMode', mode)
     },
-    // 涓婚鍒囨崲
+    // 主题切换
     changeTheme(theme) {
       const themeColor = getThemeColorConsants(theme)
       this.instance.cy.style().selector('node[name]').style({
@@ -579,7 +581,7 @@ export default {
     },
     nodeScroolIntoView(id) {
       const cy = this.instance.cy;
-      const new_node = cy.getElementById(id); // 閫氳繃nodeId鑾峰彇
+      const new_node = cy.getElementById(id); // 通过nodeId获取
       cy.animate({
         center: {
           eles: new_node,
@@ -707,5 +709,3 @@ export default {
   @include font-color($text-color, $dark-workflow-font-color);
 }
 </style>
-
-

@@ -14,7 +14,11 @@
   }
   return themeColor
 }
-
+/**
+ *
+ * @param {*} nodeTypes
+ * @returns
+ */
 export default function (nodeTypes) {
   const themeColor = getThemeColorConsants()
   return [
@@ -55,7 +59,7 @@ export default function (nodeTypes) {
       style: {
         label: 'data(name)',
         'background-color': themeColor.nodeBg,
-        color: themeColor.nodeColor,
+        'color': themeColor.nodeColor,
         'text-valign': 'center',
         'text-wrap': 'ellipsis',
         'text-max-width': '120px',
@@ -156,7 +160,7 @@ export default function (nodeTypes) {
         height: 12,
         shape: 'ellipse',
         'overlay-opacity': 0,
-        'border-width': 12,
+        'border-width': 12, // makes the handle easier to hit
         'border-opacity': 0,
         'background-opacity': 0.5,
       },
