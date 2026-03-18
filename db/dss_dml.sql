@@ -166,6 +166,7 @@ insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`l
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (42,'Filter','请填写过滤条件','Please enter filter','过滤条件','Filter','Input',1,NULL,NULL,0,NULL,0,1,1,0,'runtime');
 INSERT  INTO `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (45,'ReuseEngine','请选择是否复用引擎','Please choose to reuse engin or not','是否复用引擎','reuse-engine-or-not','Select',1,'[\"true\",\"false\"]','true',0,NULL,0,1,1,0,'startup');
 INSERT  INTO `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (46,'wds.linkis.engineconn.java.driver.memory','请填写引擎内存','please input driver memory','wds.linkis.engineconn.java.driver.memory','wds-linkis-engineconn.java.driver.memory','Input',0,NULL,'1G',0,NULL,0,1,1,0,'runtime');
+INSERT  INTO `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (47,'branch.output.mapping','请填写输出变量映射，格式如 amount=total_amount，多个映射请用英文逗号分隔','Please enter output variable mappings such as amount=total_amount, and separate multiple mappings with commas','输出变量映射','Branch output mapping','Text',0,NULL,NULL,0,NULL,0,2,1,0,'special');
 
 DELETE FROM dss_workflow_node_to_ui;
 select @workflow_node_sql:=id from dss_workflow_node where name='sql';
@@ -211,6 +212,7 @@ select @node_ui_upStreams:=id from dss_workflow_node_ui where `key`='upStreams';
 select @node_ui_executeUser:=id from dss_workflow_node_ui where `key`='executeUser';
 select @node_ui_ReuseEngine:=id from dss_workflow_node_ui where `key`='ReuseEngine';
 select @node_ui_DriverMemory:=id from dss_workflow_node_ui where `key`='wds.linkis.engineconn.java.driver.memory';
+select @node_ui_branch_output_mapping:=id from dss_workflow_node_ui where `key`='branch.output.mapping';
 
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_sql,@node_ui_title);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_sql,@node_ui_desc);
@@ -223,6 +225,7 @@ insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@work
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_sql,@node_ui_wds_linkis_rm_yarnqueue);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_sql,@node_ui_resources);
 INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (@workflow_node_sql,@node_ui_ReuseEngine);
+INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (@workflow_node_sql,@node_ui_branch_output_mapping);
 
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_python,@node_ui_title);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_python,@node_ui_desc);
@@ -241,6 +244,7 @@ insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@work
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_pyspark,@node_ui_wds_linkis_rm_yarnqueue);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_pyspark,@node_ui_resources);
 INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (@workflow_node_pyspark,@node_ui_ReuseEngine);
+INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (@workflow_node_pyspark,@node_ui_branch_output_mapping);
 
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_scala,@node_ui_title);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_scala,@node_ui_desc);
@@ -401,6 +405,7 @@ insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@
 insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@node_ui_spark_executor_memory,60);
 insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@node_ui_job_desc,61);
 insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@node_ui_DriverMemory,63);
+insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@node_ui_branch_output_mapping,61);
 
 
 DELETE FROM dss_workspace_appconn_role;
