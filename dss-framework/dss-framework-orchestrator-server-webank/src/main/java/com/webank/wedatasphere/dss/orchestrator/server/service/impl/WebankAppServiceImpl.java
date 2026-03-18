@@ -252,7 +252,7 @@ public class WebankAppServiceImpl implements WebankAppService {
         // 根据项目名称获取项目ID
         Long projectId = projectMapper.getProjectIdByName(projectName);
         if (projectId == null) {
-            throw new DSSErrorException(70010, "项目 " + projectName + " 不存在");
+            throw new DSSErrorException(70010, "项目 [" + projectName + "] 不存在");
         }
 
         // 根据项目ID获取项目下所有编排
@@ -261,7 +261,7 @@ public class WebankAppServiceImpl implements WebankAppService {
         List<DSSOrchestratorInfo> orchestratorInfoList = orchestratorMapper.queryOrchestratorInfos(params);
 
         if (CollectionUtils.isEmpty(orchestratorInfoList)) {
-            throw new DSSErrorException(70010, "项目 " + projectName + " 下没有编排");
+            throw new DSSErrorException(70010, "项目 [" + projectName + "] 下没有编排");
         }
 
         Set<String> projectOrchestratorNames = orchestratorInfoList.stream()
@@ -270,7 +270,7 @@ public class WebankAppServiceImpl implements WebankAppService {
 
         for (String orchestratorName : orchestratorNames) {
             if (!projectOrchestratorNames.contains(orchestratorName)) {
-                throw new DSSErrorException(70010, "编排 " + orchestratorName + " 不属于项目 " + projectName);
+                throw new DSSErrorException(70010, "编排 [" + orchestratorName + "] 不属于项目 " + projectName);
             }
         }
     }
