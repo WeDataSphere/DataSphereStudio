@@ -247,11 +247,17 @@ public class WebankAppServiceImpl implements WebankAppService {
                     ResponsePublishHistory.class, RequestPublishHistory.class);
 
             List<ReleaseHistoryDetail> releaseHistoryDetails = responsePublishHistory.getReleaseHistorys();
+            ReleaseInfoVO vo = new ReleaseInfoVO();
+            // 获取编排信息并设置扩展字段
+            String orchestratorName = webankOrchestratorMapper.getOrchestratorNameById(orchestratorId.intValue());
+            vo.setOrchestratorId(orchestratorId);
+            vo.setOrchestratorName(orchestratorName);
+            vo.setProjectId(request.getProjectId());
+            vo.setWorkspaceId(request.getWorkspaceId());
 
             if (CollectionUtils.isNotEmpty(releaseHistoryDetails)) {
                 // SQL已过滤出success状态，第一条就是最新的成功记录
                 ReleaseHistoryDetail detail = releaseHistoryDetails.get(0);
-                ReleaseInfoVO vo = new ReleaseInfoVO();
                 // 复制基础字段
                 vo.setId(detail.getId());
                 vo.setStatus(detail.getStatus());
@@ -265,16 +271,9 @@ public class WebankAppServiceImpl implements WebankAppService {
                 vo.setAppId(detail.getAppId());
                 vo.setLogMsg(detail.getLogMsg());
                 vo.setBak(detail.getBak());
-
-                // 获取编排信息并设置扩展字段
-                String orchestratorName = webankOrchestratorMapper.getOrchestratorNameById(orchestratorId.intValue());
-                vo.setOrchestratorId(orchestratorId);
-                vo.setOrchestratorName(orchestratorName);
-                vo.setProjectId(request.getProjectId());
-                vo.setWorkspaceId(request.getWorkspaceId());
-
-                resultList.add(vo);
             }
+
+            resultList.add(vo);
         }
 
         return resultList;
