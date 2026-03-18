@@ -114,6 +114,9 @@
         <if test="startTime != null and startTime != '' and endTime != null and endTime != ''">
             and a.create_time BETWEEN CONCAT(#{startTime},' 00:00:00') AND CONCAT(#{endTime},' 23:59:59')
         </if>
+        <if test="status != null and status != ''">
+            and a.status = #{status}
+        </if>
         and b.context_id != ''
         order by a.id desc
     </select>

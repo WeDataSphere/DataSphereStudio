@@ -9,7 +9,9 @@ import com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestExecution
 import com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestPublishHistory;
 import com.webank.wedatasphere.dss.orchestrator.server.entity.request.OrchestratorCompareRequest;
 import com.webank.wedatasphere.dss.orchestrator.server.entity.request.ReleaseHistoryRequest;
+import com.webank.wedatasphere.dss.orchestrator.server.entity.request.ReleaseInfoRequest;
 import com.webank.wedatasphere.dss.orchestrator.server.entity.request.ReleaseUserRequest;
+import com.webank.wedatasphere.dss.orchestrator.server.entity.response.ReleaseInfoVO;
 import org.apache.commons.math3.util.Pair;
 
 import java.util.List;
@@ -49,5 +51,13 @@ public interface WebankAppService {
      * @throws DSSErrorException
      */
     List<CompareWorkflowResult> compareOrchestrator(OrchestratorCompareRequest orchestratorCompareRequest) throws DSSErrorException;
+
+    /**
+     * 获取批量编排的发布信息（最新发布成功版本）
+     * @param request
+     * @return
+     * @throws DSSErrorException
+     */
+    List<ReleaseInfoVO> getReleaseInfo(ReleaseInfoRequest request) throws DSSErrorException;
 
 }

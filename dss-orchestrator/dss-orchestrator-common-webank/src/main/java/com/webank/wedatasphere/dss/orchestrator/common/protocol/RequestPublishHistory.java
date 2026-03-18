@@ -20,6 +20,8 @@ public class RequestPublishHistory implements Serializable {
     private String endTime;
     //描述
     private String comment;
+    //发布状态
+    private String status;
 
     public Long getOrchestratorId() {
         return orchestratorId;
@@ -75,5 +77,13 @@ public class RequestPublishHistory implements Serializable {
 
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }
