@@ -376,9 +376,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         if (CollectionUtils.isNotEmpty(unSaveNodes)) {
             throw new DSSErrorException(80001, "工作流中存在子工作流未被保存，请先保存子工作流：" + unSaveNodes);
         }
-
-        
         validateBranchNodeConfig(jsonFlow);
+
 
         //判断该工作流对应编排是否已发布，若已发布则不允许修改
         Long rootFlowId = getRootFlowId(flowID);
@@ -387,7 +386,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             orchestratorVo = RpcAskUtils.processAskException(getOrchestratorSender().ask(new RequestQuertByAppIdOrchestrator(rootFlowId)),
                     OrchestratorVo.class, RequestQuertByAppIdOrchestrator.class);
         } catch (Exception e) {
-            logger.error("保存工作流时获取编排失败，原因为: ", e);
+            logger.error("保存工作流时获取编排失败，原因为：", e);
         }
 
         DSSOrchestratorVersion dssOrchestratorVersion = orchestratorVo != null ? orchestratorVo.getDssOrchestratorVersion() : null;
@@ -429,7 +428,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 logger.error("check roll back node failed", e);
             }
             if (rollBackNode != null) {
-                throw new DSSErrorException(80001, "工作流中存在节点 " + rollBackNode + "，此次保存会导致该节点的代码版本被回退，请刷新页面，确认代码无误后再保存");
+                throw new DSSErrorException(80001, "工作流中存在节点：" + rollBackNode + "，此次保存会导致该节点的代码版本被回退，请刷新页面，确认代码无误后再保存");
             }
         }
 
@@ -454,18 +453,18 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         dssFlow.setResourceId(bmlReturnMap.get("resourceId").toString());
         dssFlow.setBmlVersion(bmlReturnMap.get("version").toString());
         updateMetrics(dssFlow, jsonFlow);
-        // todo 数据库增加版本更新
+        //todo 数据库增加版本更新
         flowMapper.updateFlowInputInfo(dssFlow);
 
         try {
             contextService.checkAndSaveContext(jsonFlow, String.valueOf(parentFlowID));
         } catch (DSSErrorException e) {
             logger.error("Failed to saveContext: ", e);
-            throw new DSSRuntimeException(e.getErrCode(), "保存ContextId失败，您可以尝试重新发布工作流！flowID: " + flowID + "，原因: " + ExceptionUtils.getRootCauseMessage(e), e);
+            throw new DSSRuntimeException(e.getErrCode(), "保存ContextId失败，您可以尝试重新发布工作流！flowID：" + flowID + "原因：" + ExceptionUtils.getRootCauseMessage(e), e);
         }
         saveFlowHook.afterSave(jsonFlow, dssFlow, parentFlowID);
         String version = bmlReturnMap.get("version").toString();
-        // 对子工作流需更新父工作流状态，以便提交
+        // 对子工作流,需更新父工作流状态，以便提交
         Long updateFlowId = parentFlowID == null ? dssFlow.getId() : parentFlowID;
         updateTOSaveStatus(dssFlow.getProjectId(), updateFlowId, orchestratorId);
 
@@ -474,7 +473,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
 
     private void validateBranchNodeConfig(String jsonFlow) throws DSSErrorException {
-        JsonObject jsonObject = new JsonParser().parse(jsonFlow).getAsJsonObject();
+        JsonObject jsonObject = JsonParser.parseString(jsonFlow).getAsJsonObject();
         JsonArray nodeJsonArray = jsonObject.getAsJsonArray("nodes");
         JsonArray edgeJsonArray = jsonObject.getAsJsonArray("edges");
         if (nodeJsonArray == null || nodeJsonArray.size() == 0) {
@@ -512,7 +511,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             List<JsonObject> outgoingEdges = branchEdges.getOrDefault(branchNodeId, Collections.emptyList());
             String branchNodeName = branchNodeNames.getOrDefault(branchNodeId, branchNodeId);
             if (outgoingEdges.size() < 2) {
-                throw new DSSErrorException(80001, "分支节点[" + branchNodeName + "]至少需要两条出边");
+                throw new DSSErrorException(80001, "Branch node [" + branchNodeName + "] must have at least two outgoing edges.");
             }
             int defaultCount = 0;
             for (JsonObject edge : outgoingEdges) {
@@ -520,11 +519,11 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 if (isDefault) {
                     defaultCount++;
                 } else if (StringUtils.isBlank(getJsonString(edge, "condition"))) {
-                    throw new DSSErrorException(80001, "分支节点[" + branchNodeName + "]的非默认出边必须填写条件表达式");
+                    throw new DSSErrorException(80001, "Non-default outgoing edges of branch node [" + branchNodeName + "] must define a condition.");
                 }
             }
             if (defaultCount != 1) {
-                throw new DSSErrorException(80001, "分支节点[" + branchNodeName + "]必须且只能配置一条默认分支");
+                throw new DSSErrorException(80001, "Branch node [" + branchNodeName + "] must configure exactly one default branch.");
             }
         }
     }
@@ -534,7 +533,9 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             return false;
         }
         JsonElement jsonElement = edge.get("isDefault");
-        return jsonElement.isJsonPrimitive() && ((JsonPrimitive) jsonElement).isBoolean() ? jsonElement.getAsBoolean() : Boolean.parseBoolean(jsonElement.getAsString());
+        return jsonElement.isJsonPrimitive() && ((JsonPrimitive) jsonElement).isBoolean()
+                ? jsonElement.getAsBoolean()
+                : Boolean.parseBoolean(jsonElement.getAsString());
     }
 
     private String getJsonString(JsonObject jsonObject, String key) {
@@ -543,7 +544,6 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         }
         return jsonObject.get(key).getAsString();
     }
-
     private String updatePysparkPythonVersion(String jsonFlow) {
 
         try {
@@ -576,7 +576,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                     continue;
                 }
 
-                // 过滤非新增节�?
+                // 过滤非新增节点
                 if (node.get("createTime") == null || node.get("createTime").getAsLong() < pythonDateTimeLong) {
 
                     String createDateTime =  node.get("createTime") == null ?
@@ -651,7 +651,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     public void updateTOSaveStatus(Long projectId, Long flowID, Long orchestratorId) throws Exception {
         try {
             DSSProject projectInfo = DSSFlowEditLockManager.getProjectInfo(projectId);
-            //仅对接入Git的项�?更新状态为 保存
+            //仅对接入Git的项目 更新状态为 保存
             if (projectInfo.getAssociateGit() != null && projectInfo.getAssociateGit()) {
                 Long rootFlowId = getRootFlowId(flowID);
                 if (rootFlowId != null) {
@@ -707,7 +707,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         List<? extends DSSFlow> subFlows = dssFlow.getChildren();
         saveFlowMetaData(dssFlow.getId(), dssFlow.getFlowJson(), orchestratorId);
         if (subFlows != null) {
-            // 递归遍历子节点保�?
+            // 递归遍历子节点保存
             for (DSSFlow subFlow : subFlows) {
                 saveAllMetaData(subFlow, orchestratorId);
             }
@@ -797,15 +797,15 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 return;
             }
 
-            // 获取相同的部分（交集�?
+            // 获取相同的部分（交集）
             Set<NodeContentDO> intersection = new HashSet<>(contentDOS);
             intersection.retainAll(nodeContentDOS);
 
-            // 获取删除的部分（差集�?
+            // 获取删除的部分（差集）
             Set<NodeContentDO> difference1 = new HashSet<>(contentDOS);
             difference1.removeAll(nodeContentDOS);
 
-            // 获取新增的部分（差集�?
+            // 获取新增的部分（差集）
             Set<NodeContentDO> difference2 = new HashSet<>(nodeContentDOS);
             difference2.removeAll(contentDOS);
 
@@ -934,10 +934,10 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
     private void clearFlowMetaData(Long orchestratorId, Long rootFlowId) {
 
-        // 保存�?清理node_content表的脏数�?
+        // 保存时 清理node_content表的脏数据
         // 获取编排目前的所有的flowID
         List<Long> flowIdList = getFlowIdListByOrchestratorId(rootFlowId);
-        // 获取编排不存在的工作流信�?
+        // 获取编排不存在的工作流信息
         List<Long> contentIdList = nodeContentMapper.getNodeContentListByOrchestratorId(orchestratorId).stream()
                 .filter(nodeContentDO -> !flowIdList.contains(nodeContentDO.getFlowId()))
                 .map(NodeContentDO::getId)
@@ -955,7 +955,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         logger.info("orchestratorId is {}, rootFlowId is {}, notSaveFlow is {}", orchestratorId, rootFlowId, StrUtil.join(",", notSaveFlow));
         for (Long flowId : notSaveFlow) {
             logger.info("save flow data, orchestratorId is {}, flowID is {}", orchestratorId, flowId);
-            // 保存工作流信�?
+            // 保存工作流信息
             DSSFlow dssFlow = getFlow(flowId);
             saveFlowMetaData(dssFlow.getId(), dssFlow.getFlowJson(), orchestratorId);
         }
@@ -995,7 +995,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             orchestratorVo = RpcAskUtils.processAskException(getOrchestratorSender().ask(new RequestQuertByAppIdOrchestrator(rootFlowId)),
                     OrchestratorVo.class, RequestQuertByAppIdOrchestrator.class);
         } catch (Exception e) {
-            logger.error("保存工作流时获取编排失败，原因为: ", e);
+            logger.error("保存工作流时获取编排失败，原因为：", e);
         }
         DSSOrchestratorVersion dssOrchestratorVersion = orchestratorVo != null ? orchestratorVo.getDssOrchestratorVersion() : null;
         // 解析并保存元数据
@@ -1014,7 +1014,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
     /**
-     * 当数据库的父子工作流依赖关系和json中不一致时，该方法会删除数据库中的脏数�?
+     * 当数据库的父子工作流依赖关系和json中不一致时，该方法会删除数据库中的脏数据
      *
      * @param user
      * @param flowId
@@ -1043,7 +1043,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 if (CollectionUtils.isEmpty(workFlowParser.getWorkFlowNodesJson(subflowJson))) {
                     flowMapper.deleteFlowRelation(subflow.getId());
                 } else {
-                    logger.warn("子工作流内容不为空，不予删除和父工作流的依赖关系�?);
+                    logger.warn("子工作流内容不为空，不予删除和父工作流的依赖关系。");
                 }
             }
         });
@@ -1076,7 +1076,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
     public String checkFlowVersionDowngrade(String oldFlowJson, String newFlowJson) {
-        // 解析JSON字符�?
+        // 解析JSON字符串
         JsonObject oldFlow = JsonParser.parseString(oldFlowJson).getAsJsonObject();
         JsonObject newFlow = JsonParser.parseString(newFlowJson).getAsJsonObject();
 
@@ -1096,7 +1096,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             JsonObject newNode = nodeElement.getAsJsonObject();
             String nodeId = newNode.get("id").getAsString();
 
-            // 如果node在old flow中存�?
+            // 如果node在old flow中存在
             if (oldNodesMap.containsKey(nodeId)) {
                 JsonObject oldNode = oldNodesMap.get(nodeId);
 
@@ -1104,7 +1104,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 JsonArray oldResources = oldNode.getAsJsonArray("resources");
                 JsonArray newResources = newNode.getAsJsonArray("resources");
 
-                // 如果resources为空则跳�?
+                // 如果resources为空则跳过
                 if (oldResources == null || newResources == null) {
                     continue;
                 }
@@ -1121,14 +1121,14 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                     JsonObject newResource = resourceElement.getAsJsonObject();
                     String resourceId = newResource.get("resourceId").getAsString();
 
-                    // 如果resource在old node中存�?
+                    // 如果resource在old node中存在
                     if (oldResourcesMap.containsKey(resourceId)) {
                         JsonObject oldResource = oldResourcesMap.get(resourceId);
 
                         // 比较version (格式为v000001)
                         String oldVersion = oldResource.get("version").getAsString();
                         String newVersion = newResource.get("version").getAsString();
-                        // 比较版本�?
+                        // 比较版本号
                         if (compareVersions(newVersion, oldVersion) < 0) {
                             // 发现版本降级，返回node的title
                             return newNode.get("title").getAsString();
@@ -1137,12 +1137,12 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 }
             }
         }
-        // 没有发现version降级的情�?
+        // 没有发现version降级的情况
         return null;
     }
 
 
-    // 比较版本�?
+    // 比较版本号
     private int compareVersions(String version1, String version2) {
         String v1 = version1.substring(1);
         String v2 = version2.substring(1);
@@ -1177,9 +1177,9 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         }
         for (Long subFlowID : subFlowIDs) {
             deleteDWSDB(subFlowID);
-            // TODO: 2019/6/5 wtss发布过的工作流的删除�?
+            // TODO: 2019/6/5 wtss发布过的工作流的删除？
             // TODO: 2019/6/5 json中资源的删除
-            // TODO: 2019/6/5 事务的保�?
+            // TODO: 2019/6/5 事务的保证
         }
         deleteFlowMetaDataByFlowId(flowId);
         deleteDWSDB(flowId);
@@ -1188,7 +1188,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     private void deleteDWSDB(Long flowID) {
         flowMapper.deleteFlowBaseInfo(flowID);
         flowMapper.deleteFlowRelation(flowID);
-        //第一期没有工作流的发布，所以不需要删除dws工作流的发布�?
+        //第一期没有工作流的发布，所以不需要删除dws工作流的发布表
     }
 
     /**
@@ -1197,13 +1197,13 @@ public class DSSFlowServiceImpl implements DSSFlowService {
      * @param rootFlowId   拷贝基于的工作流id
      * @param userName
      * @param workspace
-     * @param projectName  目标工程�?
+     * @param projectName  目标工程名
      * @param version      新的编排版本
      * @param contextIdStr 新的contextId
      * @param description
      * @param dssLabels
      * @param nodeSuffix   节点后缀
-     * @param newFlowName  新的工作流名�?
+     * @param newFlowName  新的工作流名称
      * @param newProjectId 目标工程id
      * @return
      * @throws DSSErrorException
@@ -1224,7 +1224,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 orchestratorId, dssFlow.getName(), dssFlow.getId(), copyOrchestrator);
         if (!copyOrchestrator) {
             logger.info("delete flow metadata , orchestratorId is {}", orchestratorId);
-            // 不是复制工作�?就删除元数据信息
+            // 不是复制工作流,就删除元数据信息
             deleteFlowMetaData(orchestratorId);
         }
         DSSFlow rootFlowWithSubFlows = copyFlowAndSetSubFlowInDB(dssFlow, userName, description, nodeSuffix, newFlowName, newProjectId);
@@ -1272,7 +1272,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
      * @param dssFlow
      * @param userName
      * @param description
-     * @param newFlowName       拷贝时新的工作流�?
+     * @param newFlowName       拷贝时新的工作流名
      * @param newProjectId      拷贝到新的工程id
      * @param subFlowNameSuffix 工作流拷贝时需要为所有子工作流节点名添加后缀
      * @return
@@ -1334,7 +1334,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         }
         List<NodeContentDO> contentDOS = nodeContentMapper.getContentListByFlowId(flowIdList);
         List<Long> contentIdListByOrchestratorId = contentDOS.stream().map(NodeContentDO::getId).collect(Collectors.toList());
-        // 删除当前节点的属性信�?
+        // 删除当前节点的属性信息
         if (CollectionUtils.isNotEmpty(contentIdListByOrchestratorId)) {
             nodeContentUIMapper.deleteNodeContentUIByContentList(contentIdListByOrchestratorId);
         }
@@ -1363,7 +1363,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             updateFlowJson = updateFlowProxyUser(updateFlowJson, flowProxyUser, orchestratorId, rootFlow);
         }
 
-        //重新上传工作流资�?
+        //重新上传工作流资源
         updateFlowJson = uploadFlowResourceToBml(userName, updateFlowJson, projectName, rootFlow);
         //上传节点的资源或调用appconn的copyRef
         updateFlowJson = updateWorkFlowNodeJsonForMultiThread(userName, projectName, updateFlowJson, rootFlow,
@@ -1391,8 +1391,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         flowMapper.updateFlowInputInfo(updateDssFlow);
         contextService.checkAndSaveContext(updateFlowJson, String.valueOf(parentFlowId));
 
-        //  待保存完bml�?在做元数据保�?防止bml更新失败,编排对应的flowId未更改。而工作流元数据的flowId 却更改了
-        // 不是复制工作�?就保存元数据信息
+        //  待保存完bml后,在做元数据保存,防止bml更新失败,编排对应的flowId未更改。而工作流元数据的flowId 却更改了
+        // 不是复制工作流 就保存元数据信息
         if (!copyOrchestrator) {
             // 更新对应节点的FlowJson
             saveFlowMetaData(rootFlow.getId(), updateFlowJson, orchestratorId);
@@ -1442,7 +1442,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
             Map<String, Object> params = (Map) nodeJsonMap.get("params");
 
-            // enableNodeList 不为�?且不包含节点Id，则添加禁用节点 auto.disabled=true
+            // enableNodeList 不为空,且不包含节点Id，则添加禁用节点 auto.disabled=true
             if (CollectionUtils.isNotEmpty(enableNodeList) && !enableNodeList.contains(oldId)) {
 
                 if (params == null) {
@@ -1488,11 +1488,11 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         if (CollectionUtils.isNotEmpty(props)) {
 
-            // 获取原工作流的代理用�?
+            // 获取原工作流的代理用户
             String proxyUser = "";
             for (Map<String, Object> prop : props) {
                 if (prop.containsKey("user.to.proxy") && prop.get("user.to.proxy") != null) {
-                    // 代理用户不为�?替换代理用户
+                    // 代理用户不为空,替换代理用户
                     proxyUser = prop.get("user.to.proxy").toString();
                     prop.put("user.to.proxy", flowProxyUser);
                     break;
@@ -1502,7 +1502,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             logger.info("origin orchestratorId is {},origin flow is [{},{}], origin proxy user is {}, flowProxyUser is {}",
                     orchestratorId, dssFlow.getId(), dssFlow.getName(), proxyUser, flowProxyUser);
 
-            // 原工作流代理用户不为�?拷贝后的工作�?代理用户信息则进行替�?
+            // 原工作流代理用户不为空,拷贝后的工作流 代理用户信息则进行替换
             if (StringUtils.isNotEmpty(proxyUser)) {
 
                 flowJson = workFlowParser.updateFlowJsonWithKey(flowJson, "props", props);
@@ -1526,7 +1526,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
     }
 
-    //上传工作流资�?
+    //上传工作流资源
     public String uploadFlowResourceToBml(String userName, String flowJson, String projectName, DSSFlow dssFlow) throws IOException {
         List<Resource> resourceList = workFlowParser.getWorkFlowResources(flowJson);
         if (CollectionUtils.isEmpty(resourceList)) {
@@ -1607,10 +1607,10 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                     nodeJsonMap = BDPJettyServerHelper.jacksonJson().readValue(updateNodeJson, Map.class);
                     nodeJsonListRes.add(nodeJsonMap);
                 } else if (dssFlowList.size() > 1) {
-                    logger.error("工程内存在重复的子工作流节点名称，导入失�? + subFlowName);
-                    throw new DSSErrorException(90077, "工程内存在重复的子工作流节点名称，导入失�? + subFlowName);
+                    logger.error("工程内存在重复的子工作流节点名称，导入失败" + subFlowName);
+                    throw new DSSErrorException(90077, "工程内存在重复的子工作流节点名称，导入失败" + subFlowName);
                 } else {
-                    logger.error("工程内存在重复的子工作流节点名称，导入失�? + subFlowName);
+                    logger.error("工程内存在重复的子工作流节点名称，导入失败" + subFlowName);
                     throw new DSSErrorException(90078, "工程内未能找到子工作流节点，导入失败" + subFlowName);
                 }
 //            } else if (nodeJsonMap.get("jobContent") != null && !((Map) nodeJsonMap.get("jobContent")).containsKey("script")) {
@@ -1691,10 +1691,10 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                             nodeJsonMap = BDPJettyServerHelper.jacksonJson().readValue(updateNodeJson, Map.class);
 
                         } else if (dssFlowList.size() > 1) {
-                            logger.error("工程内存在重复的子工作流节点名称，导入失�? + subFlowName);
-                            throw new DSSErrorException(90077, "工程内存在重复的子工作流节点名称，导入失�? + subFlowName);
+                            logger.error("工程内存在重复的子工作流节点名称，导入失败" + subFlowName);
+                            throw new DSSErrorException(90077, "工程内存在重复的子工作流节点名称，导入失败" + subFlowName);
                         } else {
-                            logger.error("工程内存在重复的子工作流节点名称，导入失�? + subFlowName);
+                            logger.error("工程内存在重复的子工作流节点名称，导入失败" + subFlowName);
                             throw new DSSErrorException(90078, "工程内未能找到子工作流节点，导入失败" + subFlowName);
                         }
                     } else if (nodeInfo == null) {
@@ -1810,7 +1810,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         Map<Long, DSSFlowNodeInfo> dssFlowNodeInfoMap = flowNodeToMap(flowNodeInfoList);
         List<Long> contentIdList = new ArrayList<>(dssFlowNodeInfoMap.keySet());
 
-        // 查询节点保存的配置信�?
+        // 查询节点保存的配置信息
         Map<Long, List<NodeContentUIDO>> nodeContentUIGroup = getNodeContentUIGroup(contentIdList);
         if (nodeContentUIGroup.isEmpty()) {
             logger.error("queryDataDevelopNodeList not find nodeUI info , example contextId is {}", contentIdList.get(0));
@@ -1862,7 +1862,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 }
 
 
-                // 未引用资源模板时, 获取属�?
+                // 未引用资源模板时, 获取属性
                 if (!dataDevelopNodeInfo.getRefTemplate()) {
 
                     if (nodeMap.containsKey("spark.driver.memory") && StringUtils.isNotEmpty(nodeMap.get("spark.driver.memory"))) {
@@ -1899,7 +1899,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             }
         }
 
-        // 条件筛选、排�?
+        // 条件筛选、排序
         dataDevelopNodeInfoList = dataDevelopNodeResultFilter(request, dataDevelopNodeInfoList);
 
         dataDevelopNodeResponse.setTotal((long) dataDevelopNodeInfoList.size());
@@ -1925,14 +1925,14 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         Map<String, Object> content = new HashMap<>();
         if (nodeContentDO == null) {
             logger.error("not find node info , id is {}, nodeId is {}", contentId, nodeId);
-            throw new DSSRuntimeException(90004, "未找�? + nodeId + "节点信息，请查看节点是否被删�?);
+            throw new DSSRuntimeException(90004, "未找到" + nodeId + "节点信息，请查看节点是否被删除");
         }
 
         List<NodeContentUIDO> nodeContentUIDOList = nodeContentUIMapper.getNodeContentUIByContentId(contentId);
 
         if (CollectionUtils.isEmpty(nodeContentUIDOList)) {
             logger.error("not find node params info , content id is {}", contentId);
-            throw new DSSRuntimeException(90004, "未找�? + nodeId + "节点信息，请查看节点是否被删�?);
+            throw new DSSRuntimeException(90004, "未找到" + nodeId + "节点信息，请查看节点是否被删除");
         }
 
         List<NodeUIInfo> nodeUIInfoList = nodeInfoMapper.getNodeUIInfoByNodeType(nodeContentDO.getJobType());
@@ -1995,7 +1995,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         Map<Long, DSSFlowNodeInfo> dssFlowNodeInfoMap = flowNodeToMap(flowNodeInfoList);
         List<Long> contentIdList = new ArrayList<>(dssFlowNodeInfoMap.keySet());
 
-        // 查询节点保存的配置信�?
+        // 查询节点保存的配置信息
         Map<Long, List<NodeContentUIDO>> nodeContentUIGroup = getNodeContentUIGroup(contentIdList);
         if (nodeContentUIGroup.isEmpty()) {
             logger.error("queryDataViewNode not find nodeUI info , example contextId is {}", contentIdList.get(0));
@@ -2156,7 +2156,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             }
 
 
-            // 工作流名�?
+            // 工作流名称
             if (!StringUtils.isBlank(request.getOrchestratorName()) && flag) {
                 flag = request.getOrchestratorName().equals(dataDevelopNodeInfo.getOrchestratorName());
             }
@@ -2166,7 +2166,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 flag = request.getProjectNameList().contains(dataDevelopNodeInfo.getProjectName());
             }
 
-            // 新增 Spark 相关属性筛�?
+            // 新增 Spark 相关属性筛选
             if (!StringUtils.isBlank(request.getSparkDriverMemory()) && flag) {
                 flag = StringUtils.isNotEmpty(dataDevelopNodeInfo.getSparkDriverMemory())
                         && dataDevelopNodeInfo.getSparkDriverMemory().contains(request.getSparkDriverMemory().trim());
@@ -2192,7 +2192,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                         dataDevelopNodeInfo.getSparkExecutorInstances().contains(request.getSparkExecutorInstances().trim());
             }
 
-            // 新增 executeCluster 筛�?
+            // 新增 executeCluster 筛选
             if (!StringUtils.isBlank(request.getExecuteCluster()) && flag) {
                 flag = request.getExecuteCluster().equals(dataDevelopNodeInfo.getExecuteCluster());
             }
@@ -2213,7 +2213,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         dataViewNodeInfoList = dataViewNodeInfoList.stream().filter(dataViewNodeInfo -> {
             boolean flag = true;
-            // 工作流名�?
+            // 工作流名称
             if (!StringUtils.isBlank(request.getOrchestratorName())) {
                 flag = request.getOrchestratorName().equals(dataViewNodeInfo.getOrchestratorName());
             }
@@ -2341,13 +2341,13 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             editFlowRequestMap.put(orchestratorId, editFlowRequests);
         }
 
-        // 校验节点是否可进行编�?
+        // 校验节点是否可进行编辑
         List<Long> contentIdList = editFlowRequestList.stream().map(EditFlowRequest::getId).collect(Collectors.toList());
         validNodeDisableEdit(contentIdList);
 
 
         Set<Long> orchestratorIdList = editFlowRequestList.stream().map(EditFlowRequest::getOrchestratorId).collect(Collectors.toSet());
-        // 批量获取编辑�?
+        // 批量获取编辑锁
         Sender sender = DSSSenderServiceFactory.getOrCreateServiceInstance().getOrcSender();
         RequestQueryOrchestrator requestQueryOrchestrator = new RequestQueryOrchestrator(new ArrayList<>(orchestratorIdList));
         ResponseQueryOrchestrator responseQueryOrchestrator = RpcAskUtils.processAskException(sender.ask(requestQueryOrchestrator), ResponseQueryOrchestrator.class, RequestQueryOrchestrator.class);
@@ -2378,7 +2378,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 DSSFlow dssFlow = getFlow(flowId);
                 DSSFlowEditLock flowEditLock = lockMapper.getFlowEditLockByID(flowId);
                 if (flowEditLock != null && !flowEditLock.getOwner().equals(ticketId)) {
-                    throw new DSSErrorException(80001, "当前工作�? + dssFlow.getName() + "被用�? + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
+                    throw new DSSErrorException(80001, "当前工作流" + dssFlow.getName() + "被用户" + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
                 }
 
                 lockFlow(dssFlow, userName, ticketId);
@@ -2413,7 +2413,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                     modifyJson.setLength(0);
                     modifyJson.append(json);
                 }
-                // 批量修改属�?
+                // 批量修改属性
                 String resultJson = modifyFlowJsonTime(String.valueOf(modifyJson), modifyTime, userName);
                 saveFlow(targetFlowId, String.valueOf(resultJson)
                         , targetFlow.getDescription(), userName
@@ -2421,7 +2421,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             }
         }
 
-        // 完成后批量解�?
+        // 完成后批量解锁
         for (OrchestratorVo orchestratorVo : orchestratorVoes) {
             DSSOrchestratorVersion dssOrchestratorVersion = orchestratorVo.getDssOrchestratorVersion();
             if (dssOrchestratorVersion != null) {
@@ -2467,7 +2467,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         DSSProject dssProject = RpcAskUtils.processAskException(DSSSenderServiceFactory.getOrCreateServiceInstance().getProjectServerSender()
                 .ask(projectInfoRequest), DSSProject.class, ProjectInfoRequest.class);
         if (dssProject == null) {
-            DSSExceptionUtils.dealErrorException(6003, "工程不存�?, DSSErrorException.class);
+            DSSExceptionUtils.dealErrorException(6003, "工程不存在", DSSErrorException.class);
         }
         return dssProject;
     }
@@ -2585,7 +2585,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         List<Long> contentIdList = new ArrayList<>(dssFlowNodeInfoMap.keySet());
 
 
-        // 查询节点保存的配置信�?
+        // 查询节点保存的配置信息
         Map<Long, List<NodeContentUIDO>> nodeContentUIGroup = getNodeContentUIGroup(contentIdList);
         if (nodeContentUIGroup.isEmpty()) {
             logger.error("queryDataCheckerNode query not find nodeUI info , example contextId is {}", contentIdList.get(0));
@@ -2730,7 +2730,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         Map<Long, DSSFlowNodeInfo> dssFlowNodeInfoMap = flowNodeToMap(flowNodeInfoList);
         List<Long> contentIdList = new ArrayList<>(dssFlowNodeInfoMap.keySet());
 
-        // 查询节点保存的配置信�?
+        // 查询节点保存的配置信息
         Map<Long, List<NodeContentUIDO>> nodeContentUIGroup = getNodeContentUIGroup(contentIdList);
         if (nodeContentUIGroup.isEmpty()) {
             logger.error("queryEventSenderNode query not find nodeUI info , example contextId is {}", contentIdList.get(0));
@@ -2883,7 +2883,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         Map<Long, DSSFlowNodeInfo> dssFlowNodeInfoMap = flowNodeToMap(flowNodeInfoList);
         List<Long> contentIdList = new ArrayList<>(dssFlowNodeInfoMap.keySet());
 
-        // 查询节点保存的配置信�?
+        // 查询节点保存的配置信息
         Map<Long, List<NodeContentUIDO>> nodeContentUIGroup = getNodeContentUIGroup(contentIdList);
         if (nodeContentUIGroup.isEmpty()) {
             logger.error("queryEventSenderNode query not find nodeUI info , example contextId is {}", contentIdList.get(0));
@@ -3053,7 +3053,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             logger.error(e.getMessage());
         }
 
-        // 过滤出不为空的信�?
+        // 过滤出不为空的信息
         return nodeUIValue.stream().filter(StringUtils::isNotEmpty).collect(Collectors.toList());
     }
 
@@ -3204,14 +3204,14 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         boolean isUnlock = editNodeContentRequest.getUnlock();
 
         if (StringUtils.isEmpty(nodeContent) && MapUtils.isEmpty(nodeMetadata) && StringUtils.isEmpty(modifyNodeName)) {
-            DSSExceptionUtils.dealErrorException(90003, String.format("节点内容和节点配置信息、需修改节点名称都为�?%s节点不做更新", nodeName), DSSErrorException.class);
+            DSSExceptionUtils.dealErrorException(90003, String.format("节点内容和节点配置信息、需修改节点名称都为空,%s节点不做更新", nodeName), DSSErrorException.class);
         }
 
         // 鉴权
         DSSProject dssProject = validateOperation(editNodeContentRequest.getProjectId(), username);
 
         if (!editNodeContentRequest.getWorkspaceId().equals(Long.valueOf(dssProject.getWorkspaceId()))) {
-            DSSExceptionUtils.dealErrorException(90003, "传入的工作空间与项目所属工作空间不一�?, DSSErrorException.class);
+            DSSExceptionUtils.dealErrorException(90003, "传入的工作空间与项目所属工作空间不一致", DSSErrorException.class);
         }
 
         RequestQueryByIdOrchestrator RequestQueryByIdOrchestrator = new RequestQueryByIdOrchestrator();
@@ -3227,16 +3227,16 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         DSSOrchestratorVersion dssOrchestratorVersion = orchestratorVo.getDssOrchestratorVersion();
 
-        // 获取主工作流下的节点和所有子工作�?
+        // 获取主工作流下的节点和所有子工作流
         DSSFlow rootFlow = genDSSFlowTree(dssOrchestratorVersion.getAppId());
 
         DSSFlow flow = getFLowByNode(rootFlow, nodeName);
 
         if (flow == null) {
-            DSSExceptionUtils.dealErrorException(90003, "工作流下未找到相关节�?, DSSErrorException.class);
+            DSSExceptionUtils.dealErrorException(90003, "工作流下未找到相关节点", DSSErrorException.class);
         }
 
-        // 强制解锁工作�?
+        // 强制解锁工作流
         forceUnlockWorkflow(rootFlow, ticketId, username, isUnlock, workspace);
 
         lockFlow(rootFlow, username, ticketId);
@@ -3246,7 +3246,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             DSSNodeDefault node = updateNodeContent(flow, nodeName, nodeContent, nodeMetadata, dssProject.getName(), username, modifyNodeName);
             node.setModifyNodeName(modifyNodeName);
 
-            // 校验修改的节点名称是否符合要�?
+            // 校验修改的节点名称是否符合要求
             validModifyNodeName(node);
 
             updateSubFlowName(node, username, flow);
@@ -3255,10 +3255,10 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                     dssProject.getWorkspaceName(), dssProject.getName(), null);
 
         } catch (Exception e) {
-            logger.error("保存工作流失�?, e);
-            throw new DSSErrorException(80001, "保存失败，原因为�? + e.getMessage());
+            logger.error("保存工作流失败", e);
+            throw new DSSErrorException(80001, "保存失败，原因为：" + e.getMessage());
         } finally {
-            // 解锁工作�?
+            // 解锁工作流
             workFlowManager.unlockWorkflow(username, dssOrchestratorVersion.getAppId(), true, workspace);
         }
 
@@ -3280,7 +3280,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         DSSProject dssProject = validateOperation(projectId, username);
 
         if (!workspaceId.equals(Long.valueOf(dssProject.getWorkspaceId()))) {
-            DSSExceptionUtils.dealErrorException(90003, "传入的工作空间与项目所属工作空间不一�?, DSSErrorException.class);
+            DSSExceptionUtils.dealErrorException(90003, "传入的工作空间与项目所属工作空间不一致", DSSErrorException.class);
         }
 
         // 判断是否有传入更新的节点信息
@@ -3291,7 +3291,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         // 查看是否有重复的节点信息
         checkDuplicateNodeNames(nodeContentList);
 
-        // 获取工作流信�?
+        // 获取工作流信息
         OrchestratorVo orchestratorVo = getOrchestratorVo(orchestratorId);
         validateOrchestratorVo(orchestratorVo);
 
@@ -3302,10 +3302,10 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         workspace.setWorkspaceId(workspaceId);
         workspace.setWorkspaceName(dssProject.getWorkspaceName());
 
-        // 获取主工作流下的节点和所有子工作�?
+        // 获取主工作流下的节点和所有子工作流
         DSSFlow rootFlow = genDSSFlowTree(dssOrchestratorVersion.getAppId());
 
-        // 强制解锁工作�?
+        // 强制解锁工作流
         forceUnlockWorkflow(rootFlow, ticketId, username, isUnlock, workspace);
 
 
@@ -3313,7 +3313,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         batchEditNodeContentResponse.setOrchestratorId(dssOrchestratorInfo.getId());
         batchEditNodeContentResponse.setOrchestratorName(dssOrchestratorInfo.getName());
 
-        // 锁定工作�?
+        // 锁定工作流
         lockFlow(rootFlow, username, ticketId);
 
         try {
@@ -3321,20 +3321,20 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             Map<Long, DSSFlow> flowMap = new HashMap<>();
 
             Map<Long, List<DSSNodeDefault>> flowNodeMap = new HashMap<>();
-            // 查找出节点所属的工作�?并分�?
+            // 查找出节点所属的工作流 并分组
             for (BatchEditNodeContentRequest.NodeContent nodeContent : nodeContentList) {
 
                 if (StringUtils.isEmpty(nodeContent.getNodeContent()) && MapUtils.isEmpty(nodeContent.getNodeMetadata())
                         && StringUtils.isEmpty(nodeContent.getModifyNodeName())) {
                     DSSExceptionUtils.dealErrorException(90003,
-                            String.format("节点内容和节点配置信息、需修改节点名称 都为�?%s节点不做更新", nodeContent.getNodeName()), DSSErrorException.class);
+                            String.format("节点内容和节点配置信息、需修改节点名称 都为空,%s节点不做更新", nodeContent.getNodeName()), DSSErrorException.class);
                 }
 
                 DSSFlow flow = getFLowByNode(rootFlow, nodeContent.getNodeName());
 
                 if (flow == null) {
                     DSSExceptionUtils.dealErrorException(90003,
-                            String.format("%s工作流下未找�?s节点", dssOrchestratorInfo.getName(), nodeContent.getNodeName()), DSSErrorException.class);
+                            String.format("%s工作流下未找到%s节点", dssOrchestratorInfo.getName(), nodeContent.getNodeName()), DSSErrorException.class);
                 }
 
                 if (flowMap.containsKey(flow.getId())) {
@@ -3356,7 +3356,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             }
 
 
-            // 保存工作�?
+            // 保存工作流
             for (Long flowId : flowMap.keySet()) {
                 List<DSSNodeDefault> dssNodeDefaultList = flowNodeMap.get(flowId);
                 List<String> nodeNameList = dssNodeDefaultList.stream().map(DSSNodeDefault::getName).collect(Collectors.toList());
@@ -3382,7 +3382,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 } catch (Exception e) {
                     batchEditNodeContentResponse.setFailNodeName(nodeNameList);
                     batchEditNodeContentResponse.setErrorMsg(e.getMessage());
-                    logger.error("保存工作流失�?, e);
+                    logger.error("保存工作流失败", e);
                     break;
                 }
 
@@ -3390,7 +3390,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         } catch (Exception e) {
             logger.error("保存编排失败", e);
-            throw new DSSErrorException(80001, "保存失败，原因为�? + e.getMessage());
+            throw new DSSErrorException(80001, "保存失败，原因为：" + e.getMessage());
         } finally {
             workFlowManager.unlockWorkflow(username, dssOrchestratorVersion.getAppId(), true, workspace);
         }
@@ -3400,25 +3400,25 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
     /**
-     * 校验工作流是否锁�?
+     * 校验工作流是否锁定
      *
      * @param rootFlow 根工作流对象
      * @param ticketId 票据 ID
-     * @throws DSSErrorException 工作流被锁定时抛出异�?
+     * @throws DSSErrorException 工作流被锁定时抛出异常
      */
     private void validateFlowLock(DSSFlow rootFlow, String ticketId) throws DSSErrorException {
         DSSFlowEditLock flowEditLock = lockMapper.getFlowEditLockByID(rootFlow.getId());
         if (flowEditLock != null && !flowEditLock.getOwner().equals(ticketId)) {
-            throw new DSSErrorException(80001, "当前工作�? + rootFlow.getName() + "被用�? + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
+            throw new DSSErrorException(80001, "当前工作流" + rootFlow.getName() + "被用户" + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
         }
     }
 
 
     /**
-     * 检查节点名称是否重�?
+     * 检查节点名称是否重复
      *
      * @param nodeContentList 节点内容列表
-     * @throws DSSErrorException 存在重复节点名称时抛出异�?
+     * @throws DSSErrorException 存在重复节点名称时抛出异常
      */
     private void checkDuplicateNodeNames(List<BatchEditNodeContentRequest.NodeContent> nodeContentList) throws DSSErrorException {
         Set<String> nodeNameSet = new HashSet<>();
@@ -3433,11 +3433,11 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
 
     /**
-     * 获取工作流信�?
+     * 获取工作流信息
      *
-     * @param orchestratorId 编排�?ID
-     * @return 工作流信息对�?
-     * @throws DSSErrorException 获取失败时抛出异�?
+     * @param orchestratorId 编排器 ID
+     * @return 工作流信息对象
+     * @throws DSSErrorException 获取失败时抛出异常
      */
     private OrchestratorVo getOrchestratorVo(Long orchestratorId) throws DSSErrorException {
         RequestQueryByIdOrchestrator requestQueryByIdOrchestrator = new RequestQueryByIdOrchestrator();
@@ -3447,10 +3447,10 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
     /**
-     * 验证工作流信息是否有�?
+     * 验证工作流信息是否有效
      *
-     * @param orchestratorVo 工作流信息对�?
-     * @throws DSSErrorException 验证失败时抛出异�?
+     * @param orchestratorVo 工作流信息对象
+     * @throws DSSErrorException 验证失败时抛出异常
      */
     private void validateOrchestratorVo(OrchestratorVo orchestratorVo) throws DSSErrorException {
         if (orchestratorVo == null || orchestratorVo.getDssOrchestratorInfo() == null
@@ -3493,9 +3493,9 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         DSSNodeDefault dssNodeDefault = getNode(dssFlow, nodeName);
 
-        // 节点不存�?
+        // 节点不存在
         if (dssNodeDefault == null) {
-            DSSExceptionUtils.dealErrorException(90003, String.format("工作流下未找�?%s 节点", nodeName), DSSErrorException.class);
+            DSSExceptionUtils.dealErrorException(90003, String.format("工作流下未找到 %s 节点", nodeName), DSSErrorException.class);
         }
 
         Resource resource = null;
@@ -3520,17 +3520,17 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
         logger.info("update script node info is {}", dssNodeDefault.toString());
 
-        // 节点是否在脚本信�?
+        // 节点是否在脚本信息
         if (dssNodeDefault.getJobContent() == null || !dssNodeDefault.getJobContent().containsKey("script")) {
             logger.error("{} node jobContent not contains script key ", dssNodeDefault.getTitle());
-            DSSExceptionUtils.dealErrorException(90003, String.format("%s 节点不存在内容信�?不能进行内容修改", dssNodeDefault.getTitle()), DSSErrorException.class);
+            DSSExceptionUtils.dealErrorException(90003, String.format("%s 节点不存在内容信息,不能进行内容修改", dssNodeDefault.getTitle()), DSSErrorException.class);
         }
 
         Object script = dssNodeDefault.getJobContent().get("script");
 
         if (script == null || StringUtils.isEmpty(String.valueOf(script))) {
             logger.error("{} node script info is empty", dssNodeDefault.getTitle());
-            DSSExceptionUtils.dealErrorException(90003, String.format("%s 节点不存在内容信�?不能进行内容修改", dssNodeDefault.getTitle()), DSSErrorException.class);
+            DSSExceptionUtils.dealErrorException(90003, String.format("%s 节点不存在内容信息,不能进行内容修改", dssNodeDefault.getTitle()), DSSErrorException.class);
         }
 
         logger.info("{} node start upload bml {} script content", dssNodeDefault.getTitle(), script);
@@ -3555,7 +3555,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             params = new HashMap<>(dssNodeDefault.getParams());
         }
 
-        // 清空startup信息�?在保存bml内容。防止脚本头�?带有参数
+        // 清空startup信息后,在保存bml内容。防止脚本头部 带有参数
         if (params.containsKey("configuration")) {
             Map<String, Object> configuration = (Map) params.get("configuration");
             if (MapUtils.isNotEmpty(configuration)) {
@@ -3579,7 +3579,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                         .filter(var -> !org.springframework.util.StringUtils.isEmpty(var.value()))
                         .collect(Collectors.toList());
 
-        // 保存代码和配置信�?
+        // 保存代码和配置信息
         writer.addMetaData(new ScriptMetaData(variableList.toArray(new Variable[0])));
         writer.addRecord(new ScriptRecord(nodeContent));
 
@@ -3641,7 +3641,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 }
 
                 if (resource != null && json.keySet().contains("resources")) {
-                    // 修改内容�?更新 resource版本
+                    // 修改内容后 更新 resource版本
                     JsonArray resources = json.getAsJsonArray("resources");
                     // 更改resource版本
                     for (JsonElement element : resources) {
@@ -3662,7 +3662,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
                 }
 
-                // 修改节点的更新时�?
+                // 修改节点的更新时间
                 json.addProperty("modifyTime", System.currentTimeMillis());
                 json.addProperty("modifyUser", username);
 
@@ -3702,7 +3702,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         DSSProject dssProject = RpcAskUtils.processAskException(DSSSenderServiceFactory.getOrCreateServiceInstance().getProjectServerSender()
                 .ask(projectInfoRequest), DSSProject.class, ProjectInfoRequest.class);
         if (dssProject == null) {
-            DSSExceptionUtils.dealErrorException(90003, "工程不存�?, DSSErrorException.class);
+            DSSExceptionUtils.dealErrorException(90003, "工程不存在", DSSErrorException.class);
         }
         if (!hasProjectEditPriv(projectId, username)) {
             DSSExceptionUtils.dealErrorException(90004, "用户没有工程编辑权限", DSSErrorException.class);
@@ -3830,7 +3830,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         Long orchestratorId = queryNodeInfoByNameRequest.getOrchestratorId();
         List<String> nodeNameList = queryNodeInfoByNameRequest.getNodeNameList();
         if (CollectionUtils.isEmpty(nodeNameList)) {
-            DSSExceptionUtils.dealErrorException(90003, "查找的节点列表为�?, DSSErrorException.class);
+            DSSExceptionUtils.dealErrorException(90003, "查找的节点列表为空", DSSErrorException.class);
         }
 
         List<DSSNodeDefault> dssNodeDefaultList = new ArrayList<>();
@@ -3848,7 +3848,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         DSSOrchestratorVersion dssOrchestratorVersion = orchestratorVo.getDssOrchestratorVersion();
         DSSOrchestratorInfo dssOrchestratorInfo = orchestratorVo.getDssOrchestratorInfo();
 
-        // 获取主工作流下的节点和所有子工作�?
+        // 获取主工作流下的节点和所有子工作流
         DSSFlow rootFlow = genDSSFlowTree(dssOrchestratorVersion.getAppId());
         for (String nodeName : nodeNameList) {
 
@@ -3858,7 +3858,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             if (flow == null) {
                 logger.error("dssOrchestratorInfo is [{},{}],not find flow info by {} node ", dssOrchestratorInfo.getName(),
                         dssOrchestratorInfo.getId(), nodeName);
-                DSSExceptionUtils.dealErrorException(90003, String.format("%s 工作流中未找�?s节点信息",
+                DSSExceptionUtils.dealErrorException(90003, String.format("%s 工作流中未找到%s节点信息",
                         dssOrchestratorInfo.getName(), nodeName), DSSErrorException.class);
             }
 
@@ -3868,7 +3868,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 logger.error("dssOrchestratorInfo is [{},{}], not find {} node, flow is [{},{}] ", dssOrchestratorInfo.getName(),
                         dssOrchestratorInfo.getId(), nodeName, flow.getName(), flow.getId());
                 DSSExceptionUtils.dealErrorException(90003,
-                        String.format("%s 工作流下未找�?%s 节点", dssOrchestratorInfo.getName(), nodeName), DSSErrorException.class);
+                        String.format("%s 工作流下未找到 %s 节点", dssOrchestratorInfo.getName(), nodeName), DSSErrorException.class);
             }
 
             dssNodeDefaultList.add(dssNodeDefault);
@@ -3883,16 +3883,16 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
     public void forceUnlockWorkflow(DSSFlow rootFlow, String ticketId, String username, boolean isUnlock, Workspace workspace) {
 
-        // 校验工作流是否锁�?
+        // 校验工作流是否锁定
         DSSFlowEditLock flowEditLock = lockMapper.getFlowEditLockByID(rootFlow.getId());
         if (flowEditLock != null && !flowEditLock.getOwner().equals(ticketId)) {
-            // 工作流如果锁定编�? isUnlock = true 则强制解�?
+            // 工作流如果锁定编辑, isUnlock = true 则强制解锁
             if (isUnlock) {
                 logger.info("force unlock workflow is [{},{}], username is {}", rootFlow.getName(),
                         rootFlow.getId(), username);
                 workFlowManager.unlockWorkflow(username, rootFlow.getId(), true, workspace);
             } else {
-                throw new DSSErrorException(80001, "当前工作�? + rootFlow.getName() + "被用�? + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
+                throw new DSSErrorException(80001, "当前工作流" + rootFlow.getName() + "被用户" + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
             }
 
         }
@@ -3944,7 +3944,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
             if (node.getModifyNodeName().length() >= 128) {
                 DSSExceptionUtils.dealErrorException(91004,
-                        String.format(" %s modifyNodeName length cannot exceed 128 (名称长度超过�?28)", node.getModifyNodeName()), DSSErrorException.class);
+                        String.format(" %s modifyNodeName length cannot exceed 128 (名称长度超过了128)", node.getModifyNodeName()), DSSErrorException.class);
             }
 
             // 校验是否字母、数字、下划线
@@ -3952,7 +3952,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
             if (!matcher.find()) {
                 DSSExceptionUtils.dealErrorException(91004, String.format("%s modifyNodeName must be Started with alphabetic characters, " +
-                                "only alphanumeric and underscore are allowed! (必须以字母开头，且只支持字母、数字、下划线�? ", node.getModifyNodeName()),
+                                "only alphanumeric and underscore are allowed! (必须以字母开头，且只支持字母、数字、下划线！) ", node.getModifyNodeName()),
                         DSSErrorException.class);
             }
 
@@ -3961,9 +3961,6 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
 }
-
-
-
 
 
 
