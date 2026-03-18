@@ -127,8 +127,8 @@ public class DSSEdgeDefault implements DSSEdge {
                 ", branchKey='" + branchKey + '\'' +
                 ", branchLabel='" + branchLabel + '\'' +
                 ", condition='" + condition + '\'' +
-                ", priority=" + priority +
-                ", isDefault=" + isDefault +
+                ", priority=" + priority + '\'' +
+                ", isDefault=" + isDefault + '\'' +
                 '}';
     }
 }
