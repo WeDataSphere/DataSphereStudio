@@ -14,20 +14,21 @@
  *
  */
 
-package com.webank.wedatasphere.dss.orchestrator.server.entity.response;
-
-import com.webank.wedatasphere.dss.orchestrator.common.entity.ReleaseHistoryDetail;
+package com.webank.wedatasphere.dss.orchestrator.common.entity;
 
 import java.io.Serializable;
 
 /**
- * 发布信息VO，继承ReleaseHistoryDetail并扩展编排相关字段
+ * 发布信息VO
  */
-public class ReleaseInfoVO extends ReleaseHistoryDetail implements Serializable {
+public class ReleaseInfoVO implements Serializable {
     private Long orchestratorId;        // 编排ID
     private String orchestratorName;    // 编排名称
-    private Integer projectId;          // 项目ID
-    private Integer workspaceId;        // 工作空间ID
+    private String status;              // 发布状态
+    private String releaseUser;         // 发布人
+    private String releaseTime;         // 发布时间
+    private Long projectId;             // 项目ID
+    private String projectName;         // 项目名称
 
     public Long getOrchestratorId() {
         return orchestratorId;
@@ -45,39 +46,56 @@ public class ReleaseInfoVO extends ReleaseHistoryDetail implements Serializable 
         this.orchestratorName = orchestratorName;
     }
 
-    public Integer getProjectId() {
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getReleaseUser() {
+        return releaseUser;
+    }
+
+    public void setReleaseUser(String releaseUser) {
+        this.releaseUser = releaseUser;
+    }
+
+    public String getReleaseTime() {
+        return releaseTime;
+    }
+
+    public void setReleaseTime(String releaseTime) {
+        this.releaseTime = releaseTime;
+    }
+
+    public Long getProjectId() {
         return projectId;
     }
 
-    public void setProjectId(Integer projectId) {
+    public void setProjectId(Long projectId) {
         this.projectId = projectId;
     }
 
-    public Integer getWorkspaceId() {
-        return workspaceId;
+    public String getProjectName() {
+        return projectName;
     }
 
-    public void setWorkspaceId(Integer workspaceId) {
-        this.workspaceId = workspaceId;
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
     }
 
     @Override
     public String toString() {
         return "ReleaseInfoVO{" +
-                "id=" + getId() +
-                ", status='" + getStatus() + '\'' +
-                ", recode='" + getRecode() + '\'' +
-                ", releaseUser='" + getReleaseUser() + '\'' +
-                ", version='" + getVersion() + '\'' +
-                ", lastModifyUser='" + getLastModifyUser() + '\'' +
-                ", releaseTime='" + getReleaseTime() + '\'' +
-                ", errorMessage='" + getErrorMessage() + '\'' +
-                ", orchestratorVersionId=" + getOrchestratorVersionId() +
-                ", appId=" + getAppId() +
-                ", orchestratorId=" + orchestratorId +
+                "orchestratorId=" + orchestratorId +
                 ", orchestratorName='" + orchestratorName + '\'' +
+                ", status='" + status + '\'' +
+                ", releaseUser='" + releaseUser + '\'' +
+                ", releaseTime='" + releaseTime + '\'' +
                 ", projectId=" + projectId +
-                ", workspaceId=" + workspaceId +
+                ", projectName='" + projectName + '\'' +
                 '}';
     }
 }

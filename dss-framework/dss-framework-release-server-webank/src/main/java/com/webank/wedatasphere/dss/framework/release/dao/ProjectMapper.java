@@ -32,6 +32,13 @@ public interface ProjectMapper {
 
     ProjectInfo getProjectInfoById(@Param("projectId")Long projectId);
 
+    /**
+     * 根据项目名称获取项目ID
+     * @param projectName 项目名称
+     * @return 项目ID
+     */
+    Long getProjectIdByName(@Param("projectName") String projectName);
+
     //todo release-server包移到orchestrator-server
     @Select("Select project_id from dss_orchestrator_info where id = #{orchestratorId}")
     Long getProjectIdByOrcId(@Param("orchestratorId") Long orchestratorId);

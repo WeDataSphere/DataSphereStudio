@@ -11,6 +11,7 @@ import com.webank.wedatasphere.dss.common.utils.DSSCommonUtils;
 import com.webank.wedatasphere.dss.common.utils.RpcAskUtils;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorVersion;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.ReleaseHistoryDetail;
+import com.webank.wedatasphere.dss.orchestrator.common.entity.ReleaseInfoVO;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorInfo;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.response.CompareWorkflowResult;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.response.ExecutionHistoryVo;
@@ -18,13 +19,11 @@ import com.webank.wedatasphere.dss.orchestrator.common.entity.response.ResponseA
 import com.webank.wedatasphere.dss.orchestrator.common.entity.response.ResponsePublishUser;
 import com.webank.wedatasphere.dss.orchestrator.common.protocol.*;
 import com.webank.wedatasphere.dss.orchestrator.db.dao.OrchestratorMapper;
+import com.webank.wedatasphere.dss.framework.release.dao.ProjectMapper;
 import com.webank.wedatasphere.dss.orchestrator.db.dao.WebankOrchestratorMapper;
 import com.webank.wedatasphere.dss.orchestrator.server.entity.request.OrchestratorCompareRequest;
 import com.webank.wedatasphere.dss.orchestrator.server.entity.request.ReleaseHistoryRequest;
-import com.webank.wedatasphere.dss.orchestrator.server.entity.request.ReleaseInfoRequest;
-import com.webank.wedatasphere.dss.framework.release.job.ReleaseStatus;
 import com.webank.wedatasphere.dss.orchestrator.server.entity.request.ReleaseUserRequest;
-import com.webank.wedatasphere.dss.orchestrator.server.entity.response.ReleaseInfoVO;
 import com.webank.wedatasphere.dss.orchestrator.server.service.WebankAppService;
 import com.webank.wedatasphere.dss.sender.service.DSSSenderServiceFactory;
 import org.apache.linkis.rpc.Sender;
@@ -48,6 +47,8 @@ public class WebankAppServiceImpl implements WebankAppService {
     private OrchestratorMapper orchestratorMapper;
     @Autowired
     private WebankOrchestratorMapper webankOrchestratorMapper;
+    @Autowired
+    private ProjectMapper projectMapper;
     private static final ThreadLocal<SimpleDateFormat> SIMPLE_DATE_FORMAT_HOLDER =
             ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
 
@@ -222,83 +223,54 @@ public class WebankAppServiceImpl implements WebankAppService {
     public List<ReleaseInfoVO> getReleaseInfo(ReleaseInfoRequest request) throws DSSErrorException {
         LOGGER.info("start to query release info: {}", request);
 
-        // 校验所有编排ID是否属于同一个项目
-        validateOrchestratorsInSameProject(request.getOrchestratorIds(), request.getProjectId());
-
-        List<ReleaseInfoVO> resultList = new ArrayList<>();
-
-        // 通过RPC调用ProjectServer查询发布信息
-        Sender sender = DSSSenderServiceFactory.getOrCreateServiceInstance().getProjectServerSender();
-
-        // 逐个查询每个orchestratorId的发布信息
-        for (Long orchestratorId : request.getOrchestratorIds()) {
-            RequestPublishHistory requestPublishHistory = new RequestPublishHistory();
-            requestPublishHistory.setOrchestratorId(orchestratorId);
-            // 设置状态过滤为success，只查询发布成功的记录
-            requestPublishHistory.setStatus(ReleaseStatus.SUCCESS.getStatus());
-            requestPublishHistory.setComment(request.getComment());
-            requestPublishHistory.setReleaseUser(request.getReleaseUser());
-            requestPublishHistory.setStartTime(request.getStartTime());
-            requestPublishHistory.setEndTime(request.getEndTime());
-            requestPublishHistory.setCurrentPage(1);
-            requestPublishHistory.setPageSize(1);
-
-            ResponsePublishHistory responsePublishHistory = RpcAskUtils.processAskException(sender.ask(requestPublishHistory),
-                    ResponsePublishHistory.class, RequestPublishHistory.class);
-
-            List<ReleaseHistoryDetail> releaseHistoryDetails = responsePublishHistory.getReleaseHistorys();
-            ReleaseInfoVO vo = new ReleaseInfoVO();
-            // 获取编排信息并设置扩展字段
-            String orchestratorName = webankOrchestratorMapper.getOrchestratorNameById(orchestratorId.intValue());
-            vo.setOrchestratorId(orchestratorId);
-            vo.setOrchestratorName(orchestratorName);
-            vo.setProjectId(request.getProjectId());
-            vo.setWorkspaceId(request.getWorkspaceId());
-
-            if (CollectionUtils.isNotEmpty(releaseHistoryDetails)) {
-                // SQL已过滤出success状态，第一条就是最新的成功记录
-                ReleaseHistoryDetail detail = releaseHistoryDetails.get(0);
-                // 复制基础字段
-                vo.setId(detail.getId());
-                vo.setStatus(detail.getStatus());
-                vo.setRecode(detail.getRecode());
-                vo.setReleaseUser(detail.getReleaseUser());
-                vo.setVersion(detail.getVersion());
-                vo.setLastModifyUser(detail.getLastModifyUser());
-                vo.setReleaseTime(detail.getReleaseTime());
-                vo.setErrorMessage(detail.getErrorMessage());
-                vo.setOrchestratorVersionId(detail.getOrchestratorVersionId());
-                vo.setAppId(detail.getAppId());
-                vo.setLogMsg(detail.getLogMsg());
-                vo.setBak(detail.getBak());
-            }
-
-            resultList.add(vo);
+        // 参数校验
+        if (StringUtils.isEmpty(request.getProjectName())) {
+            throw new DSSErrorException(70011, "项目名称不能为空");
+        }
+        if (CollectionUtils.isEmpty(request.getOrchestratorNames())) {
+            throw new DSSErrorException(70012, "编排名称列表不能为空");
+        }
+        if (request.getOrchestratorNames().size() > 100) {
+            throw new DSSErrorException(70013, "编排名称列表大小不能超过100");
         }
 
-        return resultList;
+        // 校验所有编排名称是否属于同一个项目
+        validateOrchestratorsInSameProject(request.getOrchestratorNames(), request.getProjectName());
+
+        // 调用WebankOrchestratorMapper查询发布信息
+        return webankOrchestratorMapper.getReleaseInfoByNames(request);
     }
 
     /**
-     * 校验所有编排ID是否属于同一个项目
+     * 校验所有编排名称是否属于同一个项目
      */
-    private void validateOrchestratorsInSameProject(List<Long> orchestratorIds, Integer projectId) throws DSSErrorException {
-        if (CollectionUtils.isEmpty(orchestratorIds)) {
+    private void validateOrchestratorsInSameProject(List<String> orchestratorNames, String projectName) throws DSSErrorException {
+        if (CollectionUtils.isEmpty(orchestratorNames)) {
             return;
         }
 
-        // 获取项目的所有编排详情
+        // 根据项目名称获取项目ID
+        Long projectId = projectMapper.getProjectIdByName(projectName);
+        if (projectId == null) {
+            throw new DSSErrorException(70010, "项目 " + projectName + " 不存在");
+        }
+
+        // 根据项目ID获取项目下所有编排
         Map<String, Object> params = new HashMap<>();
         params.put("project_id", projectId);
-        List<DSSOrchestratorInfo> orchestratorInfoList =  orchestratorMapper.queryOrchestratorInfos(params);
+        List<DSSOrchestratorInfo> orchestratorInfoList = orchestratorMapper.queryOrchestratorInfos(params);
 
-        Set<Long> projectOrchestratorIds = orchestratorInfoList.stream()
-                .map(DSSOrchestratorInfo::getId)
+        if (CollectionUtils.isEmpty(orchestratorInfoList)) {
+            throw new DSSErrorException(70010, "项目 " + projectName + " 下没有编排");
+        }
+
+        Set<String> projectOrchestratorNames = orchestratorInfoList.stream()
+                .map(DSSOrchestratorInfo::getName)
                 .collect(Collectors.toSet());
 
-        for (Long orchestratorId : orchestratorIds) {
-            if (!projectOrchestratorIds.contains(orchestratorId)) {
-                throw new DSSErrorException(70010, "编排ID " + orchestratorId + " 不属于项目 " + projectId);
+        for (String orchestratorName : orchestratorNames) {
+            if (!projectOrchestratorNames.contains(orchestratorName)) {
+                throw new DSSErrorException(70010, "编排 " + orchestratorName + " 不属于项目 " + projectName);
             }
         }
     }

@@ -34,4 +34,8 @@
     <select id = "getProjectInfoById" resultMap="projectInfo" parameterType="java.lang.Long">
         select * from dss_project where id = #{projectId}
     </select>
+
+    <select id = "getProjectIdByName" resultType="java.lang.Long" parameterType="java.lang.String">
+        select id from dss_project where name = #{projectName}
+    </select>
 </mapper>

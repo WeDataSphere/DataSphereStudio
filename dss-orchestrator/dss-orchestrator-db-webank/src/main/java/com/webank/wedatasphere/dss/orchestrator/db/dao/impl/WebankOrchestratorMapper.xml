@@ -161,4 +161,33 @@
         order by a.id desc
     </select>
 
+    <!-- 查询批量编排的发布信息（最新发布成功版本），根据项目名称和编排名称列表查询 -->
+    <select id="getReleaseInfoByNames"
+            parameterType="com.webank.wedatasphere.dss.orchestrator.common.protocol.ReleaseInfoRequest"
+            resultType="com.webank.wedatasphere.dss.orchestrator.common.entity.ReleaseInfoVO">
+        select a.id as orchestrator_id,
+               a.name as orchestrator_name,
+               b.status,
+               b.release_user,
+               b.release_time,
+               c.id as project_id,
+               c.name as project_name
+        from dss_orchestrator_info a
+        join dss_project c on a.project_id = c.id
+        left join (
+            select orchestrator_id,
+                   release_user,
+                   status,
+                   DATE_FORMAT(max(update_time),'%Y-%m-%d %T') AS release_time
+            from dss_release_task
+            where status = 'Success'
+            group by orchestrator_id
+        ) b on a.id = b.orchestrator_id
+        where a.name in
+        <foreach collection="orchestratorNames" item="name" open="(" separator="," close=")">
+            #{name}
+        </foreach>
+        and c.name = #{projectName}
+    </select>
+
 </mapper>

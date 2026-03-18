@@ -22,7 +22,9 @@ import com.webank.wedatasphere.dss.orchestrator.common.entity.DSSReleasedFlowVO;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.OrchestratorDetail;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorVersion;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.OrchestratorUser;
+import com.webank.wedatasphere.dss.orchestrator.common.entity.ReleaseInfoVO;
 import com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestPublishHistory;
+import com.webank.wedatasphere.dss.orchestrator.common.protocol.ReleaseInfoRequest;
 import org.apache.ibatis.annotations.*;
 
 import java.util.Date;
@@ -109,4 +111,11 @@ public interface WebankOrchestratorMapper {
 
     @Select("select id from `dss_orchestrator_info` where `project_id` = #{projectId} and uuid = #{uuid} and name = #{orchestratorName} limit 1")
     Long getOrcIdByUuid(@Param("projectId")Long projectId,@Param("orchestratorName")String orchestratorName,@Param("uuid")String uuid);
+
+    /**
+     * 查询批量编排的发布信息（最新发布成功版本），根据项目名称和编排名称列表查询
+     * @param request 查询请求，包含项目名称和编排名称列表
+     * @return 发布信息列表
+     */
+    List<ReleaseInfoVO> getReleaseInfoByNames(ReleaseInfoRequest request);
 }

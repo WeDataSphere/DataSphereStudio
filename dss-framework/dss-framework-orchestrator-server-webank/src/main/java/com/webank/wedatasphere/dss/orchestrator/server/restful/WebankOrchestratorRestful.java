@@ -18,13 +18,13 @@ package com.webank.wedatasphere.dss.orchestrator.server.restful;
 
 import com.webank.wedatasphere.dss.common.exception.DSSErrorException;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.ReleaseHistoryDetail;
+import com.webank.wedatasphere.dss.orchestrator.common.entity.ReleaseInfoVO;
 import com.webank.wedatasphere.dss.orchestrator.common.entity.response.ExecutionHistoryVo;
 import com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestExecutionHistory;
+import com.webank.wedatasphere.dss.orchestrator.common.protocol.ReleaseInfoRequest;
 import com.webank.wedatasphere.dss.orchestrator.server.entity.request.OrchestratorCompareRequest;
 import com.webank.wedatasphere.dss.orchestrator.server.entity.request.ReleaseHistoryRequest;
-import com.webank.wedatasphere.dss.orchestrator.server.entity.request.ReleaseInfoRequest;
 import com.webank.wedatasphere.dss.orchestrator.server.entity.request.ReleaseUserRequest;
-import com.webank.wedatasphere.dss.orchestrator.server.entity.response.ReleaseInfoVO;
 import com.webank.wedatasphere.dss.orchestrator.server.service.WebankAppService;
 import com.webank.wedatasphere.dss.orchestrator.server.service.WebankOrchestratorService;
 import org.apache.linkis.server.Message;
@@ -188,29 +188,11 @@ public class WebankOrchestratorRestful {
     public Message getReleaseInfo(@RequestBody ReleaseInfoRequest releaseInfoRequest) {
         LOGGER.info("getReleaseInfo request: {}", releaseInfoRequest);
 
-        // 参数校验
-        if (releaseInfoRequest.getWorkspaceId() == null) {
-            LOGGER.error("Failed to get release info, because workspaceId is null!");
-            return Message.error("工作空间ID不能为空");
-        }
-        if (releaseInfoRequest.getProjectId() == null) {
-            LOGGER.error("Failed to get release info, because projectId is null!");
-            return Message.error("项目ID不能为空");
-        }
-        if (releaseInfoRequest.getOrchestratorIds() == null || releaseInfoRequest.getOrchestratorIds().isEmpty()) {
-            LOGGER.error("Failed to get release info, because orchestratorIds is null or empty!");
-            return Message.error("编排ID列表不能为空");
-        }
-        if (releaseInfoRequest.getOrchestratorIds().size() > 100) {
-            LOGGER.error("Failed to get release info, orchestratorIds size exceeds limit: {}", releaseInfoRequest.getOrchestratorIds().size());
-            return Message.error("编排ID列表大小不能超过100");
-        }
-
         List<ReleaseInfoVO> releaseInfoList = null;
         try {
             releaseInfoList = webankAppService.getReleaseInfo(releaseInfoRequest);
         } catch (DSSErrorException e) {
-            LOGGER.error("Failed to get release info, because {}", e.getMessage(),e);
+            LOGGER.error("Failed to get release info, because {}", e.getMessage(), e);
             return Message.error(e.getMessage());
         }
         return Message.ok("获取发布信息成功").data("releaseInfoList", releaseInfoList);
