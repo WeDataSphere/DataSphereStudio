@@ -1,0 +1,540 @@
+openapi: 3.0.3
+info:
+  title: 工作流Spark版本白名单与发布信息查询 API
+  description: |
+    功能增强API规范文档
+
+    ## 功能概述
+    1. Spark版本白名单限制恢复 - 非白名单项目不显示Spark版本配置
+    2. AISQL节点特殊处理 - AISQL节点强制Spark3，不显示版本配置
+    3. 发布信息查询接口 - 根据项目和编排名称批量查询发布信息
+    4. 白名单管理接口 - 提供ITSM和普通两种白名单添加接口
+
+  version: 1.0.0
+  contact:
+    name: DSS Team
+
+servers:
+  - url: http://{host}:{port}
+    description: DSS Server
+    variables:
+      host:
+        default: localhost
+      port:
+        default: "9005"
+
+tags:
+  - name: Workflow Node
+    description: 工作流节点配置相关接口
+  - name: Orchestrator White
+    description: 编排白名单管理接口
+  - name: Release Info
+    description: 发布信息查询接口
+
+paths:
+  /dss/workflow/listNodeType:
+    get:
+      tags:
+        - Workflow Node
+      summary: 获取节点类型列表（GET）
+      description: |
+        获取工作流节点类型配置列表。
+
+        **白名单规则**：
+        - 生产环境（labels=prod）自动视为白名单
+        - 非白名单项目的节点不显示sparkVersion配置项
+        - AISQL节点（nodeType=linkis.ai.sql）始终不显示sparkVersion
+
+      operationId: listNodeTypeGet
+      parameters:
+        - name: labels
+          in: query
+          description: 环境标签（prod/dev）
+          required: false
+          schema:
+            type: string
+            example: "prod"
+        - name: projectId
+          in: query
+          description: 项目ID
+          required: false
+          schema:
+            type: integer
+            format: int64
+            example: 1
+        - name: orchestratorId
+          in: query
+          description: 编排ID
+          required: false
+          schema:
+            type: integer
+            format: int64
+            example: 2
+      responses:
+        '200':
+          description: 成功获取节点类型列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  method:
+                    type: string
+                    example: "GET"
+                  status:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: "OK"
+                  data:
+                    type: object
+                    properties:
+                      nodeTypes:
+                        type: array
+                        description: 节点类型分组列表
+                        items:
+                          $ref: '#/components/schemas/NodeGroupVO'
+                      isWhite:
+                        type: boolean
+                        description: 是否在白名单中
+                        example: true
+
+    post:
+      tags:
+        - Workflow Node
+      summary: 获取节点类型列表（POST）
+      description: |
+        用于工作流元数据、批量编辑节点时获取节点属性。
+
+        **与GET的区别**：
+        - 支持批量编排参数
+        - 白名单项目的sparkVersion默认值设为3
+
+      operationId: listNodeTypePost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListNodeTypeRequest'
+      responses:
+        '200':
+          description: 成功获取节点类型列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  method:
+                    type: string
+                    example: "POST"
+                  status:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: "OK"
+                  data:
+                    type: object
+                    properties:
+                      nodeTypes:
+                        type: array
+                        description: 节点类型分组列表
+                        items:
+                          $ref: '#/components/schemas/NodeGroupVO'
+                      isWhite:
+                        type: boolean
+                        description: 是否在白名单中
+                        example: true
+
+  /dss/framework/orchestrator/getReleaseInfo:
+    post:
+      tags:
+        - Release Info
+      summary: 批量查询发布信息
+      description: |
+        根据项目名称和编排名称批量查询工作流发布信息。
+
+        **业务规则**：
+        - 只返回发布成功（status='Success'）的记录
+        - 每个编排只返回最新的一条发布成功记录
+        - 编排必须属于指定的项目
+        - 未发布的编排不在结果列表中
+
+      operationId: getReleaseInfo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReleaseInfoRequest'
+      responses:
+        '200':
+          description: 成功查询发布信息
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  method:
+                    type: string
+                    example: "POST"
+                  status:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: "OK"
+                  data:
+                    type: object
+                    properties:
+                      releaseInfoList:
+                        type: array
+                        description: 发布信息列表
+                        items:
+                          $ref: '#/components/schemas/ReleaseInfoVO'
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dss/framework/orchestrator/addOrchestratorWhite:
+    post:
+      tags:
+        - Orchestrator White
+      summary: ITSM白名单添加接口
+      description: |
+        ITSM系统调用的白名单添加接口，支持批量添加。
+
+        **鉴权要求**：
+        - 需要在请求头中携带签名信息
+        - 使用WorkspaceUtils.validateAuth()验证签名
+
+        **业务规则**：
+        - orchestratorName为空或"*"时，设置orchestratorId=0（项目级白名单）
+        - type字段固定设置为"schedulis"
+        - reason字段保存用户填写的原因
+        - 重复添加不报错，更新现有记录
+
+      operationId: addOrchestratorWhite
+      parameters:
+        - name: timeStamp
+          in: header
+          description: 时间戳
+          required: true
+          schema:
+            type: string
+        - name: sign
+          in: header
+          description: 签名
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItsmWhiteRequest'
+      responses:
+        '200':
+          description: 添加成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItsmResponse'
+        '403':
+          description: 鉴权失败
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  retCode:
+                    type: string
+                    example: "403"
+                  retDetail:
+                    type: string
+                    example: "鉴权失败"
+
+  /dss/framework/orchestrator/addOrchestratorWhiteSimple:
+    post:
+      tags:
+        - Orchestrator White
+      summary: 普通白名单添加接口
+      description: |
+        普通用户使用的白名单添加接口，使用登录用户身份。
+
+        **业务规则**：
+        - projectName必填
+        - orchestratorName为空或"*"时，设置orchestratorId=0（项目级白名单）
+        - 使用登录用户作为createUser
+        - 重复添加不报错，更新现有记录
+
+      operationId: addOrchestratorWhiteSimple
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddOrchestratorWhiteRequest'
+      responses:
+        '200':
+          description: 添加成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  method:
+                    type: string
+                    example: "POST"
+                  status:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: "添加白名单成功"
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    # ===== 请求对象 =====
+    ListNodeTypeRequest:
+      type: object
+      description: 节点类型列表请求（批量编排）
+      properties:
+        batchOrchestratorInfo:
+          type: array
+          description: 批量编排信息列表
+          items:
+            $ref: '#/components/schemas/BatchOrchestrator'
+
+    BatchOrchestrator:
+      type: object
+      properties:
+        projectId:
+          type: integer
+          format: int64
+          description: 项目ID
+        orchestratorId:
+          type: integer
+          format: int64
+          description: 编排ID
+
+    ReleaseInfoRequest:
+      type: object
+      description: 发布信息查询请求
+      required:
+        - projectName
+        - orchestratorNames
+      properties:
+        projectName:
+          type: string
+          description: 项目名称
+          example: "数据开发项目"
+        orchestratorNames:
+          type: array
+          description: 编排名称列表（建议<=100）
+          maxItems: 100
+          items:
+            type: string
+          example: ["工作流1", "工作流2"]
+
+    AddOrchestratorWhiteRequest:
+      type: object
+      description: 白名单添加请求（普通接口）
+      required:
+        - projectName
+      properties:
+        projectName:
+          type: string
+          description: 项目名称
+          example: "数据开发项目"
+        orchestratorName:
+          type: string
+          description: 编排名称（为空或"*"表示项目级白名单）
+          example: "工作流1"
+        reason:
+          type: string
+          description: 添加原因
+          example: "Spark3升级测试"
+
+    ItsmWhiteRequest:
+      type: object
+      description: ITSM白名单添加请求
+      properties:
+        createDate:
+          type: string
+          description: 创建日期
+        createUser:
+          type: string
+          description: 创建用户
+        data:
+          type: array
+          description: 白名单数据列表
+          items:
+            $ref: '#/components/schemas/ItsmWhiteData'
+        externalId:
+          type: string
+          description: 外部ID
+
+    ItsmWhiteData:
+      type: object
+      properties:
+        projectName:
+          type: string
+          description: 项目名称
+        orchestratorName:
+          type: string
+          description: 编排名称
+        reason:
+          type: string
+          description: 添加原因
+
+    # ===== 响应对象 =====
+    NodeGroupVO:
+      type: object
+      description: 节点分组VO
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 分组ID
+        name:
+          type: string
+          description: 分组名称
+        nameEn:
+          type: string
+          description: 分组英文名称
+        title:
+          type: string
+          description: 显示标题
+        description:
+          type: string
+          description: 描述
+        children:
+          type: array
+          description: 节点列表
+          items:
+            $ref: '#/components/schemas/NodeInfoVO'
+
+    NodeInfoVO:
+      type: object
+      description: 节点信息VO
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 节点ID
+        name:
+          type: string
+          description: 节点名称
+        title:
+          type: string
+          description: 显示标题
+        type:
+          type: string
+          description: 节点类型
+          example: "linkis.ai.sql"
+        image:
+          type: string
+          description: 图标
+        nodeUiVOS:
+          type: array
+          description: UI配置列表
+          items:
+            $ref: '#/components/schemas/NodeUiVO'
+
+    NodeUiVO:
+      type: object
+      description: 节点UI配置VO
+      properties:
+        key:
+          type: string
+          description: 配置项键名
+          example: "sparkVersion"
+        value:
+          type: string
+          description: 配置项值
+        defaultValue:
+          type: string
+          description: 默认值
+          example: "3"
+        lableName:
+          type: string
+          description: 标签名称
+        desc:
+          type: string
+          description: 描述
+
+    ReleaseInfoVO:
+      type: object
+      description: 发布信息响应VO
+      properties:
+        orchestratorId:
+          type: integer
+          format: int64
+          description: 编排ID
+          example: 123
+        orchestratorName:
+          type: string
+          description: 编排名称
+          example: "数据同步工作流"
+        status:
+          type: string
+          description: 发布状态
+          example: "Success"
+        releaseUser:
+          type: string
+          description: 发布人
+          example: "admin"
+        releaseTime:
+          type: string
+          description: 发布时间
+          example: "2026-03-17 10:30:00"
+        projectId:
+          type: integer
+          format: int64
+          description: 项目ID
+          example: 1
+        projectName:
+          type: string
+          description: 项目名称
+          example: "数据分析项目"
+
+    ItsmResponse:
+      type: object
+      description: ITSM接口响应
+      properties:
+        retCode:
+          type: string
+          description: 返回码
+          example: "0"
+        retDetail:
+          type: string
+          description: 返回详情
+          example: "成功"
+
+    ErrorResponse:
+      type: object
+      description: 错误响应
+      properties:
+        method:
+          type: string
+          example: "POST"
+        status:
+          type: integer
+          example: 1
+        message:
+          type: string
+          description: 错误信息
+          example: "参数错误"

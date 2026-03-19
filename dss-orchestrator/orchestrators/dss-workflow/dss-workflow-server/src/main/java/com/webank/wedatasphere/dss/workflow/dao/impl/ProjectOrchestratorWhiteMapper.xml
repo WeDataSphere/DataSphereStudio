@@ -27,8 +27,8 @@
 
 
     <insert id="addProjectOrchestratorWhite">
-        insert into dss_project_orchestrator_white (project_id,project_name,orchestrator_id,orchestrator_name,create_by,update_by)
-        values(#{projectId},#{projectName},#{orchestratorId},#{orchestratorName},#{createBy},#{updateBy})
+        insert into dss_project_orchestrator_white (project_id,project_name,orchestrator_id,orchestrator_name,create_by,update_by,reason,type)
+        values(#{projectId},#{projectName},#{orchestratorId},#{orchestratorName},#{createBy},#{updateBy},#{reason},#{type})
     </insert>
 
     <update id="updateById" parameterType="com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite">
@@ -47,6 +47,11 @@
 
     <select id="getWhiteListByProjectId" resultType="com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite">
         select * from dss_project_orchestrator_white where project_id = #{projectId}
+    </select>
+
+
+    <select id="selectByProjectIdAndOrchestratorId" resultType="com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite">
+        select * from dss_project_orchestrator_white where project_id = #{projectId} and orchestrator_id = #{orchestratorId}  order by id desc limit 1;
     </select>
 
 </mapper>

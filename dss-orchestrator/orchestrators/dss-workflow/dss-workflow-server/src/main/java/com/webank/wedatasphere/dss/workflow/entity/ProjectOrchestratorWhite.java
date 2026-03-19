@@ -20,6 +20,10 @@ public class ProjectOrchestratorWhite {
 
     private String updateBy;
 
+    private String reason;
+
+    private String type;
+
     public Long getId() {
         return id;
     }
@@ -91,5 +95,21 @@ public class ProjectOrchestratorWhite {
 
     public void setUpdateBy(String updateBy) {
         this.updateBy = updateBy;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 }

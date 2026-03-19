@@ -978,4 +978,74 @@ public class DSSFrameworkOrchestratorRestful {
         return ItsmResponse.ok().retDetail("Success to add orchestrator white");
 
     }
+
+    /**
+     * 添加工作流白名单（普通接口，无需ITSM鉴权）
+     *
+     * @param request 包含项目名称、工作流名称和原因的请求
+     * @return Message
+     */
+    @RequestMapping(path = "addOrchestratorWhiteSimple", method = RequestMethod.POST)
+    public Message addOrchestratorWhiteSimple(@RequestBody AddOrchestratorWhiteRequest request) {
+        String username = SecurityFilter.getLoginUsername(httpServletRequest);
+
+        LOGGER.info("user {} try to add orchestrator white, request:{}", username, request);
+
+        String projectName = request.getProjectName();
+        String orchestratorName = request.getOrchestratorName();
+        String reason = request.getReason();
+
+        if(StringUtils.isEmpty(projectName)){
+            LOGGER.error("project is empty");
+            return Message.error("项目信息不能为空！");
+        }
+
+        if(StringUtils.isEmpty(orchestratorName)){
+            orchestratorName = "*";
+        }
+
+        try {
+            DSSProject dssProject = orchestratorFrameworkService.getProjectByName(projectName);
+
+            if (dssProject == null) {
+                String msg = String.format("项目 %s 不存在于DSS", projectName);
+                LOGGER.error(msg);
+                return Message.warn(msg);
+            }
+
+            long orchestratorId = 0L;
+
+            if(!"*".equalsIgnoreCase(orchestratorName.trim())){
+                List<DSSOrchestratorInfo> orchestratorInfoList = orchestratorMapper.getByNameAndProjectId(dssProject.getId(), orchestratorName);
+
+                if(CollectionUtils.isEmpty(orchestratorInfoList)){
+                    String msg = String.format("工作流 %s 不存在", orchestratorName);
+                    LOGGER.error(msg);
+                    return Message.error(msg);
+                }
+
+                orchestratorId = orchestratorInfoList.get(0).getId();
+            }
+
+            ProjectOrchestratorWhite projectOrchestratorWhite = new ProjectOrchestratorWhite();
+            projectOrchestratorWhite.setOrchestratorId(orchestratorId);
+            projectOrchestratorWhite.setOrchestratorName(orchestratorName);
+            projectOrchestratorWhite.setProjectName(projectName);
+            projectOrchestratorWhite.setProjectId(dssProject.getId());
+            projectOrchestratorWhite.setCreateBy(username);
+            projectOrchestratorWhite.setUpdateBy(username);
+            projectOrchestratorWhite.setReason(reason);
+            projectOrchestratorWhite.setType("schedulis");
+
+            projectOrchestratorWhiteService.addProjectOrchestratorWhite(projectOrchestratorWhite);
+
+            LOGGER.info("success to add orchestrator white, project:{}, orchestrator:{}", projectName, orchestratorName);
+            return Message.ok("添加工作流白名单成功");
+
+        } catch (Exception e) {
+            LOGGER.error("project is {}, orchestrator is {}, add white fail: {}", projectName, orchestratorName, e);
+            String errorMsg = String.format("添加工作流白名单失败: %s", e.getMessage());
+            return Message.error(errorMsg);
+        }
+    }
 }

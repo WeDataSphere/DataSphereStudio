@@ -77,7 +77,7 @@ public class NodeRestfulApi {
                                 @RequestParam(value = "projectId", required = false) Long projectId,
                                 @RequestParam(value = "orchestratorId",required = false) Long orchestratorId){
 
-        boolean isWhite;
+        boolean isWhite = false;
         if(DSSCommonUtils.ENV_LABEL_VALUE_PROD.equalsIgnoreCase(labels)){
             isWhite = true;
         }else{
@@ -87,8 +87,9 @@ public class NodeRestfulApi {
 
         logger.info("projectId is {}, orchestratorId is {} ,isWhite is {}", projectId,orchestratorId,isWhite);
 
-        List<NodeGroupVO> groupVos = getNodeGroup(req,isWhite);
-        return Message.ok().data("nodeTypes", groupVos);
+        // GET请求，不设置sparkVersion默认值
+        List<NodeGroupVO> groupVos = getNodeGroup(req,isWhite,false);
+        return Message.ok().data("nodeTypes", groupVos).data("isWhite",isWhite);
     }
 
     /****
@@ -103,7 +104,7 @@ public class NodeRestfulApi {
 
 
         logger.info("listNodeTypeRequest is {}", listNodeTypeRequest);
-        boolean isWhite = true;
+        boolean isWhite = false;
 
         for(ListNodeTypeRequest.BatchOrchestrator params: listNodeTypeRequest.getBatchOrchestratorInfo()){
 
@@ -117,12 +118,13 @@ public class NodeRestfulApi {
 
         logger.info("listNodeTypeRequest is {},isWhite is {}",listNodeTypeRequest,isWhite);
         // 传入的项目和工作流没有在白名单,则取消sparkVersion的属性筛选
-        List<NodeGroupVO> groupVos = getNodeGroup(req,isWhite);
-        return Message.ok().data("nodeTypes", groupVos);
+        // POST请求，设置sparkVersion默认值为3
+        List<NodeGroupVO> groupVos = getNodeGroup(req,isWhite,true);
+        return Message.ok().data("nodeTypes", groupVos).data("isWhite",isWhite);
     }
 
 
-    private List<NodeGroupVO> getNodeGroup(HttpServletRequest req,boolean isWhite){
+    private List<NodeGroupVO> getNodeGroup(HttpServletRequest req,boolean isWhite, boolean isPostRequest){
 
 
         Function<NodeGroup, String> supplier = internationalization(req, NodeGroup::getNameEn, NodeGroup::getName);
@@ -137,13 +139,8 @@ public class NodeRestfulApi {
 
             for(NodeInfo nodeInfo: group.getNodes()){
 
-                // 不在白名单, 跳过aisql节点
-                if (!isWhite && "linkis.ai.sql".equalsIgnoreCase(nodeInfo.getNodeType())){
-                    continue;
-                }
-
                 try {
-                    nodeGroupVO.getChildren().add(transfer(nodeInfo, req, isWhite));
+                    nodeGroupVO.getChildren().add(transfer(nodeInfo, req, isWhite, isPostRequest));
                 } catch (IOException e) {
                     logger.error("ListNodeType get AppConn {} icons failed.", nodeInfo.getAppConnName(), e);
                     throw new DSSRuntimeException(81200, e.getMessage(), e);
@@ -180,7 +177,7 @@ public class NodeRestfulApi {
         return nodeUiValidateVO;
     }
 
-    private NodeInfoVO transfer(NodeInfo nodeInfo, HttpServletRequest req, boolean isWhite) throws IOException {
+    private NodeInfoVO transfer(NodeInfo nodeInfo, HttpServletRequest req, boolean isWhite, boolean isPostRequest) throws IOException {
         NodeInfoVO nodeInfoVO = new NodeInfoVO();
         BeanUtils.copyProperties(nodeInfo, nodeInfoVO);
         nodeInfoVO.setTitle(nodeInfo.getName());
@@ -201,6 +198,12 @@ public class NodeRestfulApi {
             nodeUiVO.setDesc(descriptionSupplier.apply(nodeUi));
             nodeUiVO.setLableName(labelNameSupplier.apply(nodeUi));
             nodeUiVO.setNodeUiValidateVOS(nodeUi.getNodeUiValidates().stream().map(v -> transfer(v, req)).sorted(NodeUiValidateVO::compareTo).collect(Collectors.toList()));
+
+            // 只有POST请求才为 sparkVersion 参数设置默认值为 3
+            if (isPostRequest && "sparkVersion".equalsIgnoreCase(nodeUi.getKey())) {
+                nodeUiVO.setDefaultValue("3");
+            }
+
             nodeUiVOS.add(nodeUiVO);
             keySet.add(nodeUi.getKey());
         }
