@@ -1,0 +1,501 @@
+openapi: 3.0.3
+info:
+  title: 数据服务审批与增量授权功能 API
+  description: |
+    数据服务审批与增量授权功能相关API接口定义。
+
+    ## 功能概述
+    - E1: 批量提单功能
+    - E2: 审批刷新与Token生成
+    - E3: 增量授权核心功能（自动合并历史授权用户）
+    - E4: 历史配置保留
+
+    ## 核心流程
+    1. 用户提单时只需填写新增用户
+    2. 审批通过后用户点击"刷新状态"
+    3. 调用approvalRefresh接口
+    4. 系统自动查询历史审批单
+    5. 合并历史用户+申请用户
+    6. 禁用旧版本Token
+    7. 生成新版本Token
+  version: 1.0.0
+  contact:
+    name: DSS API Service Team
+
+servers:
+  - url: http://{host}:{port}/dss/apiservice
+    description: DSS API Service Server
+    variables:
+      host:
+        default: localhost
+      port:
+        default: '9004'
+
+tags:
+  - name: approval
+    description: 审批相关接口
+  - name: token
+    description: Token管理相关接口
+  - name: api-service
+    description: 数据服务管理接口
+
+paths:
+  /submit:
+    post:
+      tags:
+        - approval
+      summary: 批量提单
+      description: |
+        向DM发起批量提单，可同时包含多个数据服务。
+
+        ## 增量授权说明
+        - 用户只需填写新增的授权用户即可
+        - 系统在Token生成时自动合并历史用户
+        - 无需传递 incrementalMode 参数
+      operationId: submitApiService
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiSubmitRequest'
+            examples:
+              incremental:
+                summary: 增量授权提单示例
+                value:
+                  submitApiInfos:
+                    - apiId: 1
+                      apiVersionId: 200
+                  approvalName: 订单查询API增量授权
+                  applyUser: user3,user4
+                  workspaceId: 180
+                  backgroundDesc: 新增授权用户
+                  sensitive: 0
+                  duration: '30'
+              first-time:
+                summary: 首次提单示例
+                value:
+                  submitApiInfos:
+                    - apiId: 1
+                      apiVersionId: 100
+                  approvalName: 订单查询API首次授权
+                  applyUser: user1,user2
+                  workspaceId: 180
+                  backgroundDesc: 首次授权
+                  sensitive: 0
+                  duration: '30'
+      responses:
+        '200':
+          description: 提单成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+              example:
+                method: /apiservice/api/submit
+                status: 0
+                message: 提单成功
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+              examples:
+                missing-approval-name:
+                  summary: 缺少审批单名称
+                  value:
+                    method: /apiservice/api/submit
+                    status: 1
+                    message: "'approvalName' is missing[缺少审批单名字]"
+                missing-apply-user:
+                  summary: 缺少申请用户
+                  value:
+                    method: /apiservice/api/submit
+                    status: 1
+                    message: "'applyUser' is missing[缺少申请用户名字]"
+      security:
+        - cookieAuth: []
+
+  /approvalRefresh:
+    get:
+      tags:
+        - approval
+        - token
+      summary: 审批刷新与Token生成
+      description: |
+        刷新审批单状态并生成Token。
+
+        ## 功能说明
+        - 请求DM获取审批单状态
+        - 审批通过后自动触发Token生成
+        - **自动合并历史授权用户**（无需用户指定）
+        - 为所有用户（申请用户 + 历史用户）生成Token
+        - 禁用旧版本Token
+
+        ## 权限控制
+        仅审批单的创建者可调用此接口
+      operationId: approvalRefresh
+      parameters:
+        - name: approvalNo
+          in: query
+          description: 审批单号
+          required: true
+          schema:
+            type: string
+            example: uuid-xxxx-xxxx-xxxx
+      responses:
+        '200':
+          description: 刷新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+              examples:
+                success:
+                  summary: 审批通过
+                  value:
+                    method: /apiservice/approvalRefresh/
+                    status: 0
+                    message: 操作成功
+                    data:
+                      approvalStatus: 审批通过
+                approving:
+                  summary: 审批中
+                  value:
+                    method: /apiservice/approvalRefresh/
+                    status: 0
+                    message: 操作成功
+                    data:
+                      approvalStatus: 审批中
+        '403':
+          description: 权限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+              example:
+                status: 100078
+                message: 登录用户和审批单的申请用户不匹配，请联系申请用户授权，申请用户：admin,申请单号：uuid-xxxx
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+              example:
+                status: 800002
+                message: Token保存失败
+      security:
+        - cookieAuth: []
+
+  /availableSubmitApi:
+    get:
+      tags:
+        - api-service
+      summary: 查询可提单API
+      description: |
+        获取用户可提交审批的API列表。
+
+        返回最新版本为"未提单"状态的API，仅返回属于当前工作空间的API。
+      operationId: availableSubmitApi
+      parameters:
+        - name: workspaceId
+          in: query
+          description: 工作空间ID
+          required: true
+          schema:
+            type: integer
+            example: 180
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+              example:
+                method: /apiservice/availableSubmitApi
+                status: 0
+                message: 操作成功
+                data:
+                  availableSubmitApiList:
+                    - id: 1
+                      name: order_query_api
+                      aliasName: 订单查询API
+                      latestVersionId: 100
+                      status: 2
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+              example:
+                method: /apiservice/availableSubmitApi
+                status: 1
+                message: "'api service search workspaceId' is missing[缺少工作空间Id]"
+      security:
+        - cookieAuth: []
+
+  /tokenQuery:
+    get:
+      tags:
+        - token
+      summary: Token查询
+      description: 分页查询Token记录
+      operationId: tokenQuery
+      parameters:
+        - name: apiId
+          in: query
+          description: API ID
+          required: false
+          schema:
+            type: integer
+        - name: user
+          in: query
+          description: 用户名
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Token状态（0过期/1有效）
+          required: false
+          schema:
+            type: integer
+            enum: [0, 1]
+        - name: startDate
+          in: query
+          description: 开始日期（时间戳）
+          required: false
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          description: 结束日期（时间戳）
+          required: false
+          schema:
+            type: string
+        - name: currentPage
+          in: query
+          description: 当前页码
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          description: 每页大小
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: version
+          in: query
+          description: API版本
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+              example:
+                method: /apiservice/tokenQuery
+                status: 0
+                message: 操作成功
+                data:
+                  queryList:
+                    - id: 1
+                      apiVersionId: 100
+                      apiId: 1
+                      user: user1
+                      status: 1
+                      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  total: 1
+      security:
+        - cookieAuth: []
+
+components:
+  schemas:
+    ApiSubmitRequest:
+      type: object
+      required:
+        - approvalName
+        - applyUser
+        - workspaceId
+        - backgroundDesc
+        - submitApiInfos
+        - sensitive
+      properties:
+        submitApiInfos:
+          type: array
+          description: 提交的API信息列表
+          items:
+            $ref: '#/components/schemas/ApiVersionIdVo'
+        approvalName:
+          type: string
+          description: 审批单名称（不超过200个字符）
+          maxLength: 200
+          example: 订单查询API授权
+        applyUser:
+          type: string
+          description: |
+            申请用户（逗号分隔）。
+
+            增量授权说明：用户只需填写新增的用户，系统会自动合并历史用户。
+          example: user3,user4
+        workspaceId:
+          type: integer
+          description: 工作空间ID
+          example: 180
+        backgroundDesc:
+          type: string
+          description: 背景描述
+          example: 新增授权用户
+        sensitive:
+          type: integer
+          description: 是否涉及一级数据（0否/1是）
+          enum: [0, 1]
+          example: 0
+        duration:
+          type: string
+          description: |
+            授权时长（天）。
+
+            特殊值：
+            - "*" 表示永久授权
+          example: '30'
+        devPrincipals:
+          type: string
+          description: 开发负责人（JDBC API必填）
+        productInfo:
+          type: string
+          description: 关联产品信息（JDBC API必填）
+
+    ApiVersionIdVo:
+      type: object
+      required:
+        - apiId
+        - apiVersionId
+      properties:
+        apiId:
+          type: integer
+          description: API ID
+          example: 1
+        apiVersionId:
+          type: integer
+          description: API版本ID
+          example: 200
+
+    Message:
+      type: object
+      properties:
+        method:
+          type: string
+          description: 请求方法路径
+        status:
+          type: integer
+          description: 状态码（0成功/非0失败）
+        message:
+          type: string
+          description: 消息内容
+        data:
+          type: object
+          description: 返回数据
+          additionalProperties: true
+
+    ApprovalVo:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 审批单ID
+        apiId:
+          type: integer
+          description: API ID
+        apiVersionId:
+          type: integer
+          description: API版本ID
+        approvalName:
+          type: string
+          description: 审批单名称
+        applyUser:
+          type: string
+          description: 申请用户（逗号分隔）
+        creator:
+          type: string
+          description: 创建者
+        status:
+          type: integer
+          description: 审批状态（0待审批/1审批中/2成功/3失败）
+          enum: [0, 1, 2, 3]
+        approvalNo:
+          type: string
+          description: 审批单号
+        createTime:
+          type: string
+          format: date-time
+          description: 创建时间
+        updateTime:
+          type: string
+          format: date-time
+          description: 更新时间
+
+    TokenManagerVo:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Token ID
+        apiVersionId:
+          type: integer
+          description: API版本ID
+        apiId:
+          type: integer
+          description: API ID
+        publisher:
+          type: string
+          description: 发布用户
+        user:
+          type: string
+          description: 申请用户
+        applyTime:
+          type: string
+          format: date-time
+          description: 申请时间
+        duration:
+          type: integer
+          description: 授权时长（天）
+        reason:
+          type: string
+          description: 申请原因
+        ipWhitelist:
+          type: string
+          description: IP白名单
+        status:
+          type: integer
+          description: Token状态（0过期/1有效）
+          enum: [0, 1]
+        caller:
+          type: string
+          description: 调用方
+        accessLimit:
+          type: integer
+          description: 访问限制
+        token:
+          type: string
+          description: JWT Token
+        applySource:
+          type: string
+          description: 申请来源（审批单号）
+
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: linkis_user_session_ticket_id_v1
