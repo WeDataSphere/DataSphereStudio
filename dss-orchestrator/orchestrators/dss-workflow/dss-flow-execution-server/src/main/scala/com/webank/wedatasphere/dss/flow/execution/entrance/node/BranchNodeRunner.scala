@@ -90,14 +90,21 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner {
         flow.getWorkflowNodeEdges.map(_.getDSSEdge).filter(edge => currentNodeId == edge.getSource)
       )
       val context = BranchExpressionUtils.buildEvaluationContext(node)
-      val selectedEdge = selectEdge(outgoingEdges, context)
+      val branchRuleText = BranchExpressionUtils.getBranchRuleText(node)
+      if (!Option(branchRuleText).exists(_.trim.nonEmpty)) {
+        throw new IllegalStateException(s"Branch node ${node.getName} must define branch.rules.")
+      }
+      val selectedEdge = selectEdgeByRules(outgoingEdges, BranchExpressionUtils.parseBranchRules(branchRuleText), context)
+      if (selectedEdge.isEmpty) {
+        throw new IllegalStateException(s"No branch rule matched for node ${node.getName}.")
+      }
       val selectedTarget = selectedEdge.map(_.getTarget).orNull
       getNodeRunnerListener match {
         case flowEntranceJob: FlowEntranceJob =>
           flowEntranceJob.recordBranchSelection(currentNodeId, selectedTarget)
         case _ =>
       }
-      this.executedInfo = Option(selectedEdge.map(_.getBranchLabel).orNull).getOrElse(Option(selectedTarget).getOrElse("default"))
+      this.executedInfo = Option(selectedTarget).getOrElse("default")
       this.transitionState(NodeExecutionState.Succeed)
     } catch {
       case t: Throwable =>
@@ -108,11 +115,20 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner {
     }
   }
 
-  private def selectEdge(edges: Seq[DSSEdge], context: Map[String, String]): Option[DSSEdge] = {    edges.find { edge =>
-      java.lang.Boolean.TRUE != edge.getDefault && BranchExpressionUtils.evaluateCondition(edge.getCondition, context)
-    }.orElse {
-      edges.find(edge => java.lang.Boolean.TRUE == edge.getDefault)
-    }.orElse(edges.headOption)
+  private def selectEdgeByRules(edges: Seq[DSSEdge], rules: Seq[BranchExpressionUtils.BranchRule], context: Map[String, String]): Option[DSSEdge] = {
+    val workflowNodesById = flow.getWorkflowNodes.map(node => node.getId -> node).toMap
+    def matchEdge(targetName: String): Option[DSSEdge] = {
+      val normalized = Option(targetName).map(_.trim).getOrElse("")
+      edges.find { edge =>
+        workflowNodesById.get(edge.getTarget).exists { targetNode =>
+          normalized.equalsIgnoreCase(targetNode.getName) || normalized == targetNode.getId || normalized == edge.getTarget
+        }
+      }
+    }
+    rules.find(rule => !BranchExpressionUtils.isDefaultRule(rule) && BranchExpressionUtils.evaluateCondition(rule.condition, context))
+      .flatMap(rule => matchEdge(rule.targetName))
+      .orElse(rules.find(BranchExpressionUtils.isDefaultRule).flatMap(rule => matchEdge(rule.targetName)))
   }
-}
+
+  private def selectEdge(edges: Seq[DSSEdge], context: Map[String, String]): Option[DSSEdge] = {
 

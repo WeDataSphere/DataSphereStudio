@@ -27,6 +27,10 @@ import scala.collection.JavaConversions._
 object BranchExpressionUtils {
 
   val BranchNodeType = "workflow.branch"
+  val BranchRuleKey = "branch.rules"
+  val DefaultRuleValues = Set("default", "else", "*")
+
+  case class BranchRule(condition: String, targetName: String)
 
   def isBranchNode(node: WorkflowNode): Boolean = node != null && BranchNodeType.equalsIgnoreCase(node.getNodeType)
 
@@ -52,6 +56,39 @@ object BranchExpressionUtils {
       "node.type" -> Option(node).map(_.getNodeType).getOrElse("")
     )
   }
+
+  def getBranchRuleText(node: WorkflowNode): String = {
+    val params = Option(node).map(_.getDSSNode).map(_.getParams).orNull
+    params match {
+      case map: util.Map[_, _] =>
+        getStringValue(map.get(BranchRuleKey))
+          .orElse {
+            map.get("configuration") match {
+              case configuration: util.Map[_, _] =>
+                configuration.get("special") match {
+                  case special: util.Map[_, _] => getStringValue(special.get(BranchRuleKey))
+                  case _ => None
+                }
+              case _ => None
+            }
+          }.getOrElse("")
+      case _ => ""
+    }
+  }
+
+  def parseBranchRules(raw: String): Seq[BranchRule] = {
+    Option(raw).map(_.split("[\\r\\n;]+").toSeq).getOrElse(Seq.empty)
+      .map(_.trim)
+      .filter(_.nonEmpty)
+      .flatMap { line =>
+        val parts = line.split("=", 2).map(_.trim)
+        if (parts.length == 2 && parts(0).nonEmpty && parts(1).nonEmpty) {
+          Some(BranchRule(parts(0), parts(1)))
+        } else None
+      }
+  }
+
+  def isDefaultRule(rule: BranchRule): Boolean = DefaultRuleValues.contains(Option(rule.condition).map(_.trim.toLowerCase).getOrElse(""))
 
   def evaluateCondition(condition: String, context: Map[String, String]): Boolean = {
     val normalized = Option(condition).map(_.trim).getOrElse("")
@@ -84,6 +121,10 @@ object BranchExpressionUtils {
     val unquoted = normalized.stripPrefix("\"").stripSuffix("\"").stripPrefix("'").stripSuffix("'")
     context.getOrElse(normalized, context.getOrElse(unquoted, unquoted))
   }
+
+
+
+  private def getStringValue(value: Any): Option[String] = Option(value).map(_.toString.trim).filter(_.nonEmpty)
 
   private def compare(left: String, right: String, operator: String): Boolean = {
     (toBigDecimal(left), toBigDecimal(right)) match {

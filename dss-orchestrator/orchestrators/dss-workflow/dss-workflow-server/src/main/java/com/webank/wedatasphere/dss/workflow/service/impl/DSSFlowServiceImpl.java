@@ -480,56 +480,120 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         JsonObject jsonObject = JsonParser.parseString(jsonFlow).getAsJsonObject();
         JsonArray nodeJsonArray = jsonObject.getAsJsonArray("nodes");
         JsonArray edgeJsonArray = jsonObject.getAsJsonArray("edges");
-        if (nodeJsonArray == null || nodeJsonArray.size() == 0) {
+        if (nodeJsonArray == null || nodeJsonArray.size() == 0 || edgeJsonArray == null) {
             return;
         }
-        Set<String> branchNodeIds = new HashSet<>();
-        Map<String, String> branchNodeNames = new HashMap<>();
+        Map<String, JsonObject> nodeById = new HashMap<>();
+        List<JsonObject> branchNodes = new ArrayList<>();
         for (JsonElement nodeElement : nodeJsonArray) {
             JsonObject node = nodeElement.getAsJsonObject();
+            String nodeId = getJsonString(node, "key");
+            if (StringUtils.isBlank(nodeId)) {
+                nodeId = getJsonString(node, "id");
+            }
+            if (StringUtils.isNotBlank(nodeId)) {
+                nodeById.put(nodeId, node);
+            }
             String nodeType = getJsonString(node, "jobType");
             if (StringUtils.isBlank(nodeType)) {
                 nodeType = getJsonString(node, "type");
             }
             if (BRANCH_NODE_TYPE.equalsIgnoreCase(nodeType)) {
-                String nodeId = getJsonString(node, "key");
-                if (StringUtils.isBlank(nodeId)) {
-                    nodeId = getJsonString(node, "id");
+                branchNodes.add(node);
+            }
+        }
+        for (JsonObject branchNode : branchNodes) {
+            String branchNodeId = getJsonString(branchNode, "key");
+            if (StringUtils.isBlank(branchNodeId)) {
+                branchNodeId = getJsonString(branchNode, "id");
+            }
+            String branchNodeName = getJsonString(branchNode, "title");
+            if (StringUtils.isBlank(branchNodeName)) {
+                branchNodeName = branchNodeId;
+            }
+            List<JsonObject> outgoingEdges = new ArrayList<>();
+            Set<String> targetNames = new HashSet<>();
+            Set<String> targetIds = new HashSet<>();
+            for (JsonElement edgeElement : edgeJsonArray) {
+                JsonObject edge = edgeElement.getAsJsonObject();
+                if (!StringUtils.equals(branchNodeId, getJsonString(edge, "source"))) {
+                    continue;
                 }
-                branchNodeIds.add(nodeId);
-                branchNodeNames.put(nodeId, getJsonString(node, "title"));
+                outgoingEdges.add(edge);
+                String targetId = getJsonString(edge, "target");
+                if (StringUtils.isNotBlank(targetId)) {
+                    targetIds.add(targetId);
+                    JsonObject targetNode = nodeById.get(targetId);
+                    if (targetNode != null) {
+                        String targetName = getJsonString(targetNode, "title");
+                        if (StringUtils.isBlank(targetName)) {
+                            targetName = getJsonString(targetNode, "name");
+                        }
+                        if (StringUtils.isBlank(targetName)) {
+                            targetName = targetId;
+                        }
+                        targetNames.add(targetName);
+                    }
+                }
             }
-        }
-        if (branchNodeIds.isEmpty() || edgeJsonArray == null) {
-            return;
-        }
-        Map<String, List<JsonObject>> branchEdges = new HashMap<>();
-        for (JsonElement edgeElement : edgeJsonArray) {
-            JsonObject edge = edgeElement.getAsJsonObject();
-            String source = getJsonString(edge, "source");
-            if (branchNodeIds.contains(source)) {
-                branchEdges.computeIfAbsent(source, key -> new ArrayList<>()).add(edge);
-            }
-        }
-        for (String branchNodeId : branchNodeIds) {
-            List<JsonObject> outgoingEdges = branchEdges.getOrDefault(branchNodeId, Collections.emptyList());
-            String branchNodeName = branchNodeNames.getOrDefault(branchNodeId, branchNodeId);
             if (outgoingEdges.size() < 2) {
                 throw new DSSErrorException(80001, "Branch node [" + branchNodeName + "] must have at least two outgoing edges.");
             }
-            int defaultCount = 0;
-            for (JsonObject edge : outgoingEdges) {
-                boolean isDefault = parseEdgeDefault(edge);
-                if (isDefault) {
-                    defaultCount++;
-                } else if (StringUtils.isBlank(getJsonString(edge, "condition"))) {
-                    throw new DSSErrorException(80001, "Non-default outgoing edges of branch node [" + branchNodeName + "] must define a condition.");
+            String branchRuleText = getBranchRuleText(branchNode);
+            if (StringUtils.isBlank(branchRuleText)) {
+                throw new DSSErrorException(80001, "Branch node [" + branchNodeName + "] must define branch rules on the node properties.");
+            }
+            List<String[]> branchRules = parseBranchRules(branchRuleText);
+            if (branchRules.isEmpty()) {
+                throw new DSSErrorException(80001, "Branch node [" + branchNodeName + "] has invalid branch rules.");
+            }
+            for (String[] branchRule : branchRules) {
+                String targetName = branchRule[1];
+                if (!targetNames.contains(targetName) && !targetIds.contains(targetName)) {
+                    throw new DSSErrorException(80001, "Branch node [" + branchNodeName + "] references a non-outgoing target node [" + targetName + "].");
                 }
             }
-            if (defaultCount != 1) {
-                throw new DSSErrorException(80001, "Branch node [" + branchNodeName + "] must configure exactly one default branch.");
+        }
+    }
+
+    private String getBranchRuleText(JsonObject branchNode) {
+        if (branchNode == null || !branchNode.has("params") || branchNode.get("params").isJsonNull()) {
+            return null;
+        }
+        JsonObject params = branchNode.getAsJsonObject("params");
+        if (params.has("branch.rules") && !params.get("branch.rules").isJsonNull()) {
+            return params.get("branch.rules").getAsString();
+        }
+        if (!params.has("configuration") || params.get("configuration").isJsonNull()) {
+            return null;
+        }
+        JsonObject configuration = params.getAsJsonObject("configuration");
+        if (!configuration.has("special") || configuration.get("special").isJsonNull()) {
+            return null;
+        }
+        JsonObject special = configuration.getAsJsonObject("special");
+        if (!special.has("branch.rules") || special.get("branch.rules").isJsonNull()) {
+            return null;
+        }
+        return special.get("branch.rules").getAsString();
+    }
+
+    private List<String[]> parseBranchRules(String branchRuleText) {
+        List<String[]> branchRules = new ArrayList<>();
+        if (StringUtils.isBlank(branchRuleText)) {
+            return branchRules;
+        }
+        String[] rawRules = branchRuleText.split("[\\r\\n;]+");
+        for (String rawRule : rawRules) {
+            if (StringUtils.isBlank(rawRule)) {
+                continue;
+            }
+            String[] parts = rawRule.split("=", 2);
+            if (parts.length == 2 && StringUtils.isNotBlank(parts[0]) && StringUtils.isNotBlank(parts[1])) {
+                branchRules.add(new String[]{parts[0].trim(), parts[1].trim()});
             }
         }
+        return branchRules;
     }
 
     private boolean parseEdgeDefault(JsonObject edge) {

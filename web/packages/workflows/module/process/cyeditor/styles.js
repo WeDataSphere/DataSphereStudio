@@ -1,4 +1,4 @@
-﻿export function getThemeColorConsants(theme) {
+export function getThemeColorConsants(theme) {
   const themeInfo = theme ? theme : window.document.documentElement.getAttribute('data-theme')
   const isDark = themeInfo == 'dark'
   const themeColor = isDark ? {
@@ -96,22 +96,6 @@ export default function (nodeTypes) {
       selector: 'edge[lineType]',
       style: {
         'curve-style': 'data(lineType)',
-      },
-    },
-    {
-      selector: 'edge[branchLabel]',
-      style: {
-        label: 'data(branchLabel)',
-        'font-size': '10px',
-        'text-background-color': '#fff',
-        'text-background-opacity': 0.8,
-        'text-background-padding': '2px',
-      },
-    },
-    {
-      selector: 'edge[isDefault = "true"]',
-      style: {
-        'line-style': 'dashed',
       },
     },
     {

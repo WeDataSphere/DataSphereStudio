@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Convert flow json to editor data.
  */
 export default function convertFlowJson(flowjson) {
@@ -34,14 +34,9 @@ export default function convertFlowJson(flowjson) {
       if (element.source && element.target && hasNode(element.source) && hasNode(element.target)) {
         elements.edges.push({
           data: {
-            id: `${index}`,
+            id: ${index},
             source: element.source,
             target: element.target,
-            branchKey: element.branchKey,
-            branchLabel: element.branchLabel,
-            condition: element.condition,
-            priority: element.priority,
-            isDefault: `${!!element.isDefault}`,
             lineColor: element.lineColor,
             lineType: element.lineType,
           },
