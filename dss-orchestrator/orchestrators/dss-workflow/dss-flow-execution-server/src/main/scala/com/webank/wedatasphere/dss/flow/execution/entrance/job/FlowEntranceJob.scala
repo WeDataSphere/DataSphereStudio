@@ -160,7 +160,8 @@ class FlowEntranceJob(persistManager: PersistenceManager) extends EntranceExecut
           }
         }
       }
-      info(s"Collected output variables from node($nodeName): ${outputVariables.keySet().mkString(",")}")
+      info(s"Collected output variables from node($nodeName): ${outputVariables.toSeq.sortBy(_._1).map { case (k, v) => s"$k=$v" }.mkString(", ")}")
+      info(s"Current flow variables after node($nodeName): ${this.flowVariables.toSeq.sortBy(_._1).map { case (k, v) => s"$k=$v" }.mkString(", ")}")
     }
   }
 

@@ -128,6 +128,7 @@ class FlowJobNodeParser extends FlowEntranceJobParser with Logging{
       val runTodayHStd = new CustomHourType(curHour, true)
       flowVar.put("run_today_h_std", runTodayHStd.toString())
       flowVar.put("run_today_hour_std", runTodayHStd.toString())
+      info(s"Initialized flow variables for job(${flowEntranceJob.getId}): ${flowVar.toSeq.sortBy(_._1).map { case (k, v) => s"$k=$v" }.mkString(", ")}")
     }
     flowVar
   }

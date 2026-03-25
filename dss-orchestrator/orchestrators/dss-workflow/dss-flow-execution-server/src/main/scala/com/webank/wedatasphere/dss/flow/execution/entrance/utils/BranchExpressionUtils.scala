@@ -21,10 +21,11 @@ import java.util
 import com.webank.wedatasphere.dss.common.entity.node.DSSEdge
 import com.webank.wedatasphere.dss.flow.execution.entrance.conf.FlowExecutionEntranceConfiguration
 import com.webank.wedatasphere.dss.workflow.core.entity.WorkflowNode
+import org.apache.linkis.common.utils.Logging
 
 import scala.collection.JavaConversions._
 
-object BranchExpressionUtils {
+object BranchExpressionUtils extends Logging {
 
   val BranchNodeType = "workflow.branch"
   val BranchRuleKey = "branch.rules"
@@ -103,16 +104,28 @@ object BranchExpressionUtils {
         case operator if expr.contains(operator) =>
           val parts = expr.split(java.util.regex.Pattern.quote(operator), 2).map(_.trim)
           if (parts.length != 2) {
+            warn(s"Invalid branch condition syntax: $condition")
             false
           } else {
             (resolveValue(parts(0), context), resolveValue(parts(1), context)) match {
-              case (Some(left), Some(right)) => compare(left, right, operator)
-              case _ => false
+              case (Some(left), Some(right)) =>
+                val matched = compare(left, right, operator)
+                info(s"Branch condition evaluated: expr=$expr, left=$left, operator=$operator, right=$right, matched=$matched")
+                matched
+              case _ =>
+                warn(s"Branch condition unresolved token: expr=$expr, leftToken=${parts(0)}, rightToken=${parts(1)}, contextKeys=${context.keys.toSeq.sorted.mkString(",")}")
+                false
             }
           }
       }.getOrElse {
-        resolveValue(expr, context).exists { resolved =>
-          resolved.equalsIgnoreCase("true") || resolved.nonEmpty
+        resolveValue(expr, context) match {
+          case Some(resolved) =>
+            val matched = resolved.equalsIgnoreCase("true") || resolved.nonEmpty
+            info(s"Branch condition evaluated: expr=$expr, value=$resolved, matched=$matched")
+            matched
+          case None =>
+            warn(s"Branch condition unresolved token: expr=$expr, contextKeys=${context.keys.toSeq.sorted.mkString(",")}")
+            false
         }
       }
     }
