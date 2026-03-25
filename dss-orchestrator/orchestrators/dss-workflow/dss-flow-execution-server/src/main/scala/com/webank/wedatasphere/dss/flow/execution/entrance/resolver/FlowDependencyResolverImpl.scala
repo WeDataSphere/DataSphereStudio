@@ -48,6 +48,10 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
       true
     }
 
+    def hasSkippedParent(node: WorkflowNode): Boolean = {
+      node.getDependencys != null && node.getDependencys.exists(flowContext.getSkippedNodes.containsKey)
+    }
+
     def shouldSkipByBranch(node: WorkflowNode): Boolean = {
       incomingEdges(node).exists { edge =>
         workflowNodesById.get(edge.getSource).exists { sourceNode =>
@@ -57,6 +61,10 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
             !flowJob.isBranchTargetSelected(sourceNode.getId, node.getId)
         }
       }
+    }
+
+    def shouldSkip(node: WorkflowNode): Boolean = {
+      shouldSkipByBranch(node) || hasSkippedParent(node)
     }
 
     def isBranchRouteMatched(node: WorkflowNode): Boolean = {
@@ -76,11 +84,12 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
           !FlowContext.isNodeRunning(nodeName, flowContext) &&
           !flowContext.isNodeCompleted(nodeName) &&
           isAllParentDependencyCompleted(node.getDependencys) &&
+          !shouldSkip(node) &&
           isBranchRouteMatched(node)
       }
-      if (flowContext.getPendingNodes.containsKey(nodeName) && !flowContext.isNodeCompleted(nodeName) && isAllParentDependencyCompleted(node.getDependencys) && shouldSkipByBranch(node)) {
+      if (flowContext.getPendingNodes.containsKey(nodeName) && !flowContext.isNodeCompleted(nodeName) && isAllParentDependencyCompleted(node.getDependencys) && shouldSkip(node)) {
         flowContext synchronized {
-          if (flowContext.getPendingNodes.containsKey(nodeName) && shouldSkipByBranch(node)) {
+          if (flowContext.getPendingNodes.containsKey(nodeName) && shouldSkip(node)) {
             flowContext.getPendingNodes.get(nodeName).tunToSkipped()
           }
         }
