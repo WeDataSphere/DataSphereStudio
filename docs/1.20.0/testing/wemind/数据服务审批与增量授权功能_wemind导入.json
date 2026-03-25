@@ -1,1 +1,970 @@
-{"root": {"data": {"text": "DSS"}, "children": [{"data": {"text": "/所有目录/SIT/V1.20.0/数据服务审批与增量授权功能测试"}, "children": [{"data": {"text": "需求：000001"}, "children": [{"data": {"text": "批量提单功能测试"}, "children": [{"data": {"text": "分类：功能案例"}, "children": [{"data": {"text": "【AIGC】批量提单 - 正常提单多个API"}, "children": [{"data": {"text": "条件：用户已登录系统，存在2个API版本处于\"未提单\"状态"}, "children": []}, {"data": {"text": "步骤：\n1、访问批量提单页面\n2、选择两个API：订单查询API(ID=100, 版本ID=1001)、用户管理API(ID=101, 版本ID=1002)\n3、填写审批单信息：审批单名称=\"API批量授权申请\"、授权用户=\"user1,user2\"、授权期限=\"30天\"、工作空间ID=\"180\"、背景描述=\"批量授权测试\"\n4、提交审批单"}, "children": []}, {"data": {"text": "预期结果：系统返回提单成功，每个API版本创建一条审批记录，API版本状态更新为\"已提单\"，生成统一审批单号"}, "children": []}]}, {"data": {"text": "【AIGC】批量提单 - 支持永久授权"}, "children": [{"data": {"text": "条件：存在1个API版本处于\"未提单\"状态"}, "children": []}, {"data": {"text": "步骤：\n1、访问批量提单页面\n2、选择API(ID=100, 版本ID=1001)\n3、填写审批单信息\n4、设置授权期限为\"*\"（永久）\n5、提交审批单"}, "children": []}, {"data": {"text": "预期结果：系统接受永久授权申请，审批记录中的授权期限为永久，生成的Token有效期为永久"}, "children": []}]}, {"data": {"text": "【AIGC】批量提单 - JDBC API特殊处理"}, "children": [{"data": {"text": "条件：存在JDBC类型API(ID=100, 版本ID=1001)处于\"未提单\"状态"}, "children": []}, {"data": {"text": "步骤：\n1、访问批量提单页面\n2、选择JDBC API\n3、填写必填的JDBC特殊字段：开发负责人=\"张三\"、关联产品信息=\"订单管理系统\"\n4、填写其他审批单信息\n5、提交审批单"}, "children": []}, {"data": {"text": "预期结果：审批单创建成功，系统包含开发负责人信息，系统包含产品信息，DM审批流程正确识别为JDBC类型"}, "children": []}]}]}]}, {"data": {"text": "审批刷新与Token生成测试"}, "children": [{"data": {"text": "分类：功能案例"}, "children": [{"data": {"text": "【AIGC】审批刷新 - 审批通过后自动生成Token"}, "children": [{"data": {"text": "条件：存在审批单(审批单号=\"uuid-001\")，当前登录用户为审批单创建者，DM系统返回审批状态为\"通过\""}, "children": []}, {"data": {"text": "步骤：\n1、用户点击\"刷新状态\"按钮\n2、系统调用 approvalRefresh 接口\n3、验证审批单状态更新\n4、查询生成的Token列表"}, "children": []}, {"data": {"text": "预期结果：审批单状态更新为\"成功\"，系统自动为所有申请用户生成Token，旧版本Token状态被禁用，新版本Token状态为有效"}, "children": []}]}, {"data": {"text": "【AIGC】审批刷新 - 仅允许创建者调用"}, "children": [{"data": {"text": "条件：存在审批单(审批单号=\"uuid-001\", 创建者=\"user_admin\")，当前登录用户为\"user_other\""}, "children": []}, {"data": {"text": "步骤：user_other用户尝试调用 approvalRefresh 接口，传入参数 approvalNo=\"uuid-001\""}, "children": []}, {"data": {"text": "预期结果：系统拒绝访问，返回错误码 100078，错误信息=\"登录用户和审批单的申请用户不匹配，请联系申请用户授权\""}, "children": []}]}]}, {"data": {"text": "分类：安全用例"}, "children": [{"data": {"text": "【AIGC】权限控制 - 非创建者无法刷新Token"}, "children": [{"data": {"text": "条件：存在审批单(审批单号=\"uuid-001\", 创建者=\"user_admin\")，当前登录用户为\"user_other\""}, "children": []}, {"data": {"text": "步骤：user_other用户尝试调用 approvalRefresh 接口"}, "children": []}, {"data": {"text": "预期结果：系统拒绝非创建者的访问，返回权限错误"}, "children": []}]}, {"data": {"text": "【AIGC】Token有效期验证"}, "children": [{"data": {"text": "条件：系统为用户生成30天有效期的Token"}, "children": []}, {"data": {"text": "步骤：\n1、验证Token中包含过期时间信息\n2、等待Token过期\n3、尝试使用过期Token访问API"}, "children": []}, {"data": {"text": "预期结果：Token中包含过期时间信息，Token过期后自动禁用，过期Token无法访问API"}, "children": []}]}, {"data": {"text": "【AIGC】敏感信息加密存储"}, "children": [{"data": {"text": "条件：生成了多个Token"}, "children": []}, {"data": {"text": "步骤：查询数据库中的token字段"}, "children": []}, {"data": {"text": "预期结果：Token信息加密存储，无法直接读取明文"}, "children": []}]}]}]}, {"data": {"text": "增量授权核心功能测试"}, "children": [{"data": {"text": "分类：功能案例"}, "children": [{"data": {"text": "【AIGC】增量授权 - 首次提单无历史用户"}, "children": [{"data": {"text": "条件：存在API(ID=100, 版本ID=1001)，该API没有历史审批记录"}, "children": []}, {"data": {"text": "步骤：\n1、用户首次提单并填写授权用户\"user1,user2\"\n2、审批通过后调用审批刷新接口\n3、查询生成的Token列表"}, "children": []}, {"data": {"text": "预期结果：为user1生成Token，为user2生成Token，Token状态为有效，不执行历史用户合并"}, "children": []}]}, {"data": {"text": "【AIGC】增量授权 - 自动合并历史用户"}, "children": [{"data": {"text": "条件：存在历史审批记录(history: API ID=100, 版本ID=1001, 授权用户=user1,user2)，创建新版本(ID=100, 版本ID=1002)"}, "children": []}, {"data": {"text": "步骤：\n1、用户提单并只填写新增用户\"user3,user4\"\n2、审批通过后调用审批刷新接口\n3、查询生成的Token列表"}, "children": []}, {"data": {"text": "预期结果：系统自动查询历史审批单，自动合并历史用户user1和user2，为所有用户生成Token，历史版本Token被禁用，新版本Token有效，最终授权用户：user1,user2,user3,user4"}, "children": []}]}, {"data": {"text": "【AIGC】增量授权 - 只保留历史用户"}, "children": [{"data": {"text": "条件：存在历史审批记录(API ID=100, 版本ID=1001, 授权用户=user1,user2)，创建新版本(ID=100, 版本ID=1002)"}, "children": []}, {"data": {"text": "步骤：\n1、用户提单并填写授权用户为空\n2、审批通过后调用审批刷新接口\n3、查询生成的Token列表"}, "children": []}, {"data": {"text": "预期结果：系统自动保留历史用户user1和user2，为新版本生成Token，不生成任何新增用户的Token，最终授权用户：user1,user2"}, "children": []}]}, {"data": {"text": "【AIGC】增量授权 - 重复用户去重处理"}, "children": [{"data": {"text": "条件：存在历史审批记录(API ID=100, 版本ID=1001, 授权用户=user1,user2)，创建新版本(ID=100, 版本ID=1002)"}, "children": []}, {"data": {"text": "步骤：\n1、用户提单并填写授权用户\"user1,user3\"\n2、审批通过后调用审批刷新接口\n3、查询生成的Token列表"}, "children": []}, {"data": {"text": "预期结果：自动合并历史用户user2，为user1生成Token（去重后只生成一次），为user2和user3生成Token，最终授权用户：user1,user2,user3"}, "children": []}]}]}]}, {"data": {"text": "历史配置保留与重复授权防护测试"}, "children": [{"data": {"text": "分类：功能案例"}, "children": [{"data": {"text": "【AIGC】历史配置保留 - 保留IP白名单配置"}, "children": [{"data": {"text": "条件：存在历史Token记录(user1: IP白名单=\"192.168.1.100,192.168.1.101\"，访问限制=\"1000次/天\"，caller=\"scriptis\"；user2: IP白名单=\"192.168.1.200\"，访问限制=\"500次/天\"，caller=\"workflow\")，创建新版本(ID=100, 版本ID=1002)"}, "children": []}, {"data": {"text": "步骤：\n1、用户提单并只填写新增用户\"user3\"\n2、审批通过后调用审批刷新接口\n3、查询生成的新版本Token配置"}, "children": []}, {"data": {"text": "预期结果：user1的IP白名单、访问限制、caller配置保持不变，user2的IP白名单、访问限制、caller配置保持不变，user3使用默认配置"}, "children": []}]}, {"data": {"text": "【AIGC】重复授权防护 - 重复调用不重复生成Token"}, "children": [{"data": {"text": "条件：存在审批单(审批单号=\"uuid-001\")，审批单状态为\"成功\"，该审批单已生成Token记录"}, "children": []}, {"data": {"text": "步骤：\n1、用户第一次调用审批刷新接口\n2、验证Token生成成功\n3、用户再次调用审批刷新接口（相同的approvalNo）\n4、查询数据库Token记录"}, "children": []}, {"data": {"text": "预期结果：第一次调用正常生成Token，第二次调用检测到已存在Token并跳过重复插入，返回成功状态，数据库中不存在重复的Token记录"}, "children": []}]}]}]}, {"data": {"text": "边界条件测试"}, "children": [{"data": {"text": "分类：功能案例"}, "children": [{"data": {"text": "【AIGC】无历史审批记录"}, "children": [{"data": {"text": "条件：存在API(ID=100, 版本ID=1001)，该API没有历史审批记录"}, "children": []}, {"data": {"text": "步骤：用户首次提单，审批通过后调用审批刷新接口"}, "children": []}, {"data": {"text": "预期结果：系统正常处理，不尝试查询历史用户，只为申请用户生成Token，getSecondApproval()方法返回null"}, "children": []}]}, {"data": {"text": "【AIGC】历史审批记录少于2条"}, "children": [{"data": {"text": "条件：存在API(ID=100)，该API只有1条审批通过的记录"}, "children": []}, {"data": {"text": "步骤：用户创建新版本并提单，审批通过后调用审批刷新接口"}, "children": []}, {"data": {"text": "预期结果：系统判断为首次提单或只有一次审批，getSecondApproval()方法返回null，不合并历史用户，正常生成Token"}, "children": []}]}, {"data": {"text": "【AIGC】申请用户列表为空"}, "children": [{"data": {"text": "条件：存在历史审批记录(API ID=100, 版本ID=1001, 授权用户=user1,user2)，创建新版本(ID=100, 版本ID=1002)"}, "children": []}, {"data": {"text": "步骤：用户提单并填写授权用户为空字符串\"\"，审批通过后调用审批刷新接口"}, "children": []}, {"data": {"text": "预期结果：系统解析申请用户列表为空，自动保留所有历史用户，最终只为历史用户user1和user2生成Token"}, "children": []}]}, {"data": {"text": "【AIGC】申请用户全部在历史用户中"}, "children": [{"data": {"text": "条件：存在历史审批记录(API ID=100, 版本ID=1001, 授权用户=user1,user2,user3)，创建新版本(ID=100, 版本ID=1002)"}, "children": []}, {"data": {"text": "步骤：用户提单并填写授权用户\"user1,user2\"，审批通过后调用审批刷新接口"}, "children": []}, {"data": {"text": "预期结果：自动合并历史用户user3，最终授权用户为user1,user2,user3，不重复生成user1和user2的Token"}, "children": []}]}]}]}, {"data": {"text": "参数验证与异常处理测试"}, "children": [{"data": {"text": "分类：功能案例"}, "children": [{"data": {"text": "【AIGC】提单参数缺失 - 审批单名称"}, "children": [{"data": {"text": "条件：用户已登录系统"}, "children": []}, {"data": {"text": "步骤：用户尝试提单，未填写审批单名称"}, "children": []}, {"data": {"text": "预期结果：系统返回参数错误提示，错误码：1，错误信息=\"'approvalName' is missing[缺少审批单名字]\"，不创建审批记录"}, "children": []}]}, {"data": {"text": "【AIGC】授权期限格式错误"}, "children": [{"data": {"text": "条件：用户已登录系统"}, "children": []}, {"data": {"text": "步骤：用户尝试提单，填写授权期限为非法格式\"abc\""}, "children": []}, {"data": {"text": "预期结果：系统返回参数错误提示，不创建审批记录"}, "children": []}]}, {"data": {"text": "【AIGC】API版本不存在"}, "children": [{"data": {"text": "条件：用户已登录系统"}, "children": []}, {"data": {"text": "步骤：用户尝试提单，提供不存在的API版本ID"}, "children": []}, {"data": {"text": "预期结果：系统返回资源不存在错误，不创建审批记录"}, "children": []}]}]}, {"data": {"text": "分类：功能案例"}, "children": [{"data": {"text": "【AIGC】DM审批状态查询失败"}, "children": [{"data": {"text": "条件：存在审批单(审批单号=\"uuid-001\")，DM系统不可用或返回错误"}, "children": []}, {"data": {"text": "步骤：用户调用审批刷新接口 approvalRefresh"}, "children": []}, {"data": {"text": "预期结果：系统捕获异常，记录错误日志，返回友好的错误提示，不生成任何Token"}, "children": []}]}, {"data": {"text": "【AIGC】Token生成失败"}, "children": [{"data": {"text": "条件：存在审批通过的审批单，JWT生成服务异常"}, "children": []}, {"data": {"text": "步骤：系统尝试生成Token"}, "children": []}, {"data": {"text": "预期结果：系统抛出ApiServiceTokenException，记录异常日志，数据库事务回滚，审批单状态保持不变"}, "children": []}]}, {"data": {"text": "【AIGC】数据库保存失败"}, "children": [{"data": {"text": "条件：系统已生成Token对象列表，数据库连接异常"}, "children": []}, {"data": {"text": "步骤：系统尝试批量保存Token到数据库"}, "children": []}, {"data": {"text": "预期结果：系统抛出ApiServiceTokenException(错误码800002)，记录异常日志，事务回滚，Token未保存到数据库"}, "children": []}]}]}]}, {"data": {"text": "性能测试"}, "children": [{"data": {"text": "分类：性能案例"}, "children": [{"data": {"text": "【AIGC】大量用户Token生成"}, "children": [{"data": {"text": "条件：存在历史审批记录包含100个用户，创建新版本"}, "children": []}, {"data": {"text": "步骤：\n1、用户创建新版本并申请新增50个用户\n2、审批通过后调用审批刷新接口\n3、记录Token生成时间"}, "children": []}, {"data": {"text": "预期结果：系统在5秒内完成Token生成，生成150个Token（100历史+50新增），所有Token正确保存到数据库，无重复或缺失的Token"}, "children": []}]}, {"data": {"text": "【AIGC】批量API提单性能"}, "children": [{"data": {"text": "条件：存在10个待提单的API，每个API都有历史授权用户"}, "children": []}, {"data": {"text": "步骤：\n1、用户选择10个API提交批量提单请求\n2、记录提单响应时间"}, "children": []}, {"data": {"text": "预期结果：系统在10秒内完成所有API的提单，每个API独立处理，返回统一的审批单号，所有API状态正确更新"}, "children": []}]}]}, {"data": {"text": "分类：性能案例"}, "children": [{"data": {"text": "【AIGC】历史查询响应时间"}, "children": [{"data": {"text": "条件：存在大量历史审批记录（>100条）"}, "children": []}, {"data": {"text": "步骤：调用getSecondApproval方法，记录查询响应时间"}, "children": []}, {"data": {"text": "预期结果：历史查询响应时间 < 1秒，正确返回上一个通过的审批单"}, "children": []}]}, {"data": {"text": "【AIGC】并发刷新处理"}, "children": [{"data": {"text": "条件：存在审批通过的审批单"}, "children": []}, {"data": {"text": "步骤：模拟10个并发刷新请求，每个请求调用approvalRefresh接口"}, "children": []}, {"data": {"text": "预期结果：并发成功率100%，Token不重复生成，数据一致性正确"}, "children": []}]}]}]}, {"data": {"text": "集成测试"}, "children": [{"data": {"text": "分类：流程案例"}, "children": [{"data": {"text": "【AIGC】多API批量提单 - 独立处理每个API的增量授权"}, "children": [{"data": {"text": "条件：存在API(订单查询API(ID=100), 当前版本ID=1002, 历史版本ID=1001, 历史授权用户=user1,user2)和API(用户管理API(ID=101), 当前版本ID=2002, 历史版本ID=2001, 历史授权用户=user3,user4)"}, "children": []}, {"data": {"text": "步骤：\n1、用户批量提单：API ID列表=\"100,101\"，授权用户=\"user5,user6\"\n2、审批通过后调用审批刷新接口\n3、分别查询两个API的Token列表"}, "children": []}, {"data": {"text": "预期结果：系统独立处理每个API的增量授权，订单查询API的最终授权用户为user1,user2,user5,user6，用户管理API的最终授权用户为user3,user4,user5,user6，每个API的历史版本Token被禁用"}, "children": []}]}, {"data": {"text": "【AIGC】禁用旧版本Token机制"}, "children": [{"data": {"text": "条件：存在Token记录(user1: API ID=100, 版本ID=1001, 状态=有效，审批单号=\"uuid-v1\"；user2: API ID=100, 版本ID=1001, 状态=有效)，创建新版本(ID=100, 版本ID=1002)并审批通过"}, "children": []}, {"data": {"text": "步骤：调用updateTokenStatusBeforeVersionId方法，查询所有Token状态"}, "children": []}, {"data": {"text": "预期结果：所有版本ID小于1002的Token被禁用，user1和user2的V1 Token状态变为\"禁用\"，新生成的V2 Token状态为有效"}, "children": []}]}]}]}, {"data": {"text": "审计追踪测试"}, "children": [{"data": {"text": "分类：功能案例"}, "children": [{"data": {"text": "【AIGC】审批单操作日志"}, "children": [{"data": {"text": "条件：用户已登录系统"}, "children": []}, {"data": {"text": "步骤：用户提交审批单，检查系统日志"}, "children": []}, {"data": {"text": "预期结果：记录创建时间、记录创建者、记录申请用户列表、记录授权期限"}, "children": []}]}, {"data": {"text": "【AIGC】Token生成日志"}, "children": [{"data": {"text": "条件：审批通过，开始生成Token"}, "children": []}, {"data": {"text": "步骤：触发Token生成，检查系统日志"}, "children": []}, {"data": {"text": "预期结果：记录生成的Token数量、记录包含的历史用户数量、记录包含的新增用户数量、记录禁用的旧版本Token数量"}, "children": []}]}]}]}]}]}]}}
+{
+  "root": {
+    "data": {
+      "text": "DSS"
+    },
+    "children": [
+      {
+        "data": {
+          "text": "/所有目录/SIT/V1.20.0/数据服务审批与增量授权功能测试"
+        },
+        "children": [
+          {
+            "data": {
+              "text": "需求：000001"
+            },
+            "children": [
+              {
+                "data": {
+                  "text": "批量提单功能测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】批量提单 - 正常提单多个API"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：用户已登录系统，存在2个API版本处于\"未提单\"状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、访问批量提单页面\n2、选择两个API：订单查询API(ID=100, 版本ID=1001)、用户管理API(ID=101, 版本ID=1002)\n3、填写审批单信息：审批单名称=\"API批量授权申请\"、授权用户=\"user1,user2\"、授权期限=\"30天\"、工作空间ID=\"180\"、背景描述=\"批量授权测试\"\n4、提交审批单"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统返回提单成功，每个API版本创建一条审批记录，API版本状态更新为\"已提单\"，生成统一审批单号"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】批量提单 - 支持永久授权"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在1个API版本处于\"未提单\"状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、访问批量提单页面\n2、选择API(ID=100, 版本ID=1001)\n3、填写审批单信息\n4、设置授权期限为\"*\"（永久）\n5、提交审批单"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统接受永久授权申请，审批记录中的授权期限为永久，生成的Token有效期为永久"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】批量提单 - JDBC API特殊处理"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在JDBC类型API(ID=100, 版本ID=1001)处于\"未提单\"状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、访问批量提单页面\n2、选择JDBC API\n3、填写必填的JDBC特殊字段：开发负责人=\"张三\"、关联产品信息=\"订单管理系统\"\n4、填写其他审批单信息\n5、提交审批单"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：审批单创建成功，系统包含开发负责人信息，系统包含产品信息，DM审批流程正确识别为JDBC类型"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "审批刷新与Token生成测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】审批刷新 - 审批通过后自动生成Token"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在审批单(审批单号=\"uuid-001\")，当前登录用户为审批单创建者，DM系统返回审批状态为\"通过\""
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、用户点击\"刷新状态\"按钮\n2、系统调用 approvalRefresh 接口\n3、验证审批单状态更新\n4、查询生成的Token列表"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：审批单状态更新为\"成功\"，系统自动为所有申请用户生成Token，旧版本Token状态被禁用，新版本Token状态为有效"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】审批刷新 - 仅允许创建者调用"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在审批单(审批单号=\"uuid-001\", 创建者=\"user_admin\")，当前登录用户为\"user_other\""
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：user_other用户尝试调用 approvalRefresh 接口，传入参数 approvalNo=\"uuid-001\""
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统拒绝访问，返回错误码 100078，错误信息=\"登录用户和审批单的申请用户不匹配，请联系申请用户授权\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "data": {
+                      "text": "分类：安全用例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】权限控制 - 非创建者无法刷新Token"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在审批单(审批单号=\"uuid-001\", 创建者=\"user_admin\")，当前登录用户为\"user_other\""
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：user_other用户尝试调用 approvalRefresh 接口"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统拒绝非创建者的访问，返回权限错误"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】Token有效期验证"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：系统为用户生成30天有效期的Token"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、验证Token中包含过期时间信息\n2、等待Token过期\n3、尝试使用过期Token访问API"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：Token中包含过期时间信息，Token过期后自动禁用，过期Token无法访问API"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】敏感信息加密存储"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：生成了多个Token"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：查询数据库中的token字段"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：Token信息加密存储，无法直接读取明文"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "增量授权核心功能测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】增量授权 - 首次提单无历史用户"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在API(ID=100, 版本ID=1001)，该API没有历史审批记录"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、用户首次提单并填写授权用户\"user1,user2\"\n2、审批通过后调用审批刷新接口\n3、查询生成的Token列表"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：为user1生成Token，为user2生成Token，Token状态为有效，不执行历史用户合并"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】增量授权 - 自动合并历史用户"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在历史审批记录(history: API ID=100, 版本ID=1001, 授权用户=user1,user2)，创建新版本(ID=100, 版本ID=1002)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、用户提单并只填写新增用户\"user3,user4\"\n2、审批通过后调用审批刷新接口\n3、查询生成的Token列表"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统自动查询历史审批单，自动合并历史用户user1和user2，为所有用户生成Token，历史版本Token被禁用，新版本Token有效，最终授权用户：user1,user2,user3,user4"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】增量授权 - 只保留历史用户"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在历史审批记录(API ID=100, 版本ID=1001, 授权用户=user1,user2)，创建新版本(ID=100, 版本ID=1002)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、用户提单并填写授权用户为空\n2、审批通过后调用审批刷新接口\n3、查询生成的Token列表"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统自动保留历史用户user1和user2，为新版本生成Token，不生成任何新增用户的Token，最终授权用户：user1,user2"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】增量授权 - 重复用户去重处理"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在历史审批记录(API ID=100, 版本ID=1001, 授权用户=user1,user2)，创建新版本(ID=100, 版本ID=1002)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、用户提单并填写授权用户\"user1,user3\"\n2、审批通过后调用审批刷新接口\n3、查询生成的Token列表"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：自动合并历史用户user2，为user1生成Token（去重后只生成一次），为user2和user3生成Token，最终授权用户：user1,user2,user3"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "历史配置保留与重复授权防护测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】历史配置保留 - 保留IP白名单配置"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在历史Token记录(user1: IP白名单=\"192.168.1.100,192.168.1.101\"，访问限制=\"1000次/天\"，caller=\"scriptis\"；user2: IP白名单=\"192.168.1.200\"，访问限制=\"500次/天\"，caller=\"workflow\")，创建新版本(ID=100, 版本ID=1002)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、用户提单并只填写新增用户\"user3\"\n2、审批通过后调用审批刷新接口\n3、查询生成的新版本Token配置"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：user1的IP白名单、访问限制、caller配置保持不变，user2的IP白名单、访问限制、caller配置保持不变，user3使用默认配置"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】重复授权防护 - 重复调用不重复生成Token"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在审批单(审批单号=\"uuid-001\")，审批单状态为\"成功\"，该审批单已生成Token记录"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、用户第一次调用审批刷新接口\n2、验证Token生成成功\n3、用户再次调用审批刷新接口（相同的approvalNo）\n4、查询数据库Token记录"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：第一次调用正常生成Token，第二次调用检测到已存在Token并跳过重复插入，返回成功状态，数据库中不存在重复的Token记录"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "边界条件测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】无历史审批记录"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在API(ID=100, 版本ID=1001)，该API没有历史审批记录"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：用户首次提单，审批通过后调用审批刷新接口"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统正常处理，不尝试查询历史用户，只为申请用户生成Token，getSecondApproval()方法返回null"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】历史审批记录少于2条"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在API(ID=100)，该API只有1条审批通过的记录"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：用户创建新版本并提单，审批通过后调用审批刷新接口"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统判断为首次提单或只有一次审批，getSecondApproval()方法返回null，不合并历史用户，正常生成Token"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】申请用户列表为空"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在历史审批记录(API ID=100, 版本ID=1001, 授权用户=user1,user2)，创建新版本(ID=100, 版本ID=1002)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：用户提单并填写授权用户为空字符串\"\"，审批通过后调用审批刷新接口"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统解析申请用户列表为空，自动保留所有历史用户，最终只为历史用户user1和user2生成Token"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】申请用户全部在历史用户中"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在历史审批记录(API ID=100, 版本ID=1001, 授权用户=user1,user2,user3)，创建新版本(ID=100, 版本ID=1002)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：用户提单并填写授权用户\"user1,user2\"，审批通过后调用审批刷新接口"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：自动合并历史用户user3，最终授权用户为user1,user2,user3，不重复生成user1和user2的Token"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "参数验证与异常处理测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】提单参数缺失 - 审批单名称"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：用户已登录系统"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：用户尝试提单，未填写审批单名称"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统返回参数错误提示，错误码：1，错误信息=\"'approvalName' is missing[缺少审批单名字]\"，不创建审批记录"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】授权期限格式错误"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：用户已登录系统"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：用户尝试提单，填写授权期限为非法格式\"abc\""
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统返回参数错误提示，不创建审批记录"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】API版本不存在"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：用户已登录系统"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：用户尝试提单，提供不存在的API版本ID"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统返回资源不存在错误，不创建审批记录"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】DM审批状态查询失败"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在审批单(审批单号=\"uuid-001\")，DM系统不可用或返回错误"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：用户调用审批刷新接口 approvalRefresh"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统捕获异常，记录错误日志，返回友好的错误提示，不生成任何Token"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】Token生成失败"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在审批通过的审批单，JWT生成服务异常"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：系统尝试生成Token"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统抛出ApiServiceTokenException，记录异常日志，数据库事务回滚，审批单状态保持不变"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】数据库保存失败"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：系统已生成Token对象列表，数据库连接异常"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：系统尝试批量保存Token到数据库"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统抛出ApiServiceTokenException(错误码800002)，记录异常日志，事务回滚，Token未保存到数据库"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "性能测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：性能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】大量用户Token生成"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在历史审批记录包含100个用户，创建新版本"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、用户创建新版本并申请新增50个用户\n2、审批通过后调用审批刷新接口\n3、记录Token生成时间"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统在5秒内完成Token生成，生成150个Token（100历史+50新增），所有Token正确保存到数据库，无重复或缺失的Token"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】批量API提单性能"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在10个待提单的API，每个API都有历史授权用户"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、用户选择10个API提交批量提单请求\n2、记录提单响应时间"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统在10秒内完成所有API的提单，每个API独立处理，返回统一的审批单号，所有API状态正确更新"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "data": {
+                      "text": "分类：性能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】历史查询响应时间"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在大量历史审批记录（>100条）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：调用getSecondApproval方法，记录查询响应时间"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：历史查询响应时间 < 1秒，正确返回上一个通过的审批单"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】并发刷新处理"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在审批通过的审批单"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：模拟10个并发刷新请求，每个请求调用approvalRefresh接口"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：并发成功率100%，Token不重复生成，数据一致性正确"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "集成测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：流程案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】多API批量提单 - 独立处理每个API的增量授权"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在API(订单查询API(ID=100), 当前版本ID=1002, 历史版本ID=1001, 历史授权用户=user1,user2)和API(用户管理API(ID=101), 当前版本ID=2002, 历史版本ID=2001, 历史授权用户=user3,user4)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、用户批量提单：API ID列表=\"100,101\"，授权用户=\"user5,user6\"\n2、审批通过后调用审批刷新接口\n3、分别查询两个API的Token列表"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：系统独立处理每个API的增量授权，订单查询API的最终授权用户为user1,user2,user5,user6，用户管理API的最终授权用户为user3,user4,user5,user6，每个API的历史版本Token被禁用"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】禁用旧版本Token机制"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：存在Token记录(user1: API ID=100, 版本ID=1001, 状态=有效，审批单号=\"uuid-v1\"；user2: API ID=100, 版本ID=1001, 状态=有效)，创建新版本(ID=100, 版本ID=1002)并审批通过"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：调用updateTokenStatusBeforeVersionId方法，查询所有Token状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：所有版本ID小于1002的Token被禁用，user1和user2的V1 Token状态变为\"禁用\"，新生成的V2 Token状态为有效"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "审计追踪测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】审批单操作日志"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：用户已登录系统"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：用户提交审批单，检查系统日志"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：记录创建时间、记录创建者、记录申请用户列表、记录授权期限"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】Token生成日志"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：审批通过，开始生成Token"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：触发Token生成，检查系统日志"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：记录生成的Token数量、记录包含的历史用户数量、记录包含的新增用户数量、记录禁用的旧版本Token数量"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
