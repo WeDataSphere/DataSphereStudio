@@ -108,7 +108,7 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner {
       this.transitionState(NodeExecutionState.Succeed)
     } catch {
       case t: Throwable =>
-        error(s"Failed to execute branch node ${node.getName}", t)
+        error(s"Failed to execute branch node ${node.getName}" + t.getMessage)
         this.transitionState(NodeExecutionState.Failed)
     } finally {
       this.setNowTime(System.currentTimeMillis())
@@ -130,5 +130,4 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner {
       .orElse(rules.find(BranchExpressionUtils.isDefaultRule).flatMap(rule => matchEdge(rule.targetName)))
   }
 
-  private def selectEdge(edges: Seq[DSSEdge], context: Map[String, String]): Option[DSSEdge] = {
-
+}
