@@ -102,10 +102,18 @@ object BranchExpressionUtils {
       operators.collectFirst {
         case operator if expr.contains(operator) =>
           val parts = expr.split(java.util.regex.Pattern.quote(operator), 2).map(_.trim)
-          if (parts.length != 2) false else compare(resolveValue(parts(0), context), resolveValue(parts(1), context), operator)
+          if (parts.length != 2) {
+            false
+          } else {
+            (resolveValue(parts(0), context), resolveValue(parts(1), context)) match {
+              case (Some(left), Some(right)) => compare(left, right, operator)
+              case _ => false
+            }
+          }
       }.getOrElse {
-        val resolved = resolveValue(expr, context)
-        resolved.equalsIgnoreCase("true") || resolved.nonEmpty
+        resolveValue(expr, context).exists { resolved =>
+          resolved.equalsIgnoreCase("true") || resolved.nonEmpty
+        }
       }
     }
   }
@@ -116,13 +124,29 @@ object BranchExpressionUtils {
     } else expression
   }
 
-  private def resolveValue(token: String, context: Map[String, String]): String = {
-    val normalized = token.trim
-    val unquoted = normalized.stripPrefix("\"").stripSuffix("\"").stripPrefix("'").stripSuffix("'")
-    context.getOrElse(normalized, context.getOrElse(unquoted, unquoted))
+  private def resolveValue(token: String, context: Map[String, String]): Option[String] = {
+    val normalized = Option(token).map(_.trim).getOrElse("")
+    if (normalized.isEmpty) {
+      None
+    } else {
+      val unquoted = normalized.stripPrefix("\"").stripSuffix("\"").stripPrefix("'").stripSuffix("'")
+      if (isQuotedToken(normalized)) {
+        Some(unquoted)
+      } else {
+        context.get(normalized)
+          .orElse(context.get(unquoted))
+          .orElse(if (isLiteralToken(unquoted)) Some(unquoted) else None)
+      }
+    }
   }
 
+  private def isQuotedToken(token: String): Boolean = {
+    (token.startsWith("\"") && token.endsWith("\"")) || (token.startsWith("'") && token.endsWith("'"))
+  }
 
+  private def isLiteralToken(token: String): Boolean = {
+    token.equalsIgnoreCase("true") || token.equalsIgnoreCase("false") || toBigDecimal(token).nonEmpty
+  }
 
   private def getStringValue(value: Any): Option[String] = Option(value).map(_.toString.trim).filter(_.nonEmpty)
 
