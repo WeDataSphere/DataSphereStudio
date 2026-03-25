@@ -380,7 +380,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         if (CollectionUtils.isNotEmpty(unSaveNodes)) {
             throw new DSSErrorException(80001, "工作流中存在子工作流未被保存，请先保存子工作流：" + unSaveNodes);
         }
-        validateBranchNodeConfig(jsonFlow);
+//        validateBranchNodeConfig(jsonFlow);
 
 
         //判断该工作流对应编排是否已发布，若已发布则不允许修改
