@@ -1,4 +1,6 @@
-DROP TABLE IF EXISTS `dss_apiservice_api`;
+SET @@autocommit=0;
+START TRANSACTION;
+
 CREATE TABLE `dss_apiservice_api` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
   `name` varchar(180) NOT NULL COMMENT '服务名称',
@@ -23,9 +25,8 @@ CREATE TABLE `dss_apiservice_api` (
   UNIQUE KEY `idx_uniq_config_name` (`name`),
   UNIQUE KEY `idx_uniq_dconfig_path` (`path`),
   KEY `idx_dss_script_path` (`script_path`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='服务api配置表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin COMMENT='服务api配置表';
 
-DROP TABLE IF EXISTS `dss_apiservice_param`;
 CREATE TABLE `dss_apiservice_param` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
   `api_version_id` bigint(20) NOT NULL COMMENT '服务api版本id',
@@ -36,11 +37,11 @@ CREATE TABLE `dss_apiservice_param` (
   `default_value` varchar(1024) DEFAULT NULL COMMENT '参数的默认值',
   `description` varchar(200) DEFAULT NULL COMMENT '描述',
   `details` varchar(1024) DEFAULT NULL COMMENT '变量的详细说明',
+  `max_length` int(8) DEFAULT NULL COMMENT '最大长度',
   PRIMARY KEY (`id`),
   KEY `idx_api_version_id` (`api_version_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='apiservice 参数表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin COMMENT='apiservice 参数表';
 
-DROP TABLE IF EXISTS `dss_apiservice_api_version`;
 CREATE TABLE `dss_apiservice_api_version` (
    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
    `api_id` bigint(20) NOT NULL COMMENT '服务的ID',
@@ -51,13 +52,13 @@ CREATE TABLE `dss_apiservice_api_version` (
    `creator` varchar(50) DEFAULT NULL COMMENT '创建者',
    `create_time`timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
    `status` tinyint(1) default '1' COMMENT '0表示被禁用，1表示正在运行',
-   `metadata_info` varchar(5000)  COMMENT '发布者库表信息',
-   `auth_id` varchar(200) COMMENT '用于与datamap交互的UUID',
+   `metadata_info` text NOT NULL COMMENT '发布者库表信息',
+   `auth_id` varchar(200) NOT NULL COMMENT '用于与datamap交互的UUID',
    `datamap_order_no` varchar(200) DEFAULT NULL COMMENT 'datamap审批单号码',
+   `datasource`  varchar(255) DEFAULT NULL COMMENT '数据源名称',
    PRIMARY KEY(`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='服务api版本表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin COMMENT='服务api版本表';
 
-DROP TABLE IF EXISTS `dss_apiservice_token_manager`;
 CREATE TABLE `dss_apiservice_token_manager` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
   `api_version_id` bigint(20) NOT NULL COMMENT '服务api版本id',
@@ -74,9 +75,8 @@ CREATE TABLE `dss_apiservice_token_manager` (
   `apply_source` varchar(200) DEFAULT NULL COMMENT '申请来源',
   `token` varchar(500) DEFAULT NULL COMMENT 'token内容',
    PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='apiservice token管理表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin COMMENT='apiservice token管理表';
 
-DROP TABLE IF EXISTS `dss_apiservice_approval`;
 CREATE TABLE `dss_apiservice_approval` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
   `api_id` bigint(20) NOT NULL COMMENT '服务api id',
@@ -89,11 +89,13 @@ CREATE TABLE `dss_apiservice_approval` (
   `create_time` timestamp NOT null DEFAULT CURRENT_TIMESTAMP COMMENT '审批单创建时间',
   `update_time` timestamp NOT null DEFAULT CURRENT_TIMESTAMP COMMENT '审批单状态更新时间',
   `approval_no` varchar(500) NOT NULL COMMENT '审批单号',
+  `sensitive_level` TINYINT NULL COMMENT '是否涉及一级敏感数据',
+  `product_info`  TEXT  NULL  COMMENT '产品信息',
+  `dev_principals` varchar(255) DEFAULT NULL COMMENT '库表负责人',
   PRIMARY KEY(`id`),
   UNIQUE KEY `idx_uniq_api_version_id` (`api_version_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='apiservice 审批单表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin COMMENT='apiservice 审批单表';
 
-DROP TABLE IF EXISTS `dss_apiservice_access_info`;
 CREATE TABLE `dss_apiservice_access_info` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
   `api_id` bigint(20) NOT NULL COMMENT '服务id',
@@ -103,5 +105,12 @@ CREATE TABLE `dss_apiservice_access_info` (
   `execute_user` varchar(50) DEFAULT NULL COMMENT '代理执行用户',
   `api_publisher` varchar(50) NOT NULL COMMENT 'api创建者',
   `access_time` timestamp NOT null DEFAULT CURRENT_TIMESTAMP COMMENT '访问时间',
+  `task_id` varchar(256) NULL COMMENT '任务id',
+  `task_status` varchar(50) NULL COMMENT '任务执行状态',
+  `query_params` mediumtext COLLATE utf8_bin COMMENT '查询条件',
   PRIMARY KEY(`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='apiservice 访问信息表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin COMMENT='apiservice 访问信息表';
+
+
+COMMIT;
+SET @@autocommit=1;

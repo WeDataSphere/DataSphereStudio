@@ -1,4 +1,6 @@
-DROP TABLE IF EXISTS `dss_guide_group`;
+SET @@autocommit=0;
+START TRANSACTION;
+
 CREATE TABLE IF NOT EXISTS `dss_guide_group` (
   `id` BIGINT(13) NOT NULL AUTO_INCREMENT,
   `path` VARCHAR(100) NOT NULL COMMENT '页面URL路径',
@@ -10,9 +12,8 @@ CREATE TABLE IF NOT EXISTS `dss_guide_group` (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `is_delete` tinyint(1) DEFAULT '0' COMMENT '0:未删除(默认), 1已删除',
   PRIMARY KEY (`id`)
-) ENGINE=INNODB DEFAULT CHARSET=utf8 COMMENT='用户向导页面';
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin COMMENT='用户向导页面';
 
-DROP TABLE IF EXISTS `dss_guide_content`;
 CREATE TABLE IF NOT EXISTS `dss_guide_content` (
   `id` BIGINT(13) NOT NULL AUTO_INCREMENT,
   `group_id` BIGINT(50) NOT NULL COMMENT '所属页面ID',
@@ -29,9 +30,8 @@ CREATE TABLE IF NOT EXISTS `dss_guide_content` (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `is_delete` tinyint(1) DEFAULT '0' COMMENT '0:未删除(默认), 1已删除',
   PRIMARY KEY (`id`)
-) ENGINE=INNODB DEFAULT CHARSET=utf8 COMMENT='用户向导页面内容详情';
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin COMMENT='用户向导页面内容详情';
 
-DROP TABLE IF EXISTS `dss_guide_catalog`;
 CREATE TABLE IF NOT EXISTS `dss_guide_catalog` (
   `id` BIGINT(13) NOT NULL AUTO_INCREMENT,
   `parent_id` BIGINT(13) NOT NULL COMMENT '父级目录ID，-1代表最顶级目录',
@@ -43,9 +43,8 @@ CREATE TABLE IF NOT EXISTS `dss_guide_catalog` (
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `is_delete` TINYINT(1) DEFAULT '0' COMMENT '0:未删除(默认), 1已删除',
   PRIMARY KEY (`id`)
-) ENGINE=INNODB DEFAULT CHARSET=utf8 COMMENT='用户向导知识库目录';
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin COMMENT='用户向导知识库目录';
 
-DROP TABLE IF EXISTS `dss_guide_chapter`;
 CREATE TABLE IF NOT EXISTS `dss_guide_chapter` (
   `id` BIGINT(13) NOT NULL AUTO_INCREMENT,
   `catalog_id` BIGINT(13) NOT NULL COMMENT '目录ID',
@@ -59,4 +58,8 @@ CREATE TABLE IF NOT EXISTS `dss_guide_chapter` (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `is_delete` tinyint(1) DEFAULT '0' COMMENT '0:未删除(默认), 1已删除',
   PRIMARY KEY (`id`)
-) ENGINE=INNODB DEFAULT CHARSET=utf8 COMMENT='用户向导知识库文章';
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin COMMENT='用户向导知识库文章';
+
+
+COMMIT;
+SET @@autocommit=1;
