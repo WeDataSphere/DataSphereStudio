@@ -21,10 +21,11 @@ import java.util
 import com.webank.wedatasphere.dss.common.entity.node.DSSEdge
 import com.webank.wedatasphere.dss.flow.execution.entrance.conf.FlowExecutionEntranceConfiguration
 import com.webank.wedatasphere.dss.workflow.core.entity.WorkflowNode
+import org.apache.linkis.common.utils.Logging
 
 import scala.collection.JavaConversions._
 
-object BranchExpressionUtils {
+object BranchExpressionUtils extends Logging {
 
   val BranchNodeType = "workflow.branch"
   val BranchRuleKey = "branch.rules"
@@ -102,10 +103,30 @@ object BranchExpressionUtils {
       operators.collectFirst {
         case operator if expr.contains(operator) =>
           val parts = expr.split(java.util.regex.Pattern.quote(operator), 2).map(_.trim)
-          if (parts.length != 2) false else compare(resolveValue(parts(0), context), resolveValue(parts(1), context), operator)
+          if (parts.length != 2) {
+            warn(s"Invalid branch condition syntax: $condition")
+            false
+          } else {
+            (resolveValue(parts(0), context), resolveValue(parts(1), context)) match {
+              case (Some(left), Some(right)) =>
+                val matched = compare(left, right, operator)
+                info(s"Branch condition evaluated: expr=$expr, left=$left, operator=$operator, right=$right, matched=$matched")
+                matched
+              case _ =>
+                warn(s"Branch condition unresolved token: expr=$expr, leftToken=${parts(0)}, rightToken=${parts(1)}, contextKeys=${context.keys.toSeq.sorted.mkString(",")}")
+                false
+            }
+          }
       }.getOrElse {
-        val resolved = resolveValue(expr, context)
-        resolved.equalsIgnoreCase("true") || resolved.nonEmpty
+        resolveValue(expr, context) match {
+          case Some(resolved) =>
+            val matched = resolved.equalsIgnoreCase("true") || resolved.nonEmpty
+            info(s"Branch condition evaluated: expr=$expr, value=$resolved, matched=$matched")
+            matched
+          case None =>
+            warn(s"Branch condition unresolved token: expr=$expr, contextKeys=${context.keys.toSeq.sorted.mkString(",")}")
+            false
+        }
       }
     }
   }
@@ -116,13 +137,29 @@ object BranchExpressionUtils {
     } else expression
   }
 
-  private def resolveValue(token: String, context: Map[String, String]): String = {
-    val normalized = token.trim
-    val unquoted = normalized.stripPrefix("\"").stripSuffix("\"").stripPrefix("'").stripSuffix("'")
-    context.getOrElse(normalized, context.getOrElse(unquoted, unquoted))
+  private def resolveValue(token: String, context: Map[String, String]): Option[String] = {
+    val normalized = Option(token).map(_.trim).getOrElse("")
+    if (normalized.isEmpty) {
+      None
+    } else {
+      val unquoted = normalized.stripPrefix("\"").stripSuffix("\"").stripPrefix("'").stripSuffix("'")
+      if (isQuotedToken(normalized)) {
+        Some(unquoted)
+      } else {
+        context.get(normalized)
+          .orElse(context.get(unquoted))
+          .orElse(if (isLiteralToken(unquoted)) Some(unquoted) else None)
+      }
+    }
   }
 
+  private def isQuotedToken(token: String): Boolean = {
+    (token.startsWith("\"") && token.endsWith("\"")) || (token.startsWith("'") && token.endsWith("'"))
+  }
 
+  private def isLiteralToken(token: String): Boolean = {
+    token.equalsIgnoreCase("true") || token.equalsIgnoreCase("false") || toBigDecimal(token).nonEmpty
+  }
 
   private def getStringValue(value: Any): Option[String] = Option(value).map(_.toString.trim).filter(_.nonEmpty)
 

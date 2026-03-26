@@ -24,10 +24,11 @@ import com.webank.wedatasphere.dss.flow.execution.entrance.node.NodeExecutionSta
 import com.webank.wedatasphere.dss.flow.execution.entrance.utils.BranchExpressionUtils
 import com.webank.wedatasphere.dss.linkis.node.execution.job.LinkisJob
 import com.webank.wedatasphere.dss.workflow.core.entity.{Workflow, WorkflowNode}
+import org.apache.linkis.common.utils.Logging
 
 import scala.collection.JavaConversions._
 
-class BranchNodeRunner(flow: Workflow) extends NodeRunner {
+class BranchNodeRunner(flow: Workflow) extends NodeRunner with Logging {
 
   private var node: WorkflowNode = _
   private var canceled: Boolean = false
@@ -91,14 +92,20 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner {
       )
       val context = BranchExpressionUtils.buildEvaluationContext(node)
       val branchRuleText = BranchExpressionUtils.getBranchRuleText(node)
+      info(s"Branch node ${node.getName} start evaluating. context=${context.toSeq.sortBy(_._1).map { case (k, v) => s"$k=$v" }.mkString(", ")}")
+      info(s"Branch node ${node.getName} rules: ${Option(branchRuleText).getOrElse("")}")
+      info(s"Branch node ${node.getName} outgoing targets: ${describeEdges(outgoingEdges)}")
       if (!Option(branchRuleText).exists(_.trim.nonEmpty)) {
         throw new IllegalStateException(s"Branch node ${node.getName} must define branch.rules.")
       }
-      val selectedEdge = selectEdgeByRules(outgoingEdges, BranchExpressionUtils.parseBranchRules(branchRuleText), context)
+      val parsedRules = BranchExpressionUtils.parseBranchRules(branchRuleText)
+      info(s"Branch node ${node.getName} parsed rules: ${parsedRules.map(rule => s"${rule.condition}=>${rule.targetName}").mkString(", ")}")
+      val selectedEdge = selectEdgeByRules(outgoingEdges, parsedRules, context)
       if (selectedEdge.isEmpty) {
         throw new IllegalStateException(s"No branch rule matched for node ${node.getName}.")
       }
       val selectedTarget = selectedEdge.map(_.getTarget).orNull
+      info(s"Branch node ${node.getName} selected target id: ${Option(selectedTarget).getOrElse("")}")
       getNodeRunnerListener match {
         case flowEntranceJob: FlowEntranceJob =>
           flowEntranceJob.recordBranchSelection(currentNodeId, selectedTarget)
@@ -125,9 +132,32 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner {
         }
       }
     }
-    rules.find(rule => !BranchExpressionUtils.isDefaultRule(rule) && BranchExpressionUtils.evaluateCondition(rule.condition, context))
-      .flatMap(rule => matchEdge(rule.targetName))
-      .orElse(rules.find(BranchExpressionUtils.isDefaultRule).flatMap(rule => matchEdge(rule.targetName)))
+    rules.find { rule =>
+      if (BranchExpressionUtils.isDefaultRule(rule)) {
+        false
+      } else {
+        val matched = BranchExpressionUtils.evaluateCondition(rule.condition, context)
+        info(s"Branch node ${node.getName} rule evaluated: ${rule.condition} => ${rule.targetName}, matched=$matched")
+        matched
+      }
+    }.flatMap { rule =>
+      val target = matchEdge(rule.targetName)
+      info(s"Branch node ${node.getName} matched rule target lookup: ${rule.targetName}, found=${target.isDefined}")
+      target
+    }.orElse {
+      rules.find(BranchExpressionUtils.isDefaultRule).flatMap { rule =>
+        val target = matchEdge(rule.targetName)
+        info(s"Branch node ${node.getName} use default rule target lookup: ${rule.targetName}, found=${target.isDefined}")
+        target
+      }
+    }
   }
 
+  private def describeEdges(edges: Seq[DSSEdge]): String = {
+    val workflowNodesById = flow.getWorkflowNodes.map(node => node.getId -> node).toMap
+    edges.map { edge =>
+      val targetName = workflowNodesById.get(edge.getTarget).map(_.getName).getOrElse(edge.getTarget)
+      s"${edge.getTarget}($targetName)"
+    }.mkString(", ")
+  }
 }
