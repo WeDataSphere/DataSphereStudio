@@ -93,7 +93,7 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner with Logging {
       val context = BranchExpressionUtils.buildEvaluationContext(node)
       val branchRuleText = BranchExpressionUtils.getBranchRuleText(node)
       logInfo(s"Branch node ${node.getName} start evaluating. context=${context.toSeq.sortBy(_._1).map { case (k, v) => s"$k=$v" }.mkString(", ")}")
-      logInfo(s"Branch node ${node.getName} rules: ${Option(branchRuleText).getOrElse("")}")
+      logInfo(s"Branch node ${node.getName} rules are: ${Option(branchRuleText).getOrElse("")}")
       logInfo(s"Branch node ${node.getName} outgoing targets: ${describeEdges(outgoingEdges)}")
       if (!Option(branchRuleText).exists(_.trim.nonEmpty)) {
         throw new IllegalStateException(s"Branch node ${node.getName} must define branch.rules.")

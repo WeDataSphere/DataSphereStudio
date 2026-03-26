@@ -346,34 +346,81 @@ public class LinkisNodeExecutionImpl implements LinkisNodeExecution , LinkisExec
     public Map<String, String> getResultVariables(Job job, int maxSize) {
         Map<String, String> variables = new LinkedHashMap<>();
         Object fileContent = getResultFileContent(job, 0, maxSize);
+        if (fileContent == null) {
+            job.getLogObj().warn("Branch variable extraction skipped because result file content is null.");
+            return variables;
+        }
+        job.getLogObj().info("Branch variable extraction file content type: " + fileContent.getClass().getName());
         if (!(fileContent instanceof ArrayList)) {
+            job.getLogObj().warn("Branch variable extraction skipped because result file content is not ArrayList: " + fileContent);
             return variables;
         }
-        ArrayList<ArrayList<String>> rows = (ArrayList<ArrayList<String>>) fileContent;
-        if (rows == null || rows.isEmpty()) {
+        ArrayList rows = (ArrayList) fileContent;
+        if (rows.isEmpty()) {
+            job.getLogObj().warn("Branch variable extraction skipped because result rows are empty.");
             return variables;
         }
-        if (rows.size() >= 2 && rows.get(0) != null && rows.get(1) != null) {
-            ArrayList<String> headers = rows.get(0);
-            ArrayList<String> values = rows.get(1);
+        Object firstRow = rows.get(0);
+        if (firstRow instanceof Map) {
+            extractVariablesFromMapRows(rows, variables);
+        } else if (firstRow instanceof ArrayList) {
+            extractVariablesFromArrayRows(rows, variables);
+        } else {
+            job.getLogObj().warn("Branch variable extraction skipped because first row type is unsupported: " + firstRow.getClass().getName());
+        }
+        job.getLogObj().info("Branch variable extraction result: " + variables);
+        return variables;
+    }
+
+    private void extractVariablesFromArrayRows(ArrayList rows, Map<String, String> variables) {
+        if (rows.size() >= 2 && rows.get(0) instanceof ArrayList && rows.get(1) instanceof ArrayList) {
+            ArrayList headers = (ArrayList) rows.get(0);
+            ArrayList values = (ArrayList) rows.get(1);
             int size = Math.min(headers.size(), values.size());
             for (int i = 0; i < size; i++) {
-                String key = headers.get(i);
-                String value = values.get(i);
+                String key = normalizeCellValue(headers.get(i));
+                String value = normalizeCellValue(values.get(i));
                 if (StringUtils.isNotBlank(key) && value != null) {
                     variables.put(key.trim(), value);
                 }
             }
             if (!variables.isEmpty()) {
-                return variables;
+                return;
             }
         }
-        for (ArrayList<String> row : rows) {
-            if (row != null && row.size() >= 2 && StringUtils.isNotBlank(row.get(0)) && row.get(1) != null) {
-                variables.put(row.get(0).trim(), row.get(1));
+        for (Object rowObj : rows) {
+            if (!(rowObj instanceof ArrayList)) {
+                continue;
+            }
+            ArrayList row = (ArrayList) rowObj;
+            if (row.size() >= 2) {
+                String key = normalizeCellValue(row.get(0));
+                String value = normalizeCellValue(row.get(1));
+                if (StringUtils.isNotBlank(key) && value != null) {
+                    variables.put(key.trim(), value);
+                }
             }
         }
-        return variables;
+    }
+
+    private void extractVariablesFromMapRows(ArrayList rows, Map<String, String> variables) {
+        Object rowObj = rows.get(0);
+        if (!(rowObj instanceof Map)) {
+            return;
+        }
+        Map row = (Map) rowObj;
+        for (Object entryObj : row.entrySet()) {
+            Map.Entry entry = (Map.Entry) entryObj;
+            String key = normalizeCellValue(entry.getKey());
+            String value = normalizeCellValue(entry.getValue());
+            if (StringUtils.isNotBlank(key) && value != null) {
+                variables.put(key.trim(), value);
+            }
+        }
+    }
+
+    private String normalizeCellValue(Object value) {
+        return value == null ? null : value.toString();
     }
 
     private Object getResultFileContent(Job job, int index, int maxSize) {
