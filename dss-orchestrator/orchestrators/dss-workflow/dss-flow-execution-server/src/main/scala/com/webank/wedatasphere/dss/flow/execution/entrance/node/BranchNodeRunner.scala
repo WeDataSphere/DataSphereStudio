@@ -92,20 +92,20 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner with Logging {
       )
       val context = BranchExpressionUtils.buildEvaluationContext(node)
       val branchRuleText = BranchExpressionUtils.getBranchRuleText(node)
-      info(s"Branch node ${node.getName} start evaluating. context=${context.toSeq.sortBy(_._1).map { case (k, v) => s"$k=$v" }.mkString(", ")}")
-      info(s"Branch node ${node.getName} rules: ${Option(branchRuleText).getOrElse("")}")
-      info(s"Branch node ${node.getName} outgoing targets: ${describeEdges(outgoingEdges)}")
+      logInfo(s"Branch node ${node.getName} start evaluating. context=${context.toSeq.sortBy(_._1).map { case (k, v) => s"$k=$v" }.mkString(", ")}")
+      logInfo(s"Branch node ${node.getName} rules: ${Option(branchRuleText).getOrElse("")}")
+      logInfo(s"Branch node ${node.getName} outgoing targets: ${describeEdges(outgoingEdges)}")
       if (!Option(branchRuleText).exists(_.trim.nonEmpty)) {
         throw new IllegalStateException(s"Branch node ${node.getName} must define branch.rules.")
       }
       val parsedRules = BranchExpressionUtils.parseBranchRules(branchRuleText)
-      info(s"Branch node ${node.getName} parsed rules: ${parsedRules.map(rule => s"${rule.condition}=>${rule.targetName}").mkString(", ")}")
+      logInfo(s"Branch node ${node.getName} parsed rules: ${parsedRules.map(rule => s"${rule.condition}=>${rule.targetName}").mkString(", ")}")
       val selectedEdge = selectEdgeByRules(outgoingEdges, parsedRules, context)
       if (selectedEdge.isEmpty) {
         throw new IllegalStateException(s"No branch rule matched for node ${node.getName}.")
       }
       val selectedTarget = selectedEdge.map(_.getTarget).orNull
-      info(s"Branch node ${node.getName} selected target id: ${Option(selectedTarget).getOrElse("")}")
+      logInfo(s"Branch node ${node.getName} selected target id: ${Option(selectedTarget).getOrElse("")}")
       getNodeRunnerListener match {
         case flowEntranceJob: FlowEntranceJob =>
           flowEntranceJob.recordBranchSelection(currentNodeId, selectedTarget)
@@ -115,7 +115,7 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner with Logging {
       this.transitionState(NodeExecutionState.Succeed)
     } catch {
       case t: Throwable =>
-        error(s"Failed to execute branch node ${node.getName}" + t.getMessage)
+        logError(s"Failed to execute branch node ${node.getName}: ${t.getMessage}", t)
         this.transitionState(NodeExecutionState.Failed)
     } finally {
       this.setNowTime(System.currentTimeMillis())
@@ -137,17 +137,17 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner with Logging {
         false
       } else {
         val matched = BranchExpressionUtils.evaluateCondition(rule.condition, context)
-        info(s"Branch node ${node.getName} rule evaluated: ${rule.condition} => ${rule.targetName}, matched=$matched")
+        logInfo(s"Branch node ${node.getName} rule evaluated: ${rule.condition} => ${rule.targetName}, matched=$matched")
         matched
       }
     }.flatMap { rule =>
       val target = matchEdge(rule.targetName)
-      info(s"Branch node ${node.getName} matched rule target lookup: ${rule.targetName}, found=${target.isDefined}")
+      logInfo(s"Branch node ${node.getName} matched rule target lookup: ${rule.targetName}, found=${target.isDefined}")
       target
     }.orElse {
       rules.find(BranchExpressionUtils.isDefaultRule).flatMap { rule =>
         val target = matchEdge(rule.targetName)
-        info(s"Branch node ${node.getName} use default rule target lookup: ${rule.targetName}, found=${target.isDefined}")
+        logInfo(s"Branch node ${node.getName} use default rule target lookup: ${rule.targetName}, found=${target.isDefined}")
         target
       }
     }
@@ -159,5 +159,21 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner with Logging {
       val targetName = workflowNodesById.get(edge.getTarget).map(_.getName).getOrElse(edge.getTarget)
       s"${edge.getTarget}($targetName)"
     }.mkString(", ")
+  }
+
+  private def logInfo(message: String): Unit = {
+    info(message)
+    getNodeRunnerListener match {
+      case flowEntranceJob: FlowEntranceJob => flowEntranceJob.printLog(message, "INFO")
+      case _ =>
+    }
+  }
+
+  private def logError(message: String, t: Throwable): Unit = {
+    error(message, t)
+    getNodeRunnerListener match {
+      case flowEntranceJob: FlowEntranceJob => flowEntranceJob.printLog(message, "ERROR")
+      case _ =>
+    }
   }
 }

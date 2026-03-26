@@ -141,7 +141,16 @@ class FlowEntranceJob(persistManager: PersistenceManager) extends EntranceExecut
 
   private def collectNodeOutputVariables(nodeName: String): Unit = {
     val runner = this.getFlowContext.getRunningNodes.get(nodeName)
-    if (runner == null || runner.getLinkisJob == null || runner.getLinkisJob.getJobExecuteResult == null) {
+    if (runner == null) {
+      warn(s"Skip collecting output variables for node($nodeName) because runner is not in runningNodes.")
+      return
+    }
+    if (runner.getLinkisJob == null) {
+      info(s"Skip collecting output variables for node($nodeName) because linkisJob is empty.")
+      return
+    }
+    if (runner.getLinkisJob.getJobExecuteResult == null) {
+      info(s"Skip collecting output variables for node($nodeName) because job execute result is empty.")
       return
     }
     val resultVariables = Utils.tryCatch {
@@ -152,17 +161,22 @@ class FlowEntranceJob(persistManager: PersistenceManager) extends EntranceExecut
         new util.LinkedHashMap[String, String]()
     }
     val outputVariables = resolveNodeOutputVariables(runner, resultVariables)
-    if (outputVariables != null && !outputVariables.isEmpty) {
-      this.flowVariables.synchronized {
-        outputVariables.foreach { case (key, value) =>
-          if (key != null && value != null) {
-            this.flowVariables.put(key, value)
-          }
+    if (resultVariables == null || resultVariables.isEmpty) {
+      warn(s"No raw result variables extracted from node($nodeName). The result set may be empty or unsupported for branch extraction.")
+    }
+    if (outputVariables == null || outputVariables.isEmpty) {
+      warn(s"No output variables available for node($nodeName) after branchOutputMapping resolution.")
+      return
+    }
+    this.flowVariables.synchronized {
+      outputVariables.foreach { case (key, value) =>
+        if (key != null && value != null) {
+          this.flowVariables.put(key, value)
         }
       }
-      info(s"Collected output variables from node($nodeName): ${outputVariables.toSeq.sortBy(_._1).map { case (k, v) => s"$k=$v" }.mkString(", ")}")
-      info(s"Current flow variables after node($nodeName): ${this.flowVariables.toSeq.sortBy(_._1).map { case (k, v) => s"$k=$v" }.mkString(", ")}")
     }
+    info(s"Collected output variables from node($nodeName): ${outputVariables.toSeq.sortBy(_._1).map { case (k, v) => s"$k=$v" }.mkString(", ")}")
+    info(s"Current flow variables after node($nodeName): ${this.flowVariables.toSeq.sortBy(_._1).map { case (k, v) => s"$k=$v" }.mkString(", ")}")
   }
 
   private def resolveNodeOutputVariables(runner: NodeRunner, resultVariables: util.Map[String, String]): util.Map[String, String] = {

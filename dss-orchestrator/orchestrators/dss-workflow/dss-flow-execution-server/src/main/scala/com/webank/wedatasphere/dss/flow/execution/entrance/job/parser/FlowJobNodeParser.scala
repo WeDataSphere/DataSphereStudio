@@ -90,6 +90,7 @@ class FlowJobNodeParser extends FlowEntranceJobParser with Logging{
       nodeRunner.setNodeRunnerListener(flowEntranceJob)
       nodeRunner.setFlowContext(flowContext)
       nodeRunner.setNode(node)
+      info(s"Node $nodeName uses runner ${nodeRunner.getClass.getSimpleName} for type ${node.getNodeType}.")
       pendingNodeMap.put(nodeName, nodeRunner)
     }
     info(s"${flowEntranceJob.getId} finished to parse node of flow")
