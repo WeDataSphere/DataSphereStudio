@@ -50,9 +50,13 @@ import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class LinkisNodeExecutionImpl implements LinkisNodeExecution , LinkisExecutionListener {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(LinkisNodeExecutionImpl.class);
 
     private static LinkisNodeExecution linkisExecution = new LinkisNodeExecutionImpl();
 
@@ -348,16 +352,20 @@ public class LinkisNodeExecutionImpl implements LinkisNodeExecution , LinkisExec
         Object fileContent = getResultFileContent(job, 0, maxSize);
         if (fileContent == null) {
             job.getLogObj().warn("Branch variable extraction skipped because result file content is null.");
+            LOGGER.warn("Branch variable extraction skipped because result file content is null.");
             return variables;
         }
         job.getLogObj().info("Branch variable extraction file content type: " + fileContent.getClass().getName());
+        LOGGER.info("Branch variable extraction file content type: {}", fileContent.getClass().getName());
         if (!(fileContent instanceof ArrayList)) {
             job.getLogObj().warn("Branch variable extraction skipped because result file content is not ArrayList: " + fileContent);
+            LOGGER.warn("Branch variable extraction skipped because result file content is not ArrayList: {}", fileContent);
             return variables;
         }
         ArrayList rows = (ArrayList) fileContent;
         if (rows.isEmpty()) {
             job.getLogObj().warn("Branch variable extraction skipped because result rows are empty.");
+            LOGGER.warn("Branch variable extraction skipped because result rows are empty.");
             return variables;
         }
         Object firstRow = rows.get(0);
@@ -367,8 +375,10 @@ public class LinkisNodeExecutionImpl implements LinkisNodeExecution , LinkisExec
             extractVariablesFromArrayRows(rows, variables);
         } else {
             job.getLogObj().warn("Branch variable extraction skipped because first row type is unsupported: " + firstRow.getClass().getName());
+            LOGGER.warn("Branch variable extraction skipped because first row type is unsupported: {}", firstRow.getClass().getName());
         }
         job.getLogObj().info("Branch variable extraction result: " + variables);
+        LOGGER.info("Branch variable extraction result: {}", variables);
         return variables;
     }
 
