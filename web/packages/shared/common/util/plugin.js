@@ -16,12 +16,7 @@ hooks = {
     mulit: true,
     listener: []
   },
-  // scriptis 脚本运行底部TAB
-  script_console_tabs: {
-    type: 'component',
-    mulit: true,
-    listener: []
-  },
+
   // scriptis 数据库表详情
   script_dbtb_details: {
     type: 'listener',

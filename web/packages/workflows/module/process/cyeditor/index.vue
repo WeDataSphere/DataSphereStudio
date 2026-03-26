@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div :class="[{ 'fullScreenCyeditor': fullScreen }, 'cyeditor']">
     <div ref="cyeditorel" class="cy-editor-container"></div>
     <div v-show="hoverTitle" class="hover-title" :style="titlePos.pos">
@@ -124,7 +124,8 @@ export default {
       minZoom: 0.5,
       maxZoom: 3,
       zoomSize: 0,
-      layoutType: null
+      layoutType: null,
+      isCtrlPressed: false,
     }
   },
   watch: {
@@ -185,7 +186,6 @@ export default {
                 menus = []
               }
               const node = this.findNodeById(e.target.data().id)
-
               menus = this.ctxMenuOptions.beforeShowMenu(node, menus, type)
               menus = menus.map((it) => {
                 return {
@@ -384,15 +384,10 @@ export default {
           })
         })
         editor.on('click', (e) => {
-          if (e.target.isNode && e.target.isNode()) {
+          if (e.target.isNode && e.target.isNode()&&!this.isCtrlPressed) {
             const node = this.findNodeById(e.target.data().id)
             if (node) {
               this.$emit('node-click', node)
-            }
-          } else if (e.target.isEdge && e.target.isEdge()) {
-            const edge = this.findLinkById(e.target.data().id) || e.target.data()
-            if (edge) {
-              this.$emit('edge-click', edge)
             }
           }
         })
@@ -592,13 +587,27 @@ export default {
         new_node.select();
       });
     },
+    onKeyUp(e) {
+      if (e.key === 'Control') {
+        this.isCtrlPressed = false;
+      }
+    },
+    onKeyDown(e) {
+      if (e.key === 'Control') {
+        this.isCtrlPressed = true;
+      }
+    },
   },
   mounted() {
     this.initEditor();
     eventbus.on('theme.change', this.changeTheme);
+    document.addEventListener('keyup', this.onKeyUp)
+    document.addEventListener('keydown', this.onKeyDown)
   },
   beforeDestroy() {
     eventbus.off('theme.change', this.changeTheme);
+    document.removeEventListener('keyup', this.onKeyUp);
+    document.removeEventListener('keydown', this.onKeyDown);
     if (this.instance) {
       this.instance.editor.destroy()
       this.instance = null

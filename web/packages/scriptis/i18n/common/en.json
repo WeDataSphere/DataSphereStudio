@@ -152,15 +152,21 @@
       "tableDetails": {
         "BZBSX": "Table basic attributes",
         "BZDXX": "Table column information",
-        "BTJXX": "Table statistical information",
-        "DBN": "Database name",
-        "TN": "Table namee",
+        "BDAPTableBasicProps": "BDAP Table Basic Properties",
+        "BDPSourceTableBasicProps": "BDP Source Table Basic Properties",
+        "BDAPBTJXX": "BDAP Table Statistical Information",
+        "BDPBTJXX": "BDP Source Table Statistical Information",
+        "BDPSrcChangeDetail":"BDP Source Table Change Detail",
+        "DBN": "Table database name",
+        "TN": "Table name",
         "BBM": "Table alias name",
-        "FQM": "Partitioned table",
-        "compressTable":"Comprerss table",
-        "CJYH": "Created By",
-        "CJSI": "Created At",
-        "ZHFWSJ": "Last Accessed At",
+        "FQM": "Table is partitioned table",
+        "compressTable":"Table is compressed table",
+        "BDAPTableDesc": "Table description",
+        "BDAPTableBusinessMeaning": "Table business meaning",
+        "CJYH": "Table created by",
+        "CJSI": "Table created at",
+        "ZHFWSJ": "Table last accessed at",
         "BMS": "Table description",
         "BMXSX": "Table model attributes",
         "SMZQ": "Lifecycle",
@@ -171,6 +177,17 @@
         "SXCP": "Product",
         "SSXM": "Project",
         "YT": "Usage",
+        "BDPOriginTable": "Source table name",
+        "BDPOriginDb": "Source table database name",
+        "BDPOriginTableDesc": "Source table description",
+        "BDPOriginTableBusinessMeaning": "Source table business meaning",
+        "BDPUpdateMethod": "Source table update method",
+        "BDPUpdateFrequency": "Source table update frequency",
+        "BDPRelatedProduct": "Source table related business product",
+        "BDPSubsystem": "Source table subsystem",
+        "BDPDevManager": "Source table development manager",
+        "BDPDevDept": "Source table development department",
+        "BDPDictDept": "Source table dictionary business department",
         "SSZDMC": "Please search for field name, alias, description...",
         "XH": "Index",
         "ZDM": "Column name",
@@ -186,7 +203,6 @@
         "LastWriteTime": "Last Write Time",
         "WFQSJ": "No data of table partitions",
         "BXX": "Table information",
-        "BZD": "Number of columns",
         "BDX": "Table size",
         "WJM": "Number of files",
         "FQS": "Number of partitions",
@@ -197,10 +213,37 @@
         "GSHJX": "Formatted to",
         "ZJXYGE": "The format required by the component",
         "FZBZDXX": "Copy table field information",
+        "BDAPBZD": "BDAP Table Field",
+        "BDAPBZDMS": "BDAP Table Field Description",
+        "BDAPBZDLX": "BDAP Table Field Type",
+        "SFZJBDAP": "Is Primary Key (BDAP Table)",
+        "SFFQZDBDAP": "Is Partition Field (BDAP Table)",
+        "MXXXBDAP": "Model Information (BDAP Table)",
+        "ZDGZBDAP": "Field Rules (BDAP Table)",
+        "BDPYBZD": "BDP Source Table Field",
+        "BDPYBZDMS": "BDP Source Table Field Description",
+        "BDPYBZDKJJGGZ": "BDP Source Table Field Processing Rules",
+        "BDPYBZDSJX": "BDP Source Table Field Data Item",
+        "BDPYBZDSSSJFL": "BDP Source Table Field Data Classification",
+        "TMFS": "Data Masking Method",
+        "TMHS": "Data Masking Function",
+        "LSZZ": "Column Settings",
+        "XZXSLZ": "Select Display Columns",
+        "CZ": "Reset",
+        "CZCG": "Reset Successfully",
+        "HQBZDXXSB": "Failed to get table field information",
         "QHPTST": "Switch common view",
         "QHGLYST": "Switch administrator view",
         "QSRBSZ": "Please enter the table owner",
-        "MCJZCZYYWYH": "Only one user's table can be transferred at a time"
+        "MCJZCZYYWYH": "Only one user's table can be transferred at a time",
+        "AI": "AI inference",
+        "BFQXX": "Table Partition Info",
+        "SSBFQXX": "Real-time Table Partition Info",
+        "FQ": "Partition",
+        "FQCJSJ": "Partition creation time",
+        "JZBFQXXSB": "Failed to load table partition information",
+        "JZBSSFQXXSB": "Failed to load real-time table partition information",
+        "HQBDPBXXS": "Corresponding BDP source table not found"
       },
       "logView": {
         "taskId": "Task ID：",
@@ -424,6 +467,7 @@
         "engineAndTask": "Engine and task"
       },
       "constants": {
+        "columns": "columns",
         "add": "New",
         "cancel": "Cancel",
         "confirm": "Confirm",
@@ -505,7 +549,7 @@
           "catalogName": {
             "required": "Please enter directory name",
             "lengthLimit": "Length should be between 1 to 200 characters",
-            "letterTypeLimit": " Only Chinese characters, alphanumeric characters and underscore are allowed"
+            "letterTypeLimit": " Permitted: Chinese characters, alphanumerics, underscores, and non-consecutive dots"
           },
           "targetScriptPath": {
             "required": "Please choose target script path"
@@ -515,7 +559,20 @@
         "scriptType": "Script type",
         "targetFolder": "Target directory"
       },
+      "datasource": {
+        "type": "Datasource type",
+        "name": "Datasource name"
+      },
       "database": {
+        "search": {
+          "space": "Search space"
+        },
+        "types": {
+          "edge": "Edge type",
+          "tag": "Tag",
+          "tagIndex": "Tag index",
+          "edgeIndex": "Edge index"
+        },
         "contextMenu": {
           "db": {
             "copyName": "Copy database name",
@@ -531,7 +588,14 @@
             "exportTable": "Export table",
             "copyName": "Copy table name",
             "pasteName": "Copy table name & paste to script",
+            "aisql": "AI SQL",
             "copyAllColumns": "Copy all the columns of table"
+          },
+          "ng": {
+            "copyName": "Copy space name",
+            "copyPaste": "Copy space name and paste to script",
+            "viewInfo": "View space info",
+            "viewAttr": "View attributes"
           },
           "field": {
             "copyColumnsName": "Copy column name",
@@ -623,6 +687,10 @@
           "unSupport": {
             "title": "Warning",
             "desc": "Sorry, the system does not support this file format!"
+          },
+          "iframeLimit": {
+             "title": "Iframe Tab Limit",
+            "desc": "A maximum of ${maxIframeTabLen} iframe tabs can be opened. Please close some tabs and try again"
           }
         },
         "removeWork": {
@@ -898,7 +966,78 @@
       "copy_paste_board": "Copy to paste board",
       "generate_script": "Generate execution script",
       "select_data_table": "Please select a data table",
-      "paste_successfully": "Successfully copied to the paste board"
+      "paste_successfully": "Successfully copied to the paste board",
+      "table_usage_heat": "Table usage heat",
+      "visited_in_three_months": "Visited in last 3 months",
+      "visited_in_six_months": "Visited in last 6 months",
+      "visited_in_twelve_months": "Visited in last 12 months",
+      "not_visited_in_three_months": "Not visited in last 3 months",
+      "not_visited_in_six_months": "Not visited in last 6 months",
+      "not_visited_in_twelve_months": "Not visited in last 12 months"
+    },
+    "workbench": {
+      "proxyUser": "Current proxy user:",
+      "optimizationReport": "Optimization Report",
+      "downloadAudit": "Download Audit",
+      "scriptFile": "Script File",
+      "invalidScriptName": "The current script name does not meet the specification (only Chinese, letters, numbers and underscores are supported), which may affect the execution of the script, please modify the script name!",
+      "columnPagination": "Column pagination: 500 columns / page, total",
+      "textFile": "Text",
+      "fieldTypeMismatch": "Field Data Type Mismatch Details",
+      "nodeKeywordCheck": "Node Keyword Check",
+      "nokeywords": "No Keyword",
+      "optimize": "Optimize",
+      "aiCorrection": "AI Correction",
+      "aioptimize": "AI Optimize",
+      "switchDataSource": "Switch Data Source",
+      "prompt": "Prompt",
+      "disableAICorrection": "After closing, if the task reports a syntax error, the AI correction prompt will not pop up, continue?",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "nebula": {
+      "searchPlaceholder": "Please search by property name, description",
+      "spaceId": "Space ID",
+      "tagName": "Tag Name",
+      "ttlDuration": "TTL Duration",
+      "ttlColumn": "TTL Column",
+      "description": "Description",
+      "edgeTypeName": "Edge Type Name",
+      "serialNumber": "Serial Number",
+      "propertyName": "Property Name",
+      "dataType": "Data Type",
+      "defaultValue": "Default Value",
+      "tagBasicInfo": "Tag Basic Information",
+      "edgeBasicInfo": "Edge Type Basic Information",
+      "basicInfo": "Basic Information",
+      "tagProperty": "Tag Property",
+      "edgeProperty": "Edge Type Property",
+      "property": "Property",
+      "spaceBasicInfo": "Space Basic Information",
+      "spaceName": "Space Name",
+      "partitionNumber": "Partition Number",
+      "replicaFactor": "Replica Factor",
+      "charset": "Charset",
+      "collationRule": "Collation Rule",
+      "vidType": "VID Type"
+    },
+    "workflow": {
+      "searchProject": "Please enter project name to search",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "tooManyMatches": "Too many matches for this node, please view all matches >",
+      "loading": "Loading...",
+      "noMatches": "No matching data",
+      "totalMatches": "Total matches",
+      "select": "Please select",
+      "projectName": "Project name:",
+      "workflow": "Workflow:",
+      "nodeType": "Node type:",
+      "file": "File:",
+      "searchContent": "Search content",
+      "code": "Code",
+      "search": "Search",
+      "viewAll": "View all"
     }
   }
 }

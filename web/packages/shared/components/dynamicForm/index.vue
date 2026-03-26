@@ -22,6 +22,7 @@
                 type="text"
                 :placeholder="$t('message.common.dynamicForm.namePlaceholder', {title})"
                 @on-change="onInputChange"
+                @input="keyVal => onKeyInput(keyVal, index)"
               ></Input>
             </FormItem>
           </Col>
@@ -35,7 +36,7 @@
                 v-model="item.value"
                 type="text"
                 :placeholder="$t('message.common.dynamicForm.placeholderInput')"
-                @on-change="onInputChange"
+                @input="val => onValueInput(val, index)"
               ></Input>
             </FormItem>
           </Col>
@@ -117,6 +118,39 @@ export default {
       this.$emit("change", this.formDynamic.list);
     },
     onInputChange() {
+      this.$emit("change", this.formDynamic.list);
+    },
+    onKeyInput(keyVal, index) {
+      if(keyVal === 'sparkVersion') {
+        const item = this.formDynamic.list[index];
+        this.onValueInput(item.value, index)
+      }
+    },
+    onValueInput(val, index) {
+      const item = this.formDynamic.list[index];
+      item.value = val;
+      if (item.key === 'sparkVersion') {
+        if (!val) {
+          return
+        }
+        else if (val === '2') {
+          return
+          // this.$Modal.warning({
+          //   title: this.$t('message.workflow.process.notice'),
+          //   content: this.$t('message.workflow.process.spark2Notice'),
+          //   closable: true,
+          //   width: 500
+          // });
+        }
+        else if (val !== '3') {
+          this.$nextTick(() => {
+            item.value = '3';
+            this.$Message.warning(
+              this.$t('message.workflow.process.sparkVersionReset')
+            );
+          });
+        }
+      }
       this.$emit("change", this.formDynamic.list);
     }
   }

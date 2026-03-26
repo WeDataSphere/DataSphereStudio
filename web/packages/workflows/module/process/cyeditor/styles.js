@@ -31,15 +31,11 @@ export default function (nodeTypes) {
         'background-width': '24px',
         'background-height': '24px',
         'background-image': (e) => {
-          const nodeItem = nodeTypes.find((it) => it.type === e.data('type'));
+          const nodeItem = nodeTypes.find(
+            (it) => it.type === e.data('type')
+          );
           return (nodeItem && nodeItem.image) || { value: '' };
         },
-      },
-    },
-    {
-      selector: 'node[type = "workflow.branch"]',
-      style: {
-        shape: 'diamond',
       },
     },
     {

@@ -25,7 +25,7 @@
                   class="searchbox"
                   v-model="searchText"
                   clearable
-                  placeholder="请输入项目名进行搜索"
+                  :placeholder="$t('message.workflow.searchProject')"
                 />
                 <div class="project-nav-tree-top-t-icon" style="border-bottom: 1px solid #eee; margin-top: 7px;">
                   <SvgIcon class="icon sort-icon" icon-class="xinzeng" style="display: inline-flex;margin-top: 4px;" @click="createProject" />
@@ -192,9 +192,6 @@
     >
       {{ $t("message.common.projectDetail.confirmDeleteProject")
       }}{{ deleteProjectItem.name }}?
-      <br />
-      <br />
-      <Checkbox v-model="ifDelOtherSys">{{ $t('message.workflow.Simultaneously') }}</Checkbox>
     </Modal>
     <!-- flow 基础属性 -->
     <Modal v-model="baseprop.show" :footer-hide="true" class="prop-modal" :title="$t('message.workflow.Essential')">
@@ -267,6 +264,7 @@ export default {
       currentMode: null,
       applicationAreaMap: [],
       orchestratorModeList: {},
+      skipTryOpenWorkFlow: false, // 用于跳过tryOpenWorkFlow调用的标志
       currentProjectData: {
         name: "",
         description: "",
@@ -297,7 +295,6 @@ export default {
       currentTreeProject: null, // 点击哪个project的添加
       refreshFlow: false, // 左侧树添加工作流后通知右侧刷新
       deleteProjectShow: false, // 删除工程弹窗展示
-      ifDelOtherSys: false,
       deleteProjectItem: "", // 删除的工程项
       actionType: "", // add || modify
       dataList: [
@@ -366,7 +363,12 @@ export default {
       this.getAreaMap();
       this.getProjectData(()=>{
         this.updateBread();
-        this.tryOpenWorkFlow();
+        // 检查是否需要跳过tryOpenWorkFlow调用
+        if (!this.skipTryOpenWorkFlow) {
+          this.tryOpenWorkFlow();
+        } else {
+          this.skipTryOpenWorkFlow = false;
+        }
       });
       if (v.projectID) {
         this.currentTreeId = +v.projectID;
@@ -465,7 +467,7 @@ export default {
     },
     createProject() {
       this.actionType = "add";
-      this.currentProjectData = {
+      const initData = {
         devProcessPermission: this.currentProjectData.devProcessPermission,
         name: "",
         description: "",
@@ -481,7 +483,7 @@ export default {
         gitUser: '',
         gitToken: ''
       };
-      this.$refs.projectForm.showProject(this.currentProjectData, 'add')
+      this.$refs.projectForm.showProject(initData, 'add')
     },
     handlePanelChange(data) {
       if (data.width >= this.minPanelWidth && data.width <= this.maxPanelWidth) {
@@ -823,7 +825,6 @@ export default {
     },
     onDeleteProject(project) {
       this.deleteProjectShow = true;
-      this.ifDelOtherSys = false;
       this.deleteProjectItem = project;
     },
     async onConfigProject(project) {
@@ -841,7 +842,6 @@ export default {
       const params = {
         id: this.deleteProjectItem.id,
         sure: false,
-        ifDelOtherSys: this.ifDelOtherSys,
       };
       const afterDelete = () => {
         if (this.deleteProjectItem.id == this.currentProjectData.id) {
@@ -1476,11 +1476,30 @@ export default {
      * 切换tab
      * tabId为tab组件返回的标识
      */
-    onTabClick(tabId) {
+    onTabClick(tabId, flowId) {
       // 获取当前切换的工作流信息
       const currenTab = this.tabList.filter((item) => item.tabId === tabId)[0];
       this.currentTreeId = currenTab.id
       this.current = currenTab;
+      // 如果提供了flowId，则更新路由但不重新加载页面
+      if (flowId && this.$route.query.flowId != flowId) {
+        const query = {
+          ...this.$route.query,
+          flowId: flowId
+        };
+        // 使用Vue Router的replace方法更新查询参数，避免页面重新加载
+        // 为了避免触发$route.query watcher中的tryOpenWorkFlow导致重新加载，我们暂时禁用相关逻辑
+        this.skipTryOpenWorkFlow = true;
+        this.$router.replace({
+          query: query
+        }).catch(err => {
+          this.skipTryOpenWorkFlow = false;
+          // 忽略导航重复错误
+          if (err.name !== 'NavigationDuplicated') {
+            throw err;
+          }
+        })
+      }
     },
     updateCurrentWorkflowStatus(params) {
       const workspaceData = storage.get("currentWorkspace");

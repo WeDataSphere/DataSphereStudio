@@ -1,127 +1,143 @@
 <template>
-  <we-panel diretion="vertical" @on-resize="resize" @on-move-end="resizePanel">
-    <we-panel-item
-      ref="topPanel"
-      :index="1"
-      :min="36"
-      :height="scriptViewState.topPanelHeight"
-      class="editor-panel"
-      :class="{'full-screen': scriptViewState.topPanelFull}"
-    >
-      <editor ref="editor" :script="script" :work="work" :script-type="work.type" :readonly="readonly" @on-save="save" @on-run="run"
-        @on-stop="stop"/>
-      <Spin v-if="saveLoading" size="large" class="new-sidebar-spin" fix />
-    </we-panel-item>
-    <!-- 使用v-if把非当前脚本DOM移除文档防止DOM节点过多影响性能 -->
-    <we-panel-item
-      v-if="current===work.id"
-      :index="2"
-      :min="36"
-      :height="scriptViewState.bottomContentHeight"
-      class="log-panel"
-      :class="{'full-screen': scriptViewState.bottomPanelFull}"
-    >
-      <div class="workbench-tabs">
-        <div class="workbench-tab-wrapper">
-          <div class="workbench-tab">
-            <div v-if="bottomTab.progress" :class="{active: scriptViewState.showPanel == 'progress'}"
-              class="workbench-tab-item" @click="showPanelTab('progress')">
-              <span>{{ $t('message.scripts.tabs.progress') }}</span>
+  <div class="script-container">
+    <we-panel ref="panel" diretion="vertical" @on-resize="resize" @on-move-end="resizePanel">
+      <we-panel-item
+        ref="topPanel"
+        :index="1"
+        :min="36"
+        :height="scriptViewState.topPanelHeight"
+        class="editor-panel"
+        :class="{'full-screen': scriptViewState.topPanelFull}"
+      >
+        <editor ref="editor" :script="script" :work="work" :script-type="work.type" :readonly="readonly" :nodeEditable="hasNodeEditable()"
+          @on-save="save"
+          @on-run="run"
+          @on-fix="emitAiFix"
+          @on-stop="stop"/>
+        <Spin v-if="saveLoading" size="large" class="new-sidebar-spin" fix />
+      </we-panel-item>
+      <!-- 使用v-if把非当前脚本DOM移除文档防止DOM节点过多影响性能 -->
+      <we-panel-item
+        v-if="current===work.id"
+        :index="2"
+        :min="36"
+        :height="scriptViewState.bottomContentHeight"
+        class="log-panel"
+        :class="{'full-screen': scriptViewState.bottomPanelFull}"
+      >
+        <div class="workbench-tabs">
+          <div class="workbench-tab-wrapper">
+            <div class="workbench-tab">
+              <div v-if="bottomTab.progress" :class="{active: scriptViewState.showPanel == 'progress'}"
+                class="workbench-tab-item" @click="showPanelTab('progress')">
+                <span>{{ $t('message.scripts.tabs.progress') }}</span>
+              </div>
+              <div v-if="bottomTab.result" :class="{active: scriptViewState.showPanel == 'result'}"
+                class="workbench-tab-item" @click="showPanelTab('result')">
+                <span>{{ $t('message.scripts.tabs.result') }}</span>
+              </div>
+              <div v-if="bottomTab.log" :class="{active: scriptViewState.showPanel == 'log'}" class="workbench-tab-item"
+                @click="showPanelTab('log')">
+                <span>{{ $t('message.scripts.tabs.log') }}</span>
+              </div>
+              <div v-if="bottomTab.history" :class="{active: scriptViewState.showPanel == 'history'}"
+                class="workbench-tab-item" @click="showPanelTab('history')">
+                <span>{{ $t('message.scripts.tabs.history') }}</span>
+              </div>
+              <div v-if="bottomTab.fieldDetail & isShowFieldDetailTab" :class="{active: scriptViewState.showPanel == 'fieldDetail'}"
+                class="workbench-tab-item" style="min-width: 200px" @click="showPanelTab('fieldDetail')">
+                <span>{{ codePrecheckTitle }}</span>
+              </div>
+              <template v-for="(comp, index) in extComponents">
+                <component
+                  :key="comp.name + '_head' + index"
+                  :is="comp.tabHead"
+                  :script="script"
+                  :scriptViewState="scriptViewState"
+                  :comp="comp"
+                  :work="work"
+                  :class="{active: scriptViewState.showPanel == comp.name}"
+                  @click.native="showPanelTab(comp.name)" />
+              </template>
             </div>
-            <div v-if="bottomTab.result" :class="{active: scriptViewState.showPanel == 'result'}"
-              class="workbench-tab-item" @click="showPanelTab('result')">
-              <span>{{ $t('message.scripts.tabs.result') }}</span>
+            <div v-if="handleComputeShowBigTip()" class="column-pagination">
+              <span>{{ $t('message.workbench.columnPagination') }} {{ scriptResult.totalColumn }} {{ $t('message.scripts.constants.columns') }}</span>
+              <Page
+                :total="scriptResult.totalColumn"
+                :current="scriptViewState.columnPageNow || 1"
+                :page-size="500"
+                :simple="true"
+                size="small"
+                @on-change="onChangeColPage"
+              />
             </div>
-            <div v-if="bottomTab.log" :class="{active: scriptViewState.showPanel == 'log'}" class="workbench-tab-item"
-              @click="showPanelTab('log')">
-              <span>{{ $t('message.scripts.tabs.log') }}</span>
-            </div>
-            <div v-if="bottomTab.history" :class="{active: scriptViewState.showPanel == 'history'}"
-              class="workbench-tab-item" @click="showPanelTab('history')">
-              <span>{{ $t('message.scripts.tabs.history') }}</span>
-            </div>
-            <div v-if="bottomTab.fieldDetail & isShowFieldDetailTab" :class="{active: scriptViewState.showPanel == 'fieldDetail'}"
-              class="workbench-tab-item" style="min-width: 200px" @click="showPanelTab('fieldDetail')">
-              <span>{{ codePrecheckTitle }}</span>
-            </div>
+            <span class="workbench-tab-full-btn" @click="configLogPanel">
+              <Icon :type="scriptViewState.bottomPanelFull?'md-contract':'md-expand'" />
+              {{ scriptViewState.bottomPanelFull ? $t('message.scripts.constants.logPanelList.releaseFullScreen') : $t('message.scripts.constants.logPanelList.fullScreen') }}
+            </span>
+          </div>
+          <div class="workbench-container">
+            <we-progress
+              v-if="bottomTab.show_progress"
+              ref="progressTab"
+              :script="script"
+              :script-view-state="scriptViewState"
+              :execute="execute"
+              :show-diagnosis="showDiagnosis"
+              @compareDetail="openCompareDetail"
+              @open-panel="openPanel"
+              @showDiagnosisModal="handleShowDiagnosis" />
+            <result
+              v-if="bottomTab.show_result"
+              ref="result"
+              getResultUrl="filesystem"
+              :script="script"
+              :work="work"
+              :dispatch="dispatch"
+              :script-view-state="scriptViewState"
+              @on-set-change="changeResultSet"/>
+            <log
+              v-if="bottomTab.show_log"
+              :status='script.status'
+              :logs="script.log"
+              :log-line="script.logLine"
+              :script-view-state="scriptViewState"/>
+            <history
+              v-if="bottomTab.show_history"
+              :history="script.history"
+              :script-view-state="scriptViewState"
+              :run-type="script.runType"
+              :node="node"
+              @on-fix="checkAIFix"
+              @update-from-history="updateFromHistory"/>
+            <field
+              v-if="bottomTab.show_fieldDetail"
+              :codePrecheckRes="script.codePrecheckRes"
+              :script-view-state="scriptViewState"
+            />
             <template v-for="(comp, index) in extComponents">
               <component
-                :key="comp.name + '_head' + index"
-                :is="comp.tabHead"
+                v-if="scriptViewState.showPanel == comp.name"
+                :key="comp.name + index"
+                :is="comp.component"
                 :script="script"
-                :scriptViewState="scriptViewState"
-                :comp="comp"
-                :work="work"
-                :class="{active: scriptViewState.showPanel == comp.name}"
-                @click.native="showPanelTab(comp.name)" />
+                :execute="execute"
+                :script-view-state="scriptViewState"
+                :work="work" />
             </template>
           </div>
-          <div v-if="bottomTab.show_result && scriptResult.totalColumn <= 10000 && scriptResult.totalColumn > 500" class="column-pagination">
-            <span>列分页：500列 / 页，共{{ scriptResult.totalColumn }}列</span>
-            <Page
-              :total="scriptResult.totalColumn"
-              :current="scriptViewState.columnPageNow || 1"
-              :page-size="500"
-              :simple="true"
-              size="small"
-              @on-change="onChangeColPage"
-            />
-          </div>
-          <span class="workbench-tab-full-btn" @click="configLogPanel">
-            <Icon :type="scriptViewState.bottomPanelFull?'md-contract':'md-expand'" />
-            {{ scriptViewState.bottomPanelFull ? $t('message.scripts.constants.logPanelList.releaseFullScreen') : $t('message.scripts.constants.logPanelList.fullScreen') }}
-          </span>
         </div>
-        <div class="workbench-container">
-          <we-progress
-            v-if="bottomTab.show_progress"
-            ref="progressTab"
-            :script="script"
-            :script-view-state="scriptViewState"
-            :execute="execute"
-            @compareDetail="openCompareDetail"
-            @open-panel="openPanel" />
-          <result
-            v-if="bottomTab.show_result"
-            ref="result"
-            getResultUrl="filesystem"
-            :script="script"
-            :work="work"
-            :dispatch="dispatch"
-            :script-view-state="scriptViewState"
-            @on-set-change="changeResultSet"/>
-          <log
-            v-if="bottomTab.show_log"
-            :status='script.status'
-            :logs="script.log"
-            :log-line="script.logLine"
-            :script-view-state="scriptViewState"/>
-          <history
-            v-if="bottomTab.show_history"
-            :history="script.history"
-            :script-view-state="scriptViewState"
-            :run-type="script.runType"
-            :node="node"
-            @update-from-history="updateFromHistory"/>
-          <field
-            v-if="bottomTab.show_fieldDetail"
-            :codePrecheckRes="script.codePrecheckRes"
-            :script-view-state="scriptViewState"
-          />
-          <template v-for="(comp, index) in extComponents">
-            <component
-              v-if="scriptViewState.showPanel == comp.name"
-              :key="comp.name + index"
-              :is="comp.component"
-              :script="script"
-              :execute="execute"
-              :script-view-state="scriptViewState"
-              :work="work" />
-          </template>
-        </div>
-      </div>
-    </we-panel-item>
-  </we-panel>
+      </we-panel-item>
+    </we-panel>
+    
+    <!-- 事中诊断弹窗 -->
+    <diagnosisModal
+      ref="diagnosisModal"
+      :task-id="work.taskID"
+      :diagnosis-res="curDiagnosisRes"
+    />
+  </div>
+
 </template>
 <script>
 import {
@@ -150,11 +166,12 @@ import result from '@dataspherestudio/shared/components/consoleComponent/result.
 import log from '@dataspherestudio/shared/components/consoleComponent/log.vue';
 import field from './field.vue';
 import weProgress from '@dataspherestudio/shared/components/consoleComponent/progress.vue';
+import diagnosisModal from '@dataspherestudio/shared/components/consoleComponent/diagnosisModal.vue';
 import mixin from '@dataspherestudio/shared/common/service/mixin';
 import plugin from '@dataspherestudio/shared/common/util/plugin';
+import eventbus from '@dataspherestudio/shared/common/helper/eventbus';
 import { EXECUTE_COMPLETE_TYPE } from '@dataspherestudio/shared/common/config/const';
 
-// const extComponents = plugin.emitHook('script_console_tabs') || []
 const extComponents = []
 const typeMap ={'.py': 'pyspark','.hql': 'hive sql', '.sql': 'spark sql', '.scala': 'spark scala', '.txt': '文本'};
 
@@ -167,6 +184,7 @@ export default {
     history,
     weProgress,
     field,
+    diagnosisModal,
   },
   props: {
     work: {
@@ -196,6 +214,8 @@ export default {
         resultSet: 0,
         params: {},
         readOnly: false,
+        diagnosisRes: {}, // 缓存事中诊断结果
+        diagnosisProblemTypes: [], // 存储去重后的异常类型
       },
       scriptViewState: {
         topPanelHeight: this.node ? 300 : 450,
@@ -211,7 +231,10 @@ export default {
       saveLoading: false,
       extComponents,
       isShowFieldDetailTab: false,
-      codePrecheckTitle: '字段数据类型不一致详情',
+      codePrecheckTitle: this.$t('message.workbench.fieldTypeMismatch'),
+      showDiagnosis: false,
+      curDiagnosisRes: {},
+      diagnosisModalVisible: false,
     };
   },
   mixins: [mixin],
@@ -282,7 +305,8 @@ export default {
           needFix.taskId,
           needFix.code,
           needFix.errCode,
-          needFix.errMessage
+          needFix.errMessage,
+          needFix.status
         )
       }
     },
@@ -307,7 +331,7 @@ export default {
         supportedMode = find(this.getSupportModes(), (p) => p.runType === this.work.specialSetting.runType);
       }
       // 判断特殊字符的文件, 后台编译可能会因为文件名存在特殊字符报错，所以无法运行
-      const regLeal = /^[.\w\u4e00-\u9fa5-]{1,200}\.[A-Za-z]+$/;
+      const regLeal = /^[.\w\u4e00-\u9fa5-]{1,200}\.[A-Za-z0-9]+$/;
       const islegal = regLeal.test(this.work.filename);
       this.work.data = this.script = new Script(Object.assign({}, supportedMode, {
         id: this.work.id,
@@ -316,7 +340,7 @@ export default {
         executable: !supportedMode.executable ? supportedMode.executable : islegal,
         data: this.work.code,
         params: this.work.params,
-        readOnly: this.readonly
+        readOnly: this.readonly || this.work.readOnly
       }));
       delete this.work.specialSetting;
     }
@@ -402,11 +426,35 @@ export default {
     this.dispatch('IndexedDB:getHistory', {
       tabId: this.script.id,
       cb: (historyList) => {
+        // console.log('[DEBUG] script.vue created - IndexedDB:getHistory 回调');
+        // console.log('[DEBUG] tabId:', this.script.id);
+        // console.log('[DEBUG] historyList:', historyList);
         this.script.history = dropRight(values(historyList));
+        // console.log('[DEBUG] this.script.history:', this.script.history);
       }
     });
     // 加入用户名来区分不同账户下的tab
     this.dispatch('IndexedDB:recordTab', { ...this.work, userName: this.userName });
+    
+    // 恢复缓存的诊断结果
+    if (this.script.diagnosisRes && this.script.diagnosisRes.diagnosisMsg) {
+      this.curDiagnosisRes = this.script.diagnosisRes;
+      const diagnosisMsgJson = typeof this.curDiagnosisRes.diagnosisMsg === 'string' 
+        ? JSON.parse(this.curDiagnosisRes.diagnosisMsg) 
+        : this.curDiagnosisRes.diagnosisMsg;
+      // 只要有problems就显示提示区域，按钮的显示由progress.vue中的hasSuggestions控制
+      if (this.script.status === 'Running' && diagnosisMsgJson.data && diagnosisMsgJson.data.problems && diagnosisMsgJson.data.problems.length > 0) {
+        // 提取并去重异常类型
+        const problemTypes = diagnosisMsgJson.data.problems.map(p => p.type);
+        this.script.diagnosisProblemTypes = [...new Set(problemTypes)];
+        this.showDiagnosis = true;
+      }
+    }
+    
+    // 刷新页面时重新查询接口获取最新诊断数据
+    if (this.work.taskID && this.script.application === 'spark') {
+      this.refreshDiagnosisData();
+    }
   },
   mounted() {
     this.$nextTick(() => {
@@ -435,6 +483,11 @@ export default {
       clearTimeout(this.canceledTimeout);
       this.canceledTimeout = null;
     }
+    // 清理事中诊断轮询定时器
+    if (this.diagnosisPollingTimer) {
+      clearTimeout(this.diagnosisPollingTimer);
+      this.diagnosisPollingTimer = null;
+    }
     let runningScripts = storage.get(this._running_scripts_key, 'local') || {};
     if (this.script.running && this.execute && this.execute.taskID && this.execute.id) {
       runningScripts[this.script.id] = {
@@ -453,21 +506,38 @@ export default {
     }
     window.onbeforeunload = null;
     plugin.off('copilot_web_listener_inster', this.insterCode)
-    this.$Notice.close('codefixnotice')
   },
   methods: {
+    handleComputeShowBigTip() {
+      let curVShow = 'table'
+      if(this.$refs.result) {
+       curVShow = this.$refs.result.getVisualShow();
+      }
+      return this.bottomTab.show_result && curVShow==='table' && this.scriptResult.totalColumn <= 10000 && this.scriptResult.totalColumn > 500
+    },
+    hasNodeEditable() {
+      let flag = true;
+      if(this.node && this.node.params && this.node.params.configuration && this.node.params.configuration.special 
+            && this.node.params.configuration.special.disableEdit 
+            && (this.node.params.configuration.special.disableEdit === "true" || this.node.params.configuration.special.disableEdit === true)) {
+        flag = false;
+      }
+      return flag
+    },
     /**
       events: [{
           eventType?: any,
           arg?: {}
       }]
-     * @param {*} param0
+     * @param {*} param0 
      */
     initListenerCopilotEvent() {
       plugin.on('copilot_web_listener_inster', this.insterCode)
     },
     onChangeColPage(v) {
+      console.log('script-onChangeColPage', v)
       this.scriptViewState = {...this.scriptViewState, columnPageNow: v}
+      console.log('scriptViewState', this.scriptViewState)
     },
     insterCode({ code }) {
       if (this.current !== this.work.id) return
@@ -480,20 +550,24 @@ export default {
     },
     // panel 分割线拖动调整大小
     resizePanel: debounce(function() {
-      if (this.$el && this.$refs.topPanel && (this.$el.clientHeight - this.$refs.topPanel.$el.clientHeight > 0)) {
+      // 兼容方案：优先使用 panel ref，如果不存在则使用 $el
+      const containerEl = this.$refs.panel ? this.$refs.panel.$el : this.$el;
+      if (containerEl && this.$refs.topPanel && (containerEl.clientHeight - this.$refs.topPanel.$el.clientHeight > 0)) {
         this.scriptViewState.topPanelHeight = this.$refs.topPanel.$el.clientHeight
-        this.scriptViewState.bottomContentHeight = this.$el.clientHeight - this.$refs.topPanel.$el.clientHeight;
+        this.scriptViewState.bottomContentHeight = containerEl.clientHeight - this.$refs.topPanel.$el.clientHeight;
       }
     }, 700),
     // 浏览器窗口缩放
     resize: debounce(function() {
+      // 兼容方案：优先使用 panel ref，如果不存在则使用 $el
+      const containerEl = this.$refs.panel ? this.$refs.panel.$el : this.$el;
       if (this.scriptViewState.bottomPanelFull) {
-        this.scriptViewState.bottomContentHeight = this.$el.clientHeight + 30
+        this.scriptViewState.bottomContentHeight = containerEl.clientHeight + 30
         return
       }
-      if (this.$el && this.$refs.topPanel && (this.$el.clientHeight - this.$refs.topPanel.$el.clientHeight > 0)) {
-        this.scriptViewState.topPanelHeight = this.$el.clientHeight * 0.6
-        this.scriptViewState.bottomContentHeight = this.$el.clientHeight * 0.4;
+      if (containerEl && this.$refs.topPanel && (containerEl.clientHeight - this.$refs.topPanel.$el.clientHeight > 0)) {
+        this.scriptViewState.topPanelHeight = containerEl.clientHeight * 0.5
+        this.scriptViewState.bottomContentHeight = containerEl.clientHeight * 0.5;
       }
     }, 700),
     'Workbench:save'(work) {
@@ -553,6 +627,7 @@ export default {
       }
     },
     'Workbench:removeTab'() {
+      // fix http://dpms.weoa.com/#/product/100199/bug/detail/199545
       if (this.node) {
         this.resizePanel()
       }
@@ -571,7 +646,17 @@ export default {
         });
       });
     },
-    getExecuteData(option) {
+    async getDefaultTplForAiSql() {
+      const { templateList } = await api.fetch('dss/framework/workspace/engineconf/getConfTemplateList', {
+        workspaceId: this.$route.query.workspaceId,
+        pageNow: 1,
+        pageSize: 1000
+      }, 'get')
+      return templateList.find(it => {
+        return it.defaultForAISQL
+      })
+    },
+    async getExecuteData(option) {
       const executionCode = isString(option.code) ? option.code : this.script.data;
       const isStorage = option && option.type === 'storage';
       this.script.executionCode = isStorage ? option.executionCode : executionCode;
@@ -596,6 +681,33 @@ export default {
           }
         }
       }
+      if (this.script.ext === '.aisql') {
+       let defaultTpl = await this.getDefaultTplForAiSql()
+       if (defaultTpl && !this.work.queryTableCreated) {
+         params.configuration.runtime = {
+          ...params.configuration.runtime,
+          'ec.resource.name': defaultTpl.name
+         }
+       }
+       if(this.work.queryTableCreated) {
+        params.configuration.runtime['ec.engine.type'] = 'starrocks'
+       }
+      }
+      if (this.script.ext === '.py3') {
+       params.variable = {
+        ...params.variable,
+        sparkVersion: "3"
+       }
+      }
+      // 对于 spark 类型的脚本，在 Home 路径下，如果没有 sparkVersion 变量则自动添加
+      if (this.$route.name == 'Home' && this.script.application === 'spark') {
+        if (!params.variable || !params.variable.hasOwnProperty('sparkVersion')) {
+          params.variable = {
+            ...params.variable,
+            sparkVersion: "3"
+          }
+        }
+      } 
       let initData = {
         method: '/api/rest_j/v1/entrance/execute',
         websocketTag: this.work.id,
@@ -610,6 +722,14 @@ export default {
           },
         },
       };
+      if(this.$route.name == 'Workflow') {
+        // 如果params.configuration.runtime中有参数sparkVersion,
+        if(params && params.configuration && params.configuration.runtime && params.configuration.runtime.sparkVersion) {
+            if(params.variable && !params.variable.sparkVersion ) {
+              params.variable.sparkVersion = params.configuration.runtime.sparkVersion
+            }
+        }
+      }
       if (isStorage) {
         initData.method = 'dss/scriptis/backgroundservice';
         initData.data.background = option.backgroundType;
@@ -656,7 +776,7 @@ export default {
         if (!found) {
         // 如果执行代码中存在某变量，但在参数列表中不存在，则返回 false
           // console.log('不存在的变量', variable)
-          return false;
+          return false; 
         }
       }
 
@@ -665,12 +785,12 @@ export default {
     filterComments(code) {
         // 拆分成行
         const lines = code.split('\n');
-
+        
         // 过滤每一行
         const filteredLines = lines.map(line => {
             // 找到注释符的位置
             const commentIndex = line.indexOf('--');
-
+            
             if (commentIndex === 0) {
                 // 注释符在句首，过滤整行
                 return '';
@@ -682,7 +802,7 @@ export default {
                 return line;
             }
         });
-
+        
         // 合并过滤后的行
         return filteredLines.join('\n').trim();
     },
@@ -696,7 +816,7 @@ export default {
           this.dispatch('Workbench:setTabPanelSize');
           this.scriptViewState.topPanelFull = false;
         }
-        const data = this.getExecuteData(option);
+        const data = await this.getExecuteData(option);
         if (this.execute) {
           this.execute.off();
           this.execute = null;
@@ -719,8 +839,10 @@ export default {
               this.showPanelTab('progress');
             }, 100)
         }
-
+         
         let runPrecheck = false;
+        let runLinkisProcessDiagnosis = false;
+        this.showDiagnosis = false;
         if (option && option.isRestore) {
           this.execute.restore(option);
         } else {
@@ -735,6 +857,7 @@ export default {
           this.resetData();
           this.execute.start();
           runPrecheck = true;
+          runLinkisProcessDiagnosis = true;
         }
         // 运行时，如果是临时脚本且未保存状态时，弹出一个警告的提醒，否则直接保存。
         if (!this.work.filepath && this.work.unsave && !this.node) {
@@ -797,9 +920,16 @@ export default {
         });
 
         this.execute.on('history', (ret) => {
+          // console.log('[DEBUG] history事件触发');
+          // console.log('[DEBUG] ret:', ret);
+          // console.log('[DEBUG] this.script.history:', this.script.history);
+          // console.log('[DEBUG] this.execute.taskID:', this.execute ? this.execute.taskID : 'undefined');
+          
           this.script.history = this.script.history || []
           const index = findIndex(this.script.history, (o) => o.taskID == ret.taskID);
+          // console.log('[DEBUG] index:', index);
           const findHis = index > -1 ? this.script.history[index] : undefined;
+          // console.log('[DEBUG] findHis:', findHis);
           let newItem = null;
           // 这里针对的是导入导出脚本，executionCode为object的情况
           const code = typeof (this.script.executionCode) === 'string' && this.script.executionCode ? this.script
@@ -883,7 +1013,7 @@ export default {
           } else if (ret.status == 'Failed') {
             this.showPanelTab('log')
           }
-          this.checkAIFix(ret.taskID, code, ret.errCode, ret.errDesc)
+          this.checkAIFix(ret.taskID, code, ret.errCode, ret.errDesc, ret.status)
         });
         this.execute.on('result', (ret) => {
           this.showPanelTab('result');
@@ -1001,17 +1131,19 @@ export default {
           if (this._execute_last_status === status) {
             return;
           }
+          // Linkis在自动重试任务时，DSS前端不需要展示重试中，默认后台重试，用户无感知
+          if (this.script.steps.indexOf('Running') > -1 && ['Scheduled', 'WaitForRetry','Inited'].indexOf(status) > -1) {
+            return
+          }
+          if (status == 'WaitForRetry') status = 'Running'
           this._execute_last_status = status;
           if (status === 'Inited') {
             this.script.steps = ['Submitted', 'Inited'];
           } else {
-            const lastStep = last(this.script.steps);
             if (this.script.steps.indexOf(status) === -1) {
               this.script.steps.push(status);
-              // 针对可能有WaitForRetry状态后，后台会重新推送Scheduled或running状态的时候
-            } else if (this.script.steps.indexOf('WaitForRetry') !== -1 && lastStep !== status) {
-              this.script.steps.push(status);
             }
+            
             this.dispatch('IndexedDB:updateProgress', {
               tabId: this.script.id,
               rst: Object.assign(this.script.progress, {
@@ -1108,8 +1240,9 @@ export default {
         });
         // 只有hive或者spark引擎类型才会调用代码关联审查 置于末尾，不影响其余事件
         if (runPrecheck && (
-          (this.script.application === 'spark' && this.script.runType === 'sql')
-          || (this.script.application === 'hive' && this.script.runType === 'hql'))) {
+          (this.script.application === 'spark' && this.script.runType === 'sql') 
+          || (this.script.application === 'hive' && this.script.runType === 'hql') 
+          || this.script.ext === '.aisql')) {
           const variable = isEmpty(this.script.params.variable) ? {} : util.convertArrayToObject(this.script.params.variable);
           let params = {
             'variable': variable,
@@ -1132,7 +1265,7 @@ export default {
               if (this.script.codePrecheckRes.checkData && this.script.codePrecheckRes.checkData.length > 0 && this.script.codePrecheckRes.checkData[0].detailTitle) {
                 this.codePrecheckTitle = this.script.codePrecheckRes.checkData[0].detailTitle
               } else {
-                this.codePrecheckTitle = '字段数据类型不一致详情'
+                this.codePrecheckTitle = this.$t('message.workbench.fieldTypeMismatch')
               }
             }
           }, 150)
@@ -1153,6 +1286,14 @@ export default {
           this.script.validParamsInfoRes = paramsRes;
           this.$refs.progressTab.updateParamsInfo(paramsRes);
         } , 150)
+        }
+        if(runLinkisProcessDiagnosis &&  this.script.application === 'spark') {
+          setTimeout(async ()=>{
+          // 延时后发起事中诊断轮询，如果查询时代码已运行完成，则不进行操作
+            if (!this.script.progress || !this.script.progress.costTime) {
+              this.startDiagnosisPolling();
+            }
+          },  3 * 60 * 1000)
         }
       }
     },
@@ -1280,12 +1421,12 @@ export default {
       if (r || auto || type === 'run') {
         this.nodeSave();
       } else {
-        const content = `<p class="ellipse-p">${this.node.title}节点不包含关键字insert或create table</p>`;
+        const content = `<p class="ellipse-p">${this.node.title}${this.$t('message.workbench.nokeywords')}insert / create table</p>`;
         this.$Modal.confirm({
-            title: '节点关键字检查',
+            title: this.$t('message.workbench.nodeKeywordCheck'),
             content: content,
-            okText: '继续保存',
-            cancelText:'返回修改',
+            okText: this.$t('message.workbench.confirm'),
+            cancelText: this.$t('message.workbench.cancel'),
             onOk: () => {
                 this.nodeSave();
             },
@@ -1376,7 +1517,7 @@ export default {
             this.work.data.params.configuration.runtime[
               'wds.linkis.engine.runtime.datasource'
             ] = dataSetValue;
-          } else {
+          } else { 
             this.work.data.params.configuration.runtime = {
               'wds.linkis.engine.runtime.datasource': dataSetValue
             }
@@ -1445,18 +1586,32 @@ export default {
       }
     },
     showPanelTab(type) {
+      // console.log('[DEBUG] showPanelTab 被调用');
+      // console.log('[DEBUG] 切换到tab:', type);
+      // console.log('[DEBUG] this.script.status:', this.script.status);
+      // console.log('[DEBUG] this.script.steps:', this.script.steps);
+      // console.log('[DEBUG] this.script.history:', this.script.history);
+      // console.log('[DEBUG] this.execute:', this.execute);
+      // console.log('[DEBUG] this.execute.taskID:', this.execute ? this.execute.taskID : 'undefined');
+      
       const scriptViewState = {
         ...this.scriptViewState,
         showPanel: type,
       }
       this.scriptViewState = scriptViewState;
       if (type === 'progress') {
+        // console.log('[DEBUG] 切换到progress tab');
         if (EXECUTE_COMPLETE_TYPE.indexOf(this.script.status) === -1 && this.script.history && this.script.steps) {
+          // console.log('[DEBUG] 当前状态不是终态，检查历史记录同步');
           // 当前步骤不是终态，历史步骤是终态
           let notSync = false;
           if (this.script.history.length > 0 && this.script.steps.length > 0) {
+            // console.log('[DEBUG] history[0].status:', this.script.history[0].status);
+            // console.log('[DEBUG] history[0].taskID:', this.script.history[0].taskID);
             notSync = EXECUTE_COMPLETE_TYPE.indexOf(this.script.history[0].status) !== -1 && this.execute && this.script.history[0].taskID == this.execute.taskID;
+            // console.log('[DEBUG] notSync:', notSync);
             if (notSync) {
+              // console.log('[DEBUG] 历史记录已更新，触发queryStatus查询');
               // 进度轮询5秒钟一次，如果历史已经更新了则直接查询
               clearTimeout(this.execute.statusTimeout);
               this.execute.queryStatus({ isKill: false });
@@ -1513,12 +1668,14 @@ export default {
       this.debounceLocalLogShow();
     },
     configLogPanel() {
+      // 兼容方案：优先使用 panel ref，如果不存在则使用 $el
+      const containerEl = this.$refs.panel ? this.$refs.panel.$el : this.$el;
       let bottomContentHeight
       if (this.scriptViewState.bottomPanelFull) {
         bottomContentHeight = this._last_bottom_panel_height
       } else {
         this._last_bottom_panel_height = this.scriptViewState.bottomContentHeight
-        bottomContentHeight = this.$el.clientHeight + 30
+        bottomContentHeight = containerEl.clientHeight + 30
       }
       this.scriptViewState = {
         ...this.scriptViewState,
@@ -1532,6 +1689,10 @@ export default {
         ...this.script,
         resultSet
       };
+       // 同步列分页状态：当切换结果集时，重置列分页到第一页
+      if (this.scriptViewState.columnPageNow && this.scriptViewState.columnPageNow !== 1) {
+        this.scriptViewState.columnPageNow = 1;
+      }
       this.updateResult({
         tabId: this.script.id,
         resultSet: resultSet,
@@ -1573,7 +1734,7 @@ export default {
           }));
           this.getLogs(option);
           if (option.resultLocation) {
-            this.getResult(option);
+            this.getResult(option,'initHistory');
           }
         }
       } catch (errorMsg) {
@@ -1629,7 +1790,7 @@ export default {
         console.error(error)
       }
     },
-    async getResult(option) {
+    async getResult(option, parentType = '') {
       const url1 = `/filesystem/getDirFileTrees`;
       if (['Succeed','Failed','Cancelled'].indexOf(this.script.status) < 0) {
         return
@@ -1650,15 +1811,49 @@ export default {
           const currentResultPath = rst.dirFileTrees.children[0].path;
           const url2 = `/filesystem/openFile`;
           if (!currentResultPath) return
-          api.fetch(url2, {
+          const truncateColumn = storage.get('truncateColumn_'+currentResultPath)
+          const param = {
             path: currentResultPath,
             enableLimit: true,
             page: 1,
             pageSize: 5000,
-          }, 'get').then((ret) => {
+          }
+          if (truncateColumn !== null) {
+            param.truncateColumn = truncateColumn == 1
+          }
+          api.fetch(url2, param, 'get').then((ret) => {
             let tmpResult
-            if (ret.display_prohibited) {
-              result = {
+            if (ret.oversizedFields && ret.oversizedFields.length) {
+              const msg = localStorage.getItem("locale") === "en" ? ret.en_msg : ret.zh_msg;
+              const fileds = ret.oversizedFields.map(it => it.fieldName)
+              const content = `<p class="ellipse-p">${msg} : </br> ${fileds.join('、')}</p>`;
+              if (truncateColumn === null) {
+                this.$Modal.confirm({
+                  title: this.$t('message.workbench.prompt'),
+                  content: content,
+                  okText: this.$t('message.workbench.confirm'),
+                  cancelText: this.$t('message.workbench.cancel'),
+                  onOk: () => {
+                    storage.set('truncateColumn_'+currentResultPath, 1)
+                    this.getResult(option, parentType)
+                  },
+                  onCancel: () => {
+                    storage.set('truncateColumn_'+currentResultPath, 0)
+                    this.getResult(option, parentType)
+                  }
+                });
+              }
+              tmpResult = {
+                'headRows': [],
+                'bodyRows': [],
+                'total': 0,
+                'type': '2',
+                'path': currentResultPath,
+                hugeData: true,
+                tipMsg: localStorage.getItem("locale") === "en" ? ret.en_msg : ret.zh_msg
+              };
+            } else if (ret.display_prohibited) {
+              tmpResult = {
                 'headRows': [],
                 'bodyRows': [],
                 'total': ret.totalLine,
@@ -1688,7 +1883,9 @@ export default {
               };
             }
             this.$set(this.script.resultList[0], 'result', tmpResult);
-            this.scriptViewState.showPanel = 'result';
+            if(parentType !== 'initHistory') {
+              this.scriptViewState.showPanel = 'result';
+            }
           });
         }
       }
@@ -1732,18 +1929,25 @@ export default {
     updateResult(params) {
       this.dispatch('IndexedDB:updateResult', params);
     },
-    checkAIFix(taskId, code, errCode, errMessage) {
+    checkAIFix: debounce(function(taskId, code, errCode, errMessage, status) {
       const baseinfo = storage.get('baseInfo', 'local')
       if (this.node) return
       if (baseinfo && !baseinfo.copilotEnable) return
+      let codefixnotice
       const vm = this
       const noticeFix = (res) => {
-        vm.$Notice.close('codefixnotice')
-        this.$Notice.warning({
+        if (window.codefixnotice) {
+          window.codefixnotice.remove('codefixnotice')
+        }
+        window.codefixnotice = codefixnotice = this.$Notice.warning({
           name: 'codefixnotice',
-          title: "AI纠错",
+          title: this.$t('message.workbench.aiCorrection'),
           render: h => {
-            return h("div", [
+            return h("div", {
+              style: {
+                'word-wrap': 'break-word'
+              }
+            }, [
               res.message,
               h("div", {
                 style: {
@@ -1760,7 +1964,7 @@ export default {
                   },
                   on: {
                     'click': function () {
-                      vm.$Notice.close('codefixnotice')
+                      codefixnotice.remove('codefixnotice')
                     }
                   }
                 },
@@ -1774,18 +1978,8 @@ export default {
                   },
                   on: {
                     'click': function () {
-                      const message = `请检查并修改如下代码中的语法错误: ${code}，执行错误信息如下: ${errMessage}`;
-                      plugin.emit('copilot_web_open_change', {
-                        type: 'CodeCorrection',
-                        message,
-                        params: {
-                          type: vm.script ? typeMap[vm.script.ext] || vm.script.application : '',
-                          code,
-                          taskId,
-                          errMessage
-                        }
-                      })
-                      vm.$Notice.close('codefixnotice')
+                      vm.emitAiFix(taskId, code, errCode, errMessage)
+                      codefixnotice.remove('codefixnotice')
                     }
                   }
                 },
@@ -1795,28 +1989,234 @@ export default {
               ])
             ]);
           },
+          right: '30%',
           duration: 0
         })
       }
       if (this.script.id == this.current) {
         // 当前激活脚本
-        if (taskId && errCode) {
+        if (taskId && EXECUTE_COMPLETE_TYPE.includes(status)) {
           storage.remove(`cache_needfix_${this.script.id}`)
-          api.fetch('/copilot/executeCode', {
+          api.fetch('/copilot/executeCode', { 
+            fileName: this.script.fileName,
+            taskId,
             errCode
           }, 'get').then(res => {
-            if (res.popup) {
+            if (res.chatId) {
+              plugin.emit('copilot_web_open_change', { 
+                type: 'CodeOptimize', 
+                message: '',
+                params: {
+                  type: this.script ? typeMap[this.script.ext] || this.script.application : '',
+                  code: code,
+                  scriptName: this.script.fileName,
+                  taskId: taskId,
+                  badjobAnalyzeIds: this.badjobAnalyzeIds,
+                  chatId: res.chatId
+                } 
+              })
+            } else if(res.report || res.badsqlAnalyze) {
+              eventbus.emit('check.scriptis.analysis', {
+                badjobAnalyzeIds: res.badjobAnalyzeIds,
+                code,
+                taskId,
+                scriptName: this.script.fileName,
+                type: this.script ? typeMap[this.script.ext] || this.script.application : '',
+                report: res.report
+              })
+              this.script.history.find(item => {
+                if (item.taskID == taskId) {
+                  item.badsql = true
+                }
+              })
+              this.script.history = [...this.script.history]
+            } else if (res.popup) {
               noticeFix(res)
+            }
+            if (res.status == "diagnosed_no_report") {
+              this.$Message.success('已诊断无需优化')
+            }
+            if (['diagnosed', 'analyzed'].indexOf(res.status) > -1) {
+              storage.set(`${taskId}_analysis`, 1)
             }
           })
         }
       } else {
-        if (taskId && errCode) {
+        if (taskId) {
           // 缓存错误信息
           storage.set(`cache_needfix_${this.script.id}`, {
-            taskId, code, errCode, errMessage
+            taskId, code, errCode, errMessage, status
           });
         }
+      }
+    }, 1000),
+    emitAiFix(taskId, code, errCode, errMessage) {
+      if (taskId) {
+        const message = `请检查并修改如下代码中的语法错误: ${code}，执行错误信息如下: ${errMessage}`;
+        plugin.emit('copilot_web_open_change', { 
+          type: 'CodeCorrection', 
+          message, 
+          params: {
+            type: this.script ? typeMap[this.script.ext] || this.script.application : '',
+            code,
+            taskId,
+            errMessage
+          } 
+        })
+      } else {
+        const message = `请检查并修改如下代码中的语法错误: ${code}`;
+        plugin.emit('copilot_web_open_change', { 
+          type: 'CodeCorrection', 
+          message, 
+          params: {
+            type: this.script ? typeMap[this.script.ext] || this.script.application : '',
+            code: code || '',
+            taskId: this.work.taskID || (this.script.history && this.script.history[0] && this.script.history[0].taskID)
+          } 
+        })
+      }
+    },
+    // 刷新页面时重新查询诊断数据
+    async refreshDiagnosisData() {
+      try {
+        const diagnosisRes = await api.fetch('/jobhistory/diagnosis-query', {
+          taskID: this.work.taskID,
+          diagnosisSource: 'doctoris'
+        }, {
+          method: 'get',
+        });
+        
+        if (diagnosisRes && diagnosisRes.diagnosisMsg) {
+          this.curDiagnosisRes = diagnosisRes;
+          this.script.diagnosisRes = diagnosisRes;
+          // 只要有problems就显示提示区域，按钮的显示由progress.vue中的hasSuggestions控制
+          const diagnosisMsgJson = typeof diagnosisRes.diagnosisMsg === 'string' 
+            ? JSON.parse(diagnosisRes.diagnosisMsg) 
+            : diagnosisRes.diagnosisMsg;
+          if (this.script.status === 'Running' && diagnosisMsgJson.data && diagnosisMsgJson.data.problems && diagnosisMsgJson.data.problems.length > 0) {
+            // 提取并去重异常类型
+            const problemTypes = diagnosisMsgJson.data.problems.map(p => p.type);
+            this.script.diagnosisProblemTypes = [...new Set(problemTypes)];
+            this.showDiagnosis = true;
+          }
+        } else {
+          // 如果diagnosisMsg为空且脚本还在运行状态，启动轮询
+          if (this.script.status === 'Running') {
+            this.startDiagnosisPolling();
+          }
+        }
+      } catch (error) {
+        console.error('刷新诊断数据失败:', error);
+        // 查询失败且脚本还在运行状态，也启动轮询
+        if (this.script.status === 'Running') {
+          this.startDiagnosisPolling();
+        }
+      }
+    },
+    // 开始事中诊断轮询
+    startDiagnosisPolling() {
+      // 清除之前的轮询定时器
+      if (this.diagnosisPollingTimer) {
+        clearTimeout(this.diagnosisPollingTimer);
+      }
+      
+      const pollDiagnosis = async () => {
+        try {
+          console.log('pollDiagnosis')
+          // 如果代码已运行完成，停止轮询
+          if (this.script.progress && this.script.progress.costTime) {
+            return;
+          }
+           // 如果任务状态不是Running，停止轮询
+          if (this.script.status !== 'Running') {
+            return;
+          }
+          let diagnosisRes = await api.fetch('/jobhistory/diagnosis-query', {
+            taskID: this.work.taskID,
+            diagnosisSource: 'doctoris'
+          }, {
+            method: 'get',
+          });
+          console.log('diagnosisRes', diagnosisRes)
+          this.curDiagnosisRes = diagnosisRes;
+          // 只要有problems就显示提示区域，按钮的显示由progress.vue中的hasSuggestions控制
+          if (diagnosisRes && diagnosisRes.diagnosisMsg && this.script.status === 'Running') {
+            const diagnosisMsgJson = JSON.parse(diagnosisRes.diagnosisMsg)
+            console.log('diagnosisMsgJson', diagnosisMsgJson)
+            if(diagnosisMsgJson.data.problems && diagnosisMsgJson.data.problems.length > 0){
+              // 提取并去重异常类型
+              const problemTypes = diagnosisMsgJson.data.problems.map(p => p.type);
+              this.script.diagnosisProblemTypes = [...new Set(problemTypes)];
+              this.showDiagnosis = true;
+              // 缓存诊断结果到script对象
+              this.script.diagnosisRes = diagnosisRes;
+            }
+            // 只要diagnosisMsg有数据了就停止轮询
+            return;
+          }
+          
+          // 如果diagnosisMsg为空，继续轮询
+          this.diagnosisPollingTimer = setTimeout(pollDiagnosis, 30000);
+        } catch (error) {
+          console.error('事中诊断查询失败:', error);
+          // 查询失败也继续轮询
+          this.diagnosisPollingTimer = setTimeout(pollDiagnosis, 30000);
+        }
+      };
+      
+      // 开始轮询
+      this.diagnosisPollingTimer = setTimeout(pollDiagnosis, 30000);
+    },
+    // 显示事中诊断弹窗
+    showDiagnosisModal() {
+      this.$refs.diagnosisModal.show();
+    },
+    // 处理AI诊断按钮点击事件
+    handleShowDiagnosis(diagnosisRes) {
+      if (!diagnosisRes || !diagnosisRes.diagnosisMsg) {
+        this.showDiagnosisModal();
+        return;
+      }
+      
+      try {
+        const diagnosisMsgJson = typeof diagnosisRes.diagnosisMsg === 'string' 
+          ? JSON.parse(diagnosisRes.diagnosisMsg) 
+          : diagnosisRes.diagnosisMsg;
+        
+        // 检查是否包含copilotChatId字段
+        if (diagnosisMsgJson.data && 
+            diagnosisMsgJson.data.suggestions && 
+            diagnosisMsgJson.data.suggestions.length > 0 &&
+            diagnosisMsgJson.data.suggestions[0].copilotChatId) {
+              console.log('diagnosisMsgJson', diagnosisMsgJson)
+              // console.log('diagnosisMsgJson.data.suggestions[0].copilotChatId', diagnosisMsgJson.data.suggestions[0].copilotChatId)
+          // 包含copilotChatId，唤起copilot
+          const suggestion = diagnosisMsgJson.data.suggestions[0];
+          const copilotChatId = suggestion.copilotChatId;
+          
+          // 等效于checkAIFix弹窗点击了确认，唤起copilot
+          plugin.emit('copilot_web_open_change', {
+            type: 'AiSql',
+            message: '',
+            params: {
+              type: this.script ? typeMap[this.script.ext] || this.script.application : '',
+              code: this.script.data,
+              scriptName: this.script.fileName,
+              taskId: this.work.taskID,
+              chatId: copilotChatId,
+              editable: false
+            }
+          });
+        } else {
+          // 不包含copilotChatId，打开弹窗报告
+          this.curDiagnosisRes = diagnosisRes;
+          this.showDiagnosisModal();
+        }
+      } catch (error) {
+        console.error('解析诊断数据失败:', error);
+        // 解析失败时，打开弹窗报告
+        this.curDiagnosisRes = diagnosisRes;
+        this.showDiagnosisModal();
       }
     },
   },
@@ -1828,6 +2228,12 @@ export default {
   word-break: break-word;
   overflow-wrap: break-word;
 }
+  .script-container {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+  }
   .editor-panel {
     position: relative;
     .script-line {
@@ -1937,4 +2343,3 @@ export default {
     }
   }
 </style>
-

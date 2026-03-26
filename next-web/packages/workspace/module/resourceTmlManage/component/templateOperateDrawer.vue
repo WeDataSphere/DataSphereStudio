@@ -8,12 +8,14 @@
     display-directive="if"
     width="50%"
     :footer="true"
-    ok-text="保存"
+    :ok-text="$t('_.保存')"
     content-class="operate-template"
     @cancel="closeDrawer"
     @ok="saveTemplate"
   >
-    <div class="title">基础信息</div>
+    <div class="title">
+      {{ $t('_.基础信息') }}
+    </div>
     <FForm
       ref="templateFormRef"
       label-position="top"
@@ -31,13 +33,12 @@
         <FSelect
           v-model="templateForm.engineType"
           :placeholder="t('common.pleaseSelect') + t('workSpace.engineType')"
-          :options="engineList"
+          :options="allEngineList"
           clearable
           filterable
           :disabled="mode === 'edit'"
           @change="getResParamsDetails('engineType', $event)"
-        >
-        </FSelect>
+        />
       </FFormItem>
       <FFormItem :label="t('workSpace.visibility')" prop="permissionType">
         <FSelect
@@ -47,25 +48,27 @@
           clearable
           filterable
           @change="handlePermissionTypeChange"
-        >
-        </FSelect>
+        />
       </FFormItem>
       <FFormItem
         v-if="templateForm.permissionType === 1"
+        ref="permissionUsersRef"
         :label="t('workSpace.visibleUser')"
         prop="permissionUsers"
       >
-        <FSelect
+        <FSelectCascader
           v-model="templateForm.permissionUsers"
+          :data="cascadUserList"
           :placeholder="t('common.pleaseSelect') + t('workSpace.visibleUser')"
-          :options="allWorkSpaceUserList"
-          clearable
-          filterable
           multiple
-          :collapse-tags="true"
-          :collapse-tags-limit="5"
-        >
-        </FSelect>
+          :cascade="true"
+          check-strictly="child"
+          clearable
+          expand-trigger="click"
+          :show-path="false"
+          :filterable="true"
+        />
+        <UploadOutlined class="upload" :size="20" @click="openBatchUpload" />
       </FFormItem>
       <FFormItem :label="t('workSpace.tmlDes')" prop="description">
         <FInput
@@ -75,9 +78,24 @@
           :maxlength="128"
         />
       </FFormItem>
+      <FFormItem
+        v-if="templateForm.engineType == 'spark'"
+        :label="t('workSpace.defaultForAISQL')"
+        prop="defaultForAISQL"
+      >
+        <FSelect v-model="templateForm.defaultForAISQL">
+          <FOption value="1">
+            {{ $t('_.是') }}
+          </FOption>
+          <FOption value="0">
+            {{ $t('_.否') }}
+          </FOption>
+        </FSelect>
+      </FFormItem>
     </FForm>
     <div class="title">
-      资源参数<span class="tip">(不同引擎类型对应不同属性参数)</span>
+      {{ $t('_.资源参数')
+      }}<span class="tip">{{ $t('_.(不同引擎类型对应不同属性参数)') }}</span>
     </div>
     <FForm label-position="top" :model="templateForm.paramDetails">
       <FFormItem
@@ -109,7 +127,7 @@
             :rules="[
               {
                 required: curResParam.require,
-                message: '参数默认值不能为空',
+                message: $t('_.参数默认值不能为空'),
                 type: 'string',
                 trigger: ['blur', 'change'],
               },
@@ -129,7 +147,7 @@
                   );
                 },
                 trigger: ['blur', 'change'],
-                message: '默认值与上限值需同时填写，且小于等于上限值',
+                message: $t('_.默认值与上限值需同时填写，且小于等于上限值'),
               },
             ]"
           >
@@ -138,26 +156,29 @@
               v-model="templateForm.paramDetails[index].configValue"
               :placeholder="
                 curResParam.defaultValue
-                  ? '默认值:' + curResParam.defaultValue
-                  : '无默认值'
+                  ? $t('_.默认值:') + curResParam.defaultValue
+                  : $t('_.无默认值')
               "
               :title="curResParam.description"
             >
-              <template #prepend>默认值</template>
+              <template #prepend>
+                {{ $t('_.默认值') }}
+              </template>
             </FInput>
             <div v-else class="form-group">
-              <div class="select-prepend">默认值</div>
+              <div class="select-prepend">
+                {{ $t('_.默认值') }}
+              </div>
               <FSelect
                 v-model="templateForm.paramDetails[index].configValue"
                 :options="computeOFT(curResParam.validateRange)"
                 :placeholder="
                   curResParam.defaultValue
-                    ? '默认值:' + curResParam.defaultValue
-                    : '无默认值'
+                    ? $t('_.默认值:') + curResParam.defaultValue
+                    : $t('_.无默认值')
                 "
                 :title="curResParam.description"
-              >
-              </FSelect>
+              />
             </div>
           </FFormItem>
           <FFormItem
@@ -168,7 +189,7 @@
             :rules="[
               { 
                 required: curResParam.require,
-                message: '参数上限值不能为空',
+                message: $t('_.参数上限值不能为空'),
                 type: 'string' 
               },
               {
@@ -184,30 +205,51 @@
               v-model="templateForm.paramDetails[index].maxValue"
               :placeholder="
                 curResParam.defaultValue
-                  ? '默认值:' + curResParam.defaultValue
-                  : '无默认值'
+                  ? $t('_.默认值:') + curResParam.defaultValue
+                  : $t('_.无默认值')
               "
               :title="curResParam.description"
               @change="handleMaxValueChange(index)"
             >
-              <template #prepend>上限值</template>
+              <template #prepend>
+                {{ $t('_.上限值') }}
+              </template>
             </FInput>
           </FFormItem>
         </FForm>
       </FFormItem>
     </FForm>
+    <FModal
+      v-model:show="showBatchUpload"
+      :title="$t('_.批量导入用户')"
+      :mask-closable="false"
+      display-directive="if"
+      @ok="handleOkUpload"
+      @cancel="handleCancelUpload"
+    >
+      <FInput
+        v-model="batchUploadForm.batchUsers"
+        type="textarea"
+        :placeholder="$t('_.请输入用户名，例如: enjoyyin,owewnxu,leebai')"
+      />
+    </FModal>
   </FDrawer>
 </template>
 <script lang="ts" setup>
-import { onMounted, computed, ref, reactive } from 'vue';
 import { useI18n } from 'vue-i18n';
+
+import { onMounted, computed, ref, reactive } from 'vue';
 import { useDataList } from '../hooks/useDataList';
 import { fetchResParams, fetchUniqueName, fetchSaveTemplate } from '../api';
 import { FMessage, FForm } from '@fesjs/fes-design';
 import { utils } from '../hooks/utils';
 import { fetchTemplateUser } from '../api';
 import { cloneDeep } from 'lodash-es';
+import { UploadOutlined } from '@fesjs/fes-design/icon';
 
+const { t: $t } = useI18n();
+
+const permissionUsersRef = ref(null);
 type FormRefType = typeof FForm | null;
 const resParamsRefs = ref<any[]>([]);
 const templateFormRef = ref<FormRefType>(null);
@@ -224,6 +266,7 @@ type TemplateFormType = {
   paramDetails: ParamDetail[];
   templateId: string | null;
   permissionUsers?: string[] | null;
+  defaultForAISQL?: boolean | string;
 };
 
 const { paramsObjectToString } = utils();
@@ -235,14 +278,17 @@ const templateForm = reactive<TemplateFormType>({
   description: '',
   permissionUsers: [],
   paramDetails: [],
+  defaultForAISQL: '0',
 });
 const curResParams = ref<any[]>([]);
 const {
-  allWorkSpaceUserList,
-  engineList,
+  allEngineList,
   permissionTypeList,
-  loadAllWorkSpaceUserList,
   loadEngineList,
+  allWorkSpaceUserDeptsList,
+  loadAllWorkSpaceUserDeptsList,
+  cascadUserList,
+  processUserData,
 } = useDataList();
 const editInitUsers = ref<string[]>([]);
 const props = defineProps({
@@ -375,6 +421,21 @@ const saveTemplate = async () => {
   try {
     if (await submitFormValid()) {
       const paramsObject = cloneDeep(templateForm);
+      // 引擎类型为全局设置必须填一项值
+      if (
+        paramsObject.engineType === '*' &&
+        !(paramsObject.paramDetails || []).some(
+          (item) => item.configValue || item.maxValue
+        )
+      ) {
+        FMessage.warn($t('_.资源参数至少需要选填一项'));
+        return;
+      }
+      if (paramsObject.engineType === 'spark') {
+        paramsObject.defaultForAISQL = paramsObject.defaultForAISQL == '1';
+      } else {
+        delete paramsObject.defaultForAISQL;
+      }
       // 只有ermissionType=1时，选择为指定用户时，才传permissionUsers
       if (paramsObject.permissionType === 0) {
         delete paramsObject.permissionUsers;
@@ -392,7 +453,7 @@ const saveTemplate = async () => {
         paramsObject.templateId = null;
       }
       await fetchSaveTemplate(paramsObject);
-      FMessage.success('保存成功!');
+      FMessage.success($t('_.保存成功!'));
       emit('updateTemplateTable');
       closeDrawer();
     }
@@ -408,7 +469,7 @@ const templateFormRules = computed(() => ({
     { required: true, message: t('common.notEmpty') },
     {
       pattern: /^[\u4e00-\u9fa5a-z0-9_]{0,128}$/gi,
-      message: '请输入中文、英文、数字、下划线,最长不超过128字符',
+      message: $t('_.请输入中文、英文、数字、下划线,最长不超过128字符'),
     },
     {
       trigger: ['blur'],
@@ -423,7 +484,7 @@ const templateFormRules = computed(() => ({
         if (props.mode === 'add') {
           fetchUniqueName(value).then((result: any) => {
             if (result.data.repeat) {
-              callback('该模板名称已存在');
+              callback($t('_.该模板名称已存在'));
             } else {
               callback();
             }
@@ -480,9 +541,10 @@ const getResParamsDetails = async (key: string, value: string) => {
 };
 
 const handlePermissionTypeChange = async (v: number) => {
-  if (allWorkSpaceUserList.value.length === 0 && v === 1) {
+  if (allWorkSpaceUserDeptsList.value.length === 0 && v === 1) {
     // 工作空间ID看怎么拿
-    await loadAllWorkSpaceUserList(props.workPlaceId);
+    await loadAllWorkSpaceUserDeptsList(props.workPlaceId);
+    processUserData(allWorkSpaceUserDeptsList.value);
   }
   templateForm.permissionUsers = [];
 };
@@ -513,14 +575,59 @@ const editInitData = async () => {
   templateForm.engineType = props.templateObj.engineType;
   templateForm.permissionType = props.templateObj.permissionType;
   templateForm.description = props.templateObj.description;
+  templateForm.defaultForAISQL = props.templateObj.defaultForAISQL ? '1' : '0';
   if (templateForm.permissionType === 1) {
-    await loadAllWorkSpaceUserList(props.workPlaceId);
+    await loadAllWorkSpaceUserDeptsList(props.workPlaceId);
+    processUserData(allWorkSpaceUserDeptsList.value);
     await getUserDetail();
   }
   // 参数ui赋值
   await getResParamsDetails('templateId', templateForm.templateId as string);
 };
 
+// 批量导入用户
+const batchUploadForm = ref({
+  batchUsers: '',
+  batchUserArray: [],
+});
+const showBatchUpload = ref(false);
+const openBatchUpload = () => {
+  showBatchUpload.value = true;
+  batchUploadForm.value.batchUsers = '';
+};
+const handleCancelUpload = () => {
+  showBatchUpload.value = false;
+};
+const handleOkUpload = () => {
+  batchUploadForm.value.batchUserArray =
+    batchUploadForm.value.batchUsers.split(/[,，]/);
+  // 递归函数，用于查找用户
+  const findUserInTree = (tree, userName) => {
+    for (let node of tree) {
+      if (node.type === 'user' && node.name === userName) {
+        return node;
+      }
+      if (node.child && node.child.length > 0) {
+        const result = findUserInTree(node.child, userName);
+        if (result) return result;
+      }
+    }
+    return null;
+  };
+
+  const tempInsertData = batchUploadForm.value.batchUserArray
+    .map((element) => findUserInTree(allWorkSpaceUserDeptsList.value, element))
+    .filter(Boolean); // 过滤掉 null 值
+  tempInsertData.forEach((element) => {
+    if (!templateForm.permissionUsers.includes(element.name)) {
+      templateForm.permissionUsers.push(element.name);
+    }
+  });
+  showBatchUpload.value = false;
+  if (templateForm.permissionUsers.length > 0) {
+    permissionUsersRef.value.clearValidate();
+  }
+};
 onMounted(async () => {
   await loadEngineList();
   // 编辑时，根据打开的模板请求对应参数
@@ -530,6 +637,9 @@ onMounted(async () => {
 });
 </script>
 <style lang="less" scoped>
+.upload {
+  margin-left: 8px;
+}
 .operate-template {
   .inline-res-form {
     margin-bottom: 8px;

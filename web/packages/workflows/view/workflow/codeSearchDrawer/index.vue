@@ -1,53 +1,53 @@
 <template>
-    <Drawer title="查找" v-model="showDrawer" width="80%" :mask-closable="false" class-name="custom-drawer-style">
+    <Drawer :title="$t('message.workflow.find')" v-model="showDrawer" width="80%" :mask-closable="false" class-name="custom-drawer-style">
         <div class="code-search">
             <div class="code-form">
                 <Form ref="codeFormRef" inline>
                     <FormItem label="">
-                        <Select class="code-form__select flow" v-model="searchForm.projectName" placeholder="请选择"
+                        <Select class="code-form__select flow" v-model="searchForm.projectName" :placeholder="$t('message.workflow.select')"
                             filterable @on-change="getFlow($event)">
-                            <template #prefix>项目名:</template>
+                            <template #prefix>{{$t('message.workflow.projectName')}}</template>
                             <Option v-for="item in projectList" :value="item.name" :key="item.id">{{ item.name }}</Option>
                         </Select>
                     </FormItem>
                     <FormItem label="">
-                        <Select class="code-form__select flow" v-model="searchForm.workflowNameList" placeholder="请选择"
+                        <Select class="code-form__select flow" v-model="searchForm.workflowNameList" :placeholder="$t('message.workflow.select')"
                             multiple filterable>
-                            <template #prefix>工作流:</template>
+                            <template #prefix>{{$t('message.workflow.workflow')}}</template>
                             <Option v-for="item in flowList" :value="item.name" :key="item.id">{{ item.name }}</Option>
                         </Select>
                     </FormItem>
                     <FormItem label="">
-                        <Select class="code-form__select nodeType" v-model="searchForm.typeList" placeholder="请选择" multiple
+                        <Select class="code-form__select nodeType" v-model="searchForm.typeList" :placeholder="$t('message.workflow.select')" multiple
                             filterable>
-                            <template #prefix>节点类型:</template>
+                            <template #prefix>{{$t('message.workflow.nodeType')}}</template>
                             <Option v-for="(item, index) in nodeTypeList" :value="item.name" :key="'node' + index">{{
                                 item.name }}</Option>
                         </Select>
                     </FormItem>
                     <FormItem label="">
-                        <Input class="code-form__input file" v-model="searchForm.nodeName" prefix="文件" placeholder="请输入">
-                        <template #prepend>文件:</template>
+                        <Input class="code-form__input file" v-model="searchForm.nodeName" :prefix="$t('message.workflow.file')" >
+                        <template #prepend>{{$t('message.workflow.file')}}</template>
                         </Input>
                     </FormItem>
                     <FormItem label="">
-                        <Input class="code-form__input content" v-model="searchForm.searchContent" prefix="查找内容"
-                            placeholder="请输入">
-                        <template #prepend>查找内容:</template>
+                        <Input class="code-form__input content" v-model="searchForm.searchContent" :prefix="$t('message.workflow.searchContent')"
+                            >
+                        <template #prepend>{{$t('message.workflow.searchContent')}}</template>
                         <template #append>
                             <Select v-model="searchForm.append" style="width: 70px">
-                                <Option value="code">代码</Option>
+                                <Option value="code">{{$t('message.workflow.code')}}</Option>
                             </Select>
                         </template>
                         </Input>
                     </FormItem>
                     <FormItem label="">
-                        <Button type="primary" @click="pageInit">查找</Button>
+                        <Button type="primary" @click="pageInit">{{$t('message.workflow.search')}}</Button>
                     </FormItem>
                 </Form>
             </div>
             <div v-if="pageData.total > 0">
-                <div class="code-total">共计匹配: {{ pageData.total }}个文件</div>
+                <div class="code-total">{{$t('message.workflow.totalMatches')}}: {{ pageData.total }}{{$t('message.workflow.files')}}</div>
                 <div class="code-wrapper">
                     <div class="code-panel" v-for="(item, index) in codeResults">
                         <div class="panel-header">
@@ -67,7 +67,7 @@
                             </div>
                             <div class="panel-header__right" @click="clickShowMore(item)">
                                 <SvgIcon style="font-size: 14px;" color="#444444" icon-class="kaifa-icon" />
-                                <span class="header-right__icon">查看全部</span>
+                                <span class="header-right__icon">{{$t('message.workflow.viewAll')}}</span>
                             </div>
                         </div>
                         <div class="panel-content" v-if="item.keyLines.length <= 30">
@@ -79,17 +79,17 @@
                                 <li class="content-item__code" v-html="code.lineText"></li>
                             </ul>
                             <template v-if="item.keyLines.length > 10">
-                                <div class="content-btn expand" v-if="item.end === 10" @click="handleClick(item, 30)">展开
+                                <div class="content-btn expand" v-if="item.end === 10" @click="handleClick(item, 30)">{{$t('message.workflow.expand')}}
                                     <Icon type="ios-arrow-down"></Icon>
                                 </div>
-                                <div class="content-btn fold" v-if="item.end === 30" @click="handleClick(item, 10)">收起<Icon
+                                <div class="content-btn fold" v-if="item.end === 30" @click="handleClick(item, 10)">{{$t('message.workflow.collapse')}}<Icon
                                         type="ios-arrow-up"></Icon>
                                 </div>
                             </template>
                         </div>
                         <div class="panel-content" v-else>
                             <div class="content-tips" @click="clickShowMore(item)">
-                                <Icon type="ios-alert" />该节点匹配数量过多，请进入全部代码查看匹配项 >
+                                <Icon type="ios-alert" />{{$t('message.workflow.tooManyMatches')}} >
                             </div>
                         </div>
                     </div>
@@ -99,9 +99,9 @@
                     @on-page-size-change="pageSizeChange"></Page>
             </div>
             <div v-else-if="!loading">
-                <div class="code-empty">暂无匹配数据</div>
+                <div class="code-empty">{{$t('message.workflow.noMatches')}}</div>
             </div>
-            <div v-else-if="loading" class="code-empty">加载中...</div>
+            <div v-else-if="loading" class="code-empty">{{$t('message.workflow.loading')}}</div>
             <!-- 查看更多 -->
             <ViewMore v-model="showMore" :current="currentItem" @gotoFile="gotoFile"/>
         </div>
@@ -198,7 +198,7 @@ export default {
         },
         searchCode() {
             if (!this.searchForm.searchContent) {
-                return this.$Message.warning('查找内容不能为空');
+                return this.$Message.warning(this.$t('message.workflow.searchContentNotEmpty'));
             }
             this.loading = true;
             const params = {

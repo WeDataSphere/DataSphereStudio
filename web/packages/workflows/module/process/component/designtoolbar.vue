@@ -97,7 +97,7 @@
         <div v-if="publish">
           <div
             v-if="flowType === 'flow' && isMainFlow && !readonly"
-            :title="isFlowSubmited ? $t('message.workflow.process.publish') : '请先提交代码后再发布'"
+            :title="isFlowSubmited ? $t('message.workflow.process.publish') : $t('message.workflow.SubmitFirst')"
             :class="['button', isFlowSubmited ? '' : 'toolbar-diabled-item']"
             @click="handleClick('workflowPublishIsShow')"
           >
@@ -152,7 +152,7 @@
     <div
       class="button view_mode_btn table_mode"
       :class="{active: viewMode === 'table'}"
-      title="表格模式"
+      :title="$t('message.workflow.TableMode')"
       @click.stop="handleClick('changeViewMode','table')"
     >
       <SvgIcon class="icon" icon-class="listview" style="opacity: 0.65" />
@@ -160,7 +160,7 @@
     <div
       class="button view_mode_btn"
       :class="{active: viewMode !=='table'}"
-      title="拖拽模式"
+      :title="$t('message.workflow.DragMode')"
     >
       <SvgIcon class="icon" icon-class="dragmode" style="opacity: 0.65" @click.stop="handleClick('changeViewMode','')" />
     </div>
@@ -242,7 +242,6 @@ export default {
     }
   },
   mounted() {
-    console.log(this, this.readonly, this.flowType, this.isMainFlow)
     if (!this.readonly) {
       this.getToolbarsConfig()
     }

@@ -24,14 +24,6 @@
         "zh-CN": "workflows/i18n/common/zh.json"
       }
     },
-    "dataService": {
-      "routes": "dataService/router",
-      "module": "dataService/module",
-      "i18n": {
-        "en": "dataService/i18n/en.json",
-        "zh-CN": "dataService/i18n/zh.json"
-      }
-    },
     "apiServices": {
       "routes": "apiServices/router",
       "module": "apiServices/module",
@@ -40,29 +32,63 @@
         "zh-CN": "apiServices/i18n/zh.json"
       }
     },
-    "dataGovernance": {
-      "routes": "dataGovernance/router",
-      "module": "dataGovernance/module",
+    "dataService": {
+      "routes": "dataService/router",
+      "module": "dataService/module",
       "i18n": {
-        "en": "dataGovernance/i18n/en.json",
-        "zh-CN": "dataGovernance/i18n/zh.json"
+        "en": "dataService/i18n/en.json",
+        "zh-CN": "dataService/i18n/zh.json"
       }
     },
-    "dolphinScheduler": {
-      "routes": "dolphinScheduler/router",
-      "module": "dolphinScheduler/module",
+    "scheduleCenter": {
+      "routes": "scheduleCenter/router",
+      "module": "scheduleCenter/module",
       "i18n": {
-        "en": "dolphinScheduler/i18n/en.json",
-        "zh-CN": "dolphinScheduler/i18n/zh.json"
+        "en": "scheduleCenter/i18n/en.json",
+        "zh-CN": "scheduleCenter/i18n/zh.json"
       }
     }
   },
   "exts": {
+    "dss-plugin-webank": {
+      "module": "exts/webank/index.js",
+      "i18n": {
+        "en": "exts/webank/i18n/en.json",
+        "zh-CN": "exts/webank/i18n/zh.json"
+      },
+      "options": null
+    },
     "dss-plugin-open": {
       "module": "exts/open-source/index.js",
       "i18n": {
         "en": "exts/open-source/i18n/en.json",
         "zh-CN": "exts/open-source/i18n/zh.json"
+      },
+      "options": null
+    },
+    "dss-plugin-scriptisGuide": {
+      "module": "exts/scriptisGuide/index.js",
+      "i18n": {
+        "en": "exts/scriptisGuide/i18n/en.json",
+        "zh-CN": "exts/scriptisGuide/i18n/zh.json"
+      },
+      "options": {
+        "getUserStage": "/dss/scriptis/getUserStage"
+      }
+    },
+    "dss-plugin-bdp": {
+      "module": "exts/bdp/index.js",
+      "i18n": {
+        "en": "exts/bdp/i18n/en.json",
+        "zh-CN": "exts/bdp/i18n/zh.json"
+      },
+      "options": null
+    },
+    "dss-plugin-copilotWeb": {
+      "module": "exts/copilotWeb/index.js",
+      "i18n": {
+        "en": "exts/copilotWeb/i18n/en.json",
+        "zh-CN": "exts/copilotWeb/i18n/zh.json"
       },
       "options": null
     }
@@ -73,19 +99,23 @@
   },
   "conf": {
     "app_name": "DataSphere Studio",
-    "app_logo": "dss/assets/images/dssLogo.png",
-    "user_guide": "",
-    "hide_view_tb_detail": true,
-    "hide_view_db_detail": true,
+    "app_logo": "dss/assets/images/smart-ds-white.svg",
+    "handbook": "/_book",
+    "copy_project_enable": true,
+    "error_report": true,
+    "table_transfer": true,
     "watermark": {
-      "show": false,
+      "show": true,
       "template": "${username} ${time}",
       "timeupdate": 60000
     },
+    "update_chrome": "/知识库/DSS常见问题/其他/DSS使用推荐的浏览器版本.html",
     "lsp_service": {
       "sql": "${protocol}//${host}/server",
       "py": "${protocol}//${host}/python"
-    }
+    },
+    "api_err_contact": "请求异常，稍后可刷新重试，若重试失败请联系大数据生产助手(BDP_PRD)处理。",
+    "open_source": false
   },
-  "version": "1.1.12"
+  "version": "1.19.8"
 }

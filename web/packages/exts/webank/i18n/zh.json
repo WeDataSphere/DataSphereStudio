@@ -1,0 +1,81 @@
+{
+  "message": {
+    "login": {
+      "normalUser": "普通用户",
+      "systemUser": "系统用户", 
+      "proxyUser": "系统用户名",
+      "proxyUserPlaceholder": "请输入系统用户名",
+      "hduserForbidden": "禁止登录"
+    },
+    "common": {
+      "apierrmsg": "请求异常，稍后可刷新重试，若重试失败请联系大数据生产助手(BDP_PRD)处理。"
+    },
+    "scripts": {},
+    "workflow": {
+      "process": {
+        "exechisotry": {
+          "control": "操作",
+          "viewlog": "查看日志"
+        },
+        "releasehisotry": {
+          "control": "操作",
+          "viewlog": "日志",
+          "openversion": "打开版本",
+          "download": "下载"
+        }
+      },
+      "shortcuts": {
+        "week": "最近一周",
+        "month": "最近一个月",
+        "threeMonths": "最近三个月"
+      }
+    },
+    "resourceInfo": {
+      "yarnQueueInfo": "Yarn队列信息",
+      "jumpToYarnUI": "跳转Yarn UI"
+    },
+    "ext": {
+      "webank": {
+        "Queue": "队列信息",
+        "jumpto": "跳转",
+        "Execute": "执行",
+        "Exestatus": "执行状态",
+        "Execution": "执行时长",
+        "Startup": "启动时间",
+        "Errorcode": "错误码",
+        "key": "关键信息",
+        "Publish": "发布",
+        "Status": "状态",
+        "Description": "描述",
+        "Publisher": "发布人",
+        "Version": "版本",
+        "Editor": "修改人",
+        "PublishTime": "发布时间",
+        "Error": "错误信息",
+        "Downloading": "下载中，请稍候...",
+        "Description:": "描述:",
+        "Please": "请输入描述",
+        "User:": "用户:",
+        "Time:": "时间:",
+        "Nodata": "暂无数据",
+        "Nodiff": "无差异数据",
+        "Versioncomparison": "版本比对",
+        "execHistory": "执行历史",
+        "pubHistory": "发布历史",
+        "ResourceInfo": "资源信息",
+        "Name": "名称",
+        "Add": "新增",
+        "Delete": "删除",
+        "Modify": "修改",
+        "Upstream": "上游节点",
+        "Downstream": "下游节点",
+        "Last": "最后修改时间",
+        "Same": "版本号相同",
+        "Noverion": "无对比版本",
+        "editing": "编辑中",
+        "scriptcontent": "脚本内容",
+        "nodebasic": "基本信息"
+      }
+    }
+  }
+}

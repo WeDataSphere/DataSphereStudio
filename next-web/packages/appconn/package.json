@@ -1,0 +1,12 @@
+{
+  "name": "@dataspherestudio/appconn",
+  "version": "0.0.1",
+  "dependencies": {
+    "@dataspherestudio/shared": "^0.0.1",
+    "@webank/letgo-components": "0.0.4-beta.24",
+    "@fesjs/fes-design": "0.8.50",
+    "@webank/fes-design-material": "0.2.19"
+  },
+  "devDependencies": {},
+  "scripts": {}
+}

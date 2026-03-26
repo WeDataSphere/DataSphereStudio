@@ -10,6 +10,7 @@
       :getResultUrl="getResultUrl"
       :work="work"
       :result-type="resultType"
+      @on-aiAnalysis="handleonAiAnalysis"
       @on-filter="handleFilterView"
       @change-view-type="changeViewType"
     />
@@ -21,7 +22,7 @@
       @on-check="filterList"
     ></we-filter-view>
     <Spin v-show="isLoading" size="large" fix />
-    <!-- resultType: 1 -->
+    <!-- resultType: 1 文本-->
     <div
       v-if="resultType === '1'"
       :style="{ height: resultHeight + 'px' }"
@@ -36,6 +37,29 @@
         </div>
       </div>
       <span v-else class="empty-text"></span>
+    </div>
+    <!-- resultType: 2 table univer组件-->
+    <div
+      v-if="resultType === '2' && visualShow === 'univerTable'"
+      class="result-table-content"
+      :class="{
+        'table-box': tableData.type === 'normal',
+        noselectable: baseinfo.resCopyEnable === false,
+      }"
+    >
+      <div
+        v-if="result && result.tipMsg"
+        class="univer-column-info"
+      >
+        <span>{{ result.tipMsg }}</span>
+      </div>
+      <UniverWrapper
+          :script="script"
+          :script-view-state="scriptViewState"
+          :height="resultHeight"
+          @change="onUniverChange"
+          :fetch-data="handleUniverDataRequest"
+      />
     </div>
     <!-- resultType: 2 table -->
     <div
@@ -182,6 +206,7 @@ import {
   dropRight,
   toArray,
 } from 'lodash';
+import UniverWrapper from './UniverWrapper.vue';
 import util from '@dataspherestudio/shared/common/util'
 import Table from '@dataspherestudio/shared/components/virtualTable'
 import WbTable from '@dataspherestudio/shared/components/table'
@@ -194,6 +219,8 @@ import plugin from '@dataspherestudio/shared/common/util/plugin'
 import api from '@dataspherestudio/shared/common/service/api'
 
 const extComponents = plugin.emitHook('script_result_type_component') || []
+const typeMap ={'.py': 'pyspark','.hql': 'hive sql', '.sql': 'spark sql', '.scala': 'spark scala', '.txt': '文本'};
+
 /**
  * 脚本执行结果集tab面板
  * ! 1. 与工作流节点执行后的管理台console.vue 共用
@@ -205,6 +232,7 @@ export default {
     WeToolbar,
     resultSetList,
     WeFilterView: filter,
+    UniverWrapper,
   },
   props: {
     script: [Object],
@@ -316,6 +344,42 @@ export default {
   },
   beforeDestroy: function () {},
   methods: {
+    // 统一的数据获取接口，供 Univer 使用
+    async getUnifiedResultData(index, path) {
+      // 保存当前的结果集索引
+      const originalResultSet = this.script.resultSet;
+      const originalVisualShow =  this.visualShow ;
+      
+      try {
+        // 设置当前的结果集索引和视图模式
+        this.script.resultSet = index;
+         // 临时切换到 Univer 模式以应用正确的列分页策略
+        this.visualShow = 'univerTable';
+
+        // 复用现有的数据获取逻辑，包含敏感数据检查
+        await this.getResultData(1);
+        // 返回处理后的数据
+        return this.script.resultList[index].result;
+      } catch (error) {
+        console.error('Failed to get unified result data:', error);
+        return null;
+      } finally {
+        // 恢复原始的结果集索引
+        this.script.resultSet = originalResultSet;
+        this.visualShow = originalVisualShow;
+      }
+    },
+    
+    // 处理 Univer 的数据请求
+    async handleUniverDataRequest(index, path) {
+      return await this.getUnifiedResultData(index, path);
+    },
+    getVisualShow() {
+      return this.visualShow
+    },
+    onUniverChange(event) {
+      console.log('Univer data changed:', event)
+    },
     initPage() {
       if (this.result.current && this.result.size) {
         this.page = Object.assign(
@@ -560,7 +624,7 @@ export default {
         });
       }
     },
-    checkResult(resultPath) {
+    checkResult(resultPath, typeFlag = '') {
       let taskId = this.taskID
       if (!taskId) { // fix dpms 523552
         const dirs = resultPath.split('/')
@@ -585,6 +649,14 @@ export default {
       if (hasDeducted || notCheck || !scriptType) {
         return Promise.resolve(false);
       }
+      
+      // 检查是否已经保存了用户的偏好设置
+      const userPreferenceKey = `sensitive_data_preference_${this.baseinfo.username}_${taskId}_${resultPath}`;
+      const savedPreference = storage.get(userPreferenceKey);
+      if (savedPreference && typeFlag != 'all') {
+       return Promise.resolve(savedPreference)
+      }
+      
       // 检查结果集是否需要扣减用量
       const params = {
         taskId: taskId,
@@ -595,38 +667,65 @@ export default {
         api.fetch('/dss/datapipe/dataset/checkDatasetSensitive', params, 'post').then(res => {
           const result = res.result || []
           const sensitiveResult = []
+          let currentSenitive = false
+          let hasSensitiveData = false
           result.forEach((item, idx) => {
-            if (item.hasSensitiveData) {
+              if (item.hasSensitiveData) {
+                hasSensitiveData = true
+              }
+              if (item.hasSensitiveData && idx == this.script.resultSet) {
+                currentSenitive = true
+              }
               sensitiveResult.push({
                 ...item,
                 nameIndex: idx + 1
               })
-            }
           })
-          if (sensitiveResult.length) {
+          this.currentSesitiveResult.idx = `${this.script.resultSet}`
+
+          if (currentSenitive || (typeFlag == 'all' && hasSensitiveData)) {
             this.currentSesitiveResult = {
               ...this.currentSesitiveResult,
-              ...sensitiveResult[0]
+              ...sensitiveResult[this.script.resultSet]
             }
+            let maskColumns = false;
+            let columnsData = Object.keys(this.currentSesitiveResult.metadata).map(it => {
+              return {
+                name: it,
+                isContain: this.currentSesitiveResult.metadata[it]
+              }
+            })
             const getTableData = (idx) => {
               idx = idx - 0
               this.currentSesitiveResult = {
                 idx: `${idx}`,
                 ...sensitiveResult[idx]
               }
+              columnsData = Object.keys(this.currentSesitiveResult.metadata).map(it => {
+                return {
+                  name: it,
+                  isContain: this.currentSesitiveResult.metadata[it]
+                }
+              })
+              if (!sensitiveResult[idx].hasSensitiveData) {
+                this.$Modal.remove()
+                resolve(true)
+                this.changeSet(idx) 
+              }
             }
+
             this.$Modal.confirm({
-              title: '疑似包含企业明文信息',
+              title: this.$t('message.common.sensitiveData.title'),
               render: (h) => {
                 const options = [{
-                  title: '字段名',
+                  title: this.$t('message.common.sensitiveData.fieldName'),
                   key: 'name'
                 }, {
-                  title: '是否包含企业明文',
+                  title: this.$t('message.common.sensitiveData.containsSensitiveData'),
                   key: 'isContain'
                 }];
                 return h('div', [
-                  h('p', '疑似包含企业明文信息, 是否确认查看？'),
+                  h('p', this.$t('message.common.sensitiveData.confirmView')),
                   h("Table", {
                     style: {
                       'margin-top': '10px'
@@ -634,13 +733,8 @@ export default {
                     props: {
                       size: "small",
                       columns: options,
-                      data: Object.keys(this.currentSesitiveResult.metadata).map(it => {
-                        return {
-                          name: it,
-                          isContain: this.currentSesitiveResult.metadata[it]
-                        }
-                      }),
-                      height: Object.keys(this.currentSesitiveResult.metadata).length * 40 > 400 ? 400 : (Object.keys(this.currentSesitiveResult.metadata).length + 1 ) * 40
+                      data: columnsData,
+                      height: Object.keys(this.currentSesitiveResult.metadata).length * 40 > 400 ? 400 : (Object.keys(this.currentSesitiveResult.metadata).length + 2 ) * 40
                     }
                   }),
                   h('div', {
@@ -666,26 +760,52 @@ export default {
                         return h("Option", {
                           props: {
                             value: `${idx}`,
-                            label: `结果集${it.nameIndex}`
+                            label: `${this.$t('message.common.resultList')}${it.nameIndex}`
                           }
                         })
                       })
                     ),
-                    `结果集条数：${this.currentSesitiveResult.total}`
+                    this.$t('message.common.sensitiveData.resultCount', {total: this.currentSesitiveResult.total})
+                  ]),
+                  h('div', {
+                    style: {
+                      'margin-top': '10px'
+                    }
+                  }, [
+                    h('Checkbox', {
+                      props: {
+                        value: maskColumns
+                      },
+                      on: {
+                        'on-change': (value) => {
+                          maskColumns = value;
+                        }
+                      }
+                    }, this.$t('message.common.sensitiveData.maskColumns'))
                   ])
                 ])
               },
               onOk: () => {
-                this.useResult(taskId, paths, resolve)
+                if (maskColumns) { // 展示明文扣减流量
+                  this.useResult(taskId, paths, resolve)
+                } else {
+                  // 保存偏好设置
+                  const keys = columnsData.filter(it => it.isContain).map(it => it.name).filter(it => !!it).join(',')
+                  storage.set(userPreferenceKey, keys);
+                  if (typeFlag === 'all') {
+                    resolve(sensitiveResult.map(sitem => {
+                      return Object.keys(sitem.metadata).filter(fitem => sitem.metadata[fitem]).filter(it => !!it).join(',')
+                    }).filter(pt => !!pt).join(','))
+                  } else {
+                    resolve(keys)
+                  }
+                }
               },
               onCancel: () => {
                 resolve(true)
               }
             });
           } else {
-            // 不包含敏感信息
-            const hasDeducted = storage.get('senitive_result_'+ this.baseinfo.username) || [];
-            storage.set('senitive_result_'+ this.baseinfo.username, [...hasDeducted,  taskId]);
             resolve(false)
           }
         }).catch(() => {
@@ -707,17 +827,17 @@ export default {
           return resolve(false)
         }
         if (res.result.isSuccess) {
-          msg = `包含企业信息明文，扣减用量${res.result.dataSetSize}，剩余用量${res.result.quota}quota`
+          msg = this.$t('message.common.sensitiveData.deductMessage', {dataSetSize: res.result.dataSetSize, quota: res.result.quota})
           this.$Message.success(msg)
           const hasDeducted = storage.get('senitive_result_'+ this.baseinfo.username) || [];
           storage.set('senitive_result_'+ this.baseinfo.username, [...hasDeducted,  taskId]);
           resolve(false)
         } else {
           const fileds = Object.keys(res.result.metadata)
-          msg = `用户因如下字段疑似包含企业明文信息（字段清单为 ${fileds.join('、')}），无法直接展示；您当前可查看不超过${res.result.quota}条企业信息明文，如需申请查看更多企业信息明文，请联系CIB部门数据协管员`
+          msg = this.$t('message.common.sensitiveData.restrictedMessage', {fields: fileds.join('、'), quota: res.result.quota})
           setTimeout(() => {
             this.$Modal.info({
-              title: '提示',
+              title: this.$t('message.common.sensitiveData.prompt'),
               content: `<p style="word-break: break-all;max-height: 470px;overflow-y:auto">${msg}</p>`,
               closable: true,
               width: 650
@@ -749,23 +869,35 @@ export default {
           sortKey: result.result.sortKey,
         };
       }
+       // 根据展示模式决定列分页策略
+      let enableLimit = true;
+      // Univer表格模式：小于1w列全部展示，大于1w列则做限制
+      if (this.visualShow === 'univerTable' && (result.result ? result.result.totalColumn <= 10000 : (this.script.result && this.script.result.path === resultPath && this.script.result.totalColumn <= 10000 ))) {
+          enableLimit = false;
+      }
+
+      const truncateColumn = storage.get('truncateColumn_'+resultPath)
+
       const params = {
         path: resultPath,
-        columnPage: columnPageNow || 1,
-        enableLimit: true,
+        columnPage: enableLimit ? (columnPageNow || 1) : 1,
+        enableLimit: enableLimit,
         pageSize: 5000,
+      }
+      if (truncateColumn !== null) {
+        params.truncateColumn = truncateColumn == 1
       }
       if ('dss/apiservice' == this.getResultUrl) {
         params.taskId = this.taskID
       }
-      const checkResultSensitive = await this.checkResult(resultPath)
+      let checkResultSensitive = await this.checkResult(resultPath)
       // 敏感信息判断 为true 需要被拦截，扣减流量失败或者取消请求结果集
       if (!checkResultSensitive) {
         try {
         ret = await api.fetch(url, params, 'get')
         } catch (error) {
         }
-      } else {
+      } else if(checkResultSensitive=== true) {
         this.isLoading = false
         ret = {
           metadata: [],
@@ -774,10 +906,47 @@ export default {
           totalColumn: 0,
           type: '2',
         }
+      } else if(typeof checkResultSensitive == 'string') {
+        params.maskedFieldNames = checkResultSensitive
+        try {
+        ret = await api.fetch(url, params, 'get')
+        } catch (error) {
+        }
       }
     
       this.isLoading = false;
-      if (ret.display_prohibited) {
+      if (ret.oversizedFields && ret.oversizedFields.length) {
+        const msg = localStorage.getItem("locale") === "en" ? ret.en_msg : ret.zh_msg;
+        const fileds = ret.oversizedFields.map(it => it.fieldName)
+        const content = `<p class="ellipse-p">${msg} : </br> ${fileds.join('、')}</p>`;
+        if (truncateColumn == null) {
+          setTimeout(() => {
+            this.$Modal.confirm({
+              title: this.$t('message.workbench.prompt'),
+              content: content,
+              okText: this.$t('message.workbench.confirm'),
+              cancelText: this.$t('message.workbench.cancel'),
+              onOk: () => {
+                storage.set('truncateColumn_'+resultPath, 1)
+                this.getResultData(columnPageNow)
+              },
+              onCancel: () => {
+                storage.set('truncateColumn_'+resultPath, 0)
+                this.getResultData(columnPageNow)
+              }
+            });
+          }, 1500)
+        }
+        result = {
+          'headRows': [],
+          'bodyRows': [],
+          'total': 0,
+          'type': '2',
+          'path': resultPath,
+          hugeData: true,
+          tipMsg: msg
+        };
+      } else if (ret.display_prohibited) {
         result = {
           'headRows': [],
           'bodyRows': [],
@@ -817,6 +986,9 @@ export default {
       }
       this.result = result;
       this.script.result = result;
+      if (result && result.headRows.length < 1) {
+        result.bodyRows = []
+      }
       this.originRows = result.bodyRows || []
       if (result.type === '2') {
         this.tableData.type =
@@ -1054,6 +1226,29 @@ export default {
         this.hightLightRow.push(temObject)
       })
     },
+    handleonAiAnalysis() {
+      let curResultPath = '';
+      if (this.script && this.script.resultSet !== undefined && Array.isArray(this.script.resultList)) {
+          const resultSetIndex = Number(this.script.resultSet);
+          if (Number.isInteger(resultSetIndex) && resultSetIndex >= 0 && resultSetIndex < this.script.resultList.length) {
+              curResultPath = this.script.resultList[resultSetIndex].parentPath || '';
+          }
+      }
+      // message在copilot处未使用，消息模板由后台返回，前端用params数据匹配占位符
+      const message = this.$t('message.common.scriptTask') + `${typeMap[this.script.ext]||this.script.application}${this.$t('message.common.script')}${this.script.fileName},
+      ${this.$t('message.common.resultList')}${Number(this.script.resultSet) + 1 || 1}`;
+      plugin.emit('copilot_web_open_change', { 
+        type: 'DataAnalyst', 
+        message,
+        params: {
+          code: this.script.executionCode,
+          type: typeMap[this.script.ext] || this.script.application,
+          resultPath: curResultPath,
+          resultIndex: Number(this.script.resultSet)+1 || 1,
+          scriptName: this.script.fileName,
+        }
+      })
+    },
     handleFilterView() {
       this.isFilterViewShow = !this.isFilterViewShow
     },
@@ -1125,8 +1320,39 @@ export default {
     changeViewType(type) {
       if (type !== this.visualShow) {
         this.visualShow = type
+        // 视图切换时重新请求数据，解决缓存问题
+        this.refreshDataOnViewChange()
       }
       this.isFilterViewShow = false
+    },
+    // 视图切换时刷新数据
+    async refreshDataOnViewChange() {
+      // 重置到第一个结果集
+      if (this.script.resultSet !== 0) {
+        this.changeSet(0)
+      } else {
+        // 强制重新请求当前结果集数据
+        await this.forceRefreshCurrentResult()
+      }
+    },
+    // 强制刷新当前结果集数据
+    async forceRefreshCurrentResult() {
+      const currentResult = this.script.resultList ? this.script.resultList[this.script.resultSet] : this.script.result
+      if (currentResult && currentResult.result) {
+          // 清除当前结果的缓存数据
+          if (this.script.resultList && this.script.resultList[this.script.resultSet]) {
+            this.script.resultList[this.script.resultSet].result = null
+          }
+          // 重新请求数据
+          await this.getResultData(this.scriptViewState.columnPageNow || 1)
+      }
+      // 如果是从普通表格切换到Univer，需要通知Univer组件重新加载数据
+      if (this.visualShow === 'univerTable') {
+        this.$nextTick(() => {
+          // 触发一个事件让Univer组件知道需要重新加载数据
+          this.$emit('reload-univer-data');
+        });
+      }
     },
   },
 }
@@ -1177,6 +1403,9 @@ export default {
   }
   .noselectable {
     user-select: none;
+  }
+  .univer-column-info {
+    margin: 10px 15px;
   }
   .we-page-container {
     display: flex;

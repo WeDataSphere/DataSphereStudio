@@ -20,7 +20,7 @@ const routes = [
         children: [
           {
             path: '',
-            name: 'resourceTmlManage',
+            name: 'resourceTmlManageIndex',
             meta: {
               title: 'Resource Template',
               publicPage: true,
@@ -56,6 +56,15 @@ const routes = [
           publicPage: true,
         },
         component: () => import('./module/workFlow/index.vue'),
+      },
+      {
+        path: 'workspaceSettings',
+        name: 'workspaceSettings',
+        meta: {
+          title: 'workspaceSettings',
+          publicPage: true,
+        },
+        component: () => import('./module/settings/index.vue'),
       },
     ],
   },

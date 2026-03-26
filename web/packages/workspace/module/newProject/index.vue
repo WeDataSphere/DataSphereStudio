@@ -48,8 +48,8 @@
     <!-- 合作项目列表 -->
     <template v-if="dataList.length > 0">
       <project-content-item
-        :class="{'delete-card-item' : viewState === 'delete'}"
         v-for="item in dataList"
+        :viewState="viewState "
         :key="item.name"
         :hide-button-bar="false"
         :hide-publish-andcopy="false"
@@ -62,6 +62,7 @@
         @modify="projectModify"
         @copy="copyProject"
         @addProject="addProject"
+        @redo="redoProject"
         @delete="deleteProject"
         @gotoGit="gotoGit"
       ></project-content-item>
@@ -115,10 +116,13 @@
       @on-ok="deleteProjectConfirm"
     >
       <div style="word-wrap: break-word;">{{$t('message.common.projectDetail.confirmDeleteProject')}}{{ deleteProjectItem.name }}?</div>
-      <br />
-      <br />
-      <Checkbox v-model="ifDelOtherSys">{{ $t('message.workspace.Simultaneously') }}</Checkbox>
-      <br />
+    </Modal>
+    <Modal
+      v-model="redoProjectShow"
+      :title="$t('message.common.projectDetail.redoProject')"
+      @on-ok="redoProjectConfirm"
+    >
+      <div style="word-wrap: break-word;">{{$t('message.common.projectDetail.confirmRedoProject')}}{{ redoProjectItem.name }}?</div>
     </Modal>
     <Spin v-if="loading" size="large" fix />
   </div>
@@ -145,6 +149,8 @@ export default {
   },
   data() {
     return {
+      redoProjectShow: false, // 恢复工程弹窗提示
+      redoProjectItem: {},
       deleteProjectShow: false, // 删除工程弹窗展示
       deleteProjectItem: '', // 删除的工程项
       actionType: '', // add || modify
@@ -184,7 +190,6 @@ export default {
       exportChangeVersion: false,
       applicationAreaMap: [],
       orchestratorModeList: {},
-      ifDelOtherSys: false,
       viewState: 'owner',
       searchTxt: '',
       workspaceUsers: {
@@ -404,10 +409,35 @@ export default {
           });
       }
     },
+    // 恢复单项功能
+    redoProject(params) {
+      this.redoProjectShow = true
+      this.redoProjectItem = params
+    },
+    redoProjectConfirm() {
+      this.loading = true;
+      const params = {
+        id: this.redoProjectItem.id,
+      };
+      api
+        .fetch(`${this.$API_PATH.PROJECT_PATH}restoreProject`, params, 'post')
+        .then(res => {
+          this.loading = false;
+          this.$Message.success(
+              `${this.redoProjectItem.name}${this.$t(
+                'message.common.projectDetail.redoSuccess'
+              )}`
+            )
+          this.viewDeleted();
+        })
+        .catch(error => {
+          console.error('restoreProject error:', error);
+          this.loading = false;
+        });
+    },
     // 删除单项工程
     deleteProject(params) {
       this.deleteProjectShow = true
-      this.ifDelOtherSys = false
       this.deleteProjectItem = params
     },
     // 确认删除单项工程
@@ -417,7 +447,6 @@ export default {
       const params = {
         id: this.deleteProjectItem.id,
         sure: false,
-        ifDelOtherSys: this.ifDelOtherSys
       }
       api
         .fetch(`${this.$API_PATH.PROJECT_PATH}deleteProject`, params, 'post')
@@ -491,6 +520,10 @@ export default {
     },
     // 点击工程跳转到工作流
     gotoWorkflow(item, subItem) {
+      if (this.viewState === 'delete') {
+        this.$Message.warning('已删除无法查看')
+        return
+      }
       storage.set('currentProject', subItem)
       const query = {
         workspaceId: this.$route.query.workspaceId,

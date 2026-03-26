@@ -1,0 +1,43 @@
+{
+  "message": {
+    "ext": {
+      "bdp": {
+        "Manage": "项目管理",
+        "Operation": "操作类型：",
+        "Export": "导出",
+        "Publish": "发布",
+        "Workflow": "选中要导出的工作流：",
+        "tipworkflow": "请选择工作流",
+        "Confirm": "确认",
+        "Import": "导入",
+        "ImportType": "导入方式：",
+        "zipfile": "从Zip包导入",
+        "hdfs": "从HDFS导入",
+        "Zip": "Zip包路径：",
+        "Upload": "Zip包上传：",
+        "zippath": "请输入zip包的HDFS路径",
+        "inputVerifyCode": "请输入zip包的校验值",
+        "Verify": "校验码：",
+        "ITSMID": "ITSM单号：",
+        "inputItsm": "请填写项目发布的ITSM单号",
+        "Description：": "描述：",
+        "Please": "请填写项目发布的描述",
+        "Index": "序号",
+        "Type": "类型",
+        "Status": "状态",
+        "Content": "内容",
+        "Operate": "操作",
+        "User": "操作人",
+        "OperateTime": "操作时间",
+        "typerequired": "导入方式必填",
+        "fileempty": "导入文件必填",
+        "Path": "路径必填",
+        "VerifyCode": "校验值必填",
+        "ITSM": "ITSM单号必填",
+        "download": "下载",
+        "exportmsg": "工作流导出中，导出包请稍后在操作历史中下载",
+        "publishmsg": "工作流发布中，发布进度请在操作历史中查看"
+      }
+    }
+  }
+}

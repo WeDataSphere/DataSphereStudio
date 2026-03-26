@@ -53,6 +53,7 @@ export class Work {
     this.params = option.params;
     // 用于记录临时脚本或者HDFS脚本另存后保存内容和参数用
     this.ismodifyByOldTab = option.ismodifyByOldTab || false;
+    this.readOnly = option.readOnly || false;
     this.owner = option.owner;
     this.specialSetting = option.specialSetting;
     this.nodeName = option.nodeName || null; // 在工作流操作时记录名称
@@ -63,6 +64,10 @@ export class Work {
     }
     if (option.dataSetList) {
       this.dataSetList = option.dataSetList
+    }
+    // 添加标记表明这是通过 queryTable 创建的脚本
+    if (option.queryTableCreated) {
+      this.queryTableCreated = option.queryTableCreated;
     }
   }
 

@@ -1,6 +1,6 @@
 <template>
   <Drawer
-    title="节点参数模板列表"
+    :title="$t('message.workflow.processComponent.templateSelectDrawer.title')"
     width="500"
     :mask-closable="false"
     closable
@@ -20,13 +20,13 @@
           <div v-for="(confItem,confIndex) in item.conf" :key="confIndex">
             <span>{{confItem.key}}</span>:&nbsp;<span style="color: black">{{confItem.configValue}}</span>
           </div>
-          <div><span>模板描述</span>:&nbsp;<span style="color: black">{{item.desc}}</span></div>
+          <div><span>{{ $t('message.workflow.processComponent.templateSelectDrawer.templateDesc') }}</span>:&nbsp;<span style="color: black">{{item.desc}}</span></div>
         </div>
       </Panel>
     </Collapse>
     <div class="demo-drawer-footer">
-      <Button style="margin-right: 8px" @click="submitCancel">取消</Button>
-      <Button type="primary" @click="submitTemplateInfo">保存</Button>
+      <Button style="margin-right: 8px" @click="submitCancel">{{ $t('message.workflow.processComponent.templateSelectDrawer.cancel') }}</Button>
+      <Button type="primary" @click="submitTemplateInfo">{{ $t('message.workflow.processComponent.templateSelectDrawer.save') }}</Button>
     </div>
   </Drawer>
 </template>

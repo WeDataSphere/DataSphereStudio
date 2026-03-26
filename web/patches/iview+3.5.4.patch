@@ -1,8 +1,27 @@
 diff --git a/node_modules/iview/dist/iview.js b/node_modules/iview/dist/iview.js
-index 1de5eb9..64cbf03 100644
+index ca45008..9f75ca5 100644
 --- a/node_modules/iview/dist/iview.js
 +++ b/node_modules/iview/dist/iview.js
-@@ -20972,9 +20972,10 @@ exports.default = {
+@@ -7247,7 +7247,7 @@ function removeEventListeners(reference, state) {
+  */
+ function disableEventListeners() {
+   if (this.state.eventsEnabled) {
+-    cancelAnimationFrame(this.scheduleUpdate);
++    cancelAnimationFrame(this._scheduleUpdateRAF);
+     this.state = removeEventListeners(this.reference, this.state);
+   }
+ }
+@@ -8615,7 +8615,8 @@ var Popper = function () {
+     classCallCheck(this, Popper);
+ 
+     this.scheduleUpdate = function () {
+-      return requestAnimationFrame(_this.update);
++        _this._scheduleUpdateRAF = requestAnimationFrame(_this.update);
++      return _this._scheduleUpdateRAF
+     };
+ 
+     // make update() debounced, so that it only runs at most once-per-tick
+@@ -20972,9 +20973,10 @@ exports.default = {
                  this.closeTimer = null;
              }
          },
@@ -15,7 +34,7 @@ index 1de5eb9..64cbf03 100644
              this.$parent.close(this.name);
          },
          handleEnter: function handleEnter(el) {
-@@ -21001,7 +21002,7 @@ exports.default = {
+@@ -21001,7 +21003,7 @@ exports.default = {
              this.closeTimer = setTimeout(function () {
                  (0, _newArrowCheck3.default)(this, _this);
  
@@ -24,3 +43,38 @@ index 1de5eb9..64cbf03 100644
              }.bind(this), this.duration * 1000);
          }
  
+@@ -38723,7 +38725,16 @@ var iconTypes = {
+     'error': 'ios-close-circle'
+ };
+ 
+-function getNoticeInstance() {
++function getNoticeInstance(options) {
++    if (options && options.right) {
++        return  _notification2.default.newInstance({
++            prefixCls: prefixCls,
++            styles: {
++                top: top + 'px',
++                right: options.right
++            }
++        });
++    }
+     noticeInstance = noticeInstance || _notification2.default.newInstance({
+         prefixCls: prefixCls,
+         styles: {
+@@ -38746,7 +38757,7 @@ function notice(type, options) {
+ 
+     name++;
+ 
+-    var instance = getNoticeInstance();
++    var instance = getNoticeInstance(options);
+ 
+     var content = void 0;
+ 
+@@ -38776,6 +38787,7 @@ function notice(type, options) {
+         closable: true,
+         type: 'notice'
+     });
++    return instance
+ }
+ 
+ exports.default = {

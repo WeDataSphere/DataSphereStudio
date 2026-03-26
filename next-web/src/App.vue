@@ -1,8 +1,24 @@
-<script setup lang="ts"></script>
-
 <template>
-  <router-view></router-view>
+  <f-config-provider :locale="localeLang" :get-container="getContainer">
+    <router-view />
+  </f-config-provider>
 </template>
+<script setup lang="ts">
+import { enUS, zhCN } from '@fesjs/fes-design';
+import { ref, onMounted } from 'vue';
+
+const localeLang = ref(zhCN);
+const getContainer = () => document.body;
+
+onMounted(() => {
+  const curlanguage = localStorage.getItem('locale');
+  if (curlanguage === 'zh-CN') {
+    localeLang.value = zhCN;
+  } else {
+    localeLang.value = enUS;
+  }
+});
+</script>
 
 <style scoped>
 .logo {

@@ -19,7 +19,7 @@
               <FSelect
                 v-model="searchForm.nodeType"
                 :options="nodeTypes"
-                placeholder="节点类型"
+                :placeholder="$t('_.节点类型')"
                 filterable
                 clearable
                 multiple
@@ -33,7 +33,7 @@
               <FSelect
                 v-model="searchForm.nodeName"
                 :options="allNodes"
-                placeholder="节点名称"
+                :placeholder="$t('_.节点名称')"
                 filterable
                 clearable
                 value-field="title"
@@ -44,7 +44,7 @@
               <FSelect
                 v-model="searchForm.modifyUser"
                 :options="userList"
-                placeholder="更新人"
+                :placeholder="$t('_.更新人')"
                 filterable
                 clearable
                 value-field="value"
@@ -59,7 +59,7 @@
           <FTable-column
             v-slot="{ row }"
             prop="title"
-            label="节点名称"
+            :label="$t('_.节点名称')"
             :min-width="160"
             :formatter="fillText"
             ellipsis
@@ -85,15 +85,14 @@
           </FTable-column>
           <FTable-column
             prop="jobText"
-            label="节点类型"
+            :label="$t('_.节点类型')"
             :min-width="120"
             :formatter="fillText"
             ellipsis
-          >
-          </FTable-column>
+          />
           <FTable-column
             prop="createTime"
-            label="创建时间"
+            :label="$t('_.创建时间')"
             :min-width="182"
             :formatter="fillTimeText"
             ellipsis
@@ -101,20 +100,20 @@
           />
           <FTable-column
             prop="modifyUser"
-            label="更新人"
+            :label="$t('_.更新人')"
             :min-width="120"
             :formatter="fillText"
             ellipsis
           />
           <FTable-column
             prop="modifyTime"
-            label="更新时间"
+            :label="$t('_.更新时间')"
             :min-width="182"
             :formatter="fillTimeText"
             ellipsis
             sortable
           />
-          <FTable-column label="操作" :min-width="60" fixed="right">
+          <FTable-column :label="$t('_.操作')" :min-width="60" fixed="right">
             <FDropdown
               placement="bottom-end"
               :options="moreOperations"
@@ -137,13 +136,14 @@
           :page-size-option="[10, 20, 50, 100]"
           :total-count="pagination.totalCount"
           @change="handlePageChange"
-        >
-        </FPagination>
+        />
       </template>
     </BTablePage>
   </FDrawer>
 </template>
 <script lang="ts" setup name="nodeDrawer">
+import { useI18n } from 'vue-i18n';
+
 import { ref, computed, watch, inject, nextTick, type Ref } from 'vue';
 import { MoreCircleOutlined } from '@fesjs/fes-design/icon';
 import { useDataUtils } from './hooks/useDataUtils';
@@ -152,6 +152,9 @@ import {
   type PaginationAndParams,
 } from '../hooks/usePagination';
 type ObjectType = Record<string, unknown>;
+
+const { t: $t } = useI18n();
+
 const emits = defineEmits(['update:show']);
 const props = defineProps({
   show: {
@@ -168,8 +171,8 @@ const props = defineProps({
   },
 });
 const titleMap: { [key: string]: string } = {
-  preNode: '的上游一级节点',
-  nextNode: '的下游一级节点',
+  preNode: $t('_.的上游一级节点'),
+  nextNode: $t('_.的下游一级节点'),
 };
 const title = computed(
   () => `${props.form.title}${titleMap[props.config.type]}`

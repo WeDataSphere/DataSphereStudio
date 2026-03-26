@@ -19,7 +19,7 @@ Apps.appsI18n.forEach((appI18n: any) => {
 
 const i18n = createI18n({
   legacy: false,
-  locale: 'zh-CN',
+  locale: localStorage.getItem('locale') || 'zh-CN',
   messages,
 });
 

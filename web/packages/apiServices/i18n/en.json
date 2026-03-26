@@ -1,6 +1,77 @@
 {
   "message": {
     "apiServices": {
+      "servicesSubmit": {
+        "batchApprove": "Batch Submit Approval",
+        "apiInfoTitle": "Data API Information", 
+        "approvalInfoTitle": "Approval Information",
+        "approvalName": "Approval Name",
+        "authorizedUser": "Authorized User",
+        "duration": "Authorization Period",
+        "sensitiveData": "Contains Level 1 Data",
+        "importance": "Importance Level",
+        "background": "Background Description",
+        "attentionUser": "Attention User",
+        "submit": "Submit Approval",
+        "cancel": "Cancel",
+        "apiInfoSection": "API Information",
+        "validation": {
+          "apiRequired": "Please enter service API",
+          "approvalNameRequired": "Please enter approval name",
+          "approvalNameMax": "Approval name max 200 characters",
+          "userRequired": "Please select authorized user",
+          "durationRequired": "Please enter authorization period",
+          "durationRange": "Authorization period 1-7300 days or *",
+          "sensitiveRequired": "Please select if contains level 1 data",
+          "sensitiveError": "APIs with level 1 data cannot be submitted",
+          "importanceRequired": "Please select importance level",
+          "backgroundRequired": "Please enter background description",
+          "backgroundMax": "Background description max 500 characters",
+          "developerOwnerRequired": "Please select developer owner",
+          "productInfoRequired": "Please enter product information"
+        },
+        "sensitiveOptions": {
+          "yes": "Yes",
+          "no": "No"
+        },
+        "importanceOptions": {
+          "high": "High",
+          "medium": "Medium",
+          "low": "Low"
+        },
+        "apiInfo": {
+          "title": "API Information",
+          "englishName": "English Name",
+          "chineseName": "Chinese Name", 
+          "path": "API Path",
+          "protocol": "Protocol",
+          "method": "Request Method",
+          "scope": "Scope",
+          "tag": "Tag",
+          "description": "Description",
+          "comment": "Comment"
+        },
+        "protocolOptions": {
+          "http": "HTTP",
+          "https": "HTTPS"
+        },
+        "scopeOptions": {
+          "grantView": "Grant View"
+        },
+        "booleanOptions": {
+          "yes": "Yes",
+          "no": "No"
+        },
+        "paramInfoTitle": "Parameter Information",
+        "selectApi": "Select API",
+        "developerOwner": "Developer Owner",
+        "productInfo": "Product Information",
+        "durationPlaceholder": "Range 1-7300, enter * for permanent",
+        "sensitivePlaceholder": "Please check if API query results contain level 1 sensitive data: WeBank card number, date of birth",
+        "day": "day",
+        "developerOwnerTip": "Developer owner of the library in StarRocks script, select one",
+        "productInfoTip": "Product associated with the library in StarRocks script"
+      },
       "viewAll": "View All",
       "viewValid": "View Valid",
       "deleted": "Deleted",
@@ -274,7 +345,13 @@
       "more1024": "Cannot exceed 1024 characters！",
       "moreline": "Too many rows, please query in batches！",
       "outlimit": "Exceed the limit, please modify！",
-      "uninittask": "Nothing has been returned yet,Please try again later or contact administrator！"
+      "uninittask": "Nothing has been returned yet,Please try again later or contact administrator！",
+      "apiCard": {
+        "descriptionLabel": "Description:",
+        "currentVersion": "Current running version:",
+        "newVersion": "New version available",
+        "taskAlreadyOpen": "Task ${taskID} is already open in current tab, switch between progress/result/log tabs to view!"
+      }
     }
   }
 }

@@ -302,17 +302,18 @@ export default {
         if (this.executeLastStatus && this.executeLastStatus[this.node.runState.taskID] === status) {
           return;
         }
+         // Linkis在自动重试任务时，DSS前端不需要展示重试中，默认后台重试，用户无感知
+        if (this.script.steps.indexOf('Running') > -1 && ['Scheduled', 'WaitForRetry','Inited'].indexOf(status) > -1) {
+          return
+        }
+        if (status == 'WaitForRetry') status = 'Running'
         this.executeLastStatus = {
           [this.node.runState.taskID]: status
         };
         if (status === 'Inited') {
           this.script.steps = ['Submitted', 'Inited'];
         } else {
-          const lastStep = last(this.script.steps);
           if (this.script.steps.indexOf(status) === -1) {
-            this.script.steps.push(status);
-            // 针对可能有WaitForRetry状态后，后台会重新推送Scheduled或running状态的时候
-          } else if (lastStep !== status) {
             this.script.steps.push(status);
           }
           this.updateNodeCache(['steps']);

@@ -22,7 +22,7 @@
                 <SvgIcon style="font-size: 16px;" color="#5580eb" icon-class="base"/>
                 {{subitem.name}}
               </span>
-              <div v-if="subitem.canWrite() || checkCopyable(subitem, getUserName())" class="menu-bar">
+              <div v-if="(subitem.canWrite() || checkCopyable(subitem, getUserName())) && viewState !== 'delete'" class="menu-bar">
                 <Button size="small" @click.stop>{{ $t('message.workspace.Management') }}</Button>
                 <ul class="menu-list">
                   <li class="list-item" v-if="subitem.canDelete()" @click.stop="deleteProject(subitem)">{{ $t('message.workspace.Delete') }}</li>
@@ -30,6 +30,12 @@
                   <li class="list-item" v-if="$APP_CONF.copy_project_enable && checkCopyable(subitem, getUserName())"  @click.stop="copy(currentData.id, subitem)">{{ $t('message.workspace.Copy') }}</li>
                   <li class="list-item" v-if="subitem.associateGit" @click.stop="gotoGit(subitem)">{{ $t('message.workflow.viewgit') }}</li>
                   <!-- <li class="list-item" @click.stop="publish(currentData.id, subitem)">发布</li> -->
+                </ul>
+              </div>
+              <div v-if="viewState === 'delete'" class="menu-bar">
+                <Button size="small" @click.stop>{{ $t('message.workspace.Management') }}</Button>
+                <ul class="menu-list">
+                  <li class="list-item" @click.stop="redoProject(subitem)">{{ $t('message.scripts.editorDetail.navBar.redo') }}</li>
                 </ul>
               </div>
             </div>
@@ -109,6 +115,10 @@ export default {
     applicationAreaMap: {
       type: Array,
       default: () => []
+    },
+    viewState: {
+      type: String,
+      default: ""
     }
   },
   data() {
@@ -181,6 +191,9 @@ export default {
       if (this.isPercent(subItem.id))
         return this.$Message.warning(this.$t("message.workflow.workflowItem.noView"));
       this.$emit("goto", item, subItem);
+    },
+    redoProject(project) {
+      this.$emit("redo", project);
     },
     deleteProject(project) {
       this.$emit("delete", project);

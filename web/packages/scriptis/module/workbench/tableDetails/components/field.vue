@@ -10,6 +10,41 @@
       </Input>
       <div class="field-list-search__button">
         <Button type="success" @click="handleCopy">{{ $t('message.scripts.tableDetails.FZBZDXX') }}</Button>
+        <Poptip
+          v-model="columnSettingsVisible"
+          placement="bottom-end"
+          width="300"
+          :transfer="false"
+          class="column-settings-poptip">
+          <Button type="default" style="margin-left: 8px;">
+            <Icon type="ios-settings" />
+            {{ $t('message.scripts.tableDetails.LSZZ') }}
+          </Button>
+          <div slot="content" class="column-settings-content">
+            <div class="column-settings-header">
+              <span>{{ $t('message.scripts.tableDetails.XZXSLZ') }}</span>
+              <Button type="text" size="small" @click="resetColumns">{{ $t('message.scripts.tableDetails.CZ') }}</Button>
+            </div>
+            <draggable
+              v-model="sortableColumns"
+              handle=".drag-handle"
+              @end="onColumnSort"
+              class="sortable-columns">
+              <div
+                v-for="column in sortableColumns"
+                :key="column.key"
+                class="column-item">
+                <Icon type="ios-menu" class="drag-handle" />
+                <Checkbox
+                  v-model="column.visible"
+                  @on-change="onColumnVisibilityChange"
+                  :disabled="column.key === 'index'">
+                  {{ column.title }}
+                </Checkbox>
+              </div>
+            </draggable>
+          </div>
+        </Poptip>
       </div>
     </div>
     <div style="position:relative">
@@ -43,12 +78,12 @@
         >
           <div
             class="field-list-item"
-            :title="formatValue(item, field)"
+            :title="getPlainTextValue(item, field)"
             v-for="(field, index2) in columnCalc"
             :data-key="field.key"
             :key="index2"
             :style="{width: columnCalc[index2].width? `${columnCalc[index2].width}` : 'auto'}">
-            {{ formatValue(item, field) }}
+            <span v-html="formatValue(item, field)"></span>
           </div>
         </li>
       </virtual-list>
@@ -81,9 +116,13 @@
 <script>
 import utils from '../utils.js';
 import virtualList from '@dataspherestudio/shared/components/virtualList';
+import draggable from 'vuedraggable';
+import aiInferenceMixin from '../mixins/aiInference.js';
 export default {
+  mixins: [aiInferenceMixin],
   components: {
     virtualList,
+    draggable,
   },
   props: {
     table: {
@@ -99,17 +138,22 @@ export default {
       searchColList: [],
       editModelShow: false,
       fieldModel: {},
-      tableColumns: [
-        { title: this.$t('message.scripts.Serial'), key: 'index', width: '5%' },
-        { title: this.$t('message.scripts.tableDetails.ZDM'), key: 'name', width: '10%' },
-        { title: this.$t('message.scripts.tableDetails.ZDLX'), key: 'type', width: '10%'  },
-        { title: this.$t('message.scripts.tableDetails.BM'), key: 'alias', width: '10%'  },
-        { title: this.$t('message.scripts.hiveTableExport.LX'), key: 'modeInfo.type', width: '10%'  },
-        { title: this.$t('message.scripts.tableDetails.SFZJ'), key: 'primary', type: 'boolean', width: '10%' },
-        { title: this.$t('message.scripts.tableDetails.SFFQ'), key: 'partitionField', type: 'boolean', width: '10%'  },
-        { title: this.$t('message.scripts.tableDetails.model'), key: 'modeInfo.name', width: '10%'  },
-        { title: this.$t('message.scripts.tableDetails.ZDGZ'), key: 'rule', width: '10%' },
-        { title: this.$t('message.scripts.tableDetails.MS'), key: 'comment', width: '15%' },
+      allTableColumns: [
+        { title: this.$t('message.scripts.Serial'), key: 'index', width: '5%', visible: true },
+        { title: this.$t('message.scripts.tableDetails.BDAPBZD'), key: 'targetColumnName', width: '10%', visible: true },
+        { title: this.$t('message.scripts.tableDetails.BDAPBZDMS'), key: 'targetColumnComment', width: '12%', visible: true },
+        { title: this.$t('message.scripts.tableDetails.BDAPBZDLX'), key: 'type', width: '10%', visible: true },
+        { title: this.$t('message.scripts.tableDetails.SFZJBDAP'), key: 'primary', type: 'boolean', width: '10%', visible: true },
+        { title: this.$t('message.scripts.tableDetails.SFFQZDBDAP'), key: 'partitionField', type: 'boolean', width: '10%', visible: true },
+        { title: this.$t('message.scripts.tableDetails.MXXXBDAP'), key: 'modeInfo.name', width: '10%', visible: true },
+        { title: this.$t('message.scripts.tableDetails.ZDGZBDAP'), key: 'rule', width: '10%', visible: true },
+        { title: this.$t('message.scripts.tableDetails.BDPYBZD'), key: 'originColumnName', width: '10%', visible: true },
+        { title: this.$t('message.scripts.tableDetails.BDPYBZDMS'), key: 'originColumnComment', width: '12%', visible: true },
+        { title: this.$t('message.scripts.tableDetails.BDPYBZDKJJGGZ'), key: 'fieldRule', width: '12%', visible: true },
+        { title: this.$t('message.scripts.tableDetails.BDPYBZDSJX'), key: 'dataItemName', width: '10%', visible: true },
+        { title: this.$t('message.scripts.tableDetails.BDPYBZDSSSJFL'), key: 'classficationName', width: '12%', visible: true },
+        { title: this.$t('message.scripts.tableDetails.TMFS'), key: 'funcDescription', width: '8%', visible: true },
+        { title: this.$t('message.scripts.tableDetails.TMHS'), key: 'funcName', width: '8%', visible: true },
       ],
       dragStartX: undefined,
       dragEndX: undefined,
@@ -118,12 +162,22 @@ export default {
         diff: 0,
         left: 0
       },
-      adjustCol: []
+      adjustCol: [],
+      columnSettingsVisible: false, // 列设置弹窗显示状态
+      columnOrder: [] // 列的排序配置
     };
   },
   computed: {
     maxSize() {
       return Math.floor((window.innerHeight - 242) / 46) - 1;
+    },
+    tableColumns() {
+      // 获取排序后的可见列
+      const orderedColumns = this.columnOrder.length > 0
+        ? this.columnOrder.map(index => this.allTableColumns[index])
+        : this.allTableColumns;
+
+      return orderedColumns.filter(col => col.visible);
     },
     columnCalc() {
       return this.tableColumns.map((item, index) => {
@@ -134,9 +188,31 @@ export default {
           ...item
         }
       })
+    },
+    sortableColumns: {
+      get() {
+        return this.columnOrder.length > 0
+          ? this.columnOrder.map(index => this.allTableColumns[index])
+          : this.allTableColumns;
+      },
+      set(newValue) {
+        // 更新列顺序
+        this.columnOrder = newValue.map(col =>
+          this.allTableColumns.findIndex(original => original.key === col.key)
+        );
+        this.saveColumnSettings();
+      }
     }
   },
   watch: {
+    table: {
+      handler(newVal) {
+        if (newVal && newVal.length > 0) {
+          this.init();
+        }
+      },
+      immediate: true
+    },
     searchText(val) {
       this.searchColList = [];
       let specialCharacter = ['\\', '$', '(', ')', '*', '+', '.', '[', '?', '^', '{', '|'];
@@ -146,26 +222,98 @@ export default {
       });
       const regexp = new RegExp(val, 'i');
       const tmpList = this.table;
-      tmpList.forEach((o, index) => {
-        if ([o.name, o.comment, o.alias].some(item => regexp.test(item || ''))) {
-          o.index = index + 1
-          this.searchColList.push(o);
-        }
-      });
+      if (tmpList && tmpList.length > 0) {
+        tmpList.forEach((o, index) => {
+          // 需要搜索的字段列表，包括可能的AI推断字段
+          const searchFields = [
+            o.name,
+            o.targetColumnName,
+            o.targetColumnComment,
+            o.originColumnName,
+            o.originColumnComment,
+            o.dataItemName,
+            o.classficationName,
+            o.funcDescription,
+            o.funcName,
+            o.fieldRule
+          ];
+
+          // 检查是否有字段匹配搜索关键字
+          const isMatched = searchFields.some(fieldValue => {
+            // 如果字段值是AI推断的对象格式，提取其文本内容进行搜索
+            if (this.hasAIInference(fieldValue)) {
+              const plainText = this.getAIInferencePlainText(fieldValue);
+              return regexp.test(plainText || '');
+            }
+            // 普通字段直接进行正则匹配
+            return regexp.test(fieldValue || '');
+          });
+
+          if (isMatched) {
+            o.index = index + 1
+            this.searchColList.push(o);
+          }
+        });
+      }
     },
   },
   mounted() {
-    this.init();
+    this.loadColumnSettings();
   },
   methods: {
     init() {
-      this.searchColList = this.table.map((o, index)=> {
-        o.index = index + 1;
-        return o
-      });
+      if (this.table && this.table.length > 0) {
+        this.searchColList = this.table.map((o, index)=> {
+          o.index = index + 1;
+          return o
+        });
+      } else {
+        this.searchColList = [];
+      }
     },
     formatValue(item, field) {
+      // 获取字段值
+      let fieldValue = item[field.key];
+
+      // 处理嵌套属性（如 modeInfo.name）
+      if (field.key.includes('.')) {
+        const keyParts = field.key.split('.');
+        fieldValue = item;
+        for (const part of keyParts) {
+          fieldValue = fieldValue && fieldValue[part];
+        }
+      }
+
+      // 如果字段值是对象格式 {currentEnv: "", inference: ""}，按AI推断逻辑处理
+      if (this.hasAIInference(fieldValue)) {
+        return this.formatAIInferenceValue(fieldValue);
+      }
+
+      // 其他情况按原有逻辑处理
       return utils.formatValue(item, field);
+    },
+
+    getPlainTextValue(item, field) {
+      // 获取字段值
+      let fieldValue = item[field.key];
+
+      // 处理嵌套属性（如 modeInfo.name）
+      if (field.key.includes('.')) {
+        const keyParts = field.key.split('.');
+        fieldValue = item;
+        for (const part of keyParts) {
+          fieldValue = fieldValue && fieldValue[part];
+        }
+      }
+
+      // 如果字段值是对象格式 {currentEnv: "", inference: ""}，按AI推断逻辑处理
+      if (this.hasAIInference(fieldValue)) {
+        return this.getAIInferencePlainText(fieldValue);
+      }
+
+      // 其他情况按原有逻辑处理，但获取纯文本值
+      const formattedValue = utils.formatValue(item, field);
+      return formattedValue || '';
     },
     clickItem(e, item) {
       if (e && e.target && e.target.dataset.key) {
@@ -226,7 +374,9 @@ export default {
           if (['primary','partitionField'].includes(key) && typeof item[key] === 'boolean') {
             items.push(item[key] ? '是' : '否');
           } else {
-            items.push(item[key]);
+            // 获取字段值
+            let value = this.getCopyFieldValue(item, key);
+            items.push(value || '');
           }
         })
         contents.push(items.join('\t'));
@@ -239,6 +389,80 @@ export default {
       document.execCommand("copy");
       document.body.removeChild(textArea);
       this.$Message.success(this.$t("message.scripts.paste_successfully"));
+    },
+
+    getCopyFieldValue(item, key) {
+      // 获取字段值
+      let fieldValue = item[key];
+
+      // 处理嵌套属性（如 modeInfo.name）
+      if (key.includes('.')) {
+        const keyParts = key.split('.');
+        fieldValue = item;
+        for (const part of keyParts) {
+          fieldValue = fieldValue && fieldValue[part];
+        }
+      }
+
+      // 如果字段值是对象格式 {currentEnv: "", inference: ""}，按AI推断逻辑处理
+      if (this.hasAIInference(fieldValue)) {
+        return this.getAIInferencePlainText(fieldValue);
+      }
+
+      // 其他情况直接返回字段值
+      return fieldValue;
+    },
+    // 列设置相关方法
+    loadColumnSettings() {
+      const storageKey = 'table_field_column_settings';
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          const settings = JSON.parse(saved);
+          if (settings.visibility) {
+            // 更新列的可见性
+            this.allTableColumns.forEach((col) => {
+              if (Object.prototype.hasOwnProperty.call(settings.visibility, col.key)) {
+                col.visible = settings.visibility[col.key];
+              }
+            });
+          }
+          if (settings.order && settings.order.length === this.allTableColumns.length) {
+            this.columnOrder = settings.order;
+          }
+        } catch (e) {
+          console.error('加载列设置失败:', e);
+        }
+      }
+    },
+    saveColumnSettings() {
+      const storageKey = 'table_field_column_settings';
+      const settings = {
+        visibility: {},
+        order: this.columnOrder
+      };
+
+      this.allTableColumns.forEach(col => {
+        settings.visibility[col.key] = col.visible;
+      });
+
+      localStorage.setItem(storageKey, JSON.stringify(settings));
+    },
+    onColumnVisibilityChange() {
+      this.saveColumnSettings();
+    },
+    onColumnSort() {
+      // 拖拽排序后自动保存
+      this.saveColumnSettings();
+    },
+    resetColumns() {
+      // 重置所有列为可见并恢复默认顺序
+      this.allTableColumns.forEach(col => {
+        col.visible = true;
+      });
+      this.columnOrder = [];
+      this.saveColumnSettings();
+      this.$Message.success(this.$t("message.scripts.tableDetails.CZCG"));
     }
   },
 };
@@ -322,6 +546,58 @@ export default {
   }
   .ovy {
     padding-right: 8px
+  }
+
+  .column-settings-content {
+    padding: 8px;
+
+    .column-settings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-weight: bold;
+    }
+
+    .sortable-columns {
+      max-height: 300px;
+      overflow-y: auto;
+
+      .column-item {
+        display: flex;
+        align-items: center;
+        padding: 4px 0;
+        cursor: pointer;
+
+        .drag-handle {
+          margin-right: 8px;
+          cursor: move;
+          color: #999;
+
+          &:hover {
+            color: #666;
+          }
+        }
+      }
+    }
+  }
+
+  .field-list-search__button {
+    display: flex;
+    align-items: center;
+  }
+
+  ::v-deep .ai-tag {
+    display: inline-block;
+    height: 18px;
+    border-radius: 3px;
+    font-size: 10px;
+    line-height: 18px;
+    text-align: center;
+    margin-right: 4px;
+    padding: 0 2px;
+    background-color: #f0f2f5;
+    color: #93949b;
   }
 
 </style>

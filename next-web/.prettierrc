@@ -8,5 +8,6 @@
       "files": [".prettierrc",".commitlintrc"],
       "options": { "parser": "json" }
     }
-  ]
+  ],
+  "endOfLine": "auto",
 }

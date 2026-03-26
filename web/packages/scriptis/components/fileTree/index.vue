@@ -162,7 +162,7 @@ export default {
           node.name.length
         );
         const pointNum = label.split('.').length - 1;
-        const reg = /^[\w\u4e00-\u9fa5]{1,200}\.[A-Za-z]+$/;
+        const reg = /^[\w\u4e00-\u9fa5]{1,200}\.[A-Za-z0-9]+$/;
         const unReg = /[^\w\u4e00-\u9fa5]+/g;
         const extAllowChange = ['.sql','.hql'];
         if (!reg.test(label)) {

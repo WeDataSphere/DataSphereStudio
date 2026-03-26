@@ -1,4 +1,5 @@
-import { ref, type ComputedRef } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { ref, type ComputedRef, computed } from 'vue';
 import api from '../api';
 import { useDateFormat } from '@vueuse/core';
 import { request } from '@dataspherestudio/shared';
@@ -6,20 +7,24 @@ import { FMessage } from '@fesjs/fes-design';
 const maxPageSize = 10000;
 
 type ObjectType = Record<string, unknown>;
+interface ResultType {
+  [key: string]: any;
+}
 
 export const useDataList = (workspaceId?: ComputedRef) => {
+  const { t: $t } = useI18n();
   const bindApplications = ref([]); // 关联应用
-  const engineTypes = ref([]); // 引擎类型
-  const engineNames = ref([]); // 引擎名
+  const engineTypes: ResultType = ref([]); // 引擎类型
+  const engineNames: ResultType = ref([]); // 引擎名
   const templateNames = ref([]); // 模板名称
   const ruleTypes = ref([
-    { value: '1', label: '工作空间新用户规则' },
-    { value: '0', label: '临时规则' },
+    { value: '1', label: $t('_.工作空间新用户规则') },
+    { value: '0', label: $t('_.临时规则') },
   ]); // 规则类型
   const overlayAreas = ref([
-    { value: '0', label: '全部用户' },
-    { value: '1', label: '指定用户' },
-    { value: '2', label: '工作空间新用户' },
+    { value: '0', label: $t('_.全部用户') },
+    { value: '1', label: $t('_.指定用户') },
+    { value: '2', label: $t('_.工作空间新用户') },
   ]); // 覆盖范围
 
   // 加载关联应用
@@ -33,6 +38,11 @@ export const useDataList = (workspaceId?: ComputedRef) => {
     );
   }
 
+  const allBindApplications = computed(() => [
+    { valueField: '*', labelField: $t('_.全局设置') },
+    ...bindApplications.value,
+  ]);
+
   // 加载引擎类型
   async function loadEngineTypes(application?: string) {
     const res = await request.fetch(api.getEngineTypeList, { application });
@@ -42,10 +52,15 @@ export const useDataList = (workspaceId?: ComputedRef) => {
     }));
   }
 
+  const allEngineTypes = computed(() => [
+    { valueField: '*', labelField: $t('_.全局设置') },
+    ...engineTypes.value,
+  ]);
+
   // 加载引擎名
   async function loadEngineNames(application?: string) {
     if (!application) {
-      FMessage.warn('请先选择关联应用');
+      FMessage.warn($t('_.请先选择关联应用'));
       return;
     }
     const res = await request.fetch(api.getEngineNameList, { application });
@@ -58,7 +73,7 @@ export const useDataList = (workspaceId?: ComputedRef) => {
   // 加载模板名称
   async function loadTemplateNames(engineName?: string) {
     if (!engineName) {
-      FMessage.warn('请先选择引擎类型');
+      FMessage.warn($t('_.请先选择引擎类型'));
       return;
     }
     const param = {
@@ -117,7 +132,9 @@ export const useDataList = (workspaceId?: ComputedRef) => {
 
   return {
     bindApplications, // 关联应用
+    allBindApplications,
     engineTypes, // 引擎类型
+    allEngineTypes,
     engineNames, // 引擎名
     templateNames, // 模板名称
     ruleTypes, // 规则类型

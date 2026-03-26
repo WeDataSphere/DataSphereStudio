@@ -1,29 +1,30 @@
 <template>
   <FModal
     v-model:show="showModal"
-    title="高级筛选"
+    :title="$t('_.高级筛选')"
     display-directive="if"
-    ok-text="确定"
+    :ok-text="$t('_.确定')"
+    :cancel-text="$t('_.取消')"
     :mask-closable="false"
     @ok="handleOk"
   >
-    <FForm ref="filterForm" :label-width="90" label-position="right">
-      <FFormItem label="节点名称">
+    <FForm ref="filterForm" label-position="top">
+      <FFormItem :label="$t('_.节点名称')">
         <FSelect
           v-model="formData.nodeName"
           :options="allNodeList"
-          placeholder="请选择"
+          :placeholder="$t('_.请选择')"
           filterable
           clearable
           value-field="title"
           label-field="title"
         />
       </FFormItem>
-      <FFormItem label="节点类型">
+      <FFormItem :label="$t('_.节点类型')">
         <FSelect
           v-model="formData.nodeType"
           :options="nodeTypes"
-          placeholder="请选择"
+          :placeholder="$t('_.请选择')"
           filterable
           clearable
           multiple
@@ -33,11 +34,11 @@
           label-field="label"
         />
       </FFormItem>
-      <FFormItem label="资源参数模板">
+      <FFormItem :label="$t('_.资源参数模板')">
         <FSelectCascader
           v-model="formData.templateId"
           class="select-cascader"
-          placeholder="请选择"
+          :placeholder="$t('_.请选择')"
           :data="templateData"
           clearable
           remote
@@ -45,25 +46,26 @@
           expand-trigger="click"
           :show-path="false"
           :load-data="loadTemplates"
-        ></FSelectCascader>
+        />
       </FFormItem>
-      <FFormItem label="更新人">
+      <FFormItem :label="$t('_.更新人')">
         <FSelect
           v-model="formData.modifyUser"
           :options="userList"
-          placeholder="请选择"
+          :placeholder="$t('_.请选择')"
           filterable
           clearable
           value-field="value"
           label-field="label"
         />
       </FFormItem>
-      <FFormItem label="修改时间">
+      <FFormItem :label="$t('_.修改时间')">
         <FDatePicker
           v-model="formData.updateTimes"
           type="datetimerange"
           format="yyyy/MM/dd HH:mm:ss"
           clearable
+          :placeholder="[$t('common.startDateTime'), $t('common.endDateTime')]"
         />
       </FFormItem>
     </FForm>
@@ -71,10 +73,14 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n';
+
 import { ref, computed, defineProps, defineEmits, watch, inject } from 'vue';
-// import { useI18n } from '@fesjs/fes';
+// import { useI18n } from 'vue-i18n';
 import { cloneDeep } from 'lodash-es';
 import { useTemplateList } from './hooks/useTemplateList';
+
+const { t: $t } = useI18n();
 
 const emits = defineEmits(['success', 'update:show']);
 const props = defineProps({

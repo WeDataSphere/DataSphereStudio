@@ -1,8 +1,7 @@
 <template>
   <FForm
     ref="formRef"
-    :label-width="100"
-    label-position="right"
+    label-position="top"
     :model="formData"
     :rules="formRules"
   >
@@ -104,7 +103,7 @@ const formRules = computed(() => ({
         }
         return false;
       },
-      message: '结束时间必须大于起始时间',
+      message: $t('_.结束时间必须大于起始时间'),
       trigger: ['change', 'blur'],
     },
   ],

@@ -375,6 +375,27 @@ const showErrMsg = function (error) {
     msg = i18n.t('message.common.apierrmsg')
   }
   let isHoverNotice = {}
+  const reportError = () => {
+     // 上报
+     let requestBody = error.response.config.data
+     try {
+       requestBody = typeof error.response.config.data === 'string' ? JSON.parse(error.response.config.data) : error.response.config.data
+     } catch (e) {
+       //
+     }
+     action('/dss/guide/solution/reportProblem', {
+       requestUrl: error.response.config.url,
+       queryParams: error.response.config.params,
+       requestBody,
+       requestHeaders: {
+         Cookie: document.cookie,
+         ...error.response.config.headers
+       },
+       responseBody: error.response.data
+     }).then(() => {
+       // Message.success(i18n.t('message.common.errsubmited'))
+     })
+  }
   if (window.$APP_CONF && window.$APP_CONF.error_report && error.response) {
     const noticeName = 'err_' + Date.now()
     isHoverNotice[noticeName] = false
@@ -403,33 +424,11 @@ const showErrMsg = function (error) {
             style: {
               background: '#ec6565',
               color: '#fff',
-              display: error.solution !== undefined ? 'inline-block' : 'none'
+              display:  error.solution && error.solution.solutionUrl ? 'inline-block' : 'none'
             },
             on: {
               click: () => {
-                if (error.solution && error.solution.solutionUrl) {
-                  window.open(error.solution.solutionUrl, '_blank')
-                } else if (error.response) {
-                  // 上报
-                  let requestBody = error.response.config.data
-                  try {
-                    requestBody = typeof error.response.config.data === 'string' ? JSON.parse(error.response.config.data) : error.response.config.data
-                  } catch (e) {
-                    //
-                  }
-                  action('/dss/guide/solution/reportProblem', {
-                    requestUrl: error.response.config.url,
-                    queryParams: error.response.config.params,
-                    requestBody,
-                    requestHeaders: {
-                      Cookie: document.cookie,
-                      ...error.response.config.headers
-                    },
-                    responseBody: error.response.data
-                  }).then(() => {
-                    Message.success(i18n.t('message.common.errsubmited'))
-                  })
-                }
+                window.open(error.solution.solutionUrl, '_blank')
                 Notice.close(noticeName)
               }
             }
@@ -454,6 +453,7 @@ const showErrMsg = function (error) {
         }, false)
       })
     }, 150)
+    reportError()
   } else {
     Notice.error({
       desc: msg,
@@ -466,10 +466,12 @@ const showErrMsg = function (error) {
 const isShowErr = (url) => {
   const noShowUrlList = [
     '/dss/datapipe/datasource/getSchemaBaseInfo',
+    '/copilot/badjobAnalyze',
     '/validator/code-precheck', 
     '/copilot/codecompletion', 
     '/copilot/codeadoption', 
     '/copilot/user/isinwhitelist',
+    '/dss/guide/solution/getAllProblemReport',
     '/dss/guide/solution/reportProblem'];
   if (noShowUrlList.includes(url)) {
     return false;

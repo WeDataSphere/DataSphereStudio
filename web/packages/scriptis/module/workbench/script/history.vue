@@ -45,7 +45,11 @@ export default {
     },
     runType: String,
     node: Object,
-    scriptViewState: Object
+    scriptViewState: Object,
+    defaultActiveTab: {
+      type: String,
+      default: 'log'
+    }
   },
   data() {
     return {
@@ -150,6 +154,12 @@ export default {
             label: this.$t('message.scripts.history.columns.control.download'),
             action: this.downloadLog,
           }, {
+            label: this.$t('message.workbench.aioptimize'),
+            action: this.aiFix,
+            isHide: (data) => {
+              return data.badsql || storage.get(`${data.taskID}_analysis`)
+            }
+          },  {
             label: this.$t('message.scripts.history.columns.control.noticeopen'),
             action: this.subscribe,
             isHide: (data) => {
@@ -244,6 +254,7 @@ export default {
         type: 'historyScript',
         addWay: 'follow',
         currentNodeKey: this.node ? this.node.key : '',
+        defaultActiveTab: this.defaultActiveTab, // 使用props传入的默认tab页
         // status:params.row.status,
       }, (f) => {
         if (f) {
@@ -281,6 +292,9 @@ export default {
       }).catch((err) => {
         this.$Message.error(err.message);
       });
+    },
+    aiFix(params) {
+      this.$emit('on-fix', params.row.taskID, params.row.code || params.row.data, params.row.errCode, params.row.errDesc || params.row.errMessage || params.row.failedReason, params.row.status);
     },
     change(page) {
       this.page.current = page;
@@ -369,4 +383,3 @@ export default {
   }
 }
 </style>
-

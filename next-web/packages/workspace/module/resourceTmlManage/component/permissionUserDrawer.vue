@@ -1,7 +1,7 @@
 <template>
   <FDrawer
     v-model:show="drawerShow"
-    :title="`可见用户列表（${templateObj.name})`"
+    :title="`${$t('_.可见用户列表')}（${templateObj.name})`"
     :mask-closable="false"
     display-directive="if"
     width="50%"
@@ -26,8 +26,7 @@
               :options="allWorkSpaceUserList"
               filterable
               clearable
-            >
-            </FSelect>
+            />
           </template>
         </BSearch>
       </template>

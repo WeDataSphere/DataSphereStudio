@@ -173,6 +173,8 @@ function resolve(dir) {
 //       "connect-src": [
 //         "'self'",
 //         "ws:",
+//         "https://trace.test.webank.com",
+//         "http://adm.webank.io"
 //       ],
 //       "img-src": [
 //         "data:",

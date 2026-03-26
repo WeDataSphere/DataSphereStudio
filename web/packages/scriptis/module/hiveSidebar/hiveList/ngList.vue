@@ -15,7 +15,7 @@
         v-if="loading||rendering"
         size="large"
         fix/>
-      <span v-else-if="treeData.length < 1 " style="text-align: center;padding-top: 20px;  display: flex;justify-content: center;">暂无数据</span>
+      <span v-else-if="treeData.length < 1 " style="text-align: center;padding-top: 20px;  display: flex;justify-content: center;">{{ $t('message.scripts.emptyText')  }}</span>
     </div>
   </template>
   <script>

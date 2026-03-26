@@ -31,5 +31,11 @@ export default async function init() {
       window.document.title = _title;
     }
   });
+  router.onError((error) => {
+    console.log('route error:', error);
+    if (error.message.includes('Failed to fetch dynamically imported module')) {
+      window.location.reload();
+    }
+  });
   return router;
 }

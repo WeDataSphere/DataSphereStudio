@@ -25,19 +25,6 @@ import { EXECUTE_COMPLETE_TYPE } from '@dataspherestudio/shared/common/config/co
 
 
 /**
- * 记录轮询接口请求日志
- * @param {execID,taskID,path,reqtime,restime,data} log
- */
-function executeReqLog(log) {
-  let list = storage.get('scriptis_execute_req_log') || []
-  if (list.length > 2000) {
-    list = list.slice(1000)
-  }
-  list.push(log)
-  storage.set('scriptis_execute_req_log',list)
-}
-
-/**
  * 提供脚本运行相关方法，包括执行方法，状态轮询，日志接收，获取结果等
  * * 1.默认使用socket方式通信，若socket连接失败则使用http方式
  * * 2.点击执行调用start方法，收到taskID后进入执行中状态
@@ -277,30 +264,29 @@ Execute.prototype.queryStatus = function({ isKill }) {
     }
   };
   if (this.id) {
-    executeReqLog({
-      execID: this.id,
-      taskID: this.taskID,
-      path: '/status',
-      reqtime: Date.now(),
-    })
-    api.fetch(`/entrance/${this.id}/status`, {taskID: this.taskID}, 'get')
-      .then((ret) => {
-        executeReqLog({
-          execID: this.id,
-          taskID: this.taskID,
-          path: '/status',
-          restime: Date.now(),
-          data: ret
-        })
-        if (ret.status === 3) { // 停止状态轮询
-          if (ret.message) {
-            Message.error(ret.message);
-          }
-          this.trigger('queryError');
-          return
+    // api.fetch(`/entrance/${this.id}/status`, {taskID: this.taskID}, 'get')
+    // api执行时的路径不一样
+    const taskUrl = this.getResultUrl !== 'filesystem' ? this.getResultUrl : 'jobhistory';
+    api.fetch(`/${taskUrl}/${this.taskID}/get`, 'get')
+      .then((res) => {
+        const task = res.task;
+        this.trigger('history', {
+          taskID: task.taskID,
+          execID: '',
+          solution: res.solution,
+          errCode: task.errCode,
+          errDesc: task.errDesc,
+          createDate: task.createdTime,
+          runningTime: task.costTime,
+          // 这里改成使用execute的status是因为数据库中在大结果集的情况下可能会发生状态不翻转的情况，但websocket推送的状态是对的
+          status: this.status,
+          failedReason: task.errCode && task.errDesc ? task.errCode + task.errDesc : task.errCode || task.errDesc || ''
+        });
+        if (task.progress === 1) {
+          this.trigger('costTime', task.costTime);
         }
-        this.status = ret.status;
-        requestStatus(ret);
+        this.status = task.status;
+        requestStatus({status: task.status});
       })
       .catch(() => {
         requestStatus({
@@ -311,21 +297,8 @@ Execute.prototype.queryStatus = function({ isKill }) {
 };
 
 Execute.prototype.queryProgress = function() {
-  executeReqLog({
-    execID: this.id,
-    taskID: this.taskID,
-    path: '/progressWithResource',
-    reqtime: Date.now(),
-  })
   api.fetch(`/entrance/${this.id}/progressWithResource`, 'get')
     .then((rst) => {
-      executeReqLog({
-        execID: this.id,
-        taskID: this.taskID,
-        path: '/progressWithResource',
-        restime: Date.now(),
-        data: rst
-      })
       this.trigger('progress', { progress: rst.progress, progressInfo: rst.progressInfo, yarnMetrics: rst.yarnMetrics });
     });
 };
@@ -562,9 +535,9 @@ function deconstructStatus(execute, ret) {
   execute.trigger('steps', ret.status);
   execute.trigger('status', ret.status);
   switch (ret.status) {
-    case 'Inited': case 'Scheduled': case 'Running':
+    case 'Inited': case 'Scheduled': case 'Running': case 'WaitForRetry':
       // 在状态发生改变的时候更新历史
-      execute.updateLastHistory();
+      // execute.updateLastHistory();
       if (execute.postType !== 'socket') {
         // 5秒发送一次请求
         if (!execute.run) return;

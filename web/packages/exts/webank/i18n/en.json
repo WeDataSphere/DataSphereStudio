@@ -1,0 +1,81 @@
+{
+  "message": {
+    "login": {
+      "normalUser": "Normal User",
+      "systemUser": "System User",
+      "proxyUser": "Proxy Username",
+      "proxyUserPlaceholder": "Please enter proxy username",
+      "hduserForbidden": "User is forbidden"
+    },
+    "common": {
+      "apierrmsg": "The request is abnormal. You can refresh and try again later. If the retry fails, please contact the Big Data Production Assistant (BDP_PRD) for processing."
+    },
+    "scripts": {},
+    "workflow": {
+      "process": {
+        "exechisotry": {
+          "control": "Action",
+          "viewlog": "View Log"
+        },
+        "releasehisotry": {
+          "control": "Action",
+          "viewlog": "View Log",
+          "openversion": "Open Version",
+          "download": "Download"
+        }
+      },
+      "shortcuts": {
+        "week": "Recent Week",
+        "month": "Recent Month",
+        "threeMonths": "Recent Three Months"
+      }
+    },
+    "resourceInfo": {
+      "yarnQueueInfo": "Yarn Queue Information",
+      "jumpToYarnUI": "Jump to Yarn UI"
+    },
+    "ext": {
+      "webank": {
+        "Queue": "Queue information",
+        "jumpto": "Jump to",
+        "Execute": "Execute",
+        "Exestatus": "Execution status",
+        "Execution": "Execution time",
+        "Startup": "Startup time",
+        "Errorcode": "Error code",
+        "key": "key Information",
+        "Publish": "Publish",
+        "Status": "Status",
+        "Description": "Description",
+        "Publisher": "Publisher",
+        "Version": "Version",
+        "Editor": "Editor",
+        "PublishTime": "Publish time",
+        "Error": "Error message",
+        "Downloading": "Downloading，Please wait...",
+        "Description:": "Description:",
+        "Please": "Please input description",
+        "User:": "User:",
+        "Time:": "Time:",
+        "Nodata": "No data",
+        "Nodiff": "No difference in data",
+        "Versioncomparison": "Version comparison",
+        "execHistory": "Execution History",
+        "pubHistory": "Publish History",
+        "ResourceInfo": "Resource INFO",
+        "Name": "Name",
+        "Add": "Add",
+        "Delete": "Delete",
+        "Modify": "Modify",
+        "Upstream": "Upstream node",
+        "Downstream": "Downstream node",
+        "Last": "Last modified time",
+        "Same": "Same version",
+        "Noverion": "No comparable version",
+        "editing": "Editing",
+        "scriptcontent": "Content",
+        "nodebasic": "Basic Info"
+      }
+    }
+  }
+}

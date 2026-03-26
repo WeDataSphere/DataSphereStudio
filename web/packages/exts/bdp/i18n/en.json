@@ -1,0 +1,43 @@
+{
+  "message": {
+    "ext": {
+      "bdp": {
+        "Manage": "Manage",
+        "Operation": "Operation：",
+        "Export": "Export",
+        "Publish": "Publish",
+        "Workflow": "Workflow to export：",
+        "tipworkflow": "Please select workflow",
+        "Confirm": "Confirm",
+        "Import": "Import",
+        "ImportType": "Import type：",
+        "zipfile": "From zip file",
+        "hdfs": "From HDFS",
+        "Zip": "Zip file path：",
+        "Upload": "Upload Zip file：",
+        "zippath": "Please input zip file hdfs path",
+        "inputVerifyCode": "Please input zip file verify cdoe",
+        "Verify": "Verify Code：",
+        "ITSMID": "ITSM ID：",
+        "inputItsm": "Please input approve ID of ITSM",
+        "Description：": "Description：",
+        "Please": "Please input Description",
+        "Index": "Index",
+        "Type": "Type",
+        "Status": "Status",
+        "Content": "Content",
+        "Operate": "Operate",
+        "User": "User",
+        "OperateTime": "Operate Time",
+        "typerequired": "Import type is required",
+        "fileempty": "Import file is required",
+        "Path": "Path is required",
+        "VerifyCode": "Verify code is required",
+        "ITSM": "ITSM ID is required",
+        "download": "Download",
+        "exportmsg": "Workflow export is in progress. Please download the export package later in the operation history",
+        "publishmsg": "Workflow is publishing, please view the publishing progress in the operation history"
+      }
+    }
+  }
+}

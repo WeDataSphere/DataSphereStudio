@@ -144,7 +144,7 @@ export default {
     onChooseWork(params) {
       if (params.taskID === this.currentTaskId) {
         this.$Notice.info({
-          desc: `当前任务【${params.taskID}】已在当前tab页打开，可切换进度/结果/日志栏目查看！`,
+          desc: this.$t('message.apiServices.apiCard.taskAlreadyOpen', { taskID: params.taskID }),
           duration: 3,
         });
         return
@@ -282,4 +282,3 @@ export default {
     }
   }
 </style>
-

@@ -1,5 +1,5 @@
 <template>
-    <Modal v-model="show" width="660" title="生成的Datachecker结果，请核对">
+    <Modal v-model="show" width="660" :title="$t('message.workflow.processComponent.generateDatachecker.title')">
         <div>
             <Table :columns="columns" :data="list" max-height="500" @on-row-dblclick="handleRowDblClick">
                 <template slot-scope="{ row, index }" slot="db">
@@ -27,26 +27,26 @@
                     </template>
                 </template>
                 <template slot-scope="{ row, index }" slot="view">
-                    {{ row.view === true ? '是' : row.view === false ? '否' : '' }}
+                    {{ row.view === true ? $t('message.workflow.processComponent.generateDatachecker.viewStatus.yes') : row.view === false ? $t('message.workflow.processComponent.generateDatachecker.viewStatus.no') : '' }}
                 </template>
                 <template slot-scope="{ row, index }" slot="action">
                     <span class="table_action error" @click="handleDelete(row, index)">
-                        删除
+                        {{ $t('message.workflow.processComponent.generateDatachecker.buttons.delete') }}
                     </span>
                     <span class="table_action success" @click="handleCopy(row, index)">
-                        复制
+                        {{ $t('message.workflow.processComponent.generateDatachecker.buttons.copy') }}
                     </span>
                     <span v-if="editRow && editRow.index === index" class="table_action warn" @click="handleConfirm(row, index)">
-                        确认
+                        {{ $t('message.workflow.processComponent.generateDatachecker.buttons.confirm') }}
                     </span>
                 </template>
             </Table>
-            <Button type="success" style="margin-top: 10px;margin-right: 20px;" @click="add">添加新行</Button>
-            <Button type="success" style="margin-top: 10px;" @click="delView">批量删除视图表</Button>
+            <Button type="success" style="margin-top: 10px;margin-right: 20px;" @click="add">{{ $t('message.workflow.processComponent.generateDatachecker.buttons.addRow') }}</Button>
+            <Button type="success" style="margin-top: 10px;" @click="delView">{{ $t('message.workflow.processComponent.generateDatachecker.buttons.batchDeleteViews') }}</Button>
         </div>
         <div slot="footer">
-            <Button @click="cancel">取消</Button>
-            <Button type="primary" :loading="loading" @click="ok">确认</Button>
+            <Button @click="cancel">{{ $t('message.workflow.processComponent.generateDatachecker.buttons.cancel') }}</Button>
+            <Button type="primary" :loading="loading" @click="ok">{{ $t('message.workflow.processComponent.generateDatachecker.buttons.ok') }}</Button>
         </div>
     </Modal>
 </template>
@@ -61,11 +61,11 @@ export default {
             hasView: false,
             editRow: null,
             columns: [
-                { title: "库名", key: "db", slot: "db" },
-                { title: "表名", key: "table", slot: "table" },
-                { title: "分区名", key: "partition", slot: "partition" },
-                { title: "是否视图", key: "view", slot: "view" },
-                { title: "操作", slot: 'action', }
+                { title: this.$t('message.workflow.processComponent.generateDatachecker.columns.db'), key: "db", slot: "db" },
+                { title: this.$t('message.workflow.processComponent.generateDatachecker.columns.table'), key: "table", slot: "table" },
+                { title: this.$t('message.workflow.processComponent.generateDatachecker.columns.partition'), key: "partition", slot: "partition" },
+                { title: this.$t('message.workflow.processComponent.generateDatachecker.columns.view'), key: "view", slot: "view" },
+                { title: this.$t('message.workflow.processComponent.generateDatachecker.columns.action'), slot: 'action', }
             ],
             list: []
         };
@@ -85,7 +85,7 @@ export default {
                 }
             })
             if (items.length < 1 || this.list.length !== items.length) {
-                this.$Message.error('请检查库表分区信息！')
+                this.$Message.error(this.$t('message.workflow.processComponent.generateDatachecker.errors.checkTableInfo'))
             } else {
                 this.checkIsView(items, () => {
                     this.show = false;
@@ -108,7 +108,7 @@ export default {
                 }
                 if (cb) {
                     if (hasView) {
-                        this.$Message.error('存在视图表，请先删除视图表！')
+                        this.$Message.error(this.$t('message.workflow.processComponent.generateDatachecker.errors.viewExists'))
                     } else {
                         cb()
                     }
@@ -182,7 +182,7 @@ export default {
                     this.loading = false
                 })
             } else {
-                this.$Message.error('脚本内容为空，无法解析')
+                this.$Message.error(this.$t('message.workflow.processComponent.generateDatachecker.errors.emptyScript'))
             }
         },
         open(node) {
@@ -211,5 +211,3 @@ export default {
     }
 }
 </style>
-  
-  

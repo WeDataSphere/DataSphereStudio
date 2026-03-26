@@ -34,6 +34,7 @@ const instance = axios.create({
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json;charset=UTF-8',
+    'Content-Language': localStorage.getItem('locale') || 'zh-CN',
   },
 });
 
@@ -72,6 +73,10 @@ instance.interceptors.response.use(
 
 // 参数处理
 const param = function (url: string, data?: object, option?: FetchOptions) {
+  if (typeof url === 'object') {
+    option = url;
+    return instance.request(option);
+  }
   if (typeof option === 'string') {
     option = {
       method: option,
@@ -142,7 +147,7 @@ const fail = function (error: { response: any; code?: any }) {
     api.error[response.status](response);
   } else {
     if (response && response.data) {
-      //
+      throw new Error(response.data.message || error);
     }
   }
   throw error;

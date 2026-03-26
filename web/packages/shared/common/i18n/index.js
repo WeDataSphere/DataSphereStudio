@@ -29,9 +29,11 @@ if (localStorage.getItem('locale')) {
   if (lang === 'zh-CN') {
     Vue.config.lang = 'zh-CN';
     localStorage.setItem('locale', 'zh-CN');
+    localStorage.setItem('fes_locale', 'zh-CN');
   } else {
     Vue.config.lang = 'en';
     localStorage.setItem('locale', 'en');
+    localStorage.setItem('fes_locale', 'en-US');
   }
 }
 

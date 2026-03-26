@@ -1,15 +1,15 @@
 <template>
-    <Drawer title="提交工作流" v-model="showDrawer" :width="drawerWidth" :mask-closable="false" draggable class-name="custom-drawer-style">
+    <Drawer :title="$t('message.workflow.processComponent.flowDiffSubmit.drawerTitle')" v-model="showDrawer" :width="drawerWidth" :mask-closable="false" draggable class-name="custom-drawer-style">
         <div class="flow-wrapper">
             <div v-if="!isExpand" class="diff-empty">
                 <Button type="text" class="empty-btn" :loading="isLoading" @click="handleToggle(true)">
-                    查看版本对比
+                    {{ $t('message.workflow.processComponent.flowDiffSubmit.viewDiffBtn') }}
                 </Button>
             </div>
             <template v-else>
                 <Tabs v-model="diffContentType" @on-click="pageStateReset('editor')">
-                    <TabPane label="代码" name="code"></TabPane>
-                    <TabPane label="元数据" name="meta"></TabPane>
+                    <TabPane :label="$t('message.workflow.processComponent.flowDiffSubmit.tabs.code')" name="code"></TabPane>
+                    <TabPane :label="$t('message.workflow.processComponent.flowDiffSubmit.tabs.meta')" name="meta"></TabPane>
                 </Tabs>
                 <template v-if="currentTree.tree && currentTree.tree.length > 0">
                     <div class="diff-tree">
@@ -17,7 +17,7 @@
                     </div>
 
                     <div v-if="isDiffLoading" class="diff-loading">
-                        加载中...
+                        {{ $t('message.workflow.processComponent.flowDiffSubmit.loadingText') }}
                     </div>
 
                     <div v-if="compareDetail.visible" class="diff-editor">
@@ -27,15 +27,15 @@
                                     <Icon type="md-lock" />
                                     {{ compareDetail.beforeCommitId }}
                                 </div>
-                                <div class="middle">VS</div>
+                                    <div class="middle">{{ $t('message.workflow.processComponent.flowDiffSubmit.editorTitle.vs') }}</div>
                             </template>
-                            <div :class="['right', !compareDetail.beforeCommitId ? 'left-style' : '']">当前版本</div>
+                            <div :class="['right', !compareDetail.beforeCommitId ? 'left-style' : '']">{{ $t('message.workflow.processComponent.flowDiffSubmit.editorTitle.currentVersion') }}</div>
                         </div>
                         <we-editor-compare :key="diffContentType + absolutePath + compareDetail.beforeCommitId" :style="'height:' + editorHeight" :value="compareDetail.after"
                             :original="compareDetail.before" :diffEditor="!!compareDetail.beforeCommitId" :readOnly="true" />
                     </div>
                 </template>
-                <div v-else-if="currentTree.tips" style="color: #f29360;margin-bottom: 16px;">{{ currentTree.tips }}</div>
+                <div v-else-if="currentTree.tips" style="color: #f29360;margin-bottom: 16px;">{{ $t(`message.workflow.processComponent.flowDiffSubmit.emptyTips.${diffContentType}`) }}</div>
             </template>
             <slot></slot>
         </div>
@@ -155,7 +155,7 @@ export default {
                         this.fetchDiffTree(taskId, cb);
                     } else if (status === 'failed') {
                         this.isLoading = false;
-                        this.$Notice.warning({desc: rst.errMsg || '获取差异化目录失败'});
+                        this.$Notice.warning({desc: rst.errMsg || this.$t('message.workflow.processComponent.flowDiffSubmit.fetchDiffFailed')});
                         return;
                     }
                 }
@@ -177,8 +177,8 @@ export default {
                     this.flowFileTree = {
                         code: this.buildTree(codeTree || []),
                         meta: this.buildTree(metaTree || []),
-                        codeEmptyTips: !codeTree && '当前工作流代码未发生变化，请保存改动后重试',
-                        metaEmptyTips: !metaTree && '当前工作流元数据未发生变化，请保存改动后重试',
+                        codeEmptyTips: !codeTree && this.$t('message.workflow.processComponent.flowDiffSubmit.emptyTips.code'),
+                        metaEmptyTips: !metaTree && this.$t('message.workflow.processComponent.flowDiffSubmit.emptyTips.meta'),
                     };
                     this.isLoading = false;
                     cb && cb();
@@ -338,4 +338,3 @@ export default {
     gap: 8px;
 }
 </style>
-  

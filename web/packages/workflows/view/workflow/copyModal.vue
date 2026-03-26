@@ -107,6 +107,24 @@ export default {
           try {
             const res = await this.copyRequest()
             this.$Message.success(this.$t('message.workflow.Copyreq'))
+            // 按需求暂时屏蔽工作流复制场景下的白名单提示
+            // if(res.isWhite) {
+            //   this.$Notice.info({
+            //     title: this.$t('message.workspace.Prompt'),
+            //     desc: '',
+            //     duration: 5,
+            //     render: (h) => {
+            //       return h('span', {
+            //         style: {
+            //           'word-break': 'break-all',
+            //           'line-height': '20px',
+            //         },
+            //       },
+            //       this.$t('message.workspace.isWhiteWorkflowInfo')
+            //       );
+            //     },
+            //   })
+            // }
             const targetProj = this.projects.find(it => it.id == this.formState.targetProjectId) || {}
             this.$emit('finish', {
               target: {

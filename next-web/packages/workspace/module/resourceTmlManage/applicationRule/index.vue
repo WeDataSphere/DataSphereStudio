@@ -1,5 +1,5 @@
 <template>
-  <NavHeader :title="pageTitle" :nav-list="navList"></NavHeader>
+  <NavHeader :title="pageTitle" :nav-list="navList" />
   <BTablePage :is-loading="isLoading" action-type="loading">
     <template #search>
       <BSearch
@@ -9,18 +9,18 @@
       >
         <template #form>
           <div>
-            <span class="condition-label">模板名称</span>
+            <span class="condition-label">{{ $t('_.模板名称') }}</span>
             <FInput
               v-model="searchForm.templateName"
-              placeholder="请输入"
-            ></FInput>
+              :placeholder="$t('_.请输入')"
+            />
           </div>
           <div>
-            <span class="condition-label">引擎类型</span>
+            <span class="condition-label">{{ $t('_.引擎类型') }}</span>
             <FSelect
               v-model="searchForm.engineType"
-              :options="engineTypes"
-              placeholder="请选择"
+              :options="allEngineTypes"
+              :placeholder="$t('_.请选择')"
               filterable
               clearable
               value-field="valueField"
@@ -29,21 +29,21 @@
             />
           </div>
           <div>
-            <span class="condition-label">规则类型</span>
+            <span class="condition-label">{{ $t('_.规则类型') }}</span>
             <FSelect
               v-model="searchForm.ruleType"
               :options="ruleTypes"
-              placeholder="请选择"
+              :placeholder="$t('_.请选择')"
               filterable
               clearable
             />
           </div>
           <div>
-            <span class="condition-label">覆盖用户</span>
+            <span class="condition-label">{{ $t('_.覆盖用户') }}</span>
             <FSelect
               v-model="searchForm.user"
               :options="allWorkSpaceUserList"
-              placeholder="请选择"
+              :placeholder="$t('_.请选择')"
               filterable
               clearable
               value-field="value"
@@ -52,11 +52,11 @@
             />
           </div>
           <div>
-            <span class="condition-label">关联应用</span>
+            <span class="condition-label">{{ $t('_.关联应用') }}</span>
             <FSelect
               v-model="searchForm.application"
-              :options="bindApplications"
-              placeholder="请选择"
+              :options="allBindApplications"
+              :placeholder="$t('_.请选择')"
               filterable
               clearable
               value-field="valueField"
@@ -68,16 +68,18 @@
       </BSearch>
     </template>
     <template #operate>
-      <FButton type="primary" @click="handleDrawer('add_rule')"
-        >新建规则</FButton
-      >
-      <FButton @click="handleDrawer('execution_record')">规则执行记录</FButton>
+      <FButton type="primary" @click="handleDrawer('add_rule')">
+        {{ $t('_.新建规则') }}
+      </FButton>
+      <FButton @click="handleDrawer('execution_record')">
+        {{ $t('_.规则执行记录') }}
+      </FButton>
     </template>
     <template #table>
       <FTable ref="tableRef" :data="tableList" @sort-change="tableSort">
         <FTable-column
           prop="ruleId"
-          label="规则ID"
+          :label="$t('_.规则ID')"
           :min-width="116"
           :formatter="fillText"
           ellipsis
@@ -85,45 +87,57 @@
         <FTable-column
           v-slot="{ row }"
           prop="ruleType"
-          label="规则类型"
+          :label="$t('_.规则类型')"
           :min-width="166"
           :formatter="fillText"
           ellipsis
         >
-          <span v-if="+row.ruleType === 1">工作空间新用户规则</span>
-          <span v-else>临时规则</span>
+          <span v-if="+row.ruleType === 1">{{
+            $t('_.工作空间新用户规则')
+          }}</span>
+          <span v-else>{{ $t('_.临时规则') }}</span>
         </FTable-column>
         <FTable-column
           prop="templateName"
-          label="模板名称"
+          :label="$t('_.模板名称')"
           :min-width="180"
           :formatter="fillText"
           ellipsis
         />
         <FTable-column
           prop="engineType"
-          label="引擎类型"
+          :label="$t('_.引擎类型')"
           :min-width="120"
           :formatter="fillText"
           ellipsis
-        />
+        >
+          <template #default="{ row }">
+            {{
+              row.engineType === '*' ? `${$t('_.全局设置')}` : row.engineType
+            }}
+          </template>
+        </FTable-column>
         <FTable-column
           v-slot="{ row }"
           prop="permissionType"
-          label="覆盖范围"
+          :label="$t('_.覆盖范围')"
           :min-width="130"
           :formatter="fillText"
           ellipsis
         >
-          <span v-if="+row.permissionType === 3">覆盖部门</span>
-          <span v-else-if="+row.permissionType === 2">工作空间新用户</span>
-          <span v-else-if="+row.permissionType === 1">指定用户</span>
-          <span v-else>全部用户</span>
+          <span v-if="+row.permissionType === 3">{{ $t('_.覆盖部门') }}</span>
+          <span v-else-if="+row.permissionType === 2">{{
+            $t('_.工作空间新用户')
+          }}</span>
+          <span v-else-if="+row.permissionType === 1">{{
+            $t('_.指定用户')
+          }}</span>
+          <span v-else>{{ $t('_.全部用户') }}</span>
         </FTable-column>
         <FTable-column
           v-slot="{ row }"
           prop="permissionUserCount"
-          label="覆盖用户数"
+          :label="$t('_.覆盖用户数')"
           :min-width="102"
           :formatter="fillText"
           ellipsis
@@ -138,31 +152,39 @@
         </FTable-column>
         <FTable-column
           prop="application"
-          label="关联应用"
+          :label="$t('_.关联应用')"
           :min-width="140"
           :formatter="fillText"
           ellipsis
-        />
+        >
+          <template #default="{ row }">
+            {{
+              row.application === '*' ? `${$t('_.全局设置')}` : row.application
+            }}
+          </template>
+        </FTable-column>
         <FTable-column
           v-slot="{ row }"
           prop="status"
-          label="执行状态"
+          :label="$t('_.执行状态')"
           :min-width="88"
           :formatter="fillText"
           ellipsis
         >
-          <span v-if="+row.status === 3" style="color: #f75f56">部分失败</span>
-          <span v-else-if="+row.status === 2" style="color: #f75f56"
-            >执行失败</span
-          >
-          <span v-else-if="+row.status === 1" style="color: #00cb91"
-            >执行成功</span
-          >
-          <span v-else style="color: #0f1222">未执行</span>
+          <span v-if="+row.status === 3" style="color: #f75f56">{{
+            $t('_.部分失败')
+          }}</span>
+          <span v-else-if="+row.status === 2" style="color: #f75f56">{{
+            $t('_.执行失败')
+          }}</span>
+          <span v-else-if="+row.status === 1" style="color: #00cb91">{{
+            $t('_.执行成功')
+          }}</span>
+          <span v-else style="color: #0f1222">{{ $t('_.未执行') }}</span>
         </FTable-column>
         <FTable-column
           prop="executeTime"
-          label="最近执行时间"
+          :label="$t('_.最近执行时间')"
           sortable
           :min-width="182"
           :formatter="fillTimeText"
@@ -170,21 +192,21 @@
         />
         <FTable-column
           prop="executeUser"
-          label="最近执行人"
+          :label="$t('_.最近执行人')"
           :min-width="120"
           :formatter="fillText"
           ellipsis
         />
         <FTable-column
           prop="creator"
-          label="创建人"
+          :label="$t('_.创建人')"
           :min-width="120"
           :formatter="fillText"
           ellipsis
         />
         <FTable-column
           prop="createTime"
-          label="创建时间"
+          :label="$t('_.创建时间')"
           sortable
           :min-width="182"
           :formatter="fillTimeText"
@@ -192,7 +214,7 @@
         />
         <FTable-column
           v-slot="{ row }"
-          label="操作"
+          :label="$t('_.操作')"
           :min-width="60"
           fixed="right"
         >
@@ -200,7 +222,7 @@
             v-if="row.ruleType === 1"
             style="color: #ff4d4f; cursor: pointer"
             @click="handleDelete(row)"
-            >删除</span
+            >{{ $t('_.删除') }}</span
           >
           <span v-else>--</span>
         </FTable-column>
@@ -215,8 +237,7 @@
         :page-size-option="[10, 20, 50, 100]"
         :total-count="pagination.totalCount"
         @change="handlePageChange"
-      >
-      </FPagination>
+      />
     </template>
   </BTablePage>
 
@@ -234,23 +255,27 @@
     <component
       :is="dynamicComponent"
       :ref="(el: any) => {
-      dynamicRef = el;
-    }
+        dynamicRef = el;
+      }
       "
       :form="currentRow"
       :workspace-id="workspaceId"
     />
     <template #footer>
       <FSpace>
-        <FButton type="primary" @click="handleOk">{{
-          drawerConfig.btnText
-        }}</FButton>
-        <FButton @click="handleCancel">取消</FButton>
+        <FButton type="primary" @click="handleOk">
+          {{ drawerConfig.btnText }}
+        </FButton>
+        <FButton @click="handleCancel">
+          {{ $t('_.取消') }}
+        </FButton>
       </FSpace>
     </template>
   </FDrawer>
 </template>
 <script lang="ts" setup>
+import { useI18n } from 'vue-i18n';
+
 import {
   onMounted,
   ref,
@@ -274,10 +299,12 @@ import api from './api';
 import type { PaginationAndParams } from '../../hooks/usePagination';
 type ObjectType = Record<string, unknown>;
 
+const { t: $t } = useI18n();
+
 const route = useRoute();
 const {
-  bindApplications, // 关联应用
-  engineTypes, // 引擎类型
+  allBindApplications, // 关联应用
+  allEngineTypes, // 引擎类型
   handleSelect,
   jsonFilter,
   ruleTypes,
@@ -285,7 +312,7 @@ const {
 
 const workspaceId = computed(() => route.query.workspaceId);
 const { allWorkSpaceUserList, loadAllWorkSpaceUserList } = useOtherDataList();
-const pageTitle = '模版应用规则';
+const pageTitle = $t('_.模版应用规则');
 const navList = ref<ObjectType[]>([]);
 
 const init = () => ({
@@ -388,20 +415,20 @@ onMounted(() => {
 const editOptions = shallowRef([
   {
     value: 'add_rule',
-    label: '新建规则',
+    label: $t('_.新建规则'),
     footer: true,
-    btnText: '新建规则并执行',
+    btnText: $t('_.新建规则并执行'),
     component: EditRule,
   },
   {
     value: 'execution_record',
-    label: '规则执行记录',
+    label: $t('_.规则执行记录'),
     footer: false,
     component: ExecutionRecord,
   },
   {
     value: 'view_users',
-    label: '覆盖用户列表',
+    label: $t('_.覆盖用户列表'),
     footer: false,
     component: ViewUsers,
   },
@@ -472,8 +499,8 @@ async function handleOk() {
 // 删除
 function handleDelete(row: ObjectType) {
   FModal.confirm({
-    title: '确认',
-    content: `确认将规则【${row.ruleId}】删除吗？`,
+    title: $t('_.确认'),
+    content: `${$t('_.确认将规则【')}${row.ruleId}${$t('_.】删除吗？')}`,
     onOk: async () => {
       try {
         await request.fetch(
@@ -481,7 +508,7 @@ function handleDelete(row: ObjectType) {
           {},
           'post'
         );
-        FMessage.success('规则删除成功!');
+        FMessage.success($t('_.规则删除成功!'));
         handleSearch();
         return Promise.resolve();
       } catch (err) {

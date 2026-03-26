@@ -14,6 +14,12 @@
       :percent="percent"
       :costTime="costTime"
       v-if="steps.length"></steps>
+    <!-- AI诊断 -->
+    <div v-if="showDiagnosis" class="alert-tips" :class="errTipColor">
+      <Icon :type="taskInfo.status == 'Failed'?'ios-close-circle-outline':'ios-alert-outline'" size="14" />
+      <span style="padding-left: 10px; flex:1">{{this.$t('message.common.taskFailTip')}}: {{ formatStringArray(diagnosisProblemTypes) }}</span>
+      <Button v-if="hasSuggestions" type="primary" size="small" @click="handleShowDiagnosis">{{this.$t('message.common.aiDiagnosis')}}</Button>
+    </div>
     <!-- 错误信息 -->
     <div v-if="taskInfo.failedReason || taskInfo.solution" class="alert-tips" :class="errTipColor">
       <Icon :type="taskInfo.status == 'Failed'?'ios-close-circle-outline':'ios-alert-outline'" size="14" />
@@ -78,7 +84,11 @@ export default {
   props: {
     execute: Object,
     scriptViewState: Object,
-    script: Object
+    script: Object,
+    showDiagnosis: {
+      type: Boolean,
+      default: false
+    }
   },
   data() {
     let that = this;
@@ -149,6 +159,26 @@ export default {
     };
   },
   computed: {
+    diagnosisProblemTypes() {
+      return this.script.diagnosisProblemTypes || []
+    },
+    hasSuggestions() {
+      // 判断是否有suggestions数据
+      if (!this.script.diagnosisRes || !this.script.diagnosisRes.diagnosisMsg) {
+        return false;
+      }
+      try {
+        const diagnosisMsg = typeof this.script.diagnosisRes.diagnosisMsg === 'string' 
+          ? JSON.parse(this.script.diagnosisRes.diagnosisMsg) 
+          : this.script.diagnosisRes.diagnosisMsg;
+        return diagnosisMsg.data && 
+               diagnosisMsg.data.suggestions && 
+               diagnosisMsg.data.suggestions.length > 0;
+      } catch (error) {
+        console.error('解析diagnosisMsg失败:', error);
+        return false;
+      }
+    },
     steps() {
       return this.script.steps || []
     },
@@ -198,8 +228,17 @@ export default {
     }
   },
   mounted() {
+    // console.log('[DEBUG] progress.vue mounted - 开始初始化');
+    // console.log('[DEBUG] this.script.status:', this.script.status);
+    // console.log('[DEBUG] this.steps:', this.steps);
+    // console.log('[DEBUG] this.script.history:', this.script.history);
+    // console.log('[DEBUG] this.execute:', this.execute);
+    // console.log('[DEBUG] this.execute.taskID:', this.execute ? this.execute.taskID : 'undefined');
+    
     if (this.steps.length && this.taskInfo.errCode === undefined && this.script.history) {
       const ret  = this.script.history[0]
+      // console.log('[DEBUG] progress.vue - 使用历史记录初始化taskInfo');
+      // console.log('[DEBUG] history[0]:', ret);
       if (ret) {
         this.taskInfo = {
           solution: ret.solution,
@@ -209,6 +248,7 @@ export default {
           taskId: ret.taskID,
           failedReason: ret.failedReason
         }
+        // console.log('[DEBUG] taskInfo已设置:', this.taskInfo);
       }
     }
     if (this.script.codePrecheckRes) {
@@ -219,6 +259,15 @@ export default {
     }
   },
   methods: {
+    formatStringArray(arr) {
+      if (!Array.isArray(arr)) {
+        return '';
+      }
+      if (arr.length <= 3) {
+          return arr.join(', ');
+      }
+      return arr.slice(0, 3).join(', ') + '...';
+    },
     successStyle({ failedTasks, runningTasks, succeedTasks, totalTasks }) {
       let succeedPercent = (succeedTasks / totalTasks) * 100;
       let runningPercent = (runningTasks / totalTasks) * 100;
@@ -334,6 +383,10 @@ export default {
           this.$Message.success(this.$t('message.common.reported'))
         })
       }
+    },
+    // 处理AI诊断按钮点击事件
+    handleShowDiagnosis() {
+      this.$emit('showDiagnosisModal', this.script.diagnosisRes);
     }
   },
 };
@@ -439,4 +492,3 @@ export default {
     }
   }
 </style>
-

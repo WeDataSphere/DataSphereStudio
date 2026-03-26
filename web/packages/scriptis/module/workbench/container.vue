@@ -169,6 +169,7 @@ import elementResizeEvent from '@dataspherestudio/shared/common/helper/elementRe
 import mixin from '@dataspherestudio/shared/common/service/mixin'
 import plugin from '@dataspherestudio/shared/common/util/plugin'
 const maxTabLen = 20
+const maxIframeTabLen = 5 // iframe类型tab的最大数量限制
 export default {
   components: {
     "we-body": body,
@@ -266,6 +267,7 @@ export default {
     },
   },
   mounted() {
+    this.getAiFixConfig()
     eventbus.on('open-db-table-suggest', this.updateCache)
     this.getDatasourceType()
     this.init()
@@ -278,6 +280,13 @@ export default {
     this.destroyCopilotEvent()
   },
   methods: {
+    getAiFixConfig() {
+      const baseinfo = storage.get('baseInfo', 'local')
+      if (baseinfo && !baseinfo.copilotEnable) return
+      api.fetch(`/copilot/getconfig?uasername=${this.getUserName()}`, {}, 'get').then(res => {
+        storage.set('CodeCorrection_disablePopUp', res.CodeCorrection.disablePopUp === 'true')
+      })
+    },
     async getDatasourceType() {
       if (!this.starrocksTypeId) {
           const { typeList } = await api.fetch('/data-source-manager/type/all', {}, 'get')
@@ -454,6 +463,20 @@ export default {
         }
         let asyncList = worklist.map((work) => {
           if (work.type !== "node" && work.owner === this.getUserName()) {
+            // iframe类型的tab（如aitab）直接添加，不需要从文件系统读取
+            if (work.type === 'iframe') {
+              const methodName = "Workbench:add"
+              let addParams = {
+                id: work.id,
+                filename: work.filename,
+                url: work.url,
+                type: work.type,
+                saveAs: work.saveAs,
+                currentNodeKey: this.node ? this.node.key : "",
+              }
+              this[methodName](addParams, () => {}, false)
+              return Promise.resolve()
+            }
             // 登录之后,更新脚本内容, 当有filePath可从接口获取最新脚本
             return this.openFileAction(work)
           }
@@ -511,20 +534,34 @@ export default {
             }
             worklist.forEach((work) => {
               if (work.type !== "node" && work.owner === this.getUserName()) {
-                // 登录之后,更新脚本内容, 当有filePath可从接口获取最新脚本
-                const methodName = "Workbench:add"
-                let addParams = {
-                  id: work.data.id,
-                  filename: work.filename,
-                  filepath: work.filepath,
-                  dataSetValue: work.dataSetValue,
-                  code: work.data.data,
-                  type: work.type,
-                  data: work.data,
-                  saveAs: work.saveAs,
-                  currentNodeKey: "",
+                // iframe类型的tab（如aitab）需要特殊处理
+                if (work.type === 'iframe') {
+                  const methodName = "Workbench:add"
+                  let addParams = {
+                    id: work.id,
+                    filename: work.filename,
+                    url: work.url,
+                    type: work.type,
+                    saveAs: work.saveAs,
+                    currentNodeKey: "",
+                  }
+                  this[methodName](addParams, () => {}, false)
+                } else {
+                  // 登录之后,更新脚本内容, 当有filePath可从接口获取最新脚本
+                  const methodName = "Workbench:add"
+                  let addParams = {
+                    id: work.data.id,
+                    filename: work.filename,
+                    filepath: work.filepath,
+                    dataSetValue: work.dataSetValue,
+                    code: work.data.data,
+                    type: work.type,
+                    data: work.data,
+                    saveAs: work.saveAs,
+                    currentNodeKey: "",
+                  }
+                  this[methodName](addParams, () => {}, false)
                 }
-                this[methodName](addParams, () => {}, false)
               }
             })
             resolve()
@@ -601,6 +638,22 @@ export default {
           duration: 3,
         })
       }
+      
+      // 检查iframe类型tab的数量限制
+      if (option.type === 'iframe') {
+        const iframeCount = this.worklist.filter(w => w.type === 'iframe').length
+        if (iframeCount >= maxIframeTabLen) {
+          this.$Notice.close("iframeLimit")
+          cb && cb(false)
+          return this.$Notice.warning({
+            title: this.$t("message.scripts.container.notice.iframeLimit.title"),
+            desc: this.$t("message.scripts.container.notice.iframeLimit.desc", {maxIframeTabLen: maxIframeTabLen}),
+            name: "iframeLimit",
+            duration: 5,
+          })
+        }
+      }
+      
       let work = null
       if (supportedMode.application === 'jdbc' || supportedMode.application === 'ck') {
         let dataSet = []
@@ -661,7 +714,7 @@ export default {
           // follow表示紧跟上一个脚本
           if (option.addWay === "follow") {
             const index = this.worklist.findIndex(
-              (item) => item.id === this.current
+              (item) => work.id === this.current
             )
             this.worklist.splice(index === -1 ? 0 : index + 1, 0, work)
           } else {
@@ -669,6 +722,10 @@ export default {
           }
           repeatWork = work
           if (choose !== false) this.chooseWork(repeatWork)
+          // 对于iframe类型的tab（如aitab），需要保存到IndexedDB以便刷新后恢复
+          if (option.type === 'iframe') {
+            this.dispatch('IndexedDB:recordTab', { ...work, userName: this.getUserName() })
+          }
           cb && cb(true)
         } else {
           if (choose !== false) this.chooseWork(repeatWork)
@@ -980,6 +1037,39 @@ export default {
         this.scrollIntoView()
       }
     },
+    findAndStoreNextAiTabNumber(workList) {
+      // 存储所有找到的aiTab数字
+      const aiTabNumbers = [];
+      // 遍历workList，查找filename符合aiTabxx格式的元素
+      workList.forEach(item => {
+        if (item && item.filename) {
+          const match = item.filename.match(/^aitab(\d+)$/);
+          if (match) {
+            // 提取数字部分并转换为整数
+            const num = parseInt(match[1], 10);
+            if (!isNaN(num)) {
+              aiTabNumbers.push(num);
+            }
+          }
+        }
+      });
+      // 计算下一个可用的数字
+      let nextNumber = 1; // 默认值
+      if (aiTabNumbers.length > 0) {
+        // 找到最大值并加1
+        const maxNumber = Math.max(...aiTabNumbers);
+        nextNumber = maxNumber + 1;
+      }
+      // 创建counter对象
+      const counter = {
+        nextAiTabNumber: nextNumber,
+        lastUpdated: Date.now()
+      };
+      // 存储到sessionStorage
+      sessionStorage.setItem('aiTabCounter', JSON.stringify(counter));
+      return nextNumber; // 可选：返回计算出的下一个数字
+    },
+
     /**
      * 从worklist列表中移除work，对外抛出'Workbench:deleteDirOrFile'事件。
      * 如果work修改过未保存，则提示保存；如果saveAs是true，则提示另存。
@@ -1094,6 +1184,8 @@ export default {
           doRemove()
         }
         this.dispatch("Workbench:removeTab", this.worklist)
+        // 更新aitab的下一个序号
+        this.findAndStoreNextAiTabNumber(this.worklist)
       })
     },
     /**

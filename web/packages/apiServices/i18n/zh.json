@@ -1,6 +1,77 @@
 {
   "message": {
     "apiServices": {
+      "servicesSubmit": {
+        "batchApprove": "批量提交审批",
+        "apiInfoTitle": "数据API信息",
+        "approvalInfoTitle": "审批信息",
+        "approvalName": "审批单名称",
+        "authorizedUser": "授权用户",
+        "duration": "授权期限",
+        "sensitiveData": "是否涉及一级数据",
+        "importance": "重要程度",
+        "background": "背景描述",
+        "attentionUser": "关注人",
+        "submit": "提交审批",
+        "cancel": "取消",
+        "apiInfoSection": "API信息",
+        "validation": {
+          "apiRequired": "请填写数据服务API",
+          "approvalNameRequired": "请填写审批单名称",
+          "approvalNameMax": "审批单名称最长200字符",
+          "userRequired": "请选择授权用户",
+          "durationRequired": "请填写授权期限",
+          "durationRange": "授权期限取值范围1-7300整数天，或*",
+          "sensitiveRequired": "请选择是否涉及一级数据",
+          "sensitiveError": "查询结果中涉及一级数据的API不允许提交审批",
+          "importanceRequired": "请选择重要程度",
+          "backgroundRequired": "请填写背景描述",
+          "backgroundMax": "背景描述最长500字符",
+          "developerOwnerRequired": "请选择开发负责人",
+          "productInfoRequired": "请填写关联的产品信息"
+        },
+        "sensitiveOptions": {
+          "yes": "是",
+          "no": "否"
+        },
+        "importanceOptions": {
+          "high": "高",
+          "medium": "中",
+          "low": "低"
+        },
+        "apiInfo": {
+          "title": "API信息",
+          "englishName": "API英文名",
+          "chineseName": "API中文名",
+          "path": "API路径",
+          "protocol": "协议",
+          "method": "请求方式",
+          "scope": "可见范围",
+          "tag": "标签",
+          "description": "描述",
+          "comment": "备注"
+        },
+        "protocolOptions": {
+          "http": "HTTP",
+          "https": "HTTPS"
+        },
+        "scopeOptions": {
+          "grantView": "授权可见"
+        },
+        "booleanOptions": {
+          "yes": "是",
+          "no": "否"
+        },
+        "paramInfoTitle": "参数信息",
+        "selectApi": "选择API",
+        "developerOwner": "开发负责人",
+        "productInfo": "关联的产品信息",
+        "durationPlaceholder": "取值范围1-7300,永久请输入星号：*",
+        "sensitivePlaceholder": "请检查API的查询结果是否包含一级敏感数据：微众卡号，出生日期",
+        "day": "天",
+        "developerOwnerTip": "StarRocks脚本中库的开发负责人，选择一位即可",
+        "productInfoTip": "StarRocks脚本中库所关联的产品"
+      },
       "viewAll": "显示全部",
       "viewValid": "屏蔽已删除",
       "deleted": "已删除",
@@ -274,7 +345,13 @@
       "more1024": "不能超过1024个字符！",
       "moreline": "行数过多请分批查询！",
       "outlimit": "超出限制请修改！",
-      "uninittask": "任务暂时未生成返回，请稍后再试或联系管理员！"
+      "uninittask": "任务暂时未生成返回，请稍后再试或联系管理员！",
+      "apiCard": {
+        "descriptionLabel": "描述：",
+        "currentVersion": "当前运行中版本：",
+        "newVersion": "有新版本",
+        "taskAlreadyOpen": "当前任务【${taskID}】已在当前tab页打开，可切换进度/结果/日志栏目查看！"
+      }
     }
   }
 }

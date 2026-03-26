@@ -399,7 +399,7 @@ export default {
     },
     validFileName(input) {
       var pattern = /^[\u4E00-\u9FA5a-zA-Z0-9_.]+$/;
-      const msg = '当前脚本名称不符合规范（仅支持中文、大小写字母、数字和下划线），可能会影响脚本的执行，请修改脚本名称!';
+      const msg = this.$t('message.workbench.invalidScriptName');
       if (!pattern.test(input)) {
         Notice.error({
           name: 'validFileName' + input,
@@ -430,7 +430,7 @@ export default {
       let nodeName = this.currentNode.data.name;
       let index = nodeName.lastIndexOf(".")
       let typeSuffix = nodeName.substring(index+1,nodeName.length);
-      let typeArr = ['sql','hql','py','scala','python']
+      let typeArr = ['sql','hql','py','scala','python', 'aisql', 'py3']
       if(typeArr.indexOf(typeSuffix) === -1){
         this.$Message.warning(this.$t('message.scripts.constants.success.prohibit'));
         return;

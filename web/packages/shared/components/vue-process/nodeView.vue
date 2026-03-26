@@ -985,7 +985,7 @@ export default {
       let viewport = this.$el.getBoundingClientRect();
       let beginX = e.pageX - viewport.left + this.$el.scrollLeft;
       let beginY = e.pageY - viewport.top + this.$el.scrollTop;
-      if (e.shiftKey) {
+      if (e.shiftKey ||e.ctrlKey) {
         this.setDraging({
           type: 'box-select',
           data: {

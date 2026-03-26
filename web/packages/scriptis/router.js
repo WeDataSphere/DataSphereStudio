@@ -67,5 +67,16 @@ export default [
     },
     component: () =>
       import('./view/audit/index.vue'),
+  },
+  {
+    path: 'result-view',
+    name: 'ResultView',
+    meta: {
+      title: '结果集查看',
+      keepAlive: false,
+      publicPage: true,
+    },
+    component: () =>
+      import('./module/workbench/resultView.vue'),
   }
 ]

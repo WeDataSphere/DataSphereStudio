@@ -97,6 +97,8 @@ export default {
     },
     async getTabs(cb) {
       let tabs = await tab.get() || [];
+      // 过滤掉null值，避免访问null.id时报错
+      tabs = tabs.filter(tab => tab !== null && tab !== undefined);
       if (tabs && cb) {
         cb(tabs);
       }

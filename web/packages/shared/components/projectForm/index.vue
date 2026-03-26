@@ -455,6 +455,11 @@ export default {
       }
     },
     projectData(value) {
+     this.changeHanle(value)
+    },
+  },
+  methods: {
+    changeHanle(value) {
       const cloneObj = _.cloneDeep(value);
       const ids = this.convertSource(cloneObj);
       cloneObj.datasource = ids;
@@ -470,8 +475,6 @@ export default {
       }
       this.initAssociate();
     },
-  },
-  methods: {
     async checkName () {
       if(!this.projectDataCurrent.name) {
         return
@@ -612,6 +615,7 @@ export default {
       this.initAssociateGit = this.projectDataCurrent.associateGit
       this.initAssociate('init');
       this.mode = mode;
+      this.changeHanle(params)
     },
     initAssociate(type) {
       if (this.projectDataCurrent.associateGit) {

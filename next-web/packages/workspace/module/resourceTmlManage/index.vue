@@ -3,8 +3,8 @@
     <template #search>
       <BSearch
         v-model:form="searchForm"
+        :is-reset="false"
         @search="fetchTableDataMain"
-        @reset="handleReset"
       >
         <template #form>
           <div>
@@ -13,19 +13,17 @@
               v-model="searchForm.name"
               :placeholder="t('common.pleaseInput')"
               clearable
-            >
-            </FInput>
+            />
           </div>
           <div>
             <span class="condition-label">{{ t('workSpace.engineType') }}</span>
             <FSelect
               v-model="searchForm.engineType"
               :placeholder="t('common.pleaseSelect')"
-              :options="engineList"
+              :options="allEngineList"
               clearable
               filterable
-            >
-            </FSelect>
+            />
           </div>
           <div>
             <span class="condition-label">{{ t('workSpace.relateUser') }}</span>
@@ -35,17 +33,23 @@
               :options="allWorkSpaceUserList"
               clearable
               filterable
-            >
-            </FSelect>
+            />
           </div>
+        </template>
+        <template #exButton>
+          <FButton class="reset" @click="handleReset">
+            {{ $t('common.reset') }}
+          </FButton>
         </template>
       </BSearch>
     </template>
     <template #operate>
-      <FButton type="primary" @click="openAddTemplate">{{
-        t('workSpace.createTml')
-      }}</FButton>
-      <FButton @click="jumpToRule">{{ t('workSpace.tmlApplyRule') }}</FButton>
+      <FButton type="primary" @click="openAddTemplate">
+        {{ t('workSpace.createTml') }}
+      </FButton>
+      <FButton @click="jumpToRule">
+        {{ t('workSpace.tmlApplyRule') }}
+      </FButton>
       <!-- <FButton>{{ t('common.moreAction') }}</FButton> -->
     </template>
     <template #table>
@@ -66,7 +70,13 @@
           :label="t('workSpace.engineType')"
           :width="120"
           ellipsis
-        />
+        >
+          <template #default="{ row }">
+            {{
+              row.engineType === '*' ? `${$t('_.全局设置')}` : row.engineType
+            }}
+          </template>
+        </f-table-column>
         <f-table-column
           prop="permissionType"
           :label="t('workSpace.visibility')"
@@ -74,13 +84,17 @@
           ellipsis
         >
           <template #default="{ row }">
-            {{ row.permissionType === 0 ? '全部用户' : '指定用户' }}
+            {{
+              row.permissionType === 0
+                ? `${$t('_.全部用户')}`
+                : `${$t('_.指定用户')}`
+            }}
           </template>
         </f-table-column>
         <f-table-column
           prop="permissionUserCount"
           :label="t('workSpace.visibleUserCount')"
-          :width="102"
+          :width="language === 'zh-CN' ? 102 : 128"
           ellipsis
         >
           <template #default="{ row = {} }">
@@ -93,9 +107,19 @@
           </template>
         </f-table-column>
         <f-table-column
+          prop="defaultForAISQL"
+          :label="t('workSpace.defaultForAISQL')"
+          :width="120"
+          ellipsis
+        >
+          <template #default="{ row }">
+            {{ row.defaultForAISQL ? `${$t('_.是')}` : `${$t('_.否')}` }}
+          </template>
+        </f-table-column>
+        <f-table-column
           v-slot="{ row = {} }"
           :label="t('workSpace.resParams')"
-          :width="88"
+          :width="language === 'zh-CN' ? 88 : 128"
           ellipsis
         >
           <FTooltip
@@ -103,11 +127,13 @@
             mode="popover"
             placement="bottom"
           >
-            <div class="a-link" @mouseover="getResParamsDetails(row)">查看</div>
+            <div class="a-link" @mouseover="getResParamsDetails(row)">
+              {{ $t('_.查看') }}
+            </div>
             <template #content>
               <div class="card-wrapper">
                 <FCard
-                  header="资源参数"
+                  :header="$t('_.资源参数')"
                   :divider="false"
                   :bordered="false"
                   shadow="never"
@@ -117,11 +143,11 @@
                     <span style="color: #63656f"
                       >{{ obj.name }}[{{ obj.key }}]：</span
                     >
-                    <span>默认值：{{ obj.configValue }}</span
+                    <span>{{ $t('_.默认值：') }}{{ obj.configValue }}</span
                     >&nbsp;&nbsp;
                     <span
                       v-if="obj?.boundaryType === 2 || obj?.boundaryType === 3"
-                      >上限值：{{ obj.maxValue }}</span
+                      >{{ $t('_.上限值：') }}{{ obj.maxValue }}</span
                     >
                   </div>
                 </FCard>
@@ -189,7 +215,9 @@
             @click="clickTableMore($event, row)"
           >
             <FButton class="table-operation-item">
-              <template #icon> <MoreCircleOutlined /> </template>
+              <template #icon>
+                <MoreCircleOutlined />
+              </template>
             </FButton>
           </FDropdown>
         </f-table-column>
@@ -212,22 +240,19 @@
     v-model:show="userDrawerShow"
     :template-obj="curTemplateObj"
     :work-place-id="curWorkPlaceId"
-  >
-  </PermissionUserDrawer>
+  />
   <AppDrawer
     v-if="appDrawerShow"
     v-model:show="appDrawerShow"
     :template-obj="curTemplateObj"
     :work-place-id="curWorkPlaceId"
-  >
-  </AppDrawer>
+  />
   <WorkFlowDrawer
     v-if="workFlowDrawerShow"
     v-model:show="workFlowDrawerShow"
     :template-obj="curTemplateObj"
     :work-place-id="curWorkPlaceId"
-  >
-  </WorkFlowDrawer>
+  />
   <TemplateOperateDrawer
     v-if="operateDrawerShow"
     v-model:show="operateDrawerShow"
@@ -235,10 +260,11 @@
     :mode="curMode"
     :work-place-id="curWorkPlaceId"
     @update-template-table="fetchTableDataMain"
-  ></TemplateOperateDrawer>
+  />
 </template>
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+
 import { BTablePage, BSearch } from '@fesjs/traction-widget';
 import { onMounted, ref, reactive } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
@@ -253,9 +279,12 @@ import { useDataList } from './hooks/useDataList';
 import { fetchTemplateTableData, fetchResParams } from './api';
 import { utils } from './hooks/utils';
 
+const { t: $t } = useI18n();
+
 const router = useRouter();
 const route = useRoute();
 const { t } = useI18n();
+const language = localStorage.getItem('locale');
 const pagination = reactive({
   current: 1,
   size: 10,
@@ -282,7 +311,7 @@ const curTemplateObj = ref({});
 
 const {
   allWorkSpaceUserList,
-  engineList,
+  allEngineList,
   loadAllWorkSpaceUserList,
   loadEngineList,
   fillTimeText,
@@ -326,16 +355,16 @@ const clickTableMore = async (
     operateDrawerShow.value = true;
   } else if (value === 'delete') {
     FModal.confirm({
-      title: '提示',
-      content: `确认删除【${row.name}】模板？`,
-      okText: '确定',
-      cancelText: '取消',
+      title: $t('_.提示'),
+      content: `${$t('_.确认删除【')}${row.name}${$t('_.】模板？')}`,
+      okText: $t('_.确定'),
+      cancelText: $t('_.取消'),
       closable: true,
       onOk: async () => {
         try {
           await deleteTemplate(row.templateId);
           await fetchTableDataMain();
-          FMessage.success('删除成功');
+          FMessage.success($t('_.删除成功'));
         } catch (err) {
           console.error(err);
         }
@@ -426,6 +455,9 @@ const fetchTableDataMain = async () => {
 // 重置操作
 const handleReset = () => {
   pagination.current = 1;
+  searchForm.name = '';
+  searchForm.engineType = '';
+  searchForm.user = '';
   fetchTableDataMain();
 };
 

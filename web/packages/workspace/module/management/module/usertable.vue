@@ -140,6 +140,7 @@
     <Modal
       class-name="adduser-box"
       :closable="false"
+      width="650" 
       v-model="creatershow"
       :title="$t('message.workspaceManagement.addUser')"
     >
@@ -152,7 +153,7 @@
         <FormItem :label="$t('message.workspace.User')">
           <RadioGroup
             v-model="uType"
-            @on-change="useradd.id=''"
+            @on-change="changeUType"
           >
             <Radio label="real">{{ $t('message.workspace.Real') }}</Radio>
             <Radio label="notreal">{{ $t('message.workspace.Non') }}</Radio>
@@ -161,35 +162,30 @@
         <FormItem
           v-if="uType==='real'"
           :label="$t('message.workspaceManagement.user')"
+          :rules="[{ required: true, type: 'array', message: this.$t('message.workspaceManagement.addruleMsg'), trigger: 'blur' }]"
           prop="id"
         >
-          <Row>
-            <Col
-              span="12"
-              style="width: 196px"
-              size="small"
-            >
-              <Select
-                v-model="useradd.id"
-                filterable
-                remote
-                :remote-method="remoteMethod1"
-                @on-open-change="queryWhenOpen"
-                :loading="loading1"
-              >
-                <Option
-                  v-for="(option, index) in options"
-                  :value="option.id"
-                  :key="index"
-                  :disabled="option.disabled"
-                >{{option.username}}</Option>
-              </Select>
-            </Col>
-          </Row>
+          <Select
+            v-model="useradd.id"
+            filterable
+            multiple
+            remote
+            :remote-method="remoteMethod1"
+            @on-open-change="queryWhenOpen"
+            :loading="loading1"
+          >
+            <Option
+              v-for="(option, index) in options"
+              :value="option.id"
+              :key="option.id"
+              :disabled="option.disabled"
+            >{{option.username}}</Option>
+          </Select>
         </FormItem>
         <FormItem
           v-if="uType === 'notreal'"
           :label="$t('message.workspaceManagement.user')"
+          :rules="[{ required: true, type: 'string', message: this.$t('message.workspaceManagement.addruleMsg'), trigger: 'blur' }]"
           prop="id"
         >
           <Input
@@ -230,6 +226,7 @@
     </Modal>
     <Modal
       :closable="false"
+      width="650" 
       v-model="editusershow"
       :title="$t('message.workspaceManagement.editUser')"
     >
@@ -377,9 +374,6 @@ export default {
         role: [{ required: true, type: 'array', min: 1, message: this.$t('message.workspaceManagement.selectRoleMsg'), trigger: 'change' }]
       },
       addrule: {
-        id: [
-          { required: true, message: this.$t('message.workspaceManagement.addruleMsg'), trigger: "blur" },
-        ],
         role: [
           { required: true, type: 'array', min: 1, message: this.$t('message.workspaceManagement.selectRoleMsg'), trigger: 'change' },
         ]
@@ -426,6 +420,14 @@ export default {
     this.getUserList()
   },
   methods: {
+    changeUType() {
+      this.$refs['addUser'].resetFields()
+      this.useradd = {
+        id: this.uType === 'real' ? [] : '',
+        name: "",
+        role: []
+      }
+    },
     cantModifyAdmin(item) {
       const username = this.getUserName();
       return item.roleId === 1 && (username !== this.workspaceInfo.createBy || this.row.name === this.workspaceInfo.createBy || this.autojoinShow);
@@ -478,7 +480,7 @@ export default {
       api.fetch(`${this.$API_PATH.WORKSPACE_PATH}listAllUsers`, 'get').then((res) => {
         this.loading1 = false
         let list = res.users
-        this.data.datalist.forEach(item => {
+        this.data.datalistAll.forEach(item => {
           for (let i = 0; i < list.length; i++) {
             if (list[i].username === item.name) {
               list[i].disabled = true
@@ -547,7 +549,6 @@ export default {
         this.data.datalistAll = this.renderFormatTime(rst.workspaceUsers);
         this.data.datalist = this.data.datalistAll.slice(0, this.pageSetting.pageSize);
       }).catch(() => {
-
       });
     },
     getColumns() {
@@ -639,12 +640,11 @@ export default {
     },
     createuser() {
       let id = this.useradd.id
-      let userName
-      for (let i = 0; i < this.options.length; i++) {
-        let option = this.options[i]
-        if (option.id === id) {
-          userName = option.username
-          break
+      let userName = []
+      for (let i = 0; i < this.list.length; i++) {
+        let option = this.list[i]
+        if (id.includes(option.id)) {
+          userName.push(option.username)
         }
       }
       const params = {
@@ -652,7 +652,7 @@ export default {
         workspaceId: this.workspaceId
       }
       if (this.uType === 'notreal') {
-        params.userName = this.useradd.id
+        params.userName = [this.useradd.id]
       } else {
         params.userName = userName
         params.userId = id

@@ -23,6 +23,7 @@
             size="52"
             style="color: #3399ff"/>
           <p class="el-upload__text">{{$t('message.workflow.process.resourceBar.TZDLSC')}}</p>
+          <p class="el-upload__text">{{$t('message.common.safeTip')}}</p>
         </div>
       </Upload>
     </div>
@@ -55,6 +56,10 @@ export default {
     readonly: {
       type: Boolean,
       default: false,
+    },
+    maxFileCount: {
+      type: Number,
+      default: 10,
     },
   },
   data() {
@@ -110,6 +115,12 @@ export default {
     },
     // 发生改变时的回调
     beforeUpload(file) {
+      // 检查文件数量限制
+      if (this.uploadFiles.length >= this.maxFileCount) {
+        this.$Message.warning(this.$t('message.workflow.process.resourceBar.WJSCSX', {max: this.maxFileCount}));
+        return false;
+      }
+      
       const isInFlag = this.uploadFiles.find((item) => item.name === file.name);
       const regLeaf = /^[-.\w\u4e00-\u9fa5]{1,200}\.[A-Za-z]+$/;
       const sizeResult = file.size >= 200 * 1024 * 1024;
@@ -163,7 +174,7 @@ export default {
     // 错误时的回调
     handleError(err, file) {
       this.isUploading = false;
-      this.$Message.error(err ? err.message || '上传失败' : '上传失败');
+      this.$Message.error(err ? err.message || this.$t('message.workflow.processComponent.resource.uploadFailed') : this.$t('message.workflow.processComponent.resource.uploadFailed'));
     },
     // 上传文件过程中的回调
     handleProgress(event, file) {

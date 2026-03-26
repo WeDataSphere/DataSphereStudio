@@ -23,7 +23,6 @@
         </p>
       </div>
       <template #footer>
-        <Button @click="handleCancel">{{ $t('message.common.viewchange') }}</Button>
         <Button type="primary" @click="handleOk">{{ $t('message.common.updatenow') }}</Button>
       </template>
     </Modal>

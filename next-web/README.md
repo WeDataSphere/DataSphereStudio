@@ -7,9 +7,8 @@ vue3、vite、fes-design，是否使用 TS
 ## 本地开发及接口调试：
 
 ```
-lerna bootstrap
-wnpm run prepare
-wnpm run dev
+npm i
+npm run dev
 ```
 
 ### 方式一
@@ -20,7 +19,8 @@ wnpm run dev
 
 浏览器插件 SwitchyOmega 配置规则，非接口的资源转发至 http://localhost:5173，开发时访问目标域名即可
 网址正则示例：
-^http://***REMOVED***:8088(?!/api)._
+^http://sit.dss.bdap.weoa.com(?!/api)._
+^http://10.107.97.166:8088(?!/api)._
 
 ## 代码提交规范
 

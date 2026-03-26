@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 WeBank
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@
 const NODETYPE = {
   SHELL: 'linkis.shell.sh',
   HQL: 'linkis.hive.hql',
+  AISQL: 'linkis.ai.sql',
   SPARKSQL: 'linkis.spark.sql',
   SPARKPY: 'linkis.spark.py',
   SCALA: 'linkis.spark.scala',
@@ -33,24 +34,26 @@ const NODETYPE = {
   DATACHECKER: 'linkis.appconn.datachecker',
   RMBSENDER: 'azkaban.rmbsender',
   FLOW: 'workflow.subflow',
-  BRANCH: 'workflow.branch',
   EXCHANGE: 'linkis.data.exchange',
   QUALITIS: 'linkis.appconn.qualitis',
   PROJECTNODE: 'projectNode',
   MLSS: 'linkis.appconn.mlss',
   JDBC: 'linkis.jdbc.jdbc',
   NEBULA: 'linkis.nebula.nebula',
+  STARROCKS: 'linkis.jdbc.starrocks',
 }
 
 const ext = {
   [NODETYPE.SHELL]: 'shell',
   [NODETYPE.HQL]: 'hql',
+  [NODETYPE.AISQL]: 'aisql',
   [NODETYPE.SPARKSQL]: 'sql',
   [NODETYPE.SPARKPY]: 'pyspark',
   [NODETYPE.SCALA]: 'scala',
   [NODETYPE.PYTHON]: 'python',
   [NODETYPE.JDBC]: 'jdbc',
-  [NODETYPE.NEBULA]: 'nebula'
+  [NODETYPE.NEBULA]: 'nebula',
+  [NODETYPE.STARROCKS]: 'jdbc'
 }
 
-export { NODETYPE, ext };
+export { NODETYPE, ext};

@@ -4,7 +4,7 @@
       <template v-for="item in curNodeBaseParamsList">
         <FormItem v-if="['Input', 'Text', 'Disable'].includes(item.uiType)" :rules="paramsValid(item)" :key="poinToLink(item.key)" :label="item.lableName" :prop="item.key">
           <Input v-model="currentNode[item.key]" :type="filterFormType(item.uiType)" :rows="6"
-            :placeholder="item.desc" :disabled="item.uiType === 'Disable'"
+            :placeholder="item.desc" :disabled="item.uiType === 'Disable' || nodeEditDisable"
           />
         </FormItem>
         <FormItem
@@ -13,22 +13,33 @@
           :key="poinToLink(item.key)"
           :prop="item.key">
           <we-tag
+            v-if="!nodeEditDisable"
             :new-label="$t('message.workflow.process.nodeParameter.addLabel')"
             :tag-list="currentNode[item.key]"
             @add-tag="addTag(item.key,$event)"
             @delete-tag="deleteTag(item.key,$event)"></we-tag>
+            <div v-else>--</div>
         </FormItem>
         <FormItem v-if="item.uiType === 'Select' || item.uiType === 'MultiSelect'" :rules="paramsValid(item)" :key="poinToLink(item.key)" :label="item.lableName" :prop="item.key">
           <Select
+            :disabled="nodeEditDisable"
             v-model="currentNode[item.key]"
             :placeholder="item.desc"
             clearable
-            :multiple="item.uiType === 'MultiSelect'">
-            <Option v-for="subItem in JSON.parse(item.value)" :value="subItem" :key="subItem">{{subItem}}</Option>
+            :multiple="item.uiType === 'MultiSelect'"
+            @on-change="handleSelectChange(item)"
+            >
+            <template v-if="item.value.indexOf('/api/rest_j/') >=0" >
+              <Option v-for="subItem in dynamicData[item.key]" :value="subItem.name" :key="subItem.name">{{ subItem.name }}</Option>
+            </template>
+            <template v-else>
+              <Option v-for="subItem in JSON.parse(item.value)" :value="subItem" :key="subItem">{{ subItem }}</Option>
+            </template>
           </Select>
         </FormItem>
         <FormItem v-if="item.uiType === 'MultiBinding'" :rules="paramsValid(item)" :key="poinToLink(item.key)" :label="item.lableName" :prop="item.key">
           <Select
+            :disabled="nodeEditDisable"
             v-model="currentNode[item.key]"
             :placeholder="item.desc"
             clearable
@@ -43,16 +54,22 @@
     </div>
     <Form v-if="curNodeParamsList.length > 0 && currentNode.jobParams" label-position="top"
       ref="parameterForm"  class="node-parameter-bar" :model="currentNode" :rules="ruleValidate">
-      <FormItem label="是否引用资源参数模板">
+      <FormItem v-if="currentNode.type !== 'linkis.ai.sql'" :label="$t('message.workflow.process.nodeParameter.referenceResourceTemplate')">
         <Select
+          :disabled="nodeEditDisable"
           v-model="isRefTemplate" @on-change="handleRefTemplateChange">
-          <Option value="1">是</Option>
-          <Option value="0">否</Option>
+          <Option value="1">{{$t('message.workflow.process.nodeParameter.yes')}}</Option>
+          <Option value="0">{{$t('message.workflow.process.nodeParameter.no')}}</Option>
         </Select>
       </FormItem>
-      <template v-if="isRefTemplate === '1'">
-        <FormItem label="资源参数模板名称" prop="ecConfTemplateName">
-          <Input v-model="currentNode.ecConfTemplateName" placeholder="请选择资源参数模板名称" readonly @on-focus="openTemplateDrawer"></Input>
+      <template v-if="isRefTemplate === '1' && currentNode.type !== 'linkis.ai.sql'">
+        <FormItem :label="$t('message.workflow.process.nodeParameter.resourceTemplateName')" prop="ecConfTemplateName">
+          <template v-if="!nodeEditDisable">
+            <Input v-model="currentNode.ecConfTemplateName" :placeholder="$t('message.workflow.process.nodeParameter.selectResourceTemplateName')" readonly @on-focus="openTemplateDrawer"></Input>
+          </template>
+          <template v-else>
+            <Input v-model="currentNode.ecConfTemplateName" :disabled="true" :placeholder="currentNode.ecConfTemplateName"></Input>
+          </template>
         </FormItem>
       </template>
       <template>
@@ -64,20 +81,29 @@
               </template>
               <Poptip popper-class="node-item-popper" :disabled="!['check.object', 'job.desc'].includes(item.lableName)" word-wrap width="270" trigger="focus" :content="item.desc" placement="top-start">
                 <Input v-model="currentNode.jobParams[poinToLink(item.key)]" :type="filterFormType(item.uiType)" :rows="6"
-                :placeholder="item.desc" :disabled="item.uiType === 'Disable'"/>
+                :placeholder="item.desc" :disabled="item.uiType === 'Disable' || nodeEditDisable"/>
               </Poptip>
             </FormItem>
             <FormItem v-if="item.uiType === 'Select' || item.uiType === 'MultiSelect'" :rules="paramsValid(item)" :key="poinToLink(item.key)" :label="item.lableName" :prop="'jobParams.'+ poinToLink(item.key)">
               <Select
+                :disabled="nodeEditDisable || handleSparkVersionDisable(item)"
                 v-model="currentNode.jobParams[poinToLink(item.key)]"
                 :placeholder="item.desc"
                 clearable
-                :multiple="item.uiType === 'MultiSelect'">
-                <Option v-for="subItem in JSON.parse(item.value)" :value="subItem" :key="subItem">{{subItem}}</Option>
+                :multiple="item.uiType === 'MultiSelect'"
+                @on-change="handleSelectChange(item)"
+                >
+                <template v-if="item.value.indexOf('/api/rest_j/') >=0">
+                  <Option v-for="subItem in dynamicData[item.key]" :value="subItem.name" :key="subItem.name">{{ subItem.name }}</Option>
+                </template>
+                <template v-else>
+                  <Option v-for="subItem in JSON.parse(item.value)" :value="subItem" :key="subItem">{{ subItem }}</Option>
+                </template>
               </Select>
             </FormItem>
             <FormItem v-if="item.uiType === 'MultiBinding'" :rules="paramsValid(item)" :key="poinToLink(item.key)" :label="item.lableName" :prop="'jobParams.'+ poinToLink(item.key)">
               <Select
+                :disabled="nodeEditDisable"
                 v-model="currentNode.jobParams[poinToLink(item.key)]"
                 :placeholder="item.desc"
                 clearable
@@ -88,7 +114,7 @@
           </template>
           <template v-if="checkShow(item) && item.uiType === 'Upload'">
             <FormItem :rules="paramsValid(item)" :key="poinToLink(item.key)" :label="item.lableName">
-              <resource :resources="resources" :is-ripetition="true" :node-type="nodeData.type" :readonly="readonly"
+              <resource :resources="resources" :is-ripetition="true" :node-type="nodeData.type" :readonly="readonly || nodeEditDisable"
                 @update-resources="updateResources"></resource>
             </FormItem>
           </template>
@@ -123,6 +149,10 @@ export default {
       type: Object,
       default: null,
     },
+    nodeEditDisable: {
+      type: Boolean,
+      default: false,
+    },
     name: {
       type: String,
       default: '',
@@ -154,9 +184,10 @@ export default {
       isRefTemplate: '0',
       ruleValidate: {
         ecConfTemplateName: [
-          { required: true, message: '请选择参数模板', trigger: 'change' }
+          { required: true, message: this.$t('message.workflow.process.nodeParameter.selectParameterTemplate'), trigger: 'change' }
         ],
       },
+      dynamicData: {},
       valueSemicolonValidReg: /^(\s*(check\.object|source\.type)\.\w+?=[^;\s]+?[ \t]*?;)+$/, // 校验分号分割
       valueWordwrapValidReg: /^(\s*(check\.object|source\.type)\.\w+?=[^;\s]+?[ \t]*?\n+)+$/, // 校验换行符分割
     };
@@ -209,7 +240,13 @@ export default {
   computed: {
     // 获取当前节点参数的基本信息
     curNodeParamsList() {
-      return this.currentNode.nodeUiVOS ? this.currentNode.nodeUiVOS.filter((item) => !item.baseInfo && item.nodeMenuType) : [];
+      const list = this.currentNode.nodeUiVOS ? this.currentNode.nodeUiVOS.filter((item) => !item.baseInfo && item.nodeMenuType) : [];
+      list.forEach(item => {
+        if (item.key === 'executeCluster' && item.value.indexOf('/api/rest_j/') >=0) {
+          this.getOpions(item)
+        }
+      })
+      return list
     },
     curNodeBaseParamsList() {
       return this.currentNode.nodeUiVOS ? this.currentNode.nodeUiVOS.filter((item) => {
@@ -219,6 +256,65 @@ export default {
     }
   },
   methods: {
+    handleSparkVersionDisable(item) {
+        return item.key === 'sparkVersion' && this.nodeData.isWhite !== true
+    },
+    async getOpions(item) {
+      const res = await api.fetch(item.value, {}, {
+        method: 'get',
+        cacheOptions: {time: 3000},
+        baseURL: '',
+      })
+      if (res.dssWorkspaceStarRocksCluster && res.dssWorkspaceStarRocksCluster.length > 0) {
+        const data = res.dssWorkspaceStarRocksCluster.map(it => {
+          it.name = it.clusterName
+          return it
+        })
+        let defaultData = res.dssWorkspaceStarRocksCluster.find(it => it.defaultCluster) || res.dssWorkspaceStarRocksCluster[0]
+        this.dynamicData = {
+          ...this.dynamicData,
+          [item.key]: data
+        }
+        if (this.currentNode.jobParams && !this.currentNode.jobParams[item.key]) {
+          this.currentNode.jobParams[item.key] = defaultData.clusterName
+          this.currentNode.params.configuration[item.position][item.key] = defaultData.clusterName
+          this.currentNode.params.configuration[item.position]["linkis.datasource.type"] =  "starrocks"
+          this.currentNode.params.configuration[item.position]["linkis.datasource.params.host"] =  defaultData.clusterIp
+          this.currentNode.params.configuration[item.position]["linkis.datasource.params.port"] =  defaultData.tcpPort + ''
+          this.currentNode.jobParams["linkis-datasource-type"] = "starrocks"
+          this.currentNode.jobParams["linkis-datasource-params-host"] = defaultData.clusterIp
+          this.currentNode.jobParams["linkis-datasource-params-port"] = defaultData.tcpPort + ''
+          this.save()
+        }
+      }
+      
+    },
+    handleSelectChange(item) {
+      if (item.key === 'executeCluster') {
+        let data = this.dynamicData[item.key].find(it => it.clusterName == this.currentNode.jobParams[item.key])
+        if (data) {
+          this.currentNode.params.configuration[item.position][item.key] = data.clusterName
+          this.currentNode.params.configuration[item.position]["linkis.datasource.type"] =  "starrocks"
+          this.currentNode.params.configuration[item.position]["linkis.datasource.params.host"] =  data.clusterIp
+          this.currentNode.params.configuration[item.position]["linkis.datasource.params.port"] =  data.tcpPort + ''
+          this.currentNode.jobParams["linkis-datasource-type"] = "starrocks"
+          this.currentNode.jobParams["linkis-datasource-params-host"] = data.clusterIp
+          this.currentNode.jobParams["linkis-datasource-params-port"] = data.tcpPort + ''
+        }
+      }
+      // sparkVersion 警告提示
+      // if (item.key === 'sparkVersion') {
+      //   const currentValue = this.currentNode.jobParams[this.poinToLink(item.key)];
+      //   if (currentValue === '2') {
+      //     this.$Modal.warning({
+      //       title: this.$t('message.workflow.process.notice'),
+      //       content: this.$t('message.workflow.process.spark2Notice'),
+      //       closable: true,
+      //       width: 500
+      //     });
+      //   }
+      // }
+    },
     // 是否选择模板从false切到true时，查询是否有默认模板，有则填入默认值
     async handleRefTemplateChange(v) {
       if(v ==='1' && !this.currentNode.ecConfTemplateName) {
@@ -607,7 +703,7 @@ export default {
         }, 'post')
         hasView = res && res.result && res.result.filter(it => it.view)
         if (hasView.length) {
-          let strs = jobDesc.split('\n')
+          let strs = (jobDesc||'').split('\n')
           const tbs = [checkObject, ...strs].filter((str) => {
             return hasView.some(it => new RegExp(`${it.db}\\.${it.table}\\b`).test(str))
           }).join('<br/>')
@@ -620,6 +716,7 @@ export default {
           });
         }
       } catch (error) {
+        console.error(error)
         //
       }
       this.$emit('saveButtonStatus', false);

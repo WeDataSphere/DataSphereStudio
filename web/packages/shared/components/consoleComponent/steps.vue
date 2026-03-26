@@ -163,10 +163,10 @@ export default {
             this.setHoverList(step);
           // 如果是重试态，则要在之前插入失败的状态
           } else if (step.value === RETRY_STATUS) {
-            const prevOne = this.stepListData[index - 1];
-            const completionValue = prevOne === SCHEDULED_STATUS ? 'FailedToApply' : 'FailedToExecute';
-            const completion = this.findStep(completionValue);
-            this.renderList.push(completion);
+            // const prevOne = this.stepListData[index - 1];
+            // const completionValue = prevOne === SCHEDULED_STATUS ? 'FailedToApply' : 'FailedToExecute';
+            // const completion = this.findStep(completionValue);
+            // this.renderList.push(completion);
             this.renderList.push(Object.assign(step, IS_FINISH, IS_LOADING));
           } else {
             this.renderList.push(Object.assign(step, IS_FINISH, IS_LOADING));
@@ -182,9 +182,9 @@ export default {
               }
             // 如果是重试态，就在后面插入“资源申请”中这个状态
             } else if (step.value === RETRY_STATUS) {
-              step.isLoading = true;
-              const scheduled = this.findStep(SCHEDULED_STATUS);
-              this.renderList.push(scheduled);
+              // step.isLoading = true;
+              // const scheduled = this.findStep(SCHEDULED_STATUS);
+              // this.renderList.push(scheduled);
             }
           }
         }

@@ -116,7 +116,11 @@ export default {
       this.$emit("handleTabRemove", tabData.tabId)
     },
     onChooseWork(tabData) {
-      this.$emit("bandleTapTab", tabData.tabId)
+      if(tabData && tabData.query && tabData.query.orchestratorId) {
+        this.$emit("bandleTapTab", tabData.tabId, tabData.query.orchestratorId)
+      } else {
+        this.$emit("bandleTapTab", tabData.tabId)
+      }
     },
     handleChangeButton(dicValue) {
       const btn = this.buttonText.find((item) => item.dicValue === dicValue)

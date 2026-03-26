@@ -93,10 +93,10 @@ export default {
       this.uploadData = { path: data.type + this.path };
       this.show = true;
       if (data.type === 'file://') {
-        this.msg = `(${this.$t('message.scripts.uploadDialog.LIMIT2M')})`;
+        this.msg = `(${this.$t('message.scripts.uploadDialog.LIMIT2M')}${this.$t('message.common.safeTip')})`;
         this.maxSize = 2048;
       } else {
-        this.msg = `(${this.$t('message.scripts.uploadDialog.LIMIT200M')})`;
+        this.msg = `(${this.$t('message.scripts.uploadDialog.LIMIT200M')}${this.$t('message.common.safeTip')})`;
         this.maxSize = 204800;
       }
       this.updateUrl = `${data.apiPrefix}filesystem/upload`;
@@ -157,7 +157,7 @@ export default {
     // 发生改变时的回调
     beforeUpload(file) {
       const isInFlag = this.listName.find((item) => item === file.name);
-      const regLeaf = /^[.\w\u4e00-\u9fa5-]{1,200}\.[A-Za-z]+$/;
+      const regLeaf = /^[.\w\u4e00-\u9fa5-]{1,200}\.[A-Za-z0-9]+$/;
       if (isInFlag) {
         this.$Message.warning(this.$t('message.scripts.uploadDialog.WJYCZ'));
         return false;

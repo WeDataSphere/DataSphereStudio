@@ -4,8 +4,20 @@ export default {
       routes: 'workspace/router',
       module: 'workspace/module',
       i18n: {
-        en: 'workspace/i18n/en.json',
-        'zh-CN': 'workspace/i18n/zh.json',
+        en: 'workspace/i18n/en.js',
+        'zh-CN': 'workspace/i18n/zh.js',
+      },
+    },
+    appconn: {
+      routes: 'appconn/router',
+      module: 'appconn/module',
+    },
+    accounts: {
+      routes: 'accounts/router',
+      module: 'accounts/module',
+      i18n: {
+        en: 'accounts/i18n/en.js',
+        'zh-CN': 'accounts/i18n/zh.js',
       },
     },
   },

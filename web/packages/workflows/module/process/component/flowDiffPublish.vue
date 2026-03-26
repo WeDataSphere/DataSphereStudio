@@ -3,17 +3,17 @@
         class-name="custom-drawer-style">
         <div class="flow-wrapper">
             <template v-if="associateGit">
-                <div class="diff-title">代码比对</div>
+                <div class="diff-title">{{ $t('message.workflow.processComponent.flowDiffPublish.diffTitle') }}</div>
                 <div class="diff-wrapper">
                     <div v-if="!isExpand" class="diff-empty">
                         <Button type="text" class="empty-btn" :loading="isLoading" @click="handleToggle(true)">
-                            查看版本对比
+                            {{ $t('message.workflow.processComponent.flowDiffPublish.viewDiffBtn') }}
                         </Button>
                     </div>
                     <template v-else>
                         <Tabs v-model="diffContentType" @on-click="pageStateReset('editor')">
-                            <TabPane label="代码" name="code"></TabPane>
-                            <TabPane label="元数据" name="meta"></TabPane>
+                            <TabPane :label="$t('message.workflow.processComponent.flowDiffPublish.tabs.code')" name="code"></TabPane>
+                            <TabPane :label="$t('message.workflow.processComponent.flowDiffPublish.tabs.meta')" name="meta"></TabPane>
                         </Tabs>
                         <template v-if="currentTree.tree && currentTree.tree.length > 0">
                             <div class="diff-tree">
@@ -21,7 +21,7 @@
                             </div>
 
                             <div v-if="isDiffLoading" class="diff-loading">
-                                加载中...
+                                {{ $t('message.workflow.processComponent.flowDiffPublish.loadingText') }}
                             </div>
 
                             <div v-if="compareDetail.visible" class="diff-editor">
@@ -30,9 +30,9 @@
                                         <Icon type="md-lock" />
                                         {{ compareDetail.beforeCommitId }}
                                     </div>
-                                    <div class="middle">VS</div>
+                                    <div class="middle">{{ $t('message.workflow.processComponent.flowDiffPublish.editorTitle.vs') }}</div>
                                     <div class="right">
-                                        当前版本({{ compareDetail.afterCommitId }})
+                                        {{ $t('message.workflow.processComponent.flowDiffPublish.editorTitle.currentVersion') }}({{ compareDetail.afterCommitId }})
                                     </div>
                                 </div>
                                 <we-editor-compare 
@@ -184,10 +184,10 @@ export default {
                     code: this.buildTree(codeTree || []),
                     meta: this.buildTree(metaTree || []),
                     codeEmptyTips:
-                        !codeTree && '当前工作流代码发布后的版本与上一版完全相同，没有任何变化',
+                        !codeTree && this.$t('message.workflow.processComponent.flowDiffPublish.emptyTips.code'),
                     metaEmptyTips:
                         !metaTree &&
-                        '当前工作流元数据发布后的版本与上一版完全相同，没有任何变化',
+                        this.$t('message.workflow.processComponent.flowDiffPublish.emptyTips.meta'),
                 };
                 this.isLoading = false;
                 cb && cb();
@@ -376,4 +376,3 @@ export default {
     gap: 8px;
 }
 </style>
-  

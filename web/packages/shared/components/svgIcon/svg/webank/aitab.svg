@@ -1,0 +1,163 @@
+<svg
+  width="128"
+  height="128"
+  viewBox="0 0 128 128"
+  xmlns="http://www.w3.org/2000/svg"
+>
+
+ <!-- 背景圆角矩形 -->
+  <rect
+    x="0"
+    y="0"
+    width="128"
+    height="128"
+    rx="18"
+    fill="#b4b8cdff"
+  />
+ 
+ 
+  <!-- ===================== 中心：SDS文字 ===================== -->
+   <text
+    x="64"
+    y="72"
+    fill="#38BDF8"
+    font-family="Arial, sans-serif"
+    font-size="18"
+    font-weight="bold"
+    text-anchor="middle"
+    dominant-baseline="middle"
+  >SDS</text>
+
+
+  <!-- ===================== 环绕的细线圈 ===================== -->
+  <circle
+    cx="64"
+    cy="68"
+    r="55"
+    fill="none"
+    stroke="#38BDF8"
+    stroke-width="1.5"
+  />
+
+  <!-- ===================== 三个节点符号 ===================== -->
+  <!-- 1. 上：了解数据（小眼睛） -->
+  <!-- 圆心(64,68)，半径55，270°位置：(64, 13) -->
+  <g transform="translate(64, 13)">
+    <!-- 矩形外边框 -->
+    <rect
+      x="-14"
+      y="-8"
+      width="28"
+      height="16"
+      rx="3"
+      ry="3"
+      fill="none"
+      stroke="#38BDF8"
+      stroke-width="1.5"
+    />
+    <!-- 眼睛轮廓，中心在(0,0) -->
+    <path
+      d="M-10 0
+         C-6 -4, 6 -4, 10 0
+         C6 4, -6 4, -10 0 Z"
+      fill="none"
+      stroke="#38BDF8"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <circle
+      cx="0"
+      cy="0"
+      r="2.5"
+      fill="none"
+      stroke="#38BDF8"
+      stroke-width="1.8"
+    />
+  </g>
+
+  <!-- 2. 左下：处理数据（小提示符） -->
+  <!-- 210°位置：(16.4, 95.5) -->
+  <g transform="translate(16.4, 95.5)">
+    <!-- 矩形外边框 -->
+    <rect
+      x="-8"
+      y="-10"
+      width="24"
+      height="20"
+      rx="3"
+      ry="3"
+      fill="none"
+      stroke="#38BDF8"
+      stroke-width="1.5"
+    />
+    <!-- 小提示符箭头，中心在(0,0) -->
+    <polyline
+      points="-4,6 2,0 -4,-6"
+      fill="none"
+      stroke="#38BDF8"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <!-- 输入行 -->
+    <line
+      x1="4"
+      y1="0"
+      x2="12"
+      y2="0"
+      stroke="#38BDF8"
+      stroke-width="1.8"
+      stroke-linecap="round"
+    />
+  </g>
+
+  <!-- 3. 右下：分析数据（小柱状图 + 趋势折线） -->
+  <!-- 330°位置：(111.6, 95.5) -->
+  <g transform="translate(111.6, 95.5)">
+    <!-- 矩形外边框 -->
+    <rect
+      x="-12"
+      y="-12"
+      width="26"
+      height="22"
+      rx="3"
+      ry="3"
+      fill="none"
+      stroke="#38BDF8"
+      stroke-width="1.5"
+    />
+    <!-- 三根小柱，以(0,0)为中心 -->
+    <line
+      x1="-6" y1="6"
+      x2="-6" y2="-2"
+      stroke="#38BDF8"
+      stroke-width="1.8"
+      stroke-linecap="round"
+    />
+    <line
+      x1="0" y1="6"
+      x2="0" y2="-4"
+      stroke="#38BDF8"
+      stroke-width="1.8"
+      stroke-linecap="round"
+    />
+    <line
+      x1="6" y1="6"
+      x2="6" y2="0"
+      stroke="#38BDF8"
+      stroke-width="1.8"
+      stroke-linecap="round"
+    />
+    <!-- 趋势折线 -->
+    <polyline
+      points="-8,-6 -2,-2 4,-8 10,-4"
+      fill="none"
+      stroke="#38BDF8"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
+
+</svg>

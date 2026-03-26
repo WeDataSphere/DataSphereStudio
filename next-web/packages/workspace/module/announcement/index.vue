@@ -5,9 +5,9 @@
     class="dss-table-page"
   >
     <template #operate>
-      <FButton type="primary" @click="handleEdit">{{
-        $t('announcement.addAnnouncement')
-      }}</FButton>
+      <FButton type="primary" @click="handleEdit">
+        {{ $t('announcement.addAnnouncement') }}
+      </FButton>
     </template>
     <template #table>
       <FTable ref="tableRef" :data="tableList" @sort-change="tableSort">
@@ -41,7 +41,7 @@
             :min-width="item.minWidth"
             :formatter="item.formatter"
           >
-            <span v-if="+row.status === 2" style="color: #93949b">{{
+            <span v-if="+row.status !== 2" style="color: #93949b">{{
               $t('announcement.expired')
             }}</span>
             <span v-else-if="+row.status === 1" style="color: #00cb91">{{
@@ -60,7 +60,7 @@
             fixed="right"
           >
             <span
-              v-if="+row.status !== 2"
+              v-if="+row.status == 2"
               style="color: #ff4d4f; cursor: pointer"
               @click="handleDelete(row)"
               >{{ $t('announcement.delete') }}</span
@@ -81,8 +81,7 @@
         :page-size-option="[10, 20, 50, 100]"
         :total-count="pagination.totalCount"
         @change="handlePageChange"
-      >
-      </FPagination>
+      />
     </template>
   </BTablePage>
 
@@ -218,8 +217,10 @@ async function handleOk() {
 // 删除
 function handleDelete(row: ObjectType) {
   FModal.confirm({
-    title: '确认',
-    content: `确认将公告【${row.id}】删除吗？`,
+    title: $t('_.确认'),
+    content: `${$t('_.确认将公告【')}${row.id}${$t('_.】删除吗？')}`,
+    okText: `${$t('_.确定')}`,
+    cancelText: `${$t('_.取消')}`,
     onOk: async () => {
       try {
         await request.fetch(
@@ -227,7 +228,7 @@ function handleDelete(row: ObjectType) {
           { noticeId: row.id },
           'post'
         );
-        FMessage.success('公告删除成功!');
+        FMessage.success($t('_.公告删除成功!'));
         handleSearch();
         return Promise.resolve();
       } catch (err) {

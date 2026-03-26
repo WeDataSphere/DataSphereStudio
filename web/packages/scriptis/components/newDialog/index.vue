@@ -188,7 +188,23 @@ export default {
         name: [
           { required: true, message: this.$t('message.scripts.newDialog.rules.catalogName.required'), trigger: 'blur' },
           { min: 1, max: 200, message: this.$t('message.scripts.newDialog.rules.catalogName.lengthLimit'), trigger: 'change' },
-          { type: 'string', pattern: /^[\w\u4e00-\u9fa5]+$/, message: this.$t('message.scripts.newDialog.rules.catalogName.letterTypeLimit'), trigger: 'change' }
+          { 
+            validator: (rule, value, callback) => {
+              // 检查是否包含非法字符（只允许字母、数字、下划线、中文、小数点）
+              const pattern = /^[\w\u4e00-\u9fa5.]+$/;
+              if (!pattern.test(value)) {
+                callback(new Error(this.$t('message.scripts.newDialog.rules.catalogName.letterTypeLimit')));
+                return;
+              }
+              // 检查是否有连续的小数点
+              if (value.includes('..')) {
+                callback(new Error(this.$t('message.scripts.newDialog.rules.catalogName.letterTypeLimit')));
+                return;
+              }
+              callback();
+            }, 
+            trigger: 'change' 
+          }
         ],
         targetScriptPath: [
           { required: true, message: this.$t('message.scripts.newDialog.rules.targetScriptPath.required'), trigger: 'change' }
@@ -221,12 +237,13 @@ export default {
         ".jdbc": "JdbcUsageGuide",
         ".python": "PythonUsageGuide",
         ".py": "PythonSparkUsageGuide",
+        ".py3": "PythonSparkUsageGuide",
         ".r": "RUsageGuide",
         ".sh": "ShellUsageGuide",
         ".ngql": "NebulaUsageGuide",
       }
       const handbook = this.getHandbookUrl()
-      return handbook + (item ? baseinfo[scriptGuideMap[this.ext]] || '' : '')
+      return scriptGuideMap[this.ext] ? handbook + (item ? baseinfo[scriptGuideMap[this.ext]] || '' : '') : ''
     }
   },
   methods: {

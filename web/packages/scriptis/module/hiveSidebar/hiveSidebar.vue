@@ -1,7 +1,7 @@
 <template>
   <div class="we-side-bar">
     <div class="datasource-select">
-      数据源类型:
+      {{ $t('message.scripts.datasource.type') }}:
       <Select
         v-model="datasourceType"
         style="width:110px"
@@ -17,7 +17,7 @@
       </Select>
     </div>
     <div class="datasource-select" v-if="datasourceType === 'StarRocks'">
-      数据源名:
+      {{ $t('message.scripts.datasource.name') }}:
       <Select
         v-model="datasourceName"
         style="width:110px"
@@ -34,7 +34,7 @@
     </div>
     <we-navbar
       ref="navbar"
-      :placeholder="datasourceType == 'NebulaGraph' ? '搜索图空间' : 'db.table'"
+      :placeholder="datasourceType == 'NebulaGraph' ? $t('message.scripts.database.search.space') : 'db.table'"
       :nav-list="navList"
       :add-title="$t('message.scripts.createdTitle')"
       @on-add="openAddTab"
@@ -58,7 +58,7 @@
       @we-click="onClick"
       @we-contextmenu="onContextMenu"
       @we-dblclick="handledbclick"/>
-    <ng-list 
+    <ng-list
       v-if="datasourceType == 'NebulaGraph'"
       class="we-side-bar-content v-hivedb-list"
       :list="filterNgList"
@@ -66,7 +66,7 @@
       @we-click="onClickNG"
       @we-contextmenu="onContextMenuNG"
       @we-dblclick="handledbclickNG"/>
-    <starrocks-list 
+    <starrocks-list
       v-if="datasourceType == 'StarRocks'"
       class="we-side-bar-content v-hivedb-list"
       :list="starrocksList"
@@ -108,6 +108,7 @@
         <we-menu-item
           v-if="isAllowToExport && !model"
           @select="openExportDialog">{{ $t('message.scripts.database.contextMenu.tb.exportTable') }}</we-menu-item>
+        <we-menu-item v-if="copilotEnable" @select="aiGenSql">{{ $t('message.scripts.database.contextMenu.tb.aisql') }}</we-menu-item>
         <we-menu-item class="ctx-divider"/>
         <we-menu-item @select="copyName">{{ $t('message.scripts.database.contextMenu.tb.copyName') }}</we-menu-item>
         <we-menu-item @select="pasteName">{{ $t('message.scripts.database.contextMenu.tb.pasteName') }}</we-menu-item>
@@ -122,13 +123,13 @@
       <!-- NebulaGraph菜单内容 -->
       <template v-if="currentType === 'ng_space'">
         <we-menu-item @select="copyName">
-          复制图空间名
+          {{ $t('message.scripts.database.contextMenu.ng.copyName') }}
         </we-menu-item>
         <we-menu-item @select="pasteName">
-          复制图空间名并粘贴至脚本
+          {{ $t('message.scripts.database.contextMenu.ng.copyPaste') }}
         </we-menu-item>
         <we-menu-item @select="viewSpaceInfo">
-          查看图空间信息
+          {{ $t('message.scripts.database.contextMenu.ng.viewInfo') }}
         </we-menu-item>
         <we-menu-item class="ctx-divider"/>
         <we-menu-item @select="refresh">
@@ -137,7 +138,7 @@
       </template>
       <template v-if="currentType === 'ng_tag' || currentType === 'ng_edge'">
         <we-menu-item @select="viewAttr">
-          查看属性
+          {{ $t('message.scripts.database.contextMenu.ng.viewAttr') }}
         </we-menu-item>
         <we-menu-item class="ctx-divider"/>
         <we-menu-item @select="refresh">
@@ -244,6 +245,7 @@ export default {
       csTableList: [],
       ngListData: [],
       starrocksList: [],
+      copilotEnable: baseinfo.copilotEnable || false,
       datasourceType: datasourceType,
       datasourceName: '',
       datasourceList: [],
@@ -776,7 +778,7 @@ export default {
     },
     getNgSpaceInfo({spaceName,clusterCode}) {
       const params = {
-        spaceName, 
+        spaceName,
         clusterCode
       }
       return api.fetch('/dss/datapipe/datasource/space', params, 'get').then(res => {
@@ -789,7 +791,7 @@ export default {
       const {spaceName,clusterCode, children} = item
       if (children && children.length) return Promise.resolve([])
       const params = {
-        spaceName, 
+        spaceName,
         clusterCode
       }
       const urls = {
@@ -843,7 +845,7 @@ export default {
         const {spaceName, clusterCode, children} = item
         if (children && children.length) return Promise.resolve([])
         const params = {
-          spaceName, 
+          spaceName,
           clusterCode
         }
         const urls = {
@@ -927,7 +929,7 @@ export default {
           this.ngListData = [...this.ngListData]
         }
       }
-      
+
     },
     getEdgeProp(item, refresh) {
       const {spaceName,clusterCode, children, edgeTypeName} = item
@@ -935,7 +937,7 @@ export default {
         item.children = []
       }
       const params = {
-        spaceName, 
+        spaceName,
         clusterCode,
         edgeTypeName
       }
@@ -973,7 +975,7 @@ export default {
         item.children = []
       }
       const params = {
-        spaceName, 
+        spaceName,
         clusterCode,
         tagName
       }
@@ -1065,10 +1067,10 @@ export default {
     },
     viewAttr() {
       const titleMap = {
-        'ng_edge': '边类型',
-        'ng_tag': '标签',
-        'ng_tag_index': '标签索引',
-        'ng_tag_index': '边索引',
+          'ng_edge': this.$t('message.scripts.database.types.edge'),
+          'ng_tag': this.$t('message.scripts.database.types.tag'),
+          'ng_tag_index': this.$t('message.scripts.database.types.tagIndex'),
+          'ng_tag_index': this.$t('message.scripts.database.types.edgeIndex'),
       }
       const filename = `${titleMap[this.currentAcitved.dataType]}信息(${this.currentAcitved.name})`;
       const md5Path = util.md5(filename);
@@ -1112,7 +1114,7 @@ export default {
           } else if(this.currentAcitved.dataType === 'ng_tag_index' || this.currentAcitved.dataType === 'ng_edge_index') {
             const list = await this.getTagEdgeIndex(this.currentAcitved, true)
             this.updateTagEdgeIndex(this.currentAcitved, list)
-          } 
+          }
         } else {
           this.getNGDataList();
         }
@@ -1181,12 +1183,19 @@ export default {
         tabName = typeof name === 'string' ? name : `${this.currentAcitved.dbName}.${this.currentAcitved.name}`;
         code = `select * from ${tabName} limit 100`;
         filename = `${tabName}_select.hql`;
+        const workspaceData = storage.get("currentWorkspace");
+        if(workspaceData && workspaceData.isQueryTableByAiSql && workspaceData.isQueryTableByAiSql === true) {
+          filename = `${tabName}_select.aisql`;
+        }
       } else if(this.currentType == 'starrocks_tb') {
         tabName = typeof name === 'string' ? name : `${this.currentAcitved.database}.${this.currentAcitved.name}`;
         code = `select * from ${tabName} limit 100`;
         filename = `${tabName}_select.jdbc`;
       }
       md5Path = util.md5(filename);
+
+      // 添加标记表明这是通过 queryTable 创建的脚本
+      const isQueryTableCreated = filename.endsWith('.aisql');
 
       this.dispatch('Workbench:add', {
         id: md5Path,
@@ -1197,6 +1206,7 @@ export default {
         saveAs: true,
         noLoadCache: true,
         code,
+        queryTableCreated: isQueryTableCreated, // 添加标记
       }, (f) => {
         if (!f) {
           return;
@@ -1295,6 +1305,19 @@ export default {
         }
       }
       util.executeCopy(this.currentAcitved.fullColumn);
+    },
+    aiGenSql() {
+      plugin.emit('copilot_web_open_change', {
+        type: 'AiSql',
+        message: '',
+        params: {
+          datasource: [{
+            dbName: this.currentAcitved.dbName || this.currentAcitved.database,
+            tableName: this.currentAcitved.name,
+            datasourceType: 'linkis_hive'
+          }]
+        }
+      })
     },
     openDeleteDialog() {
       const type = this.currentAcitved.isView ? this.$t('message.scripts.view') : this.$t('message.scripts.table');

@@ -108,6 +108,7 @@
 <script>
 import { isEmpty, cloneDeep, throttle} from 'lodash';
 import util from '@dataspherestudio/shared/common/util';
+import storage from '@dataspherestudio/shared/common/helper/storage'
 import directoryDialog from '@dataspherestudio/shared/components/directoryDialog/index.vue';
 export default {
   name: 'ResultsExport',
@@ -165,12 +166,13 @@ export default {
   },
   computed: {
     allDisbled() {
-      return ['hql', 'sql', 'py', 'tsql', 'jdbc'].includes(this.script.runType);
+      return ['hql', 'sql', 'py', 'tsql', 'jdbc', 'aisql', 'py3'].includes(this.script.runType);
     }
   },
   methods: {
-    open() {
+    open(maskedFieldNames = '') {
       this.show = true;
+      this.maskedFieldNames = maskedFieldNames;
       this.reset();
       let fileName = '';
       if (this.script.fileName && this.script.fileName !== 'undefined') {
@@ -235,7 +237,12 @@ export default {
         temPath = temPath.substring(0, temPath.lastIndexOf('/'));
       }
       const exportOptionName = this.exportOption.format === '2' ?  `${this.exportOption.name}.xlsx`: `${this.exportOption.name}.csv`
-      const code = `from ${temPath} to ${this.exportOption.path}/${exportOptionName}`;
+      let code = `from ${temPath} to ${this.exportOption.path}/${exportOptionName}`;
+
+      if (this.maskedFieldNames) {
+        code = `${code} without "${this.maskedFieldNames}"`
+      }
+
       const md5Path = util.md5(tabName);
       const params =  {
         id: md5Path,
@@ -244,6 +251,7 @@ export default {
         // saveAs表示临时脚本，需要关闭或保存时另存
         saveAs: true,
         noLoadCache: true,
+        readOnly: !!this.maskedFieldNames,
         code
       }
       const nullValue = this.exportOption.nullValue === '1' ? 'NULL' : 'BLANK'
@@ -295,6 +303,7 @@ export default {
           });
         }, 3000);
       }
+      this.maskedFieldNames = ''
     },
     reset() {
       this.exportOption = {

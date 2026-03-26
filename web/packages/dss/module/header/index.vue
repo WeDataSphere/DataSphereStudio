@@ -95,7 +95,7 @@
         />
         <Icon v-show="isUserMenuShow" type="ios-arrow-up" class="user-icon" />
       </div>
-      <userMenu v-show="isUserMenuShow" @clear-session="clearSession" />
+      <userMenu ref="userMenu" v-show="isUserMenuShow" @clear-session="clearSession" />
     </div>
     <!-- 需要用户可以手动自定义 -->
     <ul class="menu" v-if="$route.path !== '/newhome' && $route.path !== '/bankhome' && $route.query.workspaceId">
@@ -111,7 +111,7 @@
         @click="goAccount"
         :class="isAccountPage ? 'header-actived' : '' "
       >
-        工作流元数据
+        {{ $t("message.common.workflowmetadata") }}
       </li>
       <!-- <li
         v-if="isAdmin"
@@ -152,10 +152,16 @@
         </Dropdown>
         <span v-else  @click="goCollectedUrl(app)">{{ app.title }}</span>
       </li>
+      <li
+        class="menu-item"
+        @click="openAiTab"
+        :class="isDataAgentPage ? 'header-actived' : '' "
+      >
+        DataGo
+      </li>
     </ul>
-    <div class="icon-group">
+    <div  v-if="isSandbox" class="icon-group">
       <Icon
-        v-if="isSandbox"
         :title="$t('message.common.home')"
         class="book"
         type="ios-chatboxes"
@@ -211,6 +217,7 @@ export default {
       isHomePage: false,
       isConsolePage: false,
       isAccountPage: false,
+      isDataAgentPage: false,
     };
   },
   mixins: [mixin],
@@ -291,11 +298,121 @@ export default {
         this.isHomePage = false
         this.isConsolePage = false
         this.isAccountPage = false
+        this.isDataAgentPage = false
         this.currentId = +v.query.menuApplicationId
+      }
+      if (this.$refs.userMenu) {
+        this.$refs.userMenu.closeDrawer()
       }
     },
   },
   methods: {
+     getNextAiTabNumber() {
+      try {
+        const counterStr = sessionStorage.getItem('aiTabCounter');
+        if (counterStr) {
+          const counter = JSON.parse(counterStr);
+          return counter.nextAiTabNumber || 1;
+        }
+      } catch (e) {
+        console.warn('Failed to parse aiTabCounter from sessionStorage:', e);
+        // Log error for debugging
+        console.error('AI Tab Counter Parse Error:', {
+          error: e.message,
+          stack: e.stack
+        });
+      }
+      return 1;
+    },
+
+    // Save AI tab counter to sessionStorage with performance optimization
+    saveAiTabCounter(nextNumber) {
+      try {
+        const counter = {
+          nextAiTabNumber: nextNumber,
+          lastUpdated: Date.now()
+        };
+        // Use JSON.stringify only once and avoid unnecessary operations
+        sessionStorage.setItem('aiTabCounter', JSON.stringify(counter));
+      } catch (e) {
+        console.warn('Failed to save aiTabCounter to sessionStorage:', e);
+        // Log error for debugging
+        console.error('AI Tab Counter Save Error:', {
+          error: e.message,
+          stack: e.stack,
+          nextNumber: nextNumber
+        });
+      }
+    },
+
+    generateAiTabId() {
+      try {
+        // Use faster ID generation method
+        return `aitab_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
+      } catch (e) {
+        console.error('Failed to generate AI tab ID:', e);
+        // Fallback to timestamp-based ID
+        return `aitab_${Date.now()}`;
+      }
+    },
+
+     // Get AI service URL from configuration
+    getAiServiceUrl() {
+      return `${location.origin}/cui/`;
+    },
+
+
+
+    openAiTab(){
+      const nextTabNumber = this.getNextAiTabNumber();
+      const tabId = this.generateAiTabId();
+      const tabName = `aitab${nextTabNumber}`;
+      const aiServiceUrl = this.getAiServiceUrl();
+
+      this.isHomePage = false;
+      this.isConsolePage = false;
+      this.isAccountPage = false;
+      this.isDataAgentPage = true;
+      this.currentId = -1;
+
+      // 检查是否在 scriptis 模块下
+      const isInScriptis = this.$route.path.includes('/home');
+      
+      const addAiTab = () => {
+        this.dispatch('Workbench:add', {
+          id: tabId,
+          filename: tabName,
+          url: aiServiceUrl,
+          type: 'iframe',
+        }, (success) => {
+          // Only increment counter if tab was successfully created (not duplicated)
+          if (success) {
+            this.saveAiTabCounter(nextTabNumber + 1);
+          } else {
+            // Tab already exists, show a message
+            console.log(`AI tab ${tabName} already exists`);
+          }
+        });
+      };
+      
+      if (isInScriptis) {
+        // 已经在 scriptis 模块，直接触发
+        addAiTab();
+      } else {
+        // 不在 scriptis 模块，先跳转再触发
+        this.$router.push({
+          path: '/home',
+          query: {
+            workspaceId: this.$route.query.workspaceId
+          }
+        }).then(() => {
+          // 等待 workbench 组件完全初始化
+          setTimeout(() => {
+            addAiTab();
+          }, 500);
+        });
+      }
+    },
     init() {
       this.userName = this.getUserName();
       this.isAdmin = this.getIsAdmin();
@@ -596,6 +713,7 @@ export default {
       this.isHomePage = true;
       this.isConsolePage = false;
       this.isAccountPage = false;
+      this.isDataAgentPage = false;
       let workspaceId = this.$route.query.workspaceId;
       this.currentId = -1;
       if (!workspaceId) {
@@ -611,6 +729,7 @@ export default {
       this.isHomePage = false;
       this.isAccountPage = false;
       this.isConsolePage = true;
+      this.isDataAgentPage = false;
       this.currentId = -1;
       const url =
         `${location.origin}/dss/linkis/?noHeader=1&noFooter=1&t=${Date.now()}#/console`;
@@ -626,6 +745,7 @@ export default {
       this.isHomePage = false;
       this.isConsolePage = false;
       this.isAccountPage = true;
+      this.isDataAgentPage = false;
       this.currentId = -1;
       let workspaceId = this.$route.query.workspaceId;
       const url =
@@ -645,6 +765,7 @@ export default {
       this.isHomePage = false;
       this.isConsolePage = false;
       this.isAccountPage = false;
+      this.isDataAgentPage = false;
       this.currentId = app.menuApplicationId || -1;
       this.gotoCommonFunc({app, index: 0}, {
         workspaceId: this.$route.query.workspaceId,

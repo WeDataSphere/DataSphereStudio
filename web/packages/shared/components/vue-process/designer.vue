@@ -517,6 +517,9 @@ export default {
           }
         });
       }
+    },
+    operatNode(type, nodeKey) {
+      this.$refs.designerView.operatNode(type, nodeKey)
     }
   }
 };

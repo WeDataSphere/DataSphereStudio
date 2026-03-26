@@ -1,6 +1,112 @@
 {
   "message": {
     "workflow": {
+      "processComponent": {
+          "templateSelectDrawer": {
+          "title": "节点参数模板列表",
+          "templateDesc": "模板描述",
+          "cancel": "取消",
+          "save": "保存",
+          "resource": {
+            "uploadFailed": "上传失败"
+          }
+        },
+        "flowDiffSubmit": {
+          "drawerTitle": "提交工作流",
+          "viewDiffBtn": "查看版本对比",
+          "tabs": {
+            "code": "代码",
+            "meta": "元数据"
+          },
+          "loadingText": "加载中...",
+          "editorTitle": {
+            "vs": "VS",
+            "currentVersion": "当前版本"
+          },
+          "emptyTips": {
+            "code": "当前工作流代码未发生变化，请保存改动后重试",
+            "meta": "当前工作流元数据未发生变化，请保存改动后重试"
+          },
+          "fetchDiffFailed": "获取差异化目录失败"
+        },
+        "flowDiffPublish": {
+          "diffTitle": "代码比对",
+          "viewDiffBtn": "查看版本对比",
+          "tabs": {
+            "code": "代码",
+            "meta": "元数据"
+          },
+          "loadingText": "加载中...",
+          "editorTitle": {
+            "vs": "VS",
+            "currentVersion": "当前版本"
+          },
+          "emptyTips": {
+            "code": "当前工作流代码发布后的版本与上一版完全相同，没有任何变化",
+            "meta": "当前工作流元数据发布后的版本与上一版完全相同，没有任何变化"
+          }
+        },
+        "generateDatachecker": {
+          "menubtn": "生成的Datachecker",
+          "title": "生成的Datachecker结果，请核对",
+          "columns": {
+            "db": "库名",
+            "table": "表名", 
+            "partition": "分区名",
+            "view": "是否视图",
+            "action": "操作"
+          },
+          "buttons": {
+            "delete": "删除",
+            "copy": "复制",
+            "confirm": "确认",
+            "addRow": "添加新行",
+            "batchDeleteViews": "批量删除视图表",
+            "cancel": "取消",
+            "ok": "确认"
+          },
+          "viewStatus": {
+            "yes": "是",
+            "no": "否"
+          },
+          "errors": {
+            "checkTableInfo": "请检查库表分区信息！",
+            "viewExists": "存在视图表，请先删除视图表！",
+            "emptyScript": "脚本内容为空，无法解析"
+          }
+        },
+        "batchAssociate": {
+            "title": "批量关联节点",
+            "modaltitle": "批量关联节点（根节点：{name}）",
+            "upstream": "上游一级节点",
+            "downstream": "下游一级节点",
+            "select": "请选择"
+        },
+        "submissionRecords": {
+          "title": "提交记录",
+          "id": "提交ID",
+          "time": "提交时间",
+          "user": "提交人",
+          "comment": "注释"
+        }
+      },
+      "find": "查找",
+      "select": "请选择",
+      "projectName": "工程名",
+      "file": "文件",
+      "searchContent": "查找内容",
+      "searchContentNotEmpty": "查找内容不能为空",
+      "code": "代码",
+      "search": "搜索",
+      "totalMatches": "总匹配数",
+      "files": "文件",
+      "viewAll": "查看全部",
+      "expand": "展开",
+      "collapse": "收起",
+      "tooManyMatches": "匹配项过多",
+      "noMatches": "无匹配结果",
+      "loading": "加载中",
+      "nodeType": "节点类型:",
       "downloadTolocal": "下载成功，请到本地的download文件夹查看！",
       "downloadrequest": "请求已发出，下载完成后，请到本地download文件夹查看",
       "script": "脚本",
@@ -61,6 +167,7 @@
       "newCreate": "新建",
       "editor": "修改",
       "deleteSuccess": "删除成功",
+      "redoSuccess": "恢复成功",
       "updataSuccess": "更新成功",
       "editorSuccessName": "修改分类{name}成功",
       "comment": "注释",
@@ -236,6 +343,10 @@
         "downAllLevel": "所有下游",
         "console": "管理台",
         "allDelete": "批量删除",
+        "deleteConfirm": "节点删除确认",
+        "isOpen": "打开",
+        "isClose": "关闭",
+        "allCopy": "批量复制",
         "createSubFlow": "创建子工作流",
         "notBinding": "不绑定",
         "autoSave": "自动保存",
@@ -263,6 +374,8 @@
         "saveWorkflowCuccess": "保存工作流成功！",
         "autoSaveWorkflow": "已自动保存工作流！",
         "notice": "提示",
+        "spark2Notice": "注意，如坚持使用spark2，后续切换spark3出现的不兼容性问题，需要自行承担。且后续spark2下线会导致任务无法正常运行。",
+        "sparkVersionReset": "sparkVersion 值已自动重置为 3",
         "dragNode": "请拖拽节点生成流程",
         "readonly": "节点只读状态，基础信息保存失败！",
         "readonlyNoAssociated": "节点只读状态，节点不支持导入脚本！",
@@ -277,8 +390,11 @@
         "noCopy": "该节点不支持复制！",
         "readonlyNoCopy": "节点只读状态，节点不支持复制！",
         "noPaste": "节点只读状态，节点不支持粘贴！",
+        "firstSelect": "请先选择节点！",
         "firstCopy": "请先复制节点！",
-        "namelength": "节点名称长度超过150！",
+        "someNoCopy": "节点不支持批量复制，其余节点复制成功",
+        "noCanCopy": "选中节点类型暂不支持批量复制",
+        "namelength": "节点名称长度超过127！",
         "noDelete": "节点只读状态，节点不支持删除！",
         "createdSuccess": "创建成功！",
         "arguments": {
@@ -371,7 +487,13 @@
           "QSR": "请输入",
           "businessLabel": "业务标签",
           "addLabel": "添加标签",
-          "applyLabel": "应用标签"
+          "applyLabel": "应用标签",
+          "yes": "是",
+          "no": "否",
+          "selectParameterTemplate": "请选择参数模板",
+          "resourceTemplateName": "资源参数模板名称",
+          "selectResourceTemplateName": "请选择资源参数模板名称",
+          "referenceResourceTemplate": "是否引用资源参数模板"
         },
         "resourceBar": {
           "TZDLSC": "将文件拖到此处，或点击上传",
@@ -383,7 +505,8 @@
           "SCBCG200": "上传文件不超过200M！",
           "SCCG": "文件 {name} 上传成功！",
           "WJCCXE": "文件大小超出限额！",
-          "WJBSC": "资源文件 {name} 已被成功删除！"
+          "WJBSC": "资源文件 {name} 已被成功删除！",
+          "WJSCSX": "文件个数超出最大{max}个的限制"
         }
       },
       "workflowItem": {
@@ -477,10 +600,15 @@
       "Rerun": "失败重跑",
       "Prompt": "提示",
       "Copying": "复制过程中,不允许编辑工作流",
+      "SubmitFirst": "请先提交代码后再发布",
+      "TableMode": "表格模式",
+      "DragMode": "拖拽模式",
       "Save": "保存脚本",
       "Manually": "手动保存",
       "AddNode": "新增节点",
       "BatchDel": "子工作流不支持批量删除",
+      "noEditBatchDel": "禁止编辑的节点不支持删除",
+      "noEditAndFlowBatchDel": "子工作流和禁止编辑的节点不支持删除",
       "PleaseSelectNode": "请先选择需要执行的节点",
       "Saving": "执行保存",
       "request": "请求已发出",

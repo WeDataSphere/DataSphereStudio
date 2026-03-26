@@ -1,6 +1,112 @@
 {
   "message": {
     "workflow": {
+      "processComponent": {
+          "templateSelectDrawer": {
+          "title": "Node Parameter Template List",
+          "templateDesc": "Template Description",
+          "cancel": "Cancel",
+          "save": "Save",
+          "resource": {
+            "uploadFailed": "Upload failed"
+          }
+        },
+        "flowDiffSubmit": {
+          "drawerTitle": "Submit Workflow",
+          "viewDiffBtn": "View Version Comparison", 
+          "tabs": {
+            "code": "Code",
+            "meta": "Metadata"
+          },
+          "loadingText": "Loading...",
+          "editorTitle": {
+            "vs": "VS",
+            "currentVersion": "Current Version"
+          },
+          "emptyTips": {
+            "code": "Current workflow code has no changes, please save changes and try again",
+            "meta": "Current workflow metadata has no changes, please save changes and try again"
+          },
+          "fetchDiffFailed": "Failed to get diff directory"
+        },
+        "flowDiffPublish": {
+          "diffTitle": "Code Comparison",
+          "viewDiffBtn": "View Version Comparison",
+          "tabs": {
+            "code": "Code",
+            "meta": "Metadata"
+          },
+          "loadingText": "Loading...",
+          "editorTitle": {
+            "vs": "VS",
+            "currentVersion": "Current Version"
+          },
+          "emptyTips": {
+            "code": "Published workflow code is identical to previous version with no changes",
+            "meta": "Published workflow metadata is identical to previous version with no changes"
+          }
+        },
+        "generateDatachecker": {
+          "menubtn": "Generated Datachecker",
+          "title": "Generated Datachecker Result, Please Verify",
+          "columns": {
+            "db": "Database",
+            "table": "Table",
+            "partition": "Partition",
+            "view": "Is View",
+            "action": "Action"
+          },
+          "buttons": {
+            "delete": "Delete",
+            "copy": "Copy",
+            "confirm": "Confirm",
+            "addRow": "Add New Row",
+            "batchDeleteViews": "Batch Delete Views",
+            "cancel": "Cancel",
+            "ok": "OK"
+          },
+          "viewStatus": {
+            "yes": "Yes",
+            "no": "No"
+          },
+          "errors": {
+            "checkTableInfo": "Please check database/table/partition information!",
+            "viewExists": "View tables exist, please delete them first!",
+            "emptyScript": "Script content is empty, cannot parse"
+          }
+        },
+        "batchAssociate": {
+            "title": "Batch Associate Nodes",
+            "modaltitle": "Batch Associate Nodes (Root Node: {name})",
+            "upstream": "First Level Upstream Nodes",
+            "downstream": "First Level Downstream Nodes",
+            "select": "Please Select"
+        },
+        "submissionRecords": {
+          "title": "Submission Records",
+          "id": "Submission ID",
+          "time": "Submission Time",
+          "user": "Submitter",
+          "comment": "Comment"
+        }
+      },
+      "find": "Find",
+      "select": "Please select",
+      "projectName": "Project",
+      "file": "File",
+      "searchContent": "Search content",
+      "searchContentNotEmpty": "Search content cannot be empty",
+      "code": "Code",
+      "search": "Search",
+      "totalMatches": "Total matches",
+      "files": "files",
+      "viewAll": "View all",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "tooManyMatches": "Too many matches",
+      "noMatches": "No matches found",
+      "loading": "Loading",
+      "nodeType": "Node Type",
       "downloadTolocal": "Successfully downloaded, please check from local download directory!",
       "downloadrequest": "Download request send Successfully, please check from local download directory!",
       "script": "Script",
@@ -61,6 +167,7 @@
       "newCreate": "ADD",
       "editor": "Edit",
       "deleteSuccess": "Delete Success",
+      "redoSuccess": "Redo Success",
       "updataSuccess": "Updata Success",
       "editorSuccessName": "Editor success classify {name}",
       "comment": "Comment",
@@ -235,6 +342,10 @@
         "upAllLevel": "All upstream",
         "downAllLevel": "All downstream",
         "allDelete": "Batch delete",
+        "deleteConfirm": "Node deletion secondary confirmation",
+        "isOpen": "Open",
+        "isClose": "Close",
+        "allCopy": "Batch copy",
         "console": "Open console",
         "createSubFlow": "Create sub workflow",
         "notBinding": "Not Binding",
@@ -263,6 +374,8 @@
         "saveWorkflowCuccess": "Successfully saved workflow!",
         "autoSaveWorkflow": "Automatically saved workflow!",
         "notice": "Notice",
+        "spark2Notice": "Note: If you insist on using Spark2, you will be responsible for any incompatibility issues that may arise when switching to Spark3 later. Additionally, the subsequent decommissioning of Spark2 will cause tasks to fail to run normally.",
+        "sparkVersionReset": "sparkVersion value has been automatically reset to 3",
         "dragNode": "Please drag nodes to construct a flow",
         "readonly": "This node is on read-only status, failed to save basic information!",
         "readonlyNoAssociated": "This node is on read-only status, import script not allowed!",
@@ -277,7 +390,10 @@
         "noCopy": "Copy is not supported on this node!",
         "readonlyNoCopy": "This node is on read-only status, copy is not supported!",
         "noPaste": "This node is on read-only status, paste is not supported!",
+        "firstSelect": "Please select a node first!",
         "firstCopy": "Please copy a node first!",
+        "someNoCopy": "Nodes do not support batch copying, and the remaining nodes are copied successfully.",
+        "noCanCopy": "The selected node type does not currently support batch copying.",
         "namelength": "Node name length exceeds 150！",
         "noDelete": "This node is on read-only status, delete is not supported!",
         "createdSuccess": "Successfully created!",
@@ -371,7 +487,13 @@
           "QSR": "Please enter",
           "businessLabel": "Business Label",
           "addLabel": "Add Label",
-          "applyLabel": "Appplication Label"
+          "applyLabel": "Appplication Label",
+          "yes": "Yes",
+          "no": "No",
+          "selectParameterTemplate": "Please select parameter template",
+          "resourceTemplateName": "Resource parameter template name", 
+          "selectResourceTemplateName": "Please select resource parameter template name",
+          "referenceResourceTemplate": "Reference resource parameter template"
         },
         "resourceBar": {
           "TZDLSC": "Drag file here or click to upload",
@@ -383,7 +505,8 @@
           "SCBCG200": "Files to upload cannot exceed 200M!",
           "SCCG": "Successfully uploaded file {name}!",
           "WJCCXE": "File size exceeds limit!",
-          "WJBSC": "Successfully deleted resource file {name}!"
+          "WJBSC": "Successfully deleted resource file {name}!",
+          "WJSCSX": "The number of files exceeds the maximum allowed limit of {max} files."
         }
       },
       "workflowItem": {
@@ -476,10 +599,15 @@
       "Rerun": "Rerun",
       "Prompt": "Prompt",
       "Copying": "Copying，Not allowed to edit the script",
+      "SubmitFirst": "Submit code first before publishing",
+      "TableMode": "Table mode",
+      "DragMode": "Drag mode",
       "Save": "Save script",
       "Manually": "Manually save",
       "AddNode": "Add node",
       "BatchDel": "Batch deletion of sub workflows is not supported",
+      "noEditBatchDel": "Nodes with editing disabled do not support deletion",
+      "noEditAndFlowBatchDel": "Sub-workflows and nodes with editing disabled do not support deletion",
       "PleaseSelectNode": "Please select the node to be executed",
       "Saving": "Saving",
       "request": "request sent",

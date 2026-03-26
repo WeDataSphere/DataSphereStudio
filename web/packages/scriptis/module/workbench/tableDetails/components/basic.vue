@@ -10,15 +10,14 @@
         <span
           v-for="(item, index2) in type.children"
           :key="index2"
-          class="basic-card-item"
-          :class="{'comment': item.key === 'comment'}">
+          class="basic-card-item">
           <span
             class="basic-card-item-title"
-            :style="{'width': enEnv?'140px':'100px'}">{{ item.title }}: </span>
+            :style="{'width': enEnv?'270px':'130px'}">{{ item.title }}: </span>
           <span
             class="basic-card-item-value"
-            :class="{'comment': item.key === 'comment'}"
-            :style="{'width': enEnv?'calc(100% - 144px)':'calc(100% - 104px)'}">{{ formatValue(item) }}</span>
+            :style="{'width': enEnv?'calc(100% - 274px)':'calc(100% - 134px)'}"
+            v-html="formatValue(item)"></span>
         </span>
       </div>
     </Card>
@@ -26,7 +25,9 @@
 </template>
 <script>
 import utils from '../utils.js';
+import aiInferenceMixin from '../mixins/aiInference.js';
 export default {
+  mixins: [aiInferenceMixin],
   props: {
     tableInfo: {
       type: Object,
@@ -34,22 +35,29 @@ export default {
     enEnv: Boolean,
     metaData: {
       type: Object
+    },
+    tableDetailInfo: {
+      type: Object,
+      default: () => ({})
     }
   },
   data() {
     return {
       info: [
         {
-          title: this.$t('message.scripts.tableDetails.BZBSX'),
+          title: this.$t('message.scripts.tableDetails.BDAPTableBasicProps'),
           children: [{
-            key: 'database',
-            title: this.$t('message.scripts.tableDetails.DBN'),
-          }, {
             key: 'name',
             title: this.$t('message.scripts.tableDetails.TN'),
           }, {
-            key: 'alias',
-            title: this.$t('message.scripts.tableDetails.BBM'),
+            key: 'database',
+            title: this.$t('message.scripts.tableDetails.DBN'),
+          }, {
+            key: 'targetTableComment',
+            title: this.$t('message.scripts.tableDetails.BDAPTableDesc'),
+          }, {
+            key: 'targetBusinessMeaning',
+            title: this.$t('message.scripts.tableDetails.BDAPTableBusinessMeaning'),
           }, {
             key: 'partitionTable',
             title: this.$t('message.scripts.tableDetails.FQM'),
@@ -59,19 +67,53 @@ export default {
             title: this.$t('message.scripts.tableDetails.compressTable'),
             type: 'boolean',
           }, {
-            key: 'creator',
-            title: this.$t('message.scripts.tableDetails.CJYH'),
+            key: 'latestAccessTime',
+            title: this.$t('message.scripts.tableDetails.ZHFWSJ'),
+            type: 'timestramp',
           }, {
             key: 'createTime',
             title: this.$t('message.scripts.tableDetails.CJSI'),
             type: 'timestramp',
           }, {
-            key: 'latestAccessTime',
-            title: this.$t('message.scripts.tableDetails.ZHFWSJ'),
-            type: 'timestramp',
+            key: 'creator',
+            title: this.$t('message.scripts.tableDetails.CJYH'),
+          }],
+        },
+        {
+          title: this.$t('message.scripts.tableDetails.BDPSourceTableBasicProps'),
+          children: [{
+            key: 'originTable',
+            title: this.$t('message.scripts.tableDetails.BDPOriginTable'),
           }, {
-            key: 'comment',
-            title: this.$t('message.scripts.tableDetails.BMS'),
+            key: 'originDb',
+            title: this.$t('message.scripts.tableDetails.BDPOriginDb'),
+          }, {
+            key: 'originTableComment',
+            title: this.$t('message.scripts.tableDetails.BDPOriginTableDesc'),
+          }, {
+            key: 'originBusinessMeaning',
+            title: this.$t('message.scripts.tableDetails.BDPOriginTableBusinessMeaning'),
+          }, {
+            key: 'updateMethod',
+            title: this.$t('message.scripts.tableDetails.BDPUpdateMethod'),
+          }, {
+            key: 'updateFrequency',
+            title: this.$t('message.scripts.tableDetails.BDPUpdateFrequency'),
+          }, {
+            key: 'proNames',
+            title: this.$t('message.scripts.tableDetails.BDPRelatedProduct'),
+          }, {
+            key: 'subsystems',
+            title: this.$t('message.scripts.tableDetails.BDPSubsystem'),
+          }, {
+            key: 'devmanager',
+            title: this.$t('message.scripts.tableDetails.BDPDevManager'),
+          }, {
+            key: 'devdept',
+            title: this.$t('message.scripts.tableDetails.BDPDevDept'),
+          }, {
+            key: 'deptName',
+            title: this.$t('message.scripts.tableDetails.BDPDictDept'),
           }],
         },
         {
@@ -112,8 +154,18 @@ export default {
   },
   computed: {
     tableBaseInfo() {
-      const baseInfo = this.tableInfo.baseInfo;
-      return Object.assign(baseInfo.application, baseInfo.base, baseInfo.model);
+      const { application, base, model } = this.tableInfo.baseInfo;
+
+      // 优先取DSS接口表描述(来自base.comment)，如果DSS接口表描述为空，则取DM接口表描述(来自this.tableDetailInfo.targetTableComment)
+      const targetTableComment = base.comment || this.tableDetailInfo.targetTableComment;
+
+      return {
+        ...application,
+        ...base,
+        ...model,
+        ...this.tableDetailInfo,
+        targetTableComment
+      };
     },
   },
   methods: {
@@ -124,6 +176,16 @@ export default {
         }
         return ''
       }
+
+      // 获取字段值
+      const fieldValue = this.tableBaseInfo[item.key];
+
+      // 如果字段值是对象格式 {currentEnv: "", inference: ""}，按AI推断逻辑处理
+      if (this.hasAIInference(fieldValue)) {
+        return this.formatAIInferenceValue(fieldValue);
+      }
+
+      // 其他情况按原有逻辑处理
       return utils.formatValue(this.tableBaseInfo, item);
     },
   },
@@ -141,26 +203,17 @@ export default {
     .basic-card-item {
         display: inline-flex;
         width: 50%;
-        height: 36px;
+        min-height: 36px;
         padding-left: 10px;
-        align-items: center;
-        &.comment {
-            height: 42px;
-            align-items: start;
-        }
+        align-items: start;
         .basic-card-item-title {
             display: inline-block;
-            width: 100px;
+            width: 130px;
             font-weight: bold;
         }
         .basic-card-item-value {
             display: inline-block;
-            width: calc(100% - 104px);
-            overflow: hidden;
-            &.comment {
-                overflow-y: auto;
-                height: 100%;
-            }
+            width: calc(100% - 134px);
         }
     }
   }
@@ -170,6 +223,19 @@ export default {
       font-size: $font-size-small;
       font-weight: 400!important;
     }
+  }
+
+  ::v-deep .ai-tag {
+    display: inline-block;
+    height: 18px;
+    border-radius: 3px;
+    font-size: 10px;
+    line-height: 18px;
+    text-align: center;
+    margin-right: 4px;
+    padding: 0 2px;
+    background-color: #f0f2f5;
+    color: #93949b;
   }
 </style>
 

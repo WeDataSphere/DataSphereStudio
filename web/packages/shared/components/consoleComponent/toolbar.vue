@@ -14,13 +14,28 @@
         >
       </li>
       <li
+        @click="changeViewType('univerTable', 'univerTable')"
+        :class="{ 'we-toolbar-active': activeTool === 'univerTable' }"
+      >
+        <SvgIcon
+              :style="{ 'font-size': '20px' }"
+              icon-class="univerTable"
+            />
+        <span
+          v-if="isIconLabelShow"
+          :title="$t('message.common.toolbar.analysis')"
+          class="v-toolbar-icon"
+        >{{ $t('message.common.toolbar.spreadSheet') }}</span
+        >
+      </li>
+      <li
         v-if="activeTool === 'table' && toolbarShow.filter"
         @click="openPopup('filter')"
         :title="$t('message.common.toolbar.resultGroupLineFilter')"
       >
         <SvgIcon
           :style="{ 'font-size': '20px' }"
-          icon-class="export"
+          icon-class="columnFilter"
           color="#515a6e"
         />
         <span class="v-toolbar-icon" v-if="isIconLabelShow">{{
@@ -188,6 +203,16 @@
           $t('message.common.toolbar.rowToColumn')
         }}</span>
       </li>
+      <li v-if="toolbarShow.aiAnalysis && baseinfo.copilotEnable" @click="onAiClick">
+        <SvgIcon
+          :style="{ 'font-size': '20px' }"
+          icon-class="resultAnalysis"
+          color="#515a6e"
+        />
+        <span class="v-toolbar-icon" v-if="isIconLabelShow">{{
+          $t('message.common.toolbar.aiAnalysis')
+        }}</span>
+      </li>
       <template v-for="(comp, index) in extComponents">
         <component
           :key="comp.name + index"
@@ -285,7 +310,7 @@ export default {
   computed: {
     isNotApiAll() {
       return (
-        ['hql', 'sql', 'tsql', 'jdbc', 'node'].includes(this.script.runType) &&
+        ['hql', 'sql', 'tsql', 'jdbc', 'node', 'aisql'].includes(this.script.runType) &&
         this.download.format === '2' && this.getResultUrl !== 'dss/apiservice'
       )
     },
@@ -312,11 +337,15 @@ export default {
         export:
           this.baseinfo.exportResEnable !== false &&
           isScriptis &&
-          this.activeTool === 'table' &&
+          (this.activeTool === 'table' || this.activeTool === 'univerTable') &&
           this.resultType === '2',
         download:
-          this.activeTool === 'table' &&
+          (this.activeTool === 'table' || this.activeTool === 'univerTable') &&
           this.baseinfo.downloadResEnable !== false && canDownload,
+        aiAnalysis: 
+          this.activeTool === 'table' &&
+          isScriptis &&
+          this.resultType === '2',
       }
     },
     resultList() {
@@ -339,11 +368,14 @@ export default {
         }
       }
       if (type === 'export') {
-        const checkResultSensitive = await this.$parent.checkResult(this.currentPath)
-        if (checkResultSensitive) {
+        const checkResultSensitive = await this.$parent.checkResult(this.currentPath, 'all')
+        if (checkResultSensitive===true) {
           return
+        } else if (typeof checkResultSensitive == 'string') {
+          this.$refs.exportToShare.open(checkResultSensitive)
+        } else {
+          this.$refs.exportToShare.open()
         }
-        this.$refs.exportToShare.open()
       } else if (type === 'rowView') {
         this.$refs.tableRow.open()
       } else if (type === 'filter') {
@@ -373,15 +405,21 @@ export default {
         this.downloadAll(list, cb)
       }
     },
+    onAiClick() {
+      this.$emit('on-aiAnalysis')
+    },
     async downloadConfirm() {
-      const checkResultSensitive = await this.$parent.checkResult(this.currentPath)
-      if (checkResultSensitive) {
+      let maskedFieldNames = ''
+      const checkResultSensitive = await this.$parent.checkResult(this.currentPath, 'all')
+      if (checkResultSensitive===true) {
         return
+      } else if (typeof checkResultSensitive == 'string') {
+        maskedFieldNames = checkResultSensitive
       }
       setTimeout(() => {
         this.$Modal.confirm({
           title: this.$t('message.common.Prompt'),
-          content: this.$t('message.common.safetips'),
+          content: this.$t('message.common.safetips')+this.$t('message.common.safeTip'),
           onOk: async () => {
             const splitor = this.download.format === '1' ? 'csv' : 'xlsx'
             const charset = this.download.coding === '1' ? 'utf-8' : 'gbk'
@@ -406,6 +444,9 @@ export default {
               if (res && res.userLimits && res.userLimits.downloadCount) {
                 querys += `&limit=${res.userLimits.downloadCount}`
               }
+            }
+            if (maskedFieldNames) {
+              querys += `&maskedFieldNames=${maskedFieldNames}`
             }
             const splitChar =
               [',', ';', '\t', ' ', '|'][this.download.splitChar - 1] || ','
@@ -556,7 +597,7 @@ export default {
   height: 100%;
   word-break: break-all;
   position: $absolute;
-  left: 40px;
+  left: $toolbarWidth;
   margin-left: -$toolbarWidth;
   @include bg-color($light-base-color, $dark-menu-base-color);
   .we-toolbar {
@@ -588,4 +629,3 @@ export default {
   margin-top: 5px;
 }
 </style>
-

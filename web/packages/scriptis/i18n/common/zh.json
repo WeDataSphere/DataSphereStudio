@@ -151,13 +151,19 @@
       },
       "tableDetails": {
         "BZBSX": "表基本属性",
+        "BDAPTableBasicProps": "BDAP表基本属性",
+        "BDPSourceTableBasicProps": "BDP源表基本属性",
         "BZDXX": "表字段信息",
-        "BTJXX": "表统计信息",
-        "DBN": "数据库名",
+        "BDAPBTJXX": "BDAP表统计信息",
+        "BDPBTJXX": "BDP源表统计信息",
+        "BDPSrcChangeDetail":"BDP源表变更详情",
+        "DBN": "表所属库名",
         "TN": "表名",
         "BBM": "表别名",
-        "FQM": "分区表",
-        "compressTable": "压缩表",
+        "FQM": "是否分区表",
+        "compressTable": "是否压缩表",
+        "BDAPTableDesc": "表描述",
+        "BDAPTableBusinessMeaning": "表业务含义",
         "CJYH": "创建用户",
         "CJSI": "创建时间",
         "ZHFWSJ": "最后访问时间",
@@ -171,6 +177,17 @@
         "SXCP": "所属产品",
         "SSXM": "所属项目",
         "YT": "用途",
+        "BDPOriginTable": "源表名",
+        "BDPOriginDb": "源表所属库名",
+        "BDPOriginTableDesc": "源表描述",
+        "BDPOriginTableBusinessMeaning": "源表业务含义",
+        "BDPUpdateMethod": "源表更新方式",
+        "BDPUpdateFrequency": "源表更新时效",
+        "BDPRelatedProduct": "源表关联业务产品",
+        "BDPSubsystem": "源表所属子系统",
+        "BDPDevManager": "源表开发负责人",
+        "BDPDevDept": "源表开发负责部门",
+        "BDPDictDept": "源表字典所属业务部门",
         "SSZDMC": "请搜索字段名，别名，描述...",
         "XH": "序号",
         "ZDM": "字段名",
@@ -186,7 +203,6 @@
         "LastWriteTime": "最近写入时间",
         "WFQSJ": "暂无表分区数据",
         "BXX": "表信息",
-        "BZD": "字段数",
         "BDX": "表大小",
         "WJM": "文件数",
         "FQS": "分区数",
@@ -197,10 +213,37 @@
         "GSHJX": "进行格式化成",
         "ZJXYGE": "组件需要的格式",
         "FZBZDXX": "复制表字段信息",
+        "BDAPBZD": "BDAP表字段",
+        "BDAPBZDMS": "BDAP表字段描述",
+        "BDAPBZDLX": "BDAP表字段类型",
+        "SFZJBDAP": "是否主键（BDAP表）",
+        "SFFQZDBDAP": "是否分区字段（BDAP表）",
+        "MXXXBDAP": "模型信息（BDAP表）",
+        "ZDGZBDAP": "字段规则（BDAP表）",
+        "BDPYBZD": "BDP源表字段",
+        "BDPYBZDMS": "BDP源表字段描述",
+        "BDPYBZDKJJGGZ": "BDP源表字段口径加工规则",
+        "BDPYBZDSJX": "BDP源表字段数据项",
+        "BDPYBZDSSSJFL": "BDP源表字段所属数据分类",
+        "TMFS": "脱敏方式",
+        "TMHS": "脱敏函数",
+        "LSZZ": "列设置",
+        "XZXSLZ": "选择显示列",
+        "CZ": "重置",
+        "CZCG": "重置成功",
+        "HQBZDXXSB": "获取表字段信息失败",
         "QHPTST": "切换普通视图",
         "QHGLYST": "切换管理员视图",
         "QSRBSZ": "请输入表属主",
-        "MCJZCZYYWYH": "每次仅支持转移一位用户的表"
+        "MCJZCZYYWYH": "每次仅支持转移一位用户的表",
+        "AI": "AI推断",
+        "BFQXX": "表分区信息",
+        "SSBFQXX": "实时表分区信息",
+        "FQ": "分区",
+        "FQCJSJ": "分区创建时间",
+        "JZBFQXXSB": "加载表分区信息失败",
+        "JZBSSFQXXSB": "加载表实时分区信息失败",
+        "HQBDPBXXS": "未找到对应BDP源表"
       },
       "logView": {
         "taskId": "任务ID：",
@@ -424,6 +467,7 @@
         "engineAndTask": "引擎和任务"
       },
       "constants": {
+        "columns": "列",
         "add": "新建",
         "cancel": "取消",
         "confirm": "确认",
@@ -504,7 +548,7 @@
           "catalogName": {
             "required": "请输入目录名称",
             "lengthLimit": "长度在1到200个字符",
-            "letterTypeLimit": "仅支持中文、大小写字母、数字和下划线"
+            "letterTypeLimit": "仅支持中文、大小写字母、数字和下划线和不连续的小数点"
           },
           "targetScriptPath": {
             "required": "请选择目标脚本路径"
@@ -514,7 +558,20 @@
         "scriptType": "脚本类型",
         "targetFolder": "目标文件夹"
       },
+      "datasource": {
+        "type": "数据源类型",
+        "name": "数据源名"
+      },
       "database": {
+        "search": {
+          "space": "搜索图空间"
+        },
+        "types": {
+          "edge": "边类型",
+          "tag": "标签",
+          "tagIndex": "标签索引",
+          "edgeIndex": "边索引"
+        },
         "contextMenu": {
           "db": {
             "copyName": "复制库名",
@@ -530,7 +587,14 @@
             "exportTable": "导出表",
             "copyName": "复制表名",
             "pasteName": "复制表名并粘贴至脚本",
+            "aisql": "AI生成SQL",
             "copyAllColumns": "复制表全字段"
+          },
+          "ng": {
+            "copyName": "复制图空间名",
+            "copyPaste": "复制图空间名并粘贴至脚本",
+            "viewInfo": "查看图空间信息",
+            "viewAttr": "查看属性"
           },
           "field": {
             "copyColumnsName": "复制字段名",
@@ -622,6 +686,10 @@
           "unSupport": {
             "title": "警告",
             "desc": "很抱歉，系统暂不支持打开该格式文件！"
+          },
+          "iframeLimit": {
+             "title": "Iframe标签页数量限制",
+            "desc": "最多只能打开{maxIframeTabLen}个iframe类型标签页，请关闭一些后再试"
           }
         },
         "removeWork": {
@@ -897,7 +965,69 @@
       "copy_paste_board": "复制至粘贴板",
       "generate_script": "生成执行脚本",
       "select_data_table": "请选择数据表",
-      "paste_successfully": "成功复制至粘贴板"
+      "paste_successfully": "成功复制至粘贴板",
+      "table_usage_heat": "表使用热度",
+      "visited_in_three_months": "最近3个月访问",
+      "visited_in_six_months": "最近6个月访问",
+      "visited_in_twelve_months": "最近12个月访问",
+      "not_visited_in_three_months": "最近3个月未访问",
+      "not_visited_in_six_months": "最近6个月未访问",
+      "not_visited_in_twelve_months": "最近12个月未访问"
+    },
+    "workbench": {
+      "proxyUser": "当前代理用户：",
+      "optimizationReport": "优化报告",
+      "downloadAudit": "下载审计",
+      "scriptFile": "脚本文件",
+      "invalidScriptName": "当前脚本名称不符合规范（仅支持中文、大小写字母、数字和下划线），可能会影响脚本的执行，请修改脚本名称!",
+      "columnPagination": "列分页：500列 / 页，共",
+      "textFile": "文本",
+      "fieldTypeMismatch": "字段数据类型不一致详情",
+      "nodeKeywordCheck": "节点关键字检查",
+      "nokeywords": "节点不包含关键字",
+      "optimize": "优化",
+      "aiCorrection": "AI纠错",
+      "aioptimize": "AI优化",
+      "switchDataSource": "切换数据源",
+      "prompt": "提示",
+      "disableAICorrection": "关闭后任务运行报语法错误，将不会弹出AI纠错提示，是否继续？",
+      "cancel": "取消",
+      "confirm": "确认"
+    },
+    "nebula": {
+      "searchPlaceholder": "请输搜索属性名称，描述",
+      "spaceId": "图空间ID",
+      "tagName": "标签名",
+      "ttlDuration": "存活时间",
+      "ttlColumn": "存活时间属性",
+      "description": "描述",
+      "edgeTypeName": "边类型名",
+      "serialNumber": "序号",
+      "propertyName": "属性名称",
+      "dataType": "数据类型",
+      "defaultValue": "默认值",
+      "tagBasicInfo": "标签基本信息",
+      "edgeBasicInfo": "边类型基本信息",
+      "basicInfo": "基本信息",
+      "tagProperty": "标签属性",
+      "edgeProperty": "边类型属性",
+      "property": "属性",
+      "spaceBasicInfo": "图空间基本信息",
+      "spaceName": "图空间名称",
+      "partitionNumber": "分片数量",
+      "replicaFactor": "每个分片的副本数量",
+      "charset": "字符集",
+      "collationRule": "数据存储排序规则",
+      "vidType": "点ID的数据类型"
+    },
+    "workflow": {
+      "searchProject": "请输入项目名进行搜索",
+      "expand": "展开",
+      "collapse": "收起",
+      "tooManyMatches": "该节点匹配数量过多，请进入全部代码查看匹配项 >",
+      "loading": "加载中...",
+      "noMatches": "暂无匹配数据",
+      "totalMatches": "共计匹配"
     }
   }
 }

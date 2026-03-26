@@ -4,10 +4,10 @@
       <SvgIcon style="font-size: 16px;display: inline-block;transform: rotate(180deg);"
         color="#444444"
         @click="goBack"
-        icon-class="fi-expand-right"/> 批量提交审批</div>
+        icon-class="fi-expand-right"/> {{ $t('message.apiServices.servicesSubmit.batchApprove') }}</div>
     <Row class="main">
       <Col span="14">
-        <div class="title">数据API信息</div>
+        <div class="title">{{ $t('message.apiServices.servicesSubmit.apiInfoTitle') }}</div>
         <Form
           ref="submitForm"
           :model="formData"
@@ -16,7 +16,7 @@
         >
           <FormItem
             prop="id"
-            label="选择API"
+            :label="$t('message.apiServices.servicesSubmit.selectApi')"
             class="api-select"
           >
             <Select v-model="formData.id"
@@ -36,75 +36,89 @@
               </Tag>
             </div>
           </FormItem>
-          <div class="title">审批信息</div>
+          <div class="title">{{ $t('message.apiServices.servicesSubmit.approvalInfoTitle') }}</div>
           <FormItem
             prop="approvalName"
-            label="审批单名称">
+            :label="$t('message.apiServices.servicesSubmit.approvalName')">
             <Input v-model="formData.approvalName" />
           </FormItem>
           <FormItem
             prop="applyUser"
-            label="授权用户">
+            :label="$t('message.apiServices.servicesSubmit.authorizedUser')">
             <Select v-model="formData.applyUser" multiple filterable>
               <Option v-for="(item, index) in applyUserList" :key="item.name + index" :value="item.name">{{item.name}}</Option>
             </Select>
           </FormItem>
           <FormItem
             prop="duration"
-            label="授权期限"
+            :label="$t('message.apiServices.servicesSubmit.duration')"
           >
-            <Input v-model="formData.duration" placeholder="取值范围1-7300,永久请输入星号：*">
-              <template #append><span>天</span></template>
+            <Input v-model="formData.duration" :placeholder="$t('message.apiServices.servicesSubmit.durationPlaceholder')">
+              <template #append><span>{{ $t('message.apiServices.servicesSubmit.day') }}</span></template>
             </Input>
           </FormItem>
           <FormItem
             prop="sensitive"
-            label="是否涉及一级数据"
+            :label="$t('message.apiServices.servicesSubmit.sensitiveData')"
           >
-            <Select v-model="formData.sensitive" placeholder="请检查API的查询结果是否包含一级敏感数据：微众卡号，出生日期">
-              <Option value="1">是</Option>
-              <Option value="0">否</Option>
+            <Select v-model="formData.sensitive" :placeholder="$t('message.apiServices.servicesSubmit.sensitivePlaceholder')">
+              <Option value="1">{{ $t('message.apiServices.servicesSubmit.sensitiveOptions.yes') }}</Option>
+              <Option value="0">{{ $t('message.apiServices.servicesSubmit.sensitiveOptions.no') }}</Option>
             </Select>
           </FormItem>
           <FormItem
             prop="importance"
-            label="重要程度">
+            :label="$t('message.apiServices.servicesSubmit.importance')">
             <Select v-model="formData.importance">
-              <Option value="1">高</Option>
-              <Option value="2">中</Option>
-              <Option value="3">低</Option>
+              <Option value="1">{{ $t('message.apiServices.servicesSubmit.importanceOptions.high') }}</Option>
+              <Option value="2">{{ $t('message.apiServices.servicesSubmit.importanceOptions.medium') }}</Option>
+              <Option value="3">{{ $t('message.apiServices.servicesSubmit.importanceOptions.low') }}</Option>
             </Select>
           </FormItem>
           <FormItem
             prop="backgroundDesc"
-            label="背景描述">
+            :label="$t('message.apiServices.servicesSubmit.background')">
             <Input v-model="formData.backgroundDesc" type="textarea" />
           </FormItem>
           <FormItem
             prop="attentionUser"
-            label="关注人">
+            :label="$t('message.apiServices.servicesSubmit.attentionUser')">
             <Select v-model="formData.attentionUser" multiple filterable>
               <Option v-for="(item, index) in applyUserList" :key="item.name + index" :value="item.name">{{item.name}}</Option>
             </Select>
           </FormItem>
+          <template v-if="hasStarRocksApi">
+            <FormItem
+              prop="developerOwner"
+              :label="$t('message.apiServices.servicesSubmit.developerOwner')">
+              <Select v-model="formData.developerOwner" filterable :placeholder="$t('message.apiServices.servicesSubmit.developerOwnerTip')">
+                <Option v-for="(item, index) in applyUserList" :key="item.name + index" :value="item.name">{{item.name}}</Option>
+              </Select>
+            </FormItem>
+            <FormItem
+              prop="productInfo"
+              :label="$t('message.apiServices.servicesSubmit.productInfo')">
+              <Input v-model="formData.productInfo" :placeholder="$t('message.apiServices.servicesSubmit.productInfoTip')" />
+            </FormItem>
+          </template>
         </Form>
-        <Button style="margin-left:100px" type="primary" @click="confirm" :loading="isConfirmLoading">提交审批</Button>
-        <Button style="margin-left:20px" type="default" @click="cancel">取消</Button>
+        <Button style="margin-left:100px" type="primary" @click="confirm" :loading="isConfirmLoading">{{ $t('message.apiServices.servicesSubmit.submit') }}</Button>
+        <Button style="margin-left:20px" type="default" @click="cancel">{{ $t('message.apiServices.servicesSubmit.cancel') }}</Button>
       </Col>
       <Col span="15" class="info-detail" v-show="showInfo">
-        <div class="title">API信息
+        <div class="title">{{ $t('message.apiServices.servicesSubmit.apiInfo.title') }}
           <SvgIcon style="float:right;padding:2px" @click="toggleInfo()" icon-class="close2"/>
         </div>
-        <div class="info-item"><span class="label">API英文名</span> {{currentApi.name}}</div>
-        <div class="info-item"><span class="label">API中文名</span> {{currentApi.aliasName}}</div>
-        <div class="info-item"><span class="label">API路径</span> {{currentApi.path}}</div>
-        <div class="info-item"><span class="label">协议</span> {{currentApi.protocol === 1 ? 'HTTP' : 'HTTPS'}}</div>
-        <div class="info-item"><span class="label">请求方式</span> {{currentApi.method}}</div>
-        <div class="info-item"><span class="label">可见范围</span> {{currentApi.scope === 'grantView' ? '授权可见' : ''}}</div>
-        <div class="info-item"><span class="label">标签</span> {{currentApi.tag}}</div>
-        <div class="info-item"><span class="label">描述</span> {{currentApi.description}}</div>
-        <div class="info-item"><span class="label">备注</span> {{currentApi.comment}}</div>
-        <div class="title" style="margin-top:10px">参数信息</div>
+        <div class="info-item"><span class="label">{{ $t('message.apiServices.servicesSubmit.apiInfo.englishName') }}</span> {{currentApi.name}}</div>
+        <div class="info-item"><span class="label">{{ $t('message.apiServices.servicesSubmit.apiInfo.chineseName') }}</span> {{currentApi.aliasName}}</div>
+        <div class="info-item"><span class="label">{{ $t('message.apiServices.servicesSubmit.apiInfo.path') }}</span> {{currentApi.path}}</div>
+        <div class="info-item"><span class="label">{{ $t('message.apiServices.servicesSubmit.apiInfo.protocol') }}</span> {{currentApi.protocol === 1 ? $t('message.apiServices.servicesSubmit.protocolOptions.http') : $t('message.apiServices.servicesSubmit.protocolOptions.https') }}</div>
+        <div class="info-item"><span class="label">{{ $t('message.apiServices.servicesSubmit.apiInfo.method') }}</span> {{currentApi.method}}</div>
+        <div class="info-item"><span class="label">{{ $t('message.apiServices.servicesSubmit.apiInfo.scope') }}</span> {{currentApi.scope === 'grantView' ? $t('message.apiServices.servicesSubmit.scopeOptions.grantView') : ''}}</div>
+        <div class="info-item"><span class="label">{{ $t('message.apiServices.servicesSubmit.apiInfo.tag') }}</span> {{currentApi.tag}}</div>
+        <div class="info-item"><span class="label">{{ $t('message.apiServices.servicesSubmit.apiInfo.description') }}</span> {{currentApi.description}}</div>
+        <div class="info-item"><span class="label">{{ $t('message.apiServices.servicesSubmit.apiInfo.comment') }}</span> {{currentApi.comment}}</div>
+        <div class="title" style="margin-top:10px">{{ $t('message.apiServices.servicesSubmit.paramInfoTitle') }}</div>
         <Table :columns="paramInfoColumns" :data="currentApi.params">
         </Table>
       </Col>
@@ -128,7 +142,9 @@ export default {
         duration: '',
         importance: '',
         sensitive: '',
-        attentionUser: []
+        attentionUser: [],
+        developerOwner: '', // 开发负责人
+        productInfo: '' // 关联的产品信息
       },
       applyUserList: [],
       showInfo: false,
@@ -161,7 +177,7 @@ export default {
           title: this.$t('message.scripts.apiPublish.paramTable.require.title'),
           key: 'required',
           render: (h, params) => {
-            return h('div', params.row.required == '1' ? '是' : '否');
+            return h('div', params.row.required == '1' ? this.$t('message.apiServices.servicesSubmit.booleanOptions.yes') : this.$t('message.apiServices.servicesSubmit.booleanOptions.no'));
           }
         },
         {
@@ -170,28 +186,29 @@ export default {
         }
       ],
       apiList: [],
+      needCheck: false,
       formValid: {
         id: [
           {
             type: 'array',
             required: true,
-            message: "请选择数据服务API",
+            message: this.$t('message.apiServices.servicesSubmit.validation.apiRequired'),
             trigger: "change",
           }
         ],
         approvalName: [
           {
             required: true,
-            message: "请填写审批单名称",
+            message: this.$t('message.apiServices.servicesSubmit.validation.approvalNameRequired'),
             trigger: "blur",
           },
-          { message: "审批单名称最长200字符", max: 200 }
+          { message: this.$t('message.apiServices.servicesSubmit.validation.approvalNameMax'), max: 200 }
         ],
         applyUser: [
           {
             type: 'array',
             required: true,
-            message: "请选择授权用户",
+            message: this.$t('message.apiServices.servicesSubmit.validation.userRequired'),
             trigger: "change",
           }
         ],
@@ -204,10 +221,10 @@ export default {
                 callback()
               }
               if (!value) {
-                return callback(new Error('请填写授权期限'))
+                return callback(new Error(this.$t('message.apiServices.servicesSubmit.validation.durationRequired')))
               }
               if (value <=0 || value > 7300 || value % 1 !== 0) {
-                callback(new Error('授权期限取值范围1-7300整数天，或*'))
+                callback(new Error(this.$t('message.apiServices.servicesSubmit.validation.durationRange')))
               }
               return callback()
             }
@@ -220,10 +237,10 @@ export default {
             validator: (rule, value, callback) => {
               value = value.trim()
               if (!value) {
-                return callback(new Error('请选择是否涉及一级数据'))
+                return callback(new Error(this.$t('message.apiServices.servicesSubmit.validation.sensitiveRequired')))
               }
               if (value == '1') {
-                callback(new Error('查询结果中涉及一级数据的API不允许提交审批'))
+                callback(new Error(this.$t('message.apiServices.servicesSubmit.validation.sensitiveError')))
               }
               return callback()
             }
@@ -232,17 +249,41 @@ export default {
         importance: [
           {
             required: true,
-            message: "请选择重要程度",
+            message: this.$t('message.apiServices.servicesSubmit.validation.importanceRequired'),
             trigger: "change",
           }
         ],
         backgroundDesc: [
           {
             required: true,
-            message: "请填写背景描述",
+            message: this.$t('message.apiServices.servicesSubmit.validation.backgroundRequired'),
             trigger: "blur",
           },
-          { message: "背景描述最长500字符", max: 500 }
+          { message: this.$t('message.apiServices.servicesSubmit.validation.backgroundMax'), max: 500 }
+        ],
+        developerOwner: [
+          {
+            required: this.needCheck,
+            validator: (rule, value, callback) => {
+              if (this.needCheck && !value) {
+                return callback(new Error(this.$t('message.apiServices.servicesSubmit.validation.developerOwnerRequired')));
+              }
+              return callback();
+            },
+            trigger: "change"
+          }
+        ],
+        productInfo: [
+          {
+            required: this.needCheck,
+            validator: (rule, value, callback) => {
+              if (this.needCheck && !value) {
+                return callback(new Error(this.$t('message.apiServices.servicesSubmit.validation.productInfoRequired')));
+              }
+              return callback();
+            },
+            trigger: "blur"
+          }
         ]
 
       }
@@ -256,6 +297,24 @@ export default {
           name: it.split('_-_')[1],
         }
       })
+    },
+    // 检测是否选择了包含StarRocks的API
+    hasStarRocksApi() {
+      const apiInfos = []
+      const hasJDBC =  this.selectedApi.some(api => {
+        const apiDetail = this.apiList.find(item => item.id == api.id);
+        if (apiDetail) {
+          apiInfos.push({
+            apiId: apiDetail.id,
+            apiVersionId: apiDetail.latestVersionId
+          })
+        }
+        return apiDetail && apiDetail.type && apiDetail.type.includes('jdbc');
+      });
+      if (hasJDBC) {
+        this.checkApiData(apiInfos) 
+      }
+      return hasJDBC;
     }
   },
   methods: {
@@ -277,6 +336,14 @@ export default {
         workspaceId: this.$route.query.workspaceId
       }, 'get').then((res) => {
         this.apiList = res.availableSubmitApiList;
+      }).finally(()=> {
+      })
+    },
+    checkApiData(submitApiInfos) {
+      api.fetch('/dss/apiservice/checkSubmitApi', {
+        submitApiInfos        
+      }, 'post').then((res) => {
+        this.needCheck = res.data && res.data.status == 0
       }).finally(()=> {
       })
     },
@@ -302,9 +369,15 @@ export default {
             submitApiInfos,
             workspaceId: this.$route.query.workspaceId
           }
+          
+          // 如果选择了包含StarRocks的API，添加额外字段
+          if (this.hasStarRocksApi) {
+            params.devPrincipals = this.formData.developerOwner;
+            params.productInfo = this.formData.productInfo;
+          }
           this.isConfirmLoading = true
           api.fetch('/dss/apiservice/submit', params, 'post').then(() => {
-            this.$Message.success('提交成功')
+            this.$Message.success(this.$t('message.apiServices.servicesSubmit.submitSuccess'))
             this.isConfirmLoading = false
             this.$router.push({ name: 'Apiservices', query: { workspaceId: this.$route.query.workspaceId} })
           }).catch(() => {
@@ -422,6 +495,12 @@ export default {
   }
 }
 .tag-list {
+  margin-top: 5px;
+}
+
+.form-item-tip {
+  font-size: 12px;
+  color: #999;
   margin-top: 5px;
 }
 

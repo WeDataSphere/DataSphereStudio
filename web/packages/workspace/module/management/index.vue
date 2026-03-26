@@ -94,8 +94,8 @@ export default {
         children: [],
       },
       {
-        icon: 'resTemplateManage',
-        name: '工作流配置',
+        icon: 'workflowSetting',
+        name: i18n.t('message.workflow.process.arguments.workFlowConfig'),
         path: 'workspaceSettings',
         children: [],
       },

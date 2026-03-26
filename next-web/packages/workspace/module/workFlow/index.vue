@@ -16,11 +16,11 @@
         >
           <template #form>
             <div>
-              <span class="condition-label">节点名称</span>
+              <span class="condition-label">{{ $t('_.节点名称') }}</span>
               <FSelect
                 v-model="searchForm.nodeName"
                 :options="allNodes"
-                placeholder="请选择"
+                :placeholder="$t('_.请选择')"
                 filterable
                 clearable
                 value-field="title"
@@ -28,11 +28,11 @@
               />
             </div>
             <div>
-              <span class="condition-label">节点类型</span>
+              <span class="condition-label">{{ $t('_.节点类型') }}</span>
               <FSelect
                 v-model="searchForm.nodeType"
                 :options="nodeTypes"
-                placeholder="请选择"
+                :placeholder="$t('_.请选择')"
                 filterable
                 clearable
                 multiple
@@ -60,7 +60,7 @@
             :options="pageOptions"
             @click="handleDropDown"
           >
-            <FButton>更多操作</FButton>
+            <FButton>{{ $t('_.更多操作') }}</FButton>
           </FDropdown>
         </FSpace>
       </div>
@@ -74,7 +74,7 @@
             :label="item.label"
             :prop="item.prop"
             :ellipsis="item.ellipsis"
-            :min-width="item.minWidth"
+            :width="item.minWidth"
             :formatter="item.formatter"
             :visible="checkTColShow(item.prop as string)"
           />
@@ -84,7 +84,7 @@
             :label="item.label"
             :prop="item.prop"
             :ellipsis="item.ellipsis"
-            :min-width="item.minWidth"
+            :width="item.minWidth"
             :formatter="item.formatter"
             :sortable="item.sortable"
             :visible="checkTColShow(item.prop as string)"
@@ -96,7 +96,7 @@
             :label="item.label"
             :prop="item.prop"
             :ellipsis="item.ellipsis"
-            :min-width="item.minWidth"
+            :width="item.minWidth"
             :visible="checkTColShow(item.prop as string)"
             :col-style="{ color: '#5384FF', cursor: 'pointer' }"
           >
@@ -120,7 +120,7 @@
             :key="'node' + index"
             :label="item.label"
             :prop="item.prop"
-            :min-width="item.minWidth"
+            :width="item.minWidth"
             :visible="checkTColShow(item.prop as string)"
             :col-style="{ position: 'relative' }"
           >
@@ -150,7 +150,7 @@
             v-else-if="item.type === 'action'"
             :key="item.prop"
             :label="item.label"
-            :min-width="item.minWidth"
+            :width="language === 'zh-CN' ? 60 : 80"
             fixed="right"
           >
             <FDropdown
@@ -176,8 +176,7 @@
         :page-size-option="[10, 20, 50, 100]"
         :total-count="pagination.totalCount"
         @change="handlePageChange"
-      >
-      </FPagination>
+      />
     </template>
   </BTablePage>
 
@@ -233,6 +232,7 @@ import { useDataUtils } from './hooks/useDataUtils';
 import api from './api';
 import { FSpace } from '@fesjs/fes-design';
 
+const language = localStorage.getItem('locale');
 type ObjectType = Record<string, unknown>;
 const { t: $t } = useI18n();
 const queryParam = ref<ObjectType>({
@@ -460,11 +460,11 @@ onUnmounted(() => {
 const pageOptions = [
   {
     value: '1',
-    label: '节点路径关系查询',
+    label: $t('_.节点路径关系查询'),
   },
   {
     value: '3',
-    label: '设置表格',
+    label: $t('_.设置表格'),
   },
 ];
 
@@ -513,7 +513,7 @@ const tableColumns = ref<ObjectType[]>([
   {
     type: 'link',
     prop: 'title',
-    label: '节点名称',
+    label: $t('_.节点名称'),
     ellipsis: true,
     minWidth: 160,
     formatter: fillText,
@@ -521,7 +521,7 @@ const tableColumns = ref<ObjectType[]>([
   {
     type: 'text',
     prop: 'jobText',
-    label: '节点类型',
+    label: $t('_.节点类型'),
     ellipsis: true,
     minWidth: 120,
     formatter: fillText,
@@ -529,7 +529,7 @@ const tableColumns = ref<ObjectType[]>([
   {
     type: 'node',
     prop: 'preNode',
-    label: '上游一级节点',
+    label: $t('_.上游一级节点'),
     ellipsis: true,
     minWidth: 160,
     formatter: fillText,
@@ -537,7 +537,7 @@ const tableColumns = ref<ObjectType[]>([
   {
     type: 'node',
     prop: 'nextNode',
-    label: '下游一级节点',
+    label: $t('_.下游一级节点'),
     ellipsis: true,
     minWidth: 160,
     formatter: fillText,
@@ -545,7 +545,7 @@ const tableColumns = ref<ObjectType[]>([
   {
     type: 'text',
     prop: 'ecConfTemplateName',
-    label: '资源参数模板',
+    label: $t('_.资源参数模板'),
     ellipsis: true,
     minWidth: 180,
     formatter: fillText,
@@ -570,7 +570,7 @@ const tableColumns = ref<ObjectType[]>([
   {
     type: 'text',
     prop: 'modifyUser',
-    label: '更新人',
+    label: $t('_.更新人'),
     ellipsis: true,
     minWidth: 120,
     formatter: fillText,
@@ -578,7 +578,7 @@ const tableColumns = ref<ObjectType[]>([
   {
     type: 'time',
     prop: 'modifyTime',
-    label: '更新时间',
+    label: $t('_.更新时间'),
     ellipsis: true,
     minWidth: 182,
     sortable: true,

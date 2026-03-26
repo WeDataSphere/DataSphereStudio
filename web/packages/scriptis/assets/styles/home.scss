@@ -45,6 +45,14 @@
   background-position: center;
 }
 
+.fi-ai-sql {
+  background-image: url('../images/ai.svg');
+  width: 12px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
 .home-page {
   position: $relative;
   width: 100%;
@@ -140,4 +148,20 @@
   //         }
   //     }
   // }
+}
+.badsql_notice {
+  padding: 10px;
+  width: 100%;
+  overflow: hidden;
+  word-wrap: break-word;
+  line-height: 1.2rem;
+  h1,h2,h3,h4,h5,h6 {
+    margin-bottom: 10px;
+  }
+  p {
+    padding: 3px 0
+  }
+  ol,li {
+    list-style: inside;
+  }
 }

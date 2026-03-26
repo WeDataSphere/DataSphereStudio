@@ -4,8 +4,9 @@
     <Button
       v-if="isAdmin()"
       type="success"
+      style="float: right"
       @click="creater"
-    >{{$t('message.workspaceManagement.create')}}</Button>
+    >{{$t('message.workspaceManagement.createRole')}}</Button>
     <juristable v-if="tablearr && workspaceMenu" :tablearr="tablearr" :workspaceMenu="workspaceMenu" ref="menutable"></juristable>
   </div>
 </template>

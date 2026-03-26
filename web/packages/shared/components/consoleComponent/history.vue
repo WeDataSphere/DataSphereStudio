@@ -160,7 +160,7 @@ export default {
             isHide: (data) => {
               // 任务状态为：已提交/排队中/资源申请中/运行/超时/重试时
               const status = ["Submitted","Inited","Scheduled","Running","Timeout","WaitForRetry"].indexOf(data.status) > -1
-              return baseinfo.enableTaskNotice !== false && status && data.subscribed !== 1
+              return baseinfo.enableTaskNotice !== false && status && data.subscribed !== 1 && this.$route.name == 'servicesExecute'
             }
           }, {
             label: this.$t('message.scripts.history.columns.control.noticeclose'),
@@ -168,7 +168,7 @@ export default {
             isHide: (data) => {
               // 任务状态为：已提交/排队中/资源申请中/运行/超时/重试时
               const status = ["Submitted","Inited","Scheduled","Running","Timeout","WaitForRetry"].indexOf(data.status) > -1
-              return baseinfo.enableTaskNotice !== false && data.subscribed === 1 && status
+              return baseinfo.enableTaskNotice !== false && data.subscribed === 1 && status && this.$route.name == 'servicesExecute'
             }
           }, {
             label: this.$t('message.scripts.solution'),

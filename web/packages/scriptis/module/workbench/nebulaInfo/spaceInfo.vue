@@ -1,8 +1,8 @@
 <template>
   <Tabs type="card" class="table-detail-tabs" :animated="false">
-    <TabPane label="图空间基本信息" style="height:100%;">
+    <TabPane :label="$t('message.nebula.basicInfo')" style="height:100%;">
       <div style="padding: 10px;">
-        <h4 class="title">图空间基本信息</h4>
+        <h4 class="title">{{ $t('message.nebula.basicInfo') }}</h4>
           <div class="basic-card"  v-for="(type, index1) in info" :key="index1">
             <span v-for="(item, index2) in type.children" :key="index2" class="basic-card-item">
               <span class="basic-card-item-title" :style="{ 'width': '120px' }">{{ item.title }}: </span>
@@ -29,28 +29,28 @@ export default {
         {
           children: [{
             key: 'spaceId',
-            title: '图空间ID',
+            title: this.$t('message.nebula.spaceId'),
           }, {
             key: 'spaceName',
-            title: '图空间名称',
+            title: this.$t('message.nebula.spaceName'),
           }, {
             key: 'partitionNumber',
-            title: '分片数量',
+            title: this.$t('message.nebula.partitionNumber'),
           }, {
             key: 'replicaFactor',
-            title: '每个分片的副本数量'
+            title: this.$t('message.nebula.replicaFactor')
           }, {
             key: 'charset',
-            title: '字符集'
+            title: this.$t('message.nebula.charset')
           }, {
             key: 'collate_',
-            title: '数据存储排序规则'
+            title: this.$t('message.nebula.collationRule')
           }, {
             key: 'vidType',
-            title: '点ID的数据类型'
+            title: this.$t('message.nebula.vidType')
           }, {
             key: 'comment',
-            title: '描述'
+            title: this.$t('message.nebula.description')
           }],
         }
       ],
@@ -124,5 +124,3 @@ export default {
   }
 }
 </style>
-  
-  

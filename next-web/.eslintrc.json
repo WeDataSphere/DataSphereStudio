@@ -7,15 +7,15 @@
     "parser": "@typescript-eslint/parser"
   },
 
-  "plugins": ["@typescript-eslint", "prettier"],
+  "plugins": ["@typescript-eslint"],
 
   "extends": [
     "plugin:@typescript-eslint/recommended",
-    "plugin:vue/vue3-recommended",
-    "plugin:prettier/recommended"
+    "plugin:vue/vue3-recommended"
   ],
 
   "rules": {
+    "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/ban-ts-comment": "warn",
     "vue/multi-word-component-names": "off",
     "no-unused-vars": "off"

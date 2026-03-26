@@ -57,10 +57,12 @@ export default {
     isScriptis: Boolean,
     application: String,
     filePath: String,
+    copilotConfig: Object,
   },
   data() {
     const autobreak = storage.get('editor_auto_breakline', 'local')
     return {
+      disablePopUp: this.copilotConfig && this.copilotConfig.disablePopUp,
       editor: null,
       editorModel: null,
       decorations: null,
@@ -481,19 +483,19 @@ export default {
           vm.editor.updateOptions({wordWrap: 'on'});
         },
       });
-      const action_10 = this.editor.addAction({
-        id: 'newdbsuggest',
-        label: this.$t('message.common.monacoMenu.closeLanguageServe'),
-        keybindings: [],
-        keybindingContext: null,
-        contextMenuGroupId: 'control',
-        contextMenuOrder: 2.5,
-        run() {
-          localStorage.setItem('scriptis-edditor-type', '');
-          location.reload();
-        },
-      });
-      this.actions = [ action_0, action_1, action_2, action_3, action_4, action_5, action_6, action_7, action_8, action_9, action_10]
+      // const action_10 = this.editor.addAction({
+      //   id: 'newdbsuggest',
+      //   label: this.$t('message.common.monacoMenu.closeLanguageServe'),
+      //   keybindings: [],
+      //   keybindingContext: null,
+      //   contextMenuGroupId: 'control',
+      //   contextMenuOrder: 2.5,
+      //   run() {
+      //     localStorage.setItem('scriptis-edditor-type', '');
+      //     location.reload();
+      //   },
+      // });
+      this.actions = [ action_0, action_1, action_2, action_3, action_4, action_5, action_6, action_7, action_8, action_9]
       if (this.language === 'hql') {
         // 控制语法检查
         this.closeParser = this.editor.createContextKey('closeParser', !this.isParserClose);
@@ -653,6 +655,42 @@ export default {
           }
         });
         this.actions.push(action_15);
+        this.openfixDialog = this.editor.createContextKey('openfixDialog', this.disablePopUp);
+        this.closefixDialog = this.editor.createContextKey('closefixDialog', !this.disablePopUp);
+        const action_17 = this.editor.addAction({
+          id: 'openfixDialog',
+          label: '打开AI纠错弹窗(已关闭)',
+          keybindings: [],
+          precondition: 'openfixDialog',
+          keybindingContext: null,
+          contextMenuGroupId: 'control',
+          contextMenuOrder: 2.8,
+          run() {
+            vm.disablePopUp = false;
+            vm.openfixDialog.set(false);
+            vm.closefixDialog.set(true);
+            vm.$emit('on-toggle-fix', false);
+          },
+        });
+        const action_16 = this.editor.addAction({
+          id: 'closefixDialog',
+          label: '关闭AI纠错弹窗(已开启)',
+          keybindings: [],
+          precondition: 'closefixDialog',
+          keybindingContext: null,
+          contextMenuGroupId: 'control',
+          contextMenuOrder: 2.8,
+          run() {
+            vm.disablePopUp = true;
+            vm.openfixDialog.set(true);
+            vm.closefixDialog.set(false);
+            vm.$emit('on-toggle-fix', true);
+          },
+        });
+
+        
+        this.actions.push(action_16);
+        this.actions.push(action_17);
       }
     },
     deltaDecorations: debounce(function(value, cb) {

@@ -1,16 +1,15 @@
 <template>
   <FForm
     ref="formRef"
-    :label-width="100"
     label-position="top"
     :model="formData"
     :rules="formRules"
   >
-    <FFormItem label="规则类型" prop="ruleType">
+    <FFormItem :label="$t('_.规则类型')" prop="ruleType">
       <FSelect
         v-model="formData.ruleType"
         :options="ruleTypes"
-        placeholder="请选择规则类型"
+        :placeholder="$t('_.请选择规则类型')"
         filterable
         clearable
         value-field="value"
@@ -18,11 +17,11 @@
         @change="handleChange('rule_type')"
       />
     </FFormItem>
-    <FFormItem label="关联应用" prop="application">
+    <FFormItem :label="$t('_.关联应用')" prop="application">
       <FSelect
         v-model="formData.application"
-        :options="bindApplications"
-        placeholder="请选择关联应用"
+        :options="allBindApplications"
+        :placeholder="$t('_.请选择关联应用')"
         filterable
         clearable
         value-field="valueField"
@@ -31,24 +30,29 @@
         @change="handleChange('bind_application')"
       />
     </FFormItem>
-    <FFormItem label="引擎类型" prop="engineName">
+    <FFormItem
+      :label="$t('_.引擎类型')"
+      prop="engineName"
+      :show-message="formData.application !== '*'"
+    >
       <FSelect
         v-model="formData.engineName"
         :options="engineNames"
-        placeholder="请选择引擎类型"
+        :placeholder="$t('_.请选择引擎类型')"
         filterable
         clearable
+        :disabled="formData.application === '*'"
         value-field="valueField"
         label-field="labelField"
         @focus="handleSelect('engine_name', formData.application)"
         @change="handleChange('engine_name')"
       />
     </FFormItem>
-    <FFormItem label="模板名称" prop="templateId">
+    <FFormItem :label="$t('_.模板名称')" prop="templateId">
       <FSelect
         v-model="formData.templateId"
         :options="templateNames"
-        placeholder="请选择模板名称"
+        :placeholder="$t('_.请选择模板名称')"
         filterable
         clearable
         value-field="valueField"
@@ -56,11 +60,11 @@
         @focus="handleSelect('template_name', formData.engineName)"
       />
     </FFormItem>
-    <FFormItem label="覆盖范围" prop="permissionType">
+    <FFormItem :label="$t('_.覆盖范围')" prop="permissionType">
       <FSelect
         v-model="formData.permissionType"
         :options="overlayList"
-        placeholder="请选择覆盖范围"
+        :placeholder="$t('_.请选择覆盖范围')"
         filterable
         clearable
         value-field="value"
@@ -72,31 +76,36 @@
     <FFormItem
       v-if="+formData.permissionType === 1"
       ref="permissionUsersRef"
-      label="覆盖用户"
+      :label="$t('_.覆盖用户')"
       prop="permissionUsers"
     >
       <FSelectCascader
         v-model="formData.permissionUsers"
         :data="cascadUserList"
-        placeholder="请选择覆盖用户"
+        :placeholder="$t('_.请选择覆盖用户')"
         multiple
         :cascade="true"
         check-strictly="child"
         clearable
         expand-trigger="click"
         :show-path="false"
+        :filterable="true"
       />
       <UploadOutlined class="upload" :size="20" @click="openBatchUpload" />
     </FFormItem>
     <FFormItem
       v-if="+formData.permissionType === 2"
-      label="覆盖部门"
+      :label="$t('_.覆盖部门')"
       prop="permissionDepartments"
     >
       <FSelect
         v-model="formData.permissionDepartments"
         :options="allDeptList"
-        placeholder="默认为全部，若指定，则只有指定部门的工作空间新用户，才会下发该规则"
+        :placeholder="
+          $t(
+            '_.默认为全部，若指定，则只有指定部门的工作空间新用户，才会下发该规则'
+          )
+        "
         filterable
         clearable
         multiple
@@ -107,7 +116,7 @@
   </FForm>
   <FModal
     v-model:show="showBatchUpload"
-    title="批量导入用户"
+    :title="$t('_.批量导入用户')"
     :mask-closable="false"
     display-directive="if"
     @ok="handleOkUpload"
@@ -116,11 +125,12 @@
     <FInput
       v-model="batchUploadForm.batchUsers"
       type="textarea"
-      placeholder="请输入用户名，例如: enjoyyin,owewnxu,leebai"
+      :placeholder="$t('_.请输入用户名，例如: enjoyyin,owewnxu,leebai')"
     />
   </FModal>
 </template>
 <script lang="ts" setup>
+import { useI18n } from 'vue-i18n';
 import { UploadOutlined } from '@fesjs/fes-design/icon';
 import { ref, computed, onMounted } from 'vue';
 import { useDataList } from './hooks/useDataList';
@@ -128,6 +138,8 @@ import { FForm, FMessage, FSelectCascader } from '@fesjs/fes-design';
 import { request } from '@dataspherestudio/shared';
 import { useDataList as useOtherDataList } from '../hooks/useDataList';
 import api from './api';
+
+const { t: $t } = useI18n();
 
 const props = defineProps({
   workspaceId: {
@@ -139,7 +151,7 @@ const props = defineProps({
 const workspaceId = computed(() => props.workspaceId);
 const permissionUsersRef = ref(null);
 const {
-  bindApplications, // 关联应用
+  allBindApplications, // 关联应用
   engineNames, // 引擎类型
   templateNames, // 模板名称
   ruleTypes, // 规则类型
@@ -152,6 +164,8 @@ const {
   loadAllDeptList,
   allWorkSpaceUserDeptsList,
   loadAllWorkSpaceUserDeptsList,
+  cascadUserList,
+  processUserData,
 } = useOtherDataList();
 
 interface FormDataType {
@@ -183,35 +197,35 @@ const formRules = computed(() => ({
   ruleType: [
     {
       required: true,
-      message: '请选择',
+      message: $t('_.请选择'),
       trigger: ['change', 'blur'],
     },
   ],
   templateId: [
     {
       required: true,
-      message: '请选择',
+      message: $t('_.请选择'),
       trigger: ['change', 'blur'],
     },
   ],
   engineName: [
     {
       required: true,
-      message: '请选择',
+      message: $t('_.请选择'),
       trigger: ['change', 'blur'],
     },
   ],
   application: [
     {
       required: true,
-      message: '请选择',
+      message: $t('_.请选择'),
       trigger: ['change', 'blur'],
     },
   ],
   permissionType: [
     {
       required: true,
-      message: '请选择',
+      message: $t('_.请选择'),
       trigger: ['change', 'blur'],
     },
   ],
@@ -219,7 +233,7 @@ const formRules = computed(() => ({
     {
       required: true,
       type: 'array' as const,
-      message: '请选择',
+      message: $t('_.请选择'),
       trigger: ['change', 'blur'],
     },
   ],
@@ -239,12 +253,15 @@ async function submit() {
   if (param.permissionType === 1) {
     param.permissionUsers = formData.value.permissionUsers || [];
   }
-  if (formData.value.permissionDepartments.length > 0) {
+  if (
+    formData.value.permissionDepartments &&
+    formData.value.permissionDepartments.length > 0
+  ) {
     param.permissionType = 3;
     param.permissionDepartments = formData.value.permissionDepartments || [];
   }
   await request.fetch(api.saveConfTemplateApplyRule, param, 'put');
-  FMessage.success('新建规则成功!');
+  FMessage.success($t('_.新建规则成功!'));
 }
 
 // 覆盖范围
@@ -270,8 +287,11 @@ function handleChange(type: string) {
       }
       break;
     case 'bind_application':
-      engineNames.value = [];
-      formData.value.engineName = '';
+      engineNames.value =
+        formData.value.application === '*'
+          ? [{ valueField: '*', labelField: $t('_.全局设置') }]
+          : [];
+      formData.value.engineName = formData.value.application === '*' ? '*' : '';
       templateNames.value = [];
       formData.value.templateId = '';
       break;
@@ -301,13 +321,26 @@ const handleCancelUpload = () => {
 const handleOkUpload = () => {
   batchUploadForm.value.batchUserArray =
     batchUploadForm.value.batchUsers.split(/[,，]/);
-  const tempInsertData = batchUploadForm.value.batchUserArray.filter(
-    (element) =>
-      allWorkSpaceUserDeptsList.value.find((obj) => obj.name === element)
-  );
+  // 递归函数，用于查找用户
+  const findUserInTree = (tree, userName) => {
+    for (let node of tree) {
+      if (node.type === 'user' && node.name === userName) {
+        return node;
+      }
+      if (node.child && node.child.length > 0) {
+        const result = findUserInTree(node.child, userName);
+        if (result) return result;
+      }
+    }
+    return null;
+  };
+
+  const tempInsertData = batchUploadForm.value.batchUserArray
+    .map((element) => findUserInTree(allWorkSpaceUserDeptsList.value, element))
+    .filter(Boolean); // 过滤掉 null 值
   tempInsertData.forEach((element) => {
-    if (!formData.value.permissionUsers.includes(element)) {
-      formData.value.permissionUsers.push(element);
+    if (!formData.value.permissionUsers.includes(element.name)) {
+      formData.value.permissionUsers.push(element.name);
     }
   });
   showBatchUpload.value = false;
@@ -316,61 +349,10 @@ const handleOkUpload = () => {
   }
 };
 
-const cascadUserList = ref([]);
-interface User {
-  department: string;
-  name: string;
-  office: number;
-}
-
-interface CascadeData {
-  label: string;
-  value: string;
-  children: CascadeData[];
-}
-function convertUserDataToCascadeData(userData: User[]): CascadeData[] {
-  const cascadeData: CascadeData[] = [];
-
-  for (const user of userData) {
-    const department = user.department;
-    const name = user.name;
-
-    // 检查是否已存在对应的部门对象
-    const departmentObj = cascadeData.find((obj) => obj.label === department);
-
-    if (departmentObj) {
-      // 部门对象已存在，将当前用户对象添加到部门对象的子数组中
-      departmentObj.children.push({
-        label: name,
-        value: name,
-        children: [],
-      });
-    } else {
-      // 部门对象不存在，创建新的部门对象，并将当前用户对象添加到部门对象的子数组中
-      const newDepartmentObj: CascadeData = {
-        label: department,
-        value: department,
-        children: [
-          {
-            label: name,
-            value: name,
-            children: [],
-          },
-        ],
-      };
-      cascadeData.push(newDepartmentObj);
-    }
-  }
-
-  return cascadeData;
-}
-
 onMounted(async () => {
   await loadAllDeptList();
   await loadAllWorkSpaceUserDeptsList(workspaceId.value as string);
-  cascadUserList.value = convertUserDataToCascadeData(
-    allWorkSpaceUserDeptsList.value
-  );
+  processUserData(allWorkSpaceUserDeptsList.value);
 });
 
 defineExpose({ submit });

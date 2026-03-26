@@ -11,13 +11,13 @@
         <Option value='3'>{{ $t('message.scripts.ordercreatetime') }}</Option>
         <Option value="4">{{ $t('message.scripts.orderaccesstime') }}</Option>
       </Select>
-      <Select v-model="usageHeat" clearable class="searce-item margin-right" placeholder="表使用热度">
-        <Option value="VISITED_IN_THREE_MONTHS">最近3个月访问</Option>
-        <Option value="VISITED_IN_SIX_MONTHS">最近6个月访问</Option>
-        <Option value="VISITED_IN_TWELVE_MONTHS">最近12个月访问</Option>
-        <Option value="NOT_VISITED_IN_THREE_MONTHS">最近3个月未访问</Option>
-        <Option value="NOT_VISITED_IN_SIX_MONTHS">最近6个月未访问</Option>
-        <Option value="NOT_VISITED_IN_TWELVE_MONTHS">最近12个月未访问</Option>
+      <Select v-model="usageHeat" clearable class="searce-item margin-right" :placeholder="$t('message.scripts.table_usage_heat')">
+        <Option value="VISITED_IN_THREE_MONTHS">{{ $t('message.scripts.visited_in_three_months') }}</Option>
+        <Option value="VISITED_IN_SIX_MONTHS">{{ $t('message.scripts.visited_in_six_months') }}</Option>
+        <Option value="VISITED_IN_TWELVE_MONTHS">{{ $t('message.scripts.visited_in_twelve_months') }}</Option>
+        <Option value="NOT_VISITED_IN_THREE_MONTHS">{{ $t('message.scripts.not_visited_in_three_months') }}</Option>
+        <Option value="NOT_VISITED_IN_SIX_MONTHS">{{ $t('message.scripts.not_visited_in_six_months') }}</Option>
+        <Option value="NOT_VISITED_IN_TWELVE_MONTHS">{{ $t('message.scripts.not_visited_in_twelve_months') }}</Option>
       </Select>
       <Select v-model="isTableOwner" class="searce-item margin-right">
         <Option value="0">{{ $t('message.scripts.owntable') }}</Option>
@@ -33,7 +33,7 @@
         </Button>
         <template #list>
           <DropdownMenu>
-            <DropdownItem v-if="canTransfer" name="transfer">{{ $t('message.scripts.transfer') }}</DropdownItem>
+            <!-- <DropdownItem v-if="canTransfer" name="transfer">{{ $t('message.scripts.transfer') }}</DropdownItem> -->
             <DropdownItem name="download">{{ $t('message.scripts.download') }}</DropdownItem>
             <DropdownItem name="rename">{{ $t('message.scripts.generate_rename_statement') }}</DropdownItem>
           </DropdownMenu>
@@ -54,13 +54,13 @@
         <Option value="0">{{ $t('message.scripts.owntable') }}</Option>
         <Option value="1">{{ $t('message.scripts.tablecreateby') }}</Option>
       </Select> -->
-      <Select v-model="usageHeat" class="searce-item margin-right" placeholder="表使用热度">
-        <Option value="VISITED_IN_THREE_MONTHS">最近3个月访问</Option>
-        <Option value="VISITED_IN_SIX_MONTHS">最近6个月访问</Option>
-        <Option value="VISITED_IN_TWELVE_MONTHS">最近12个月访问</Option>
-        <Option value="NOT_VISITED_IN_THREE_MONTHS">最近3个月未访问</Option>
-        <Option value="NOT_VISITED_IN_SIX_MONTHS">最近6个月未访问</Option>
-        <Option value="NOT_VISITED_IN_TWELVE_MONTHS">最近12个月未访问</Option>
+      <Select v-model="usageHeat" class="searce-item margin-right" :placeholder="$t('message.scripts.table_usage_heat')">
+        <Option value="VISITED_IN_THREE_MONTHS">{{ $t('message.scripts.visited_in_three_months') }}</Option>
+        <Option value="VISITED_IN_SIX_MONTHS">{{ $t('message.scripts.visited_in_six_months') }}</Option>
+        <Option value="VISITED_IN_TWELVE_MONTHS">{{ $t('message.scripts.visited_in_twelve_months') }}</Option>
+        <Option value="NOT_VISITED_IN_THREE_MONTHS">{{ $t('message.scripts.not_visited_in_three_months') }}</Option>
+        <Option value="NOT_VISITED_IN_SIX_MONTHS">{{ $t('message.scripts.not_visited_in_six_months') }}</Option>
+        <Option value="NOT_VISITED_IN_TWELVE_MONTHS">{{ $t('message.scripts.not_visited_in_twelve_months') }}</Option>
       </Select>
       <Input v-model="tableOwner" class="searce-item margin-right" :placeholder="$t('message.scripts.tableDetails.QSRBSZ')">
       </Input>
@@ -830,4 +830,3 @@ export default {
   max-height: 500px;
 }
 </style>
-

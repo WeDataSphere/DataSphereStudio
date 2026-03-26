@@ -167,7 +167,7 @@
 */
 .cy-editor-ctx-menu {
   position: absolute;
-  width: 150px;
+  width: max-content;
   z-index: 1000;
   border: 1px solid;
   @include border-color(#ddd, gray);
@@ -195,6 +195,8 @@
   @include border-color(#ebeef2, gray);
   box-sizing: border-box;
   position: relative;
+  display: flex;
+  align-items: center;
   .icon {
     pointer-events: none;
   }
@@ -229,14 +231,16 @@
   transform: translateX(100%);
   top: -1px;
   background: #ebeef2;
-  width: 135px;
+  width: max-content;
   color: #657180;
   border: 1px solid #ddd;
+  right: 0;
 }
 
 .cy-editor-ctx-menu .ctx-menu-item .ctx-submenu-wrap .ctx-submenu-item {
   cursor: pointer;
   padding: 0 15px;
+  width: max-content;
 }
 
 .cy-editor-ctx-menu .ctx-menu-item .ctx-submenu-wrap .ctx-submenu-item:hover {

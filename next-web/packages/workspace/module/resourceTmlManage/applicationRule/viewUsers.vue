@@ -12,7 +12,7 @@
               <FSelect
                 v-model="searchForm.username"
                 :options="allWorkSpaceUserList"
-                placeholder="用户名"
+                :placeholder="$t('_.用户名')"
                 filterable
                 clearable
                 value-field="value"
@@ -27,7 +27,7 @@
         <FTable ref="tableRef" :data="tableList">
           <FTable-column
             prop="name"
-            label="用户名"
+            :label="$t('_.用户名')"
             :formatter="fillText"
             ellipsis
           />
@@ -42,12 +42,14 @@
           :page-size-option="[10, 20, 50, 100]"
           :total-count="pagination.totalCount"
           @change="handleCurrentChange"
-        ></FPagination>
+        />
       </template>
     </BTablePage>
   </div>
 </template>
 <script lang="ts" setup>
+import { useI18n } from 'vue-i18n';
+
 import { onMounted, ref, computed } from 'vue';
 import { usePagination } from '../../hooks/usePagination';
 import { useDataList } from './hooks/useDataList';
@@ -55,6 +57,8 @@ import { useDataList as useOtherDataList } from '../hooks/useDataList';
 import { request } from '@dataspherestudio/shared';
 import api from './api';
 import type { PaginationAndParams } from '../../hooks/usePagination';
+
+const { t: $t } = useI18n();
 
 const props = defineProps({
   form: {

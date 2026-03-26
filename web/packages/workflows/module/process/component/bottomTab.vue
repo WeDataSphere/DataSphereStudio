@@ -184,6 +184,7 @@ export default {
         this.showLog = false
         this.curTab = item
       }
+      this.currentPanelHeight = 294
       if (key == 'execHistory' && logPath) {
         this.showLogPanel(logPath)
       }
@@ -281,7 +282,7 @@ export default {
   position: absolute;
   bottom: 0px;
   width: 100%;
-  z-index: 9999;
+  z-index: 1002;
   
   &.min {
     width: 40px;
@@ -294,7 +295,7 @@ export default {
     width: 100%;
     @include bg-color($light-base-color, $dark-base-color);
     @include border-color(#dee4ec, $dark-menu-base-color);
-    z-index: 10000;
+    z-index: 1003;
     
     .panel-wrapper {
       height: 100%;
@@ -317,7 +318,7 @@ export default {
           top: 0;
           left: 0;
           right: 0;
-          z-index: 10001;
+          z-index: 1004;
 
           &:hover {
             background: #e8eaec;
@@ -336,7 +337,7 @@ export default {
     display: flex;
     flex-direction: column;
     background: $light-base-color;
-    z-index: 10000;
+    z-index: 1003;
     transition: transform 0.3s, height 0.3s;
 
     .drag-handle {
@@ -346,7 +347,7 @@ export default {
       right: 0;
       height: 6px;
       cursor: ns-resize;
-      z-index: 10001;
+      z-index: 1004;
       background: transparent;
       
       .drag-line {
@@ -418,7 +419,7 @@ export default {
   .tab-menu {
     display: flex;
     @include bg-color(#F8F9FC, $dark-background-color-header);
-    z-index: 10000;
+    z-index: 1003;
     position: relative;
   }
   .tab-menu-item {

@@ -146,6 +146,24 @@ export default {
             this.queryCopyStatus(res.projectId)
             this.copyProjectData.name = '';
             this.copyProjectData.associateGit = 'false'
+            // 按需求暂时屏蔽项目复制场景下的白名单提示
+            // if(res.isWhite) {
+            //   this.$Notice.info({
+            //     title: this.$t('message.workspace.Prompt'),
+            //     desc: '',
+            //     duration: 5,
+            //     render: (h) => {
+            //       return h('span', {
+            //         style: {
+            //           'word-break': 'break-all',
+            //           'line-height': '20px',
+            //         },
+            //       },
+            //       this.$t('message.workspace.isWhiteProjectInfo')
+            //       );
+            //     },
+            //   })
+            // }
           }).catch(() => {
           });
         } else {

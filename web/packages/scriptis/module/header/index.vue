@@ -5,7 +5,7 @@
         <div class="logo">
           <img
             class="logo-img"
-            src="../../assets/images/dssLogo.png"
+            src="../../assets/images/smart-ds-white.svg"
             :alt="$APP_CONF.app_name"
           />
           <span class="version">{{sysVersion}}</span>

@@ -23,6 +23,22 @@ export default Object.freeze([{
   flowType: 'sql'
 },
 {
+  rule: /\.(aisql)$/i,
+  lang: 'hql',
+  executable: true,
+  application: 'ai-1',
+  runType: 'aisql',
+  ext: '.aisql',
+  scriptType: 'aisql',
+  abbr: 'sql',
+  logo: 'fi-ai-sql',
+  color: '#FF9900',
+  isCanBeNew: true,
+  label: 'AI Sql',
+  isCanBeOpen: true,
+  flowType: 'aisql'
+},
+{
   rule: /\.(hql)$/i,
   lang: 'hql',
   executable: true,
@@ -180,6 +196,22 @@ export default Object.freeze([{
   flowType: 'pyspark'
 },
 {
+  rule: /\.py3$/i,
+  lang: 'python',
+  executable: true,
+  application: 'spark',
+  runType: 'py',
+  ext: '.py3',
+  scriptType: 'pythonSpark3',
+  abbr: 'py',
+  logo: 'fi-spark-python',
+  color: '#3573A6',
+  isCanBeNew: true,
+  label: 'PythonSpark3',
+  isCanBeOpen: true,
+  flowType: 'pyspark'
+},
+{
   rule: /\.r$/i,
   lang: 'r',
   executable: true,
@@ -254,6 +286,21 @@ export default Object.freeze([{
   color: '#3573A6',
   isCanBeNew: false,
   label: 'QMLPy',
+  isCanBeOpen: true
+},
+{
+  rule: /\.md$/i,
+  lang: 'markdown',
+  executable: false,
+  application: null,
+  runType: null,
+  ext: '.md',
+  scriptType: 'markdown',
+  abbr: 'md',
+  logo: 'fi-file',
+  color: '#444444',
+  isCanBeNew: true,
+  label: 'Markdown',
   isCanBeOpen: true
 },
 {
@@ -375,6 +422,11 @@ export default Object.freeze([{
   rule: /(图空间信息)|(边类型信息)|(标签信息)/,
   executable: false,
   scriptType: 'Nebula',
+  isCanBeOpen: true
+},
+{
+  rule: /aitab/,
+  executable: false,
   isCanBeOpen: true
 },
 ])

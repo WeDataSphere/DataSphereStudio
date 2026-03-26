@@ -4,11 +4,11 @@
 .idea/
 
 node_modules/
-dist/
+/dist
 
 package-lock.json
 yarn-eror.log
 wedatasphere-*.zip
 luban-*.zip
 dist.zip
-.env.*
+.env.development

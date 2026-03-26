@@ -14,8 +14,31 @@
           <Icon type="ios-redo" />
           <span class="navbar-item-name">{{ $t('message.scripts.editorDetail.navBar.redo') }}</span>
         </div>
+        <!-- 非只读模式但节点不可编辑 -->
+        <div v-if="!readonly && !nodeEditable">
+          <div
+            v-show="!script.running"
+            v-if="script.executable"
+            class="workbench-body-navbar-item"
+            title="F3"
+            :class="{'disabled':loading}"
+            @click.stop="run">
+            <Icon type="ios-play" />
+            <span class="navbar-item-name">{{ $t('message.scripts.editorDetail.navBar.play') }}</span>
+          </div>
+          <div
+            v-show="script.running"
+            v-if="script.executable"
+            class="workbench-body-navbar-item"
+            @click.stop="stop">
+            <Icon
+              type="md-square"
+              style="color:red"/>
+            <span class="navbar-item-name">{{ $t('message.scripts.editorDetail.navBar.stop') }}</span>
+          </div>
+        </div>
         <div
-          v-if="scriptType!=='hdfsScript' && scriptType!=='historyScript' && !readonly"
+          v-if="scriptType!=='hdfsScript' && scriptType!=='historyScript' && !readonly && nodeEditable"
           class="workbench-body-navbar-group">
           <div
             v-show="!script.running"
@@ -64,7 +87,7 @@
             "
           >
             <Select
-              placeholder="切换数据源"
+              :placeholder="$t('message.workbench.switchDataSource')"
               @on-change="dataSetSelect"
               class="dataSetSelect"
               clearable
@@ -93,6 +116,16 @@
               :script="script"
               :work="work" />
           </template>
+          <div
+            v-if="copilotEnable"
+            style="cursor: pointer;"
+            class="workbench-body-navbar-item"
+            @click="aiFix">
+            <span class="navbar-item-name">
+              <SvgIcon
+                icon-class="aifix" />
+              {{this.$t('message.workbench.aiCorrection')}}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -106,16 +139,18 @@
           v-model="script.data"
           :language="script.lang"
           :id="script.id"
-          :read-only="script.readOnly"
+          :read-only="script.readOnly || !nodeEditable"
           :script-type="scriptType"
           :ext="script.ext"
           :file-path="work.filepath || script.id + work.filename"
           :application="script.application"
           :is-scriptis="$route.name == 'Home'"
+          :copilotConfig="copilotConfig"
           type="code"
           @on-operator="heartBeat"
           @on-run="run"
           @on-save="save"
+          @on-toggle-fix="toggleAiFix"
           @open-db-table-suggest="openDbTableSuggest"
           @is-parse-success="changeParseSuccess"/>
       </we-panel-item>
@@ -145,13 +180,15 @@ import { throttle } from 'lodash';
 import eventbus from '@dataspherestudio/shared/common/helper/eventbus';
 import elementResizeEvent from '@dataspherestudio/shared/common/helper/elementResizeEvent';
 import storage from '@dataspherestudio/shared/common/helper/storage';
+import { Button } from 'iview';
 
 const extComponents = plugin.emitHook('script_editor_top_tools') || []
 
 export default {
   components: {
     setting,
-  },
+    Button
+},
   inject: {
     containerInstance: {
       defaule: undefined
@@ -173,10 +210,20 @@ export default {
     readonly: {
       type: Boolean,
       default: false,
-    }
+    },
+    nodeEditable: {
+      type: Boolean,
+      default: true,
+    },
   },
   data() {
+    const baseinfo = storage.get('baseInfo', 'local')
+    const disablePopUp = storage.get('CodeCorrection_disablePopUp')
     return {
+      copilotEnable: baseinfo && baseinfo.copilotEnable,
+      copilotConfig: {
+        disablePopUp,
+      },
       curTipKey: '',
       showConfig: false,
       showConfigWidth:8,
@@ -228,6 +275,8 @@ export default {
         ]
 
       this.oldDataSetValue = this.dataSetValue
+      const disablePopUp = storage.get('CodeCorrection_disablePopUp')
+      this.copilotConfig.disablePopUp = disablePopUp
     }
     setTimeout(() => {
       let linenum = storage.get("revealline") || 0
@@ -360,6 +409,39 @@ export default {
       if (args.id === this.script.id) {
         this.$refs.editor.insertValueIntoEditor(args.value);
       }
+    },
+    aiFix() {
+      const code = this.$refs.editor ?  this.$refs.editor.getValueInRange() || this.$refs.editor.getValue()  : this.script.data
+      this.$emit('on-fix', '', code)
+    },
+    toggleAiFix(disablePopUp) {
+      //api/res_j/v1/copilot/getconfig
+      const postConfig = () => {
+        api.fetch(`/copilot/updateconfig?uasername=${this.userName}`, { 
+          CodeCorrection: {
+            disablePopUp
+          }
+        }, 'post').then(res => {
+          this.copilotConfig = {
+            disablePopUp: disablePopUp,
+          }
+          storage.set('CodeCorrection_disablePopUp', disablePopUp)
+          this.$Message.success('设置成功');
+        })
+      }
+      
+      if (disablePopUp) {
+        // 
+        this.$Modal.confirm({
+            title: this.$t('message.workbench.prompt'),
+            content: this.$t('message.workbench.disableAICorrection'),
+            onOk: () => {
+              postConfig()
+            },
+        });
+        return
+      }
+      postConfig()
     },
     resizePanel() {
       this.$nextTick(() => {
@@ -553,8 +635,14 @@ export default {
     .ivu-icon {
       font-size: 16px;
     }
-    .navbar-item-name {
-      margin-left: 1px;
+  }
+  .navbar-item-name {
+    margin-left: 1px;
+    &:hover {
+      @include font-color($primary-color, $dark-primary-color);
+        &.disabled {
+          @include font-color($light-text-desc-color, $dark-text-desc-color);
+      }
     }
   }
 </style>

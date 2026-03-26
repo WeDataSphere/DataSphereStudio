@@ -18,5 +18,5 @@
 export default {
   name: 'Header',
   component: () => import('./index.vue'),
-  dispatchs: ['Footer:getRunningJob', 'dssIndexedDB:deleteDb'],
+  dispatchs: ['Footer:getRunningJob', 'dssIndexedDB:deleteDb', 'Workbench:add'],
 };

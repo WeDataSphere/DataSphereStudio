@@ -17,6 +17,7 @@
     "build": "vue-cli-service build",
     "serve-sit": "vue-cli-service serve --mode sit",
     "build-sit": "vue-cli-service build --mode sit",
+    "serve-uat": "vue-cli-service serve --mode uat",
     "build-uat": "vue-cli-service build --mode uat"
   }
 }

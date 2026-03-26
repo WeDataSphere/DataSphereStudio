@@ -25,7 +25,7 @@
       </div>
     </div>
     <div class="cur-proxy-user">
-      <Tooltip v-if="proxyUserName" :content="`当前代理用户：${proxyUserName}`" placement="right">
+      <Tooltip v-if="proxyUserName" :content="`${$t('message.workbench.proxyUser')}${proxyUserName}`" placement="right">
         <SvgIcon class="nav-icon" icon-class="user" style="fontSize: 18px;" />
       </Tooltip>
     </div>
@@ -67,6 +67,7 @@
   </div>
 </template>
 <script>
+import { VueShowdown } from 'vue-showdown';
 import api from '@dataspherestudio/shared/common/service/api';
 import workbenchModule from '@/scriptis/module/workbench';
 import workSidebarModule from '@/scriptis/module/workSidebar';
@@ -86,7 +87,8 @@ export default {
     fnSidebar: fnSidebarModule.component,
     hiveSidebar: hiveSidebarModule.component,
     hdfsSidebar: hdfsSidebarModule.component,
-    settingModal
+    settingModal,
+    VueShowdown
   },
   data() {
     return {
@@ -104,6 +106,7 @@ export default {
       proxyUserName: '',
       copilotEntryComponent: null,
       dataSourcetype: 'Hive',
+      markdown: '',
     };
   },
   //组建内的守卫
@@ -170,11 +173,11 @@ export default {
     }
     storage.set('baseInfo', baseInfo, 'local')
     // languageServerDefaultEnable = true 默认启用language server
-    const uselsp = localStorage.getItem('scriptis-edditor-type')
-    if (baseInfo.languageServerDefaultEnable && uselsp === null ) {
-      localStorage.setItem('scriptis-edditor-type', 'lsp');
-      location.reload();
-    }
+    // const uselsp = localStorage.getItem('scriptis-edditor-type')
+    // if (baseInfo.languageServerDefaultEnable && uselsp === null ) {
+    //   localStorage.setItem('scriptis-edditor-type', 'lsp');
+    //   location.reload();
+    // }
   },
   mounted() {
     this.init();
@@ -191,6 +194,16 @@ export default {
         }
       })
     });
+    eventbus.on('check.scriptis.analysis', ({
+      badjobAnalyzeIds, code, type, taskId, scriptName, report
+    }) => {
+      this.scriptInfos = { code, type, scriptName, taskId }
+      if (report) {
+        this.showReport(report)
+      } else {
+        this.queryBadJobAnalysis(badjobAnalyzeIds)
+      }
+    })
     setTimeout(() => {
       const baseInfo = storage.get('baseInfo', 'local');
       if (baseInfo.proxyEnable && !baseInfo.proxyUserName) {
@@ -221,6 +234,75 @@ export default {
     plugin.emitHook('copilot_web_listener_event_remove')
   },
   methods: {
+    handleConfirm() {
+      plugin.emit('copilot_web_open_change', { 
+        type: 'CodeOptimize', 
+        message: '',
+        params: {
+          type: this.scriptInfos.type,
+          code: this.scriptInfos.code,
+          scriptName: this.scriptInfos.scriptName,
+          taskId: this.scriptInfos.taskId,
+          badjobAnalyzeIds: this.badjobAnalyzeIds
+        } 
+      })
+      this.$Notice.close('badjobreport')
+    },
+    queryBadJobAnalysis(badjobAnalyzeIds) {
+      this.badjobAnalyzeIds = badjobAnalyzeIds;
+      api.fetch(`/copilot/badjobAnalyze`, {
+        scriptName: this.scriptInfos.scriptName,
+        taskId: this.scriptInfos.taskId,
+        badjobAnalyzeIds: Array.isArray(badjobAnalyzeIds) ? badjobAnalyzeIds.join(',') : badjobAnalyzeIds
+      }, {
+        method: 'get',
+      }).then(res => {
+        if (res.status === 'Success') {
+          if (res.analyzed) {
+            if(res.report) {
+             this.showReport(res.report)
+            }
+          }
+        } else if(res.status === 'Modeling') {
+          setTimeout(() => {
+            this.queryBadJobAnalysis(badjobAnalyzeIds)
+          }, 5000)
+        }
+      })
+    },
+    showReport(report) {
+      // 展示优化报告通知
+      this.markdown = report;
+      this.$Notice.info({
+        title: this.$t('message.workbench.optimizationReport'),
+        render: (h) => {
+          return h('div', {
+            class: 'badsql_notice'
+          }, [
+            h(VueShowdown, {
+              props: {
+                markdown: this.markdown
+              }
+            }),
+            h('Button', {
+              props: {
+                type: 'primary'
+              },
+              style: {
+                'margin-top': '10px',
+              },
+              on: {
+                click: () => {
+                  this.handleConfirm()
+                }
+              }
+            }, this.$t('message.workbench.optimize'))
+          ])
+        },
+        duration: 0,
+        name: 'badjobreport'
+      });
+    },
     changeScriptTab({ type }) {
       // console.log('changeScriptTab', type)
       // this.dataSourcetype = type

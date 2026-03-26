@@ -594,7 +594,7 @@ export default {
     },
     // 判断是否符合脚本类型
     showScriptsType() {
-      return [ 'spark', 'hive', 'hql' ].includes(this.script.scriptType)
+      return [ 'spark', 'hive', 'hql', 'pythonSpark3', 'jdbc', 'pythonSpark' ].includes(this.script.scriptType)
     }
   },
   watch: {
@@ -960,8 +960,13 @@ export default {
       });
     },
     convertMetadata(params) {
-      const variable = isEmpty(params.variable) ? {} : util.convertArrayToObject(params.variable);
-
+      let variable = isEmpty(params.variable) ? {} : util.convertArrayToObject(params.variable);
+      if (this.script.ext === '.py3') {
+       variable = {
+        ...variable,
+        sparkVersion: "3"
+       }
+      }
       const configuration = isEmpty(params.configuration) ? {} : {
         special: params.configuration.special,
         runtime: {
@@ -971,6 +976,12 @@ export default {
         startup: params.configuration.startup,
         datasource: params.configuration.datasource ? params.configuration.datasource : {}
       };
+      if (this.script.ext === '.jdbc' && this.work.dataSetValue) {
+        configuration.runtime = {
+          ...configuration.runtime
+        }
+        configuration.runtime['wds.linkis.engine.runtime.datasource'] = this.work.dataSetValue
+      }
       return {
         variable,
         configuration,

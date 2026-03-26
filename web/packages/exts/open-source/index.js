@@ -39,11 +39,11 @@ export default function () {
         ...dssLimits.globalLimits
       }
     }
-    const uselsp = localStorage.getItem('scriptis-edditor-type')
-    if (baseInfo.dss.languageServerDefaultEnable && uselsp === null ) {
-      localStorage.setItem('scriptis-edditor-type', 'lsp');
-      // location.reload();
-    }
+    // const uselsp = localStorage.getItem('scriptis-edditor-type')
+    // if (baseInfo.dss.languageServerDefaultEnable && uselsp === null ) {
+    //   localStorage.setItem('scriptis-edditor-type', 'lsp');
+    //   // location.reload();
+    // }
     storage.set('baseInfo', baseInfo, 'local')
     if (baseInfo.dss.proxyEnable) {
       createProxyModal(homePageRes.homePageUrl, context)
