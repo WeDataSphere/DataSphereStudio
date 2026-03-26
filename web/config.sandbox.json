@@ -58,6 +58,14 @@
     }
   },
   "exts": {
+    "dss-plugin-webank": {
+      "module": "exts/webank/index.js",
+      "i18n": {
+        "en": "exts/webank/i18n/en.json",
+        "zh-CN": "exts/webank/i18n/zh.json"
+      },
+      "options": null
+    },
     "dss-plugin-open": {
       "module": "exts/open-source/index.js",
       "i18n": {
@@ -75,16 +83,11 @@
       "options": null
     }
   },
-  "components": {
-    "WeEditorLsp": "editorLsp/index.js",
-    "WeEditor": "editor/index.js"
-  },
   "conf": {
     "app_name": "DataSphere Studio",
-    "app_logo": "dss/assets/images/dssLogo.png",
-    "user_guide": "",
+    "app_logo": "dss/assets/images/smart-ds-white.svg",
     "isSandbox": true,
-    "faq_link": "/_book/",
+    "handbook": "/_book",
     "copy_project_enable": true,
     "error_report": true,
     "watermark": {
@@ -92,7 +95,11 @@
       "template": "${username} ${time}",
       "timeupdate": 60000
     },
-    "update_chrome": "/_book/知识库/DSS常见问题/其他/DSS使用推荐的浏览器版本.html"
+    "update_chrome": "/知识库/DSS常见问题/其他/DSS使用推荐的浏览器版本.html"
   },
-  "version": "1.1.7"
+  "components": {
+    "WeEditorLsp": "editorLsp/index.js",
+    "WeEditor": "editor/index.js"
+  },
+  "version": "1.1.9"
 }
