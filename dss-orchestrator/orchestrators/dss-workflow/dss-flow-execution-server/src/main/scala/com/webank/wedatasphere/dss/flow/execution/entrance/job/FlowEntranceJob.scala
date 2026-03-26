@@ -142,7 +142,7 @@ class FlowEntranceJob(persistManager: PersistenceManager) extends EntranceExecut
   private def collectNodeOutputVariables(nodeName: String): Unit = {
     val runner = this.getFlowContext.getRunningNodes.get(nodeName)
     if (runner == null) {
-      warn(s"Skip collecting output variables for node($nodeName) because runner is not in runningNodes.")
+      info(s"Skip collecting output variables for node($nodeName) because runner is not in runningNodes.")
       return
     }
     if (runner.getLinkisJob == null) {
@@ -162,10 +162,10 @@ class FlowEntranceJob(persistManager: PersistenceManager) extends EntranceExecut
     }
     val outputVariables = resolveNodeOutputVariables(runner, resultVariables)
     if (resultVariables == null || resultVariables.isEmpty) {
-      warn(s"No raw result variables extracted from node($nodeName). The result set may be empty or unsupported for branch extraction.")
+      info(s"No raw result variables extracted from node($nodeName). The result set may be empty or unsupported for branch extraction.")
     }
     if (outputVariables == null || outputVariables.isEmpty) {
-      warn(s"No output variables available for node($nodeName) after branchOutputMapping resolution.")
+      info(s"No output variables available for node($nodeName) after branchOutputMapping resolution.")
       return
     }
     this.flowVariables.synchronized {
