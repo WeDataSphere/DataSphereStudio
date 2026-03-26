@@ -368,6 +368,8 @@ public class LinkisNodeExecutionImpl implements LinkisNodeExecution , LinkisExec
             LOGGER.warn("Branch variable extraction skipped because result rows are empty.");
             return variables;
         }
+        LOGGER.info("Branch variable extraction rows size: {}", rows.size());
+        LOGGER.info("Branch variable extraction rows preview: {}", previewRows(rows));
         Object firstRow = rows.get(0);
         if (firstRow instanceof Map) {
             extractVariablesFromMapRows(rows, variables);
@@ -398,6 +400,13 @@ public class LinkisNodeExecutionImpl implements LinkisNodeExecution , LinkisExec
                 return;
             }
         }
+        if (rows.size() == 1 && rows.get(0) instanceof ArrayList) {
+            ArrayList row = (ArrayList) rows.get(0);
+            if (row.size() == 1) {
+                LOGGER.warn("Branch variable extraction saw a single-row single-column result: {}. Column name may not be present in fileContent.", row);
+            }
+        }
+
         for (Object rowObj : rows) {
             if (!(rowObj instanceof ArrayList)) {
                 continue;
@@ -427,6 +436,11 @@ public class LinkisNodeExecutionImpl implements LinkisNodeExecution , LinkisExec
                 variables.put(key.trim(), value);
             }
         }
+    }
+
+    private String previewRows(ArrayList rows) {
+        int previewSize = Math.min(rows.size(), 3);
+        return rows.subList(0, previewSize).toString();
     }
 
     private String normalizeCellValue(Object value) {
