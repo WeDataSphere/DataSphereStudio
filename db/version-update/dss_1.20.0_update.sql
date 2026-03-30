@@ -6,24 +6,6 @@ insert  into `dss_workflow_node_to_group`(`node_id`,`group_id`) values (
 (select id from dss_workflow_node_group where name_en='Function node' limit 1)
 );
 
-INSERT INTO `dss_workflow_node_ui` (`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`)
-values ('branch.output.mapping','请填写输出变量映射，格式如 amount=total_amount，多个映射请用英文逗号分隔','Please enter output variable mappings such as amount=total_amount, and separate multiple mappings with commas','输出变量映射','Branch output mapping','Text',0,NULL,NULL,0,NULL,0,2,1,0,'special');
-
-INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (
-(select id from dss_workflow_node where node_type  = 'linkis.spark.sql' limit 1),
-(select id from dss_workflow_node_ui where `key`='branch.output.mapping' limit 1)
-);
-
-INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (
-(select id from dss_workflow_node where node_type  = 'linkis.spark.py' limit 1),
-(select id from dss_workflow_node_ui where `key`='branch.output.mapping' limit 1)
-);
-
-insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (
-(select id from dss_workflow_node_ui where `key`='branch.output.mapping' limit 1),
-(select id  from dss_workflow_node_ui_validate  where  validate_type='None' limit 1)
-);
-
 INSERT INTO dss_workflow_node_to_ui (workflow_node_id,ui_id) values (
 (select id from dss_workflow_node where node_type = 'workflow.branch' limit 1),
 (select id from dss_workflow_node_ui where `key` ='title' and node_menu_type = '1' limit 1)
@@ -55,7 +37,7 @@ insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (
 
 insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (
 (select id from dss_workflow_node_ui where `key` ='branch.rules' limit 1),
-(select id  from dss_workflow_node_ui_validate  where  validate_type='None' limit 1)
+(select id  from dss_workflow_node_ui_validate  where  validate_type='Required' limit 1)
 );
 
 
