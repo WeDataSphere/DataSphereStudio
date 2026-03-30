@@ -81,12 +81,23 @@ object BranchExpressionUtils extends Logging {
     Option(raw).map(_.split("[\\r\\n;]+").toSeq).getOrElse(Seq.empty)
       .map(_.trim)
       .filter(_.nonEmpty)
-      .flatMap { line =>
-        val parts = line.split("=", 2).map(_.trim)
-        if (parts.length == 2 && parts(0).nonEmpty && parts(1).nonEmpty) {
-          Some(BranchRule(parts(0), parts(1)))
-        } else None
+      .flatMap(parseBranchRule)
+  }
+
+  private def parseBranchRule(line: String): Option[BranchRule] = {
+    val separatorIndex = Option(line).map(_.lastIndexOf('=')).getOrElse(-1)
+    if (separatorIndex <= 0 || separatorIndex >= line.length - 1) {
+      warn(s"Invalid branch rule syntax: $line")
+      None
+    } else {
+      val condition = line.substring(0, separatorIndex).trim
+      val targetName = line.substring(separatorIndex + 1).trim
+      if (condition.nonEmpty && targetName.nonEmpty) Some(BranchRule(condition, targetName))
+      else {
+        warn(s"Invalid branch rule syntax: $line")
+        None
       }
+    }
   }
 
   def isDefaultRule(rule: BranchRule): Boolean = DefaultRuleValues.contains(Option(rule.condition).map(_.trim.toLowerCase).getOrElse(""))
@@ -194,3 +205,4 @@ object BranchExpressionUtils extends Logging {
     }
   }
 }
+
