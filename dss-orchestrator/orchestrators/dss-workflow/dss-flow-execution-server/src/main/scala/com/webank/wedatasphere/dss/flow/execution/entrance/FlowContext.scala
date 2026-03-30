@@ -40,6 +40,10 @@ trait FlowContext {
   def getFlowStatus: SchedulerEventState
 
   def isNodeCompleted(nodeName: String): Boolean
+
+  def isNodeSkipped(nodeName: String): Boolean
+
+  def isNodeSucceed(nodeName: String): Boolean
 }
 
 object FlowContext {

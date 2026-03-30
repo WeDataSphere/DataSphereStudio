@@ -55,7 +55,11 @@ class FlowContextImpl extends FlowContext with Logging {
   override def getFlowStatus: SchedulerEventState = this.flowStatus
 
   override def isNodeCompleted(nodeName: String): Boolean = {
-    getSkippedNodes.containsKey(nodeName) || getSucceedNodes.containsKey(nodeName) || getFailedNodes.containsKey(nodeName)
+    isNodeSkipped(nodeName) || isNodeSucceed(nodeName) || getFailedNodes.containsKey(nodeName)
   }
+
+  override def isNodeSkipped(nodeName: String): Boolean = getSkippedNodes.containsKey(nodeName)
+
+  override def isNodeSucceed(nodeName: String): Boolean = getSucceedNodes.containsKey(nodeName)
 
 }

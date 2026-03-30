@@ -48,8 +48,10 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
       true
     }
 
-    def hasSkippedParent(node: WorkflowNode): Boolean = {
-      node.getDependencys != null && node.getDependencys.exists(flowContext.getSkippedNodes.containsKey)
+    def areAllParentsSkipped(node: WorkflowNode): Boolean = {
+      node.getDependencys != null &&
+        !node.getDependencys.isEmpty &&
+        node.getDependencys.forall(flowContext.isNodeSkipped)
     }
 
     def shouldSkipByBranch(node: WorkflowNode): Boolean = {
@@ -64,7 +66,7 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
     }
 
     def shouldSkip(node: WorkflowNode): Boolean = {
-      shouldSkipByBranch(node) || hasSkippedParent(node)
+      shouldSkipByBranch(node) || areAllParentsSkipped(node)
     }
 
     def isBranchRouteMatched(node: WorkflowNode): Boolean = {
@@ -102,3 +104,4 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
     info(s"${flowJob.getId} Finished to get executable node(${flowContext.getScheduledNodes.size()})")
   }
 }
+

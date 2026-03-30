@@ -349,93 +349,45 @@ public class LinkisNodeExecutionImpl implements LinkisNodeExecution , LinkisExec
     @Override
     public Map<String, String> getResultVariables(Job job, int maxSize) {
         Map<String, String> variables = new LinkedHashMap<>();
-        Object fileContent = getResultFileContent(job, 0, maxSize);
-        if (fileContent == null) {
-            job.getLogObj().warn("Branch variable extraction skipped because result file content is null.");
-            LOGGER.warn("Branch variable extraction skipped because result file content is null.");
-            return variables;
+        int resultSize =  0;
+        try{
+            resultSize = getLinkisNodeExecution().getResultSize(job);
+        }catch(final Throwable t){
+            LOGGER.error("failed to get result size");
+            resultSize = -1;
         }
-        job.getLogObj().info("Branch variable extraction file content type: " + fileContent.getClass().getName());
-        LOGGER.info("Branch variable extraction file content type: {}", fileContent.getClass().getName());
-        if (!(fileContent instanceof ArrayList)) {
-            job.getLogObj().warn("Branch variable extraction skipped because result file content is not ArrayList: " + fileContent);
-            LOGGER.warn("Branch variable extraction skipped because result file content is not ArrayList: {}", fileContent);
-            return variables;
+        for (int i = 0; i < resultSize; i++) {
+            Object fileContent = getResultFileContent(job, i, maxSize);
+            if (fileContent == null) {
+                LOGGER.warn("Branch variable extraction skipped because result file content is null.");
+                return variables;
+            }
+            LOGGER.info("Branch variable extraction file content type: {}", fileContent.getClass().getName());
+            if (!(fileContent instanceof ArrayList)) {
+                LOGGER.warn("Branch variable extraction skipped because result file content is not ArrayList: {}", fileContent);
+                return variables;
+            }
+            ArrayList rows = (ArrayList) fileContent;
+            if (rows.isEmpty()) {
+                LOGGER.warn("Branch variable extraction skipped because result rows are empty.");
+                return variables;
+            }
+            LOGGER.info("Branch variable extraction rows size: {}", rows.size());
+            LOGGER.info("Branch variable extraction rows preview: {}", previewRows(rows));
+            if (rows.size() == 1) {
+                ArrayList oneRow = (ArrayList) rows.get(0);
+                if (oneRow.size() == 1) {
+                    Object metadata = getResultMetadata(job, i, maxSize);
+                    ArrayList metadataList = (ArrayList) metadata;
+                    Map metadataMap = (Map) metadataList.get(0);
+                    String columnName = metadataMap.get("columnName").toString();
+                    variables.put(columnName, oneRow.get(0).toString());
+                }
+            }
         }
-        ArrayList rows = (ArrayList) fileContent;
-        if (rows.isEmpty()) {
-            job.getLogObj().warn("Branch variable extraction skipped because result rows are empty.");
-            LOGGER.warn("Branch variable extraction skipped because result rows are empty.");
-            return variables;
-        }
-        LOGGER.info("Branch variable extraction rows size: {}", rows.size());
-        LOGGER.info("Branch variable extraction rows preview: {}", previewRows(rows));
-        Object firstRow = rows.get(0);
-        if (firstRow instanceof Map) {
-            extractVariablesFromMapRows(rows, variables);
-        } else if (firstRow instanceof ArrayList) {
-            extractVariablesFromArrayRows(rows, variables);
-        } else {
-            job.getLogObj().warn("Branch variable extraction skipped because first row type is unsupported: " + firstRow.getClass().getName());
-            LOGGER.warn("Branch variable extraction skipped because first row type is unsupported: {}", firstRow.getClass().getName());
-        }
-        job.getLogObj().info("Branch variable extraction result: " + variables);
+
         LOGGER.info("Branch variable extraction result: {}", variables);
         return variables;
-    }
-
-    private void extractVariablesFromArrayRows(ArrayList rows, Map<String, String> variables) {
-        if (rows.size() >= 2 && rows.get(0) instanceof ArrayList && rows.get(1) instanceof ArrayList) {
-            ArrayList headers = (ArrayList) rows.get(0);
-            ArrayList values = (ArrayList) rows.get(1);
-            int size = Math.min(headers.size(), values.size());
-            for (int i = 0; i < size; i++) {
-                String key = normalizeCellValue(headers.get(i));
-                String value = normalizeCellValue(values.get(i));
-                if (StringUtils.isNotBlank(key) && value != null) {
-                    variables.put(key.trim(), value);
-                }
-            }
-            if (!variables.isEmpty()) {
-                return;
-            }
-        }
-        if (rows.size() == 1 && rows.get(0) instanceof ArrayList) {
-            ArrayList row = (ArrayList) rows.get(0);
-            if (row.size() == 1) {
-                LOGGER.warn("Branch variable extraction saw a single-row single-column result: {}. Column name may not be present in fileContent.", row);
-            }
-        }
-
-        for (Object rowObj : rows) {
-            if (!(rowObj instanceof ArrayList)) {
-                continue;
-            }
-            ArrayList row = (ArrayList) rowObj;
-            if (row.size() >= 2) {
-                String key = normalizeCellValue(row.get(0));
-                String value = normalizeCellValue(row.get(1));
-                if (StringUtils.isNotBlank(key) && value != null) {
-                    variables.put(key.trim(), value);
-                }
-            }
-        }
-    }
-
-    private void extractVariablesFromMapRows(ArrayList rows, Map<String, String> variables) {
-        Object rowObj = rows.get(0);
-        if (!(rowObj instanceof Map)) {
-            return;
-        }
-        Map row = (Map) rowObj;
-        for (Object entryObj : row.entrySet()) {
-            Map.Entry entry = (Map.Entry) entryObj;
-            String key = normalizeCellValue(entry.getKey());
-            String value = normalizeCellValue(entry.getValue());
-            if (StringUtils.isNotBlank(key) && value != null) {
-                variables.put(key.trim(), value);
-            }
-        }
     }
 
     private String previewRows(ArrayList rows) {
@@ -443,9 +395,7 @@ public class LinkisNodeExecutionImpl implements LinkisNodeExecution , LinkisExec
         return rows.subList(0, previewSize).toString();
     }
 
-    private String normalizeCellValue(Object value) {
-        return value == null ? null : value.toString();
-    }
+
 
     private Object getResultFileContent(Job job, int index, int maxSize) {
         JobInfoResult jobInfo = getClient(job).getJobInfo(job.getJobExecuteResult());
@@ -458,6 +408,19 @@ public class LinkisNodeExecutionImpl implements LinkisNodeExecution , LinkisExec
         }
         return null;
     }
+
+    private Object getResultMetadata(Job job, int index, int maxSize) {
+        JobInfoResult jobInfo = getClient(job).getJobInfo(job.getJobExecuteResult());
+        String[] resultSetList = jobInfo.getResultSetList(getClient(job));
+        if (resultSetList != null && resultSetList.length > index) {
+            return getClient(job).resultSet(ResultSetAction.builder()
+                    .setPath(resultSetList[index])
+                    .setUser(job.getJobExecuteResult().getUser())
+                    .setPageSize(maxSize).build()).getMetadata();
+        }
+        return null;
+    }
+
     @Override
     public void onStatusChanged(String fromState, String toState, Job job) {
     }
