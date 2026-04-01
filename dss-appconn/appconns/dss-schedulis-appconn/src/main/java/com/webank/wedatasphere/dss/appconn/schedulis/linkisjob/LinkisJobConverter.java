@@ -19,6 +19,7 @@ package com.webank.wedatasphere.dss.appconn.schedulis.linkisjob;
 import com.webank.wedatasphere.dss.appconn.scheduler.utils.SchedulerConf;
 import com.webank.wedatasphere.dss.appconn.schedulis.conf.AzkabanConf;
 import com.webank.wedatasphere.dss.appconn.schedulis.constant.AzkabanConstant;
+import com.webank.wedatasphere.dss.appconn.schedulis.constant.BranchSchedulisConstant;
 import com.webank.wedatasphere.dss.appconn.schedulis.conversion.NodeConverter;
 import com.webank.wedatasphere.dss.common.utils.DSSCommonUtils;
 import com.webank.wedatasphere.dss.workflow.core.constant.WorkflowConstant;
@@ -35,7 +36,7 @@ public class LinkisJobConverter implements NodeConverter {
     private LinkisJobTuning[] linkisJobTunings;
 
     public LinkisJobConverter(){
-        this.linkisJobTunings = new LinkisJobTuning[]{new AzkabanSubFlowJobTuning()};
+        this.linkisJobTunings = new LinkisJobTuning[]{new AzkabanSubFlowJobTuning(), new BranchRouteJobTuning()};
     }
 
     @Override
@@ -52,6 +53,7 @@ public class LinkisJobConverter implements NodeConverter {
         convertDependencies(workflowNode,job);
         convertProxyUser(workflowNode,job);
         convertConfiguration(workflowNode,job);
+        convertBranchControl(workflowNode, job);
         convertJobCommand(workflowNode,job);
         Arrays.stream(linkisJobTunings).forEach(t ->{
             if(t.ifJobCantuning(workflowNode.getNodeType())) {
@@ -112,30 +114,58 @@ public class LinkisJobConverter implements NodeConverter {
         if (params != null && !params.isEmpty()) {
             Map<String, Map<String,Object>> configuration = (Map<String, Map<String, Object>>) params.get("configuration");
             String confprefix = "node.conf.";
-            configuration.forEach((k,v)-> {
-                if(null!=v) {
-                    v.forEach((k2, v2) -> {
-                        if(v2!=null) {
-                            String vStr;
-                            if (v2 instanceof Number) {
-                                Number numValue = (Number) v2;
-                                vStr = numValue.longValue() == numValue.doubleValue() ?
-                                        String.valueOf(numValue.longValue()) :
-                                        numValue.toString();
-                            } else {
-                                vStr = v2.toString();
+            if (configuration != null) {
+                configuration.forEach((k,v)-> {
+                    if(null!=v) {
+                        v.forEach((k2, v2) -> {
+                            if(v2!=null) {
+                                String vStr = stringifyConfValue(v2);
+                                if (AzkabanConstant.AUTO_DISABLED.equals(k2) ) {
+                                    job.setAutoDisabled(vStr);
+                                } else {
+                                    job.getConf().put(confprefix + k + "." + k2, vStr);
+                                }
                             }
-                            if (AzkabanConstant.AUTO_DISABLED.equals(k2) ) {
-                                job.setAutoDisabled(vStr);
-                            } else {
-                                job.getConf().put(confprefix + k + "." + k2, vStr);
-                            }
-                        }
-                    });
-                }
-            });
+                        });
+                    }
+                });
+            }
         }
 
+    }
+
+    private void convertBranchControl(WorkflowNode workflowNode, LinkisJob job) {
+        Map<String, Object> params = workflowNode.getDSSNode().getParams();
+        if (params == null || params.isEmpty()) {
+            return;
+        }
+        putBranchConf(job, params, BranchSchedulisConstant.BRANCH_ROUTE_ENABLED);
+        putBranchConf(job, params, BranchSchedulisConstant.BRANCH_ROUTE_NODE_ID);
+        putBranchConf(job, params, BranchSchedulisConstant.BRANCH_ROUTE_NODE_NAME);
+        putBranchConf(job, params, BranchSchedulisConstant.BRANCH_ROUTE_RULE_TEXT);
+        putBranchConf(job, params, BranchSchedulisConstant.BRANCH_ROUTE_TARGETS);
+        putBranchConf(job, params, BranchSchedulisConstant.BRANCH_GUARD_RULES);
+    }
+
+    private void putBranchConf(LinkisJob job, Map<String, Object> params, String key) {
+        Object value = params.get(key);
+        if (value != null) {
+            job.getConf().put(key, stringifyConfValue(value));
+        }
+    }
+
+    private String stringifyConfValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number) {
+            Number numValue = (Number) value;
+            return numValue.longValue() == numValue.doubleValue() ? String.valueOf(numValue.longValue()) : numValue.toString();
+        }
+        if (value instanceof CharSequence || value instanceof Boolean) {
+            return value.toString();
+        }
+        return DSSCommonUtils.COMMON_GSON.toJson(value);
     }
 
     private void convertJobCommand(WorkflowNode workflowNode, LinkisJob job){

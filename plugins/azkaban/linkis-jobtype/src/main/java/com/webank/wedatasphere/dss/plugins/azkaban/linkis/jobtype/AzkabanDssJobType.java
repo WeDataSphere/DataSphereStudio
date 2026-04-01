@@ -26,26 +26,28 @@ import com.webank.wedatasphere.dss.linkis.node.execution.job.JobTypeEnum;
 import com.webank.wedatasphere.dss.linkis.node.execution.job.LinkisJob;
 import com.webank.wedatasphere.dss.linkis.node.execution.listener.LinkisExecutionListener;
 import com.webank.wedatasphere.dss.plugins.azkaban.linkis.jobtype.conf.LinkisJobTypeConf;
+import com.webank.wedatasphere.dss.plugins.azkaban.linkis.jobtype.job.BranchGuardExecutor;
+import com.webank.wedatasphere.dss.plugins.azkaban.linkis.jobtype.job.BranchRouteExecutor;
+import com.webank.wedatasphere.dss.plugins.azkaban.linkis.jobtype.job.BranchRuntimeStore;
 import com.webank.wedatasphere.dss.plugins.azkaban.linkis.jobtype.job.JobBuilder;
 import com.webank.wedatasphere.dss.plugins.azkaban.linkis.jobtype.log.AzkabanJobLog;
 import org.apache.commons.lang.StringUtils;
+import org.apache.linkis.common.utils.JsonUtils;
 import org.slf4j.Logger;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 
 public class AzkabanDssJobType extends AbstractJob {
 
-
-
     private static final String SENSITIVE_JOB_PROP_NAME_SUFFIX = "_X";
     private static final String SENSITIVE_JOB_PROP_VALUE_PLACEHOLDER = "[MASKED]";
     private static final String JOB_DUMP_PROPERTIES_IN_LOG = "job.dump.properties";
-
-
 
     private final Logger log;
 
@@ -61,32 +63,20 @@ public class AzkabanDssJobType extends AbstractJob {
 
     private boolean isCanceled = false;
 
-
-
-
     public AzkabanDssJobType(String jobId, Props sysProps, Props jobProps, Logger log) {
-
-
         super(jobId, log);
-
         this.jobProps = jobProps;
-
         this.sysProps = sysProps;
-
         this.jobPropsMap = this.jobProps.getMapByPrefix("");
-
         this.log = log;
         this.type = jobProps.getString(JOB_TYPE, LinkisJobExecutionConfiguration.JOB_DEFAULT_TYPE.getValue(this.jobPropsMap));
         if(!LinkisJobExecutionConfiguration.JOB_DEFAULT_TYPE.getValue(this.jobPropsMap).equalsIgnoreCase(this.type) ){
             throw new RuntimeException("This job(" + this.type + " )is not linkis type");
         }
-
     }
-
 
     @Override
     public void run() throws Exception {
-
         info("Start to execute job");
         logJobProperties();
         String runDate = getRunDate();
@@ -98,14 +88,21 @@ public class AzkabanDssJobType extends AbstractJob {
             this.jobPropsMap.put("run_today_h", runTodayH);
             this.jobPropsMap.put("run_today_hour", runTodayH);
         }
+        if (BranchRouteExecutor.isBranchRouteJob(this.jobPropsMap)) {
+            new BranchRouteExecutor(this, this.jobPropsMap).execute();
+            info("Finished branch route evaluation job");
+            return;
+        }
+        if (new BranchGuardExecutor(this, this.jobPropsMap).shouldSkip()) {
+            info("Skip guarded job because current branch path was not selected.");
+            return;
+        }
         this.job = JobBuilder.getAzkanbanBuilder().setJobProps(this.jobPropsMap).build();
         this.job.setLogObj(new AzkabanJobLog(this));
         if(JobTypeEnum.EmptyJob == ((LinkisJob)this.job).getJobType()){
             warn("This node is empty type");
             return;
         }
-       // info("runtimeMap is " + job.getRuntimeParams());
-        //job.getRuntimeParams().put("workspace", getWorkspace(job.getUser()));
         info("runtimeMap is " + job.getRuntimeParams());
         LinkisNodeExecutionImpl.getLinkisNodeExecution().runJob(this.job);
 
@@ -113,8 +110,6 @@ public class AzkabanDssJobType extends AbstractJob {
             LinkisNodeExecutionImpl.getLinkisNodeExecution().waitForComplete(this.job);
         } catch (Exception e) {
             warn("Failed to execute job", e);
-            //String reason = LinkisNodeExecutionImpl.getLinkisNodeExecution().getLog(this.job);
-            //this.log.error("Reason for failure: " + reason);
             throw e;
         }
         try {
@@ -140,13 +135,12 @@ public class AzkabanDssJobType extends AbstractJob {
             }
             info("The content of the " + (i + 1) + "th resultset is :" + result);
         }
-
+        collectBranchVariables();
         info("Finished to execute job");
     }
 
     @Override
     public void cancel() throws Exception {
-        //super.cancel();
         LinkisNodeExecutionImpl.getLinkisNodeExecution().cancel(this.job);
         isCanceled = true;
         warn("This job has been canceled");
@@ -159,19 +153,80 @@ public class AzkabanDssJobType extends AbstractJob {
 
     @Override
     public double getProgress() throws Exception {
-        return   LinkisNodeExecutionImpl.getLinkisNodeExecution().getProgress(this.job);
+        return LinkisNodeExecutionImpl.getLinkisNodeExecution().getProgress(this.job);
     }
 
-    /**
-     * prints the current Job props to the Job log.
-     */
+    private void collectBranchVariables() {
+        String flowExecId = this.jobPropsMap.get(LinkisJobTypeConf.FLOW_EXEC_ID);
+        if (StringUtils.isBlank(flowExecId) || this.job == null) {
+            return;
+        }
+        try {
+            Map<String, String> resultVariables = LinkisNodeExecutionImpl.getLinkisNodeExecution().getResultVariables(this.job, 128);
+            Map<String, String> resolvedVariables = resolveBranchOutputVariables(resultVariables);
+            if (!resolvedVariables.isEmpty()) {
+                BranchRuntimeStore.mergeFlowVariables(flowExecId, resolvedVariables);
+                info("Collected branch flow variables: " + resolvedVariables);
+            }
+        } catch (Throwable t) {
+            warn("Failed to collect branch flow variables from current job.", t);
+        }
+    }
+
+    private Map<String, String> resolveBranchOutputVariables(Map<String, String> resultVariables) {
+        if (resultVariables == null || resultVariables.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, String> mappings = getBranchOutputMappings();
+        if (mappings.isEmpty()) {
+            return resultVariables;
+        }
+        Map<String, String> mappedVariables = new LinkedHashMap<>();
+        for (Map.Entry<String, String> entry : mappings.entrySet()) {
+            if (resultVariables.containsKey(entry.getValue())) {
+                mappedVariables.put(entry.getKey(), resultVariables.get(entry.getValue()));
+            }
+        }
+        return mappedVariables.isEmpty() ? resultVariables : mappedVariables;
+    }
+
+    private Map<String, String> getBranchOutputMappings() {
+        String raw = this.jobPropsMap.get(LinkisJobTypeConf.BRANCH_OUTPUT_MAPPING);
+        if (StringUtils.isBlank(raw)) {
+            raw = this.jobPropsMap.get(LinkisJobTypeConf.BRANCH_OUTPUT_MAPPING_ALIAS);
+        }
+        if (StringUtils.isBlank(raw)) {
+            return Collections.emptyMap();
+        }
+        try {
+            if (raw.trim().startsWith("{")) {
+                Map<String, Object> parsed = JsonUtils.jackson().readValue(raw, Map.class);
+                Map<String, String> mappings = new LinkedHashMap<>();
+                for (Map.Entry<String, Object> entry : parsed.entrySet()) {
+                    if (entry.getValue() != null) {
+                        mappings.put(entry.getKey(), String.valueOf(entry.getValue()));
+                    }
+                }
+                return mappings;
+            }
+        } catch (Throwable t) {
+            warn("Failed to parse branch output mapping as JSON, fallback to key=value parsing.", t);
+        }
+        Map<String, String> mappings = new LinkedHashMap<>();
+        for (String pair : raw.split(",")) {
+            String[] parts = pair.split("=", 2);
+            if (parts.length == 2 && StringUtils.isNotBlank(parts[0]) && StringUtils.isNotBlank(parts[1])) {
+                mappings.put(parts[0].trim(), parts[1].trim());
+            }
+        }
+        return mappings;
+    }
+
     private void logJobProperties() {
-        if (this.jobProps != null &&
-                this.jobProps.getBoolean(JOB_DUMP_PROPERTIES_IN_LOG, true)) {
+        if (this.jobProps != null && this.jobProps.getBoolean(JOB_DUMP_PROPERTIES_IN_LOG, true)) {
             try {
                 this.info("******   Job properties   ******");
-                this.info(String.format("- Note : value is masked if property name ends with '%s'.",
-                        SENSITIVE_JOB_PROP_NAME_SUFFIX));
+                this.info(String.format("- Note : value is masked if property name ends with '%s'.", SENSITIVE_JOB_PROP_NAME_SUFFIX));
                 for (final Map.Entry<String, String> entry : this.jobPropsMap.entrySet()) {
                     final String key = entry.getKey();
                     final String value = key.endsWith(SENSITIVE_JOB_PROP_NAME_SUFFIX) ?
@@ -188,8 +243,7 @@ public class AzkabanDssJobType extends AbstractJob {
 
     private String getRunDate(){
         this.info("begin to get run date");
-        if (this.jobProps != null &&
-                this.jobProps.getBoolean(JOB_DUMP_PROPERTIES_IN_LOG, true)) {
+        if (this.jobProps != null && this.jobProps.getBoolean(JOB_DUMP_PROPERTIES_IN_LOG, true)) {
             try {
                 for (final Map.Entry<String, String> entry : this.jobPropsMap.entrySet()) {
                     final String key = entry.getKey();
@@ -203,7 +257,6 @@ public class AzkabanDssJobType extends AbstractJob {
                         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
                         try {
                             Date date = simpleDateFormat.parse(runDateNow);
-                            //因为date已经当天的00:00:00 减掉12小时 就是昨天的时间
                             String runDate = simpleDateFormat.format(new Date(date.getTime() - 24 * 60 * 60 * 1000));
                             this.info("runDate is " + runDate);
                             return runDate;
@@ -221,8 +274,7 @@ public class AzkabanDssJobType extends AbstractJob {
 
     private String getRunTodayh(boolean stdFormat) {
         this.info("begin to get run_today_h");
-        if (this.jobProps != null &&
-                this.jobProps.getBoolean(JOB_DUMP_PROPERTIES_IN_LOG, true)) {
+        if (this.jobProps != null && this.jobProps.getBoolean(JOB_DUMP_PROPERTIES_IN_LOG, true)) {
             try {
                 for (final Map.Entry<String, String> entry : this.jobPropsMap.entrySet()) {
                     final String key = entry.getKey();
@@ -233,8 +285,6 @@ public class AzkabanDssJobType extends AbstractJob {
                         this.info("run time is " + value);
                         String runTodayh = value.substring(0, 13).replaceAll("-", "").replaceAll("T", "");
                         this.info("run today h is " + runTodayh);
-                        //for std
-//                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH");
                         if(!stdFormat){
                             return runTodayh;
                         }
@@ -246,5 +296,4 @@ public class AzkabanDssJobType extends AbstractJob {
         }
         return null;
     }
-
 }
