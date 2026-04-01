@@ -1,5 +1,5 @@
 insert into `dss_workflow_node` (`name`, `appconn_name`, `node_type`, `jump_type`, `support_jump`, `submit_to_scheduler`, `enable_copy`, `should_creation_before_node`, `icon_path`)
-values ('branch','workflow','workflow.branch','0','0','0','1','0','svgs/subflow.svg');
+values ('branch','scriptis','workflow.branch','0','0','0','1','0','svgs/branch-node.svg');
 
 insert  into `dss_workflow_node_to_group`(`node_id`,`group_id`) values (
 (select id from dss_workflow_node where node_type = 'workflow.branch' limit 1),
