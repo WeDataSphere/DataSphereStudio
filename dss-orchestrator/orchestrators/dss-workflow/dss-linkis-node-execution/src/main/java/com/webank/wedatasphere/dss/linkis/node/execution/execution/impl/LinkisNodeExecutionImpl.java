@@ -47,11 +47,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Arrays;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class LinkisNodeExecutionImpl implements LinkisNodeExecution , LinkisExecutionListener {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(LinkisNodeExecutionImpl.class);
 
     private static LinkisNodeExecution linkisExecution = new LinkisNodeExecutionImpl();
 
@@ -338,6 +343,82 @@ public class LinkisNodeExecutionImpl implements LinkisNodeExecution , LinkisExec
             }
         }
         return resultContent;
+    }
+
+
+    @Override
+    public Map<String, String> getResultVariables(Job job, int maxSize) {
+        Map<String, String> variables = new LinkedHashMap<>();
+        int resultSize =  0;
+        try{
+            resultSize = getLinkisNodeExecution().getResultSize(job);
+        }catch(final Throwable t){
+            LOGGER.error("failed to get result size");
+            resultSize = -1;
+        }
+        for (int i = 0; i < resultSize; i++) {
+            Object fileContent = getResultFileContent(job, i, maxSize);
+            if (fileContent == null) {
+                LOGGER.warn("Branch variable extraction skipped because result file content is null.");
+                return variables;
+            }
+            LOGGER.info("Branch variable extraction file content type: {}", fileContent.getClass().getName());
+            if (!(fileContent instanceof ArrayList)) {
+                LOGGER.warn("Branch variable extraction skipped because result file content is not ArrayList: {}", fileContent);
+                return variables;
+            }
+            ArrayList rows = (ArrayList) fileContent;
+            if (rows.isEmpty()) {
+                LOGGER.warn("Branch variable extraction skipped because result rows are empty.");
+                return variables;
+            }
+            LOGGER.info("Branch variable extraction rows size: {}", rows.size());
+            LOGGER.info("Branch variable extraction rows preview: {}", previewRows(rows));
+            if (rows.size() == 1) {
+                ArrayList oneRow = (ArrayList) rows.get(0);
+                if (oneRow.size() == 1) {
+                    Object metadata = getResultMetadata(job, i, maxSize);
+                    ArrayList metadataList = (ArrayList) metadata;
+                    Map metadataMap = (Map) metadataList.get(0);
+                    String columnName = metadataMap.get("columnName").toString();
+                    variables.put(columnName, oneRow.get(0).toString());
+                }
+            }
+        }
+
+        LOGGER.info("Branch variable extraction result: {}", variables);
+        return variables;
+    }
+
+    private String previewRows(ArrayList rows) {
+        int previewSize = Math.min(rows.size(), 3);
+        return rows.subList(0, previewSize).toString();
+    }
+
+
+
+    private Object getResultFileContent(Job job, int index, int maxSize) {
+        JobInfoResult jobInfo = getClient(job).getJobInfo(job.getJobExecuteResult());
+        String[] resultSetList = jobInfo.getResultSetList(getClient(job));
+        if (resultSetList != null && resultSetList.length > index) {
+            return getClient(job).resultSet(ResultSetAction.builder()
+                    .setPath(resultSetList[index])
+                    .setUser(job.getJobExecuteResult().getUser())
+                    .setPageSize(maxSize).build()).getFileContent();
+        }
+        return null;
+    }
+
+    private Object getResultMetadata(Job job, int index, int maxSize) {
+        JobInfoResult jobInfo = getClient(job).getJobInfo(job.getJobExecuteResult());
+        String[] resultSetList = jobInfo.getResultSetList(getClient(job));
+        if (resultSetList != null && resultSetList.length > index) {
+            return getClient(job).resultSet(ResultSetAction.builder()
+                    .setPath(resultSetList[index])
+                    .setUser(job.getJobExecuteResult().getUser())
+                    .setPageSize(maxSize).build()).getMetadata();
+        }
+        return null;
     }
 
     @Override
