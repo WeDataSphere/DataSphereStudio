@@ -7,6 +7,7 @@ public class BranchSchedulisConstant {
 
     public static final String BRANCH_NODE_TYPE = "workflow.branch";
     public static final String BRANCH_ROUTE_LINKIS_TYPE = "linkis.appconn.branch.route";
+    public static final String DECISION_JOB_TYPE = "decision";
 
     public static final String BRANCH_ROUTE_ENABLED = "wds.branch.route.enabled";
     public static final String BRANCH_ROUTE_NODE_ID = "wds.branch.route.node.id";
@@ -15,4 +16,8 @@ public class BranchSchedulisConstant {
     public static final String BRANCH_ROUTE_TARGETS = "wds.branch.route.targets";
 
     public static final String BRANCH_GUARD_RULES = "wds.branch.guard.rules";
+
+    public static final String DECISION_CONDITION_PREFIX = "condition.";
+    public static final String DECISION_ON_SUCCESS_PREFIX = "on.success.";
+    public static final String DECISION_ON_FAILURE_PREFIX = "on.failure.";
 }
