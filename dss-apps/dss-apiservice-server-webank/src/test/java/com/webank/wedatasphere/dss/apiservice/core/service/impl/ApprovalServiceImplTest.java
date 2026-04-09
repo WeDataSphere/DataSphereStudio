@@ -1,11 +1,9 @@
 package com.webank.wedatasphere.dss.apiservice.core.service.impl;
 
 import com.webank.wedatasphere.dss.apiservice.core.dao.ApiServiceApprovalDao;
-import com.webank.wedatasphere.dss.apiservice.core.dao.ApiServiceTokenManagerDao;
-import com.webank.wedatasphere.dss.apiservice.core.constant.DataMapStatus;
-import com.webank.wedatasphere.dss.apiservice.core.constant.ApiCommonConstant;
+import com.webank.wedatasphere.dss.apiservice.core.dao.ApiServiceVersionDao;
+import com.webank.wedatasphere.dss.apiservice.core.datamap.DataMapStatus;
 import com.webank.wedatasphere.dss.apiservice.core.vo.ApprovalVo;
-import com.webank.wedatasphere.dss.apiservice.core.vo.TokenManagerVo;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -14,9 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -56,7 +52,7 @@ public class ApprovalServiceImplTest {
         approvalVo1 = new ApprovalVo();
         approvalVo1.setId(1L);
         approvalVo1.setApiId(100L);
-        approvalVo1.setApiVersionId(1001);
+        approvalVo1.setApiVersionId(1001L);
         approvalVo1.setApprovalName("测试审批单V1");
         approvalVo1.setApprovalNo("uuid-v1");
         approvalVo1.setStatus(DataMapStatus.SUCCESS.getIndex());
@@ -65,10 +61,10 @@ public class ApprovalServiceImplTest {
         approvalVo2 = new ApprovalVo();
         approvalVo2.setId(2L);
         approvalVo2.setApiId(100L);
-        approvalVo2.setApiVersionId(1002);
+        approvalVo2.setApiVersionId(1002L);
         approvalVo2.setApprovalName("测试审批单V2");
         approvalVo2.setApprovalNo("uuid-v2");
-        approvalVo2.setStatus(DataMapStatus.APPROVING.getIndex());
+        approvalVo2.setStatus(DataMapStatus.SUCCESS.getIndex());
         approvalVo2.setCreateTime(new java.util.Date());
 
         approvalVoList = Arrays.asList(approvalVo1, approvalVo2);
@@ -127,7 +123,7 @@ public class ApprovalServiceImplTest {
 
         when(apiServiceApprovalDao.queryByApiIdAndStatus(
                 eq(100L), eq(DataMapStatus.SUCCESS.getIndex())))
-                .thenReturn(Arrays.asList(approvalVo1, approvalVo2)));
+                .thenReturn(Arrays.asList(approvalVo1, approvalVo2));
 
         // When: 获取上一个通过的审批单
         ApprovalVo result = approvalService.getSecondApproval(100L);
@@ -153,12 +149,12 @@ public class ApprovalServiceImplTest {
 
         // When: 按API ID和状态查询审批记录
         List<ApprovalVo> result = approvalService.queryByApiIdAndStatus(100L, DataMapStatus.SUCCESS.getIndex());
-
+        LOG.info("result:{}", result);
         // Then: 应该返回审批通过的审批单列表
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(new Long(2L), result.get(0).getId());
-        assertEquals(DataMapStatus.SUCCESS.getIndex(), result.get(0).getStatus());
+        assertEquals(DataMapStatus.SUCCESS.getIndex(), result.get(0).getStatus().intValue());
     }
 
     /**

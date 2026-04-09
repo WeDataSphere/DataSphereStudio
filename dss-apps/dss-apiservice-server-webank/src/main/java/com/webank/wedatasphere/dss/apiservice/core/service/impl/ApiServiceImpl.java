@@ -445,8 +445,11 @@ public class ApiServiceImpl implements ApiService, ApprovalStatusListener {
             }
             //过滤该用户token对应的apiService
             TokenManagerVo findUserTokenManagerVo = userTokenManagerVos.stream().filter(userTokenManagerVo ->
-                    userTokenManagerVo.getApiId().equals(apiServiceVo.getId()) && userTokenManagerVo.getUser().equals(apiServiceQuery.getUserName())
+                    userTokenManagerVo.getApiId().equals(apiServiceVo.getId())
+                            && userTokenManagerVo.getUser().equals(apiServiceQuery.getUserName())
+                            && ApiCommonConstant.API_ENABLE_STATUS.equals(userTokenManagerVo.getStatus())
             ).findAny().orElse(null);
+
             if (null != findUserTokenManagerVo) {
                 //过滤token状态为有效的。注：token生成时是有效的，新的版本生成时会禁用老版本的token
                 return findUserTokenManagerVo.getStatus().equals(ApiCommonConstant.API_ENABLE_STATUS);
