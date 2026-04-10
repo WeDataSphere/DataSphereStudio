@@ -26,6 +26,7 @@ import com.webank.wedatasphere.dss.workflow.core.constant.WorkflowConstant;
 import com.webank.wedatasphere.dss.workflow.core.entity.WorkflowNode;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -64,13 +65,16 @@ public class LinkisJobConverter implements NodeConverter {
     }
 
     private String convertJobToString(LinkisJob job){
-        HashMap<String, String> map = new HashMap<>(8);
-        map.put(AzkabanConstant.LINKIS_VERSION, AzkabanConf.LINKIS_VERSION.getValue());
+        HashMap<String, String> map = new HashMap<>(16);
+        boolean decisionJob = BranchSchedulisConstant.DECISION_JOB_TYPE.equalsIgnoreCase(job.getType());
+        if (!decisionJob) {
+            map.put(AzkabanConstant.LINKIS_VERSION, AzkabanConf.LINKIS_VERSION.getValue());
+            map.put(AzkabanConstant.LINKIS_TYPE,job.getLinkistype());
+            map.put(AzkabanConstant.JOB_COMMAND,job.getCommand());
+        }
         map.put(AzkabanConstant.JOB_TYPE,job.getType());
-        map.put(AzkabanConstant.LINKIS_TYPE,job.getLinkistype());
         map.put(AzkabanConstant.ZAKABAN_DEPENDENCIES_KEY,job.getDependencies());
         map.put(WorkflowConstant.PROXY_USER,job.getProxyUser());
-        map.put(AzkabanConstant.JOB_COMMAND,job.getCommand());
         map.put(AzkabanConstant.JOB_COMMENT,job.getComment());
         map.put(AzkabanConstant.AUTO_DISABLED,job.getAutoDisabled());
         Map<String, Object> labels = new HashMap<>(1);
@@ -139,12 +143,52 @@ public class LinkisJobConverter implements NodeConverter {
         if (params == null || params.isEmpty()) {
             return;
         }
-        putBranchConf(job, params, BranchSchedulisConstant.BRANCH_ROUTE_ENABLED);
-        putBranchConf(job, params, BranchSchedulisConstant.BRANCH_ROUTE_NODE_ID);
-        putBranchConf(job, params, BranchSchedulisConstant.BRANCH_ROUTE_NODE_NAME);
-        putBranchConf(job, params, BranchSchedulisConstant.BRANCH_ROUTE_RULE_TEXT);
-        putBranchConf(job, params, BranchSchedulisConstant.BRANCH_ROUTE_TARGETS);
+        if (isBranchNode(workflowNode)) {
+            putDecisionRules(job, stringifyConfValue(params.get(BranchSchedulisConstant.BRANCH_ROUTE_RULE_TEXT)));
+            return;
+        }
         putBranchConf(job, params, BranchSchedulisConstant.BRANCH_GUARD_RULES);
+    }
+
+    private boolean isBranchNode(WorkflowNode workflowNode) {
+        return workflowNode != null && BranchSchedulisConstant.BRANCH_NODE_TYPE.equalsIgnoreCase(workflowNode.getNodeType());
+    }
+
+    private void putDecisionRules(LinkisJob job, String branchRuleText) {
+        if (StringUtils.isBlank(branchRuleText)) {
+            return;
+        }
+        List<DecisionRule> decisionRules = parseDecisionRules(branchRuleText);
+        for (int i = 0; i < decisionRules.size(); i++) {
+            DecisionRule rule = decisionRules.get(i);
+            int index = i + 1;
+            job.getConf().put(BranchSchedulisConstant.DECISION_CONDITION_PREFIX + index, rule.condition);
+            job.getConf().put(BranchSchedulisConstant.DECISION_ON_SUCCESS_PREFIX + index, rule.targetJobName);
+            job.getConf().put(BranchSchedulisConstant.DECISION_ON_FAILURE_PREFIX + index, "");
+        }
+    }
+
+    private List<DecisionRule> parseDecisionRules(String branchRuleText) {
+        List<DecisionRule> rules = new ArrayList<>();
+        for (String ruleText : branchRuleText.split(";")) {
+            if (StringUtils.isBlank(ruleText)) {
+                continue;
+            }
+            int separatorIndex = ruleText.lastIndexOf('=');
+            if (separatorIndex <= 0 || separatorIndex >= ruleText.length() - 1) {
+                continue;
+            }
+            String condition = ruleText.substring(0, separatorIndex).trim();
+            String targetJobName = ruleText.substring(separatorIndex + 1).trim();
+            if (StringUtils.isBlank(condition) || StringUtils.isBlank(targetJobName)) {
+                continue;
+            }
+            if ("default".equalsIgnoreCase(condition)) {
+                condition = "true";
+            }
+            rules.add(new DecisionRule(condition, targetJobName));
+        }
+        return rules;
     }
 
     private void putBranchConf(LinkisJob job, Map<String, Object> params, String key) {
@@ -173,6 +217,16 @@ public class LinkisJobConverter implements NodeConverter {
         if(jobContent != null) {
             jobContent.remove("jobParams");
             job.setCommand(DSSCommonUtils.COMMON_GSON.toJson(jobContent));
+        }
+    }
+
+    private static class DecisionRule {
+        private final String condition;
+        private final String targetJobName;
+
+        private DecisionRule(String condition, String targetJobName) {
+            this.condition = condition;
+            this.targetJobName = targetJobName;
         }
     }
 }

@@ -61,6 +61,8 @@ public class AzkabanDssJobType extends AbstractJob {
 
     private Job job;
 
+    private volatile Props generatedProperties = new Props();
+
     private boolean isCanceled = false;
 
     public AzkabanDssJobType(String jobId, Props sysProps, Props jobProps, Logger log) {
@@ -152,6 +154,11 @@ public class AzkabanDssJobType extends AbstractJob {
     }
 
     @Override
+    public Props getJobGeneratedProperties() {
+        return this.generatedProperties == null ? new Props() : this.generatedProperties;
+    }
+
+    @Override
     public double getProgress() throws Exception {
         return LinkisNodeExecutionImpl.getLinkisNodeExecution().getProgress(this.job);
     }
@@ -165,6 +172,9 @@ public class AzkabanDssJobType extends AbstractJob {
             Map<String, String> resultVariables = LinkisNodeExecutionImpl.getLinkisNodeExecution().getResultVariables(this.job, 128);
             Map<String, String> resolvedVariables = resolveBranchOutputVariables(resultVariables);
             if (!resolvedVariables.isEmpty()) {
+                Props props = new Props();
+                props.putAll(resolvedVariables);
+                this.generatedProperties = props;
                 BranchRuntimeStore.mergeFlowVariables(flowExecId, resolvedVariables);
                 info("Collected branch flow variables: " + resolvedVariables);
             }
@@ -297,3 +307,4 @@ public class AzkabanDssJobType extends AbstractJob {
         return null;
     }
 }
+

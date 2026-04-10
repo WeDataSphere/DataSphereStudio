@@ -58,15 +58,31 @@ public class BranchRouteExecutor {
     private Map<String, String> buildEvaluationContext(String branchNodeId, String branchNodeName) {
         Map<String, String> context = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : jobProps.entrySet()) {
+            if (!isBlank(entry.getKey()) && entry.getValue() != null) {
+                context.put(entry.getKey(), entry.getValue());
+            }
+        }
+        for (Map.Entry<String, String> entry : jobProps.entrySet()) {
             if (entry.getKey().startsWith(LinkisJobTypeConf.FLOW_VARIABLE_PREFIX) && entry.getValue() != null) {
                 context.put(entry.getKey().substring(LinkisJobTypeConf.FLOW_VARIABLE_PREFIX.length()), entry.getValue());
             }
         }
-        context.putAll(BranchRuntimeStore.snapshotFlowVariables(jobProps.get(LinkisJobTypeConf.FLOW_EXEC_ID)));
+        mergeMissingVariables(context, BranchRuntimeStore.snapshotFlowVariables(jobProps.get(LinkisJobTypeConf.FLOW_EXEC_ID)));
         context.put("node.id", branchNodeId);
         context.put("node.name", branchNodeName == null ? "" : branchNodeName);
         context.put("node.type", LinkisJobTypeConf.BRANCH_ROUTE_LINKIS_TYPE);
         return context;
+    }
+
+    private void mergeMissingVariables(Map<String, String> context, Map<String, String> fallbackVariables) {
+        if (fallbackVariables == null || fallbackVariables.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, String> entry : fallbackVariables.entrySet()) {
+            if (!isBlank(entry.getKey()) && entry.getValue() != null && !context.containsKey(entry.getKey())) {
+                context.put(entry.getKey(), entry.getValue());
+            }
+        }
     }
 
     private String selectTarget(String branchRuleText, Map<String, String> targetNameToId, Map<String, String> context) {
@@ -114,3 +130,4 @@ public class BranchRouteExecutor {
         return value == null || value.trim().isEmpty();
     }
 }
+

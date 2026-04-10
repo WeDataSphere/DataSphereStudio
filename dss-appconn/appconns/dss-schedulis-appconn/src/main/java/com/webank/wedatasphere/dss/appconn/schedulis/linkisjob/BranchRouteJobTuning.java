@@ -6,7 +6,7 @@ public class BranchRouteJobTuning implements LinkisJobTuning {
 
     @Override
     public LinkisJob tuningJob(LinkisJob job) {
-        job.setType("linkis");
+        job.setType(BranchSchedulisConstant.DECISION_JOB_TYPE);
         job.setLinkistype(BranchSchedulisConstant.BRANCH_ROUTE_LINKIS_TYPE);
         return job;
     }
