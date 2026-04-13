@@ -12,18 +12,13 @@ import com.webank.wedatasphere.dss.workflow.core.entity.WorkflowNodeEdge;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Deque;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class BranchWorkflowRewriteConverter implements WorkflowToRelConverter {
@@ -75,13 +70,6 @@ public class BranchWorkflowRewriteConverter implements WorkflowToRelConverter {
             return;
         }
         annotateRouteMetadata(branchNode, directEdges, nodeById);
-        Map<String, Set<String>> reachableTargetMap = collectReachableTargets(branchNode, directEdges, outgoingEdges);
-        reachableTargetMap.forEach((nodeId, allowedTargets) -> {
-            WorkflowNode node = nodeById.get(nodeId);
-            if (node != null && !branchNode.getId().equals(node.getId())) {
-                annotateGuardMetadata(node, branchNode, allowedTargets);
-            }
-        });
     }
 
     private void annotateRouteMetadata(WorkflowNode branchNode, List<DSSEdge> directEdges, Map<String, WorkflowNode> nodeById) {
@@ -107,63 +95,6 @@ public class BranchWorkflowRewriteConverter implements WorkflowToRelConverter {
             targets.add(target);
         }
         params.put(BranchSchedulisConstant.BRANCH_ROUTE_TARGETS, targets);
-    }
-
-    private Map<String, Set<String>> collectReachableTargets(WorkflowNode branchNode,
-                                                             List<DSSEdge> directEdges,
-                                                             Map<String, List<DSSEdge>> outgoingEdges) {
-        Map<String, Set<String>> reachableTargets = new LinkedHashMap<>();
-        for (DSSEdge directEdge : directEdges) {
-            String targetId = directEdge.getTarget();
-            if (StringUtils.isBlank(targetId)) {
-                continue;
-            }
-            Deque<String> queue = new ArrayDeque<>();
-            Set<String> visited = new HashSet<>();
-            queue.add(targetId);
-            while (!queue.isEmpty()) {
-                String currentNodeId = queue.poll();
-                if (!visited.add(currentNodeId) || branchNode.getId().equals(currentNodeId)) {
-                    continue;
-                }
-                reachableTargets.computeIfAbsent(currentNodeId, key -> new LinkedHashSet<>()).add(targetId);
-                for (DSSEdge next : outgoingEdges.getOrDefault(currentNodeId, Collections.emptyList())) {
-                    if (StringUtils.isNotBlank(next.getTarget())) {
-                        queue.add(next.getTarget());
-                    }
-                }
-            }
-        }
-        return reachableTargets;
-    }
-
-    private void annotateGuardMetadata(WorkflowNode workflowNode, WorkflowNode branchNode, Set<String> allowedTargets) {
-        if (CollectionUtils.isEmpty(allowedTargets)) {
-            return;
-        }
-        Map<String, Object> params = getOrCreateParams(workflowNode);
-        List<Map<String, Object>> guardRules = getOrCreateGuardRules(params);
-        guardRules.removeIf(rule -> branchNode.getId().equals(String.valueOf(rule.get("branchNodeId"))));
-        Map<String, Object> guardRule = new LinkedHashMap<>();
-        guardRule.put("branchNodeId", branchNode.getId());
-        guardRule.put("branchNodeName", branchNode.getName());
-        guardRule.put("allowedTargetIds", new ArrayList<>(allowedTargets));
-        guardRules.add(guardRule);
-        params.put(BranchSchedulisConstant.BRANCH_GUARD_RULES, guardRules);
-    }
-
-    private List<Map<String, Object>> getOrCreateGuardRules(Map<String, Object> params) {
-        Object existing = params.get(BranchSchedulisConstant.BRANCH_GUARD_RULES);
-        if (existing instanceof List) {
-            List<Map<String, Object>> copiedRules = new ArrayList<>();
-            for (Object item : (List<?>) existing) {
-                if (item instanceof Map) {
-                    copiedRules.add(new LinkedHashMap<>((Map<String, Object>) item));
-                }
-            }
-            return copiedRules;
-        }
-        return new ArrayList<>();
     }
 
     private Map<String, Object> getOrCreateParams(WorkflowNode workflowNode) {
