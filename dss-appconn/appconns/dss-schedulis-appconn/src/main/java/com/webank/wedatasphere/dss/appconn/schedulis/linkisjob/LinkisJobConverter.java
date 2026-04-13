@@ -145,9 +145,7 @@ public class LinkisJobConverter implements NodeConverter {
         }
         if (isBranchNode(workflowNode)) {
             putDecisionRules(job, stringifyConfValue(params.get(BranchSchedulisConstant.BRANCH_ROUTE_RULE_TEXT)));
-            return;
         }
-        putBranchConf(job, params, BranchSchedulisConstant.BRANCH_GUARD_RULES);
     }
 
     private boolean isBranchNode(WorkflowNode workflowNode) {

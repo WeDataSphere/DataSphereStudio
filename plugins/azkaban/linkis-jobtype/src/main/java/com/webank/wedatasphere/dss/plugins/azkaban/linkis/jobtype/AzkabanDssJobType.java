@@ -26,9 +26,6 @@ import com.webank.wedatasphere.dss.linkis.node.execution.job.JobTypeEnum;
 import com.webank.wedatasphere.dss.linkis.node.execution.job.LinkisJob;
 import com.webank.wedatasphere.dss.linkis.node.execution.listener.LinkisExecutionListener;
 import com.webank.wedatasphere.dss.plugins.azkaban.linkis.jobtype.conf.LinkisJobTypeConf;
-import com.webank.wedatasphere.dss.plugins.azkaban.linkis.jobtype.job.BranchGuardExecutor;
-import com.webank.wedatasphere.dss.plugins.azkaban.linkis.jobtype.job.BranchRouteExecutor;
-import com.webank.wedatasphere.dss.plugins.azkaban.linkis.jobtype.job.BranchRuntimeStore;
 import com.webank.wedatasphere.dss.plugins.azkaban.linkis.jobtype.job.JobBuilder;
 import com.webank.wedatasphere.dss.plugins.azkaban.linkis.jobtype.log.AzkabanJobLog;
 import org.apache.commons.lang.StringUtils;
@@ -90,15 +87,7 @@ public class AzkabanDssJobType extends AbstractJob {
             this.jobPropsMap.put("run_today_h", runTodayH);
             this.jobPropsMap.put("run_today_hour", runTodayH);
         }
-        if (BranchRouteExecutor.isBranchRouteJob(this.jobPropsMap)) {
-            new BranchRouteExecutor(this, this.jobPropsMap).execute();
-            info("Finished branch route evaluation job");
-            return;
-        }
-        if (new BranchGuardExecutor(this, this.jobPropsMap).shouldSkip()) {
-            info("Skip guarded job because current branch path was not selected.");
-            return;
-        }
+
         this.job = JobBuilder.getAzkanbanBuilder().setJobProps(this.jobPropsMap).build();
         this.job.setLogObj(new AzkabanJobLog(this));
         if(JobTypeEnum.EmptyJob == ((LinkisJob)this.job).getJobType()){
@@ -164,8 +153,7 @@ public class AzkabanDssJobType extends AbstractJob {
     }
 
     private void collectBranchVariables() {
-        String flowExecId = this.jobPropsMap.get(LinkisJobTypeConf.FLOW_EXEC_ID);
-        if (StringUtils.isBlank(flowExecId) || this.job == null) {
+        if (this.job == null) {
             return;
         }
         try {
@@ -175,14 +163,12 @@ public class AzkabanDssJobType extends AbstractJob {
                 Props props = new Props();
                 props.putAll(resolvedVariables);
                 this.generatedProperties = props;
-                BranchRuntimeStore.mergeFlowVariables(flowExecId, resolvedVariables);
                 info("Collected branch flow variables: " + resolvedVariables);
             }
         } catch (Throwable t) {
             warn("Failed to collect branch flow variables from current job.", t);
         }
     }
-
     private Map<String, String> resolveBranchOutputVariables(Map<String, String> resultVariables) {
         if (resultVariables == null || resultVariables.isEmpty()) {
             return Collections.emptyMap();
