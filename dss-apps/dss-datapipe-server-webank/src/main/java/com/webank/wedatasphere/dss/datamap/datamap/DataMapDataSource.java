@@ -253,7 +253,7 @@ public class DataMapDataSource {
         List<String> tablesName = null;
 
         JsonElement data = preGetJsonData(contentStr);
-        if (null == data || data.isJsonNull()) {
+        if (null == data || data.isJsonNull() || data.getAsJsonObject().keySet().isEmpty()){
             LOG.warn("The data in the datamap return message body is null.");
             tablesName = new ArrayList<>();
         } else {
@@ -711,7 +711,7 @@ public class DataMapDataSource {
         String contentStr = requestAndResponse4Nebula(param, permissionMethod, permissionPath, nebulaAccount, headerParam);
         JsonElement data = preGetJsonData(contentStr);
 
-        if (null == data || data.isJsonNull()) {
+        if (null == data || data.isJsonNull() || data.getAsJsonObject().keySet().isEmpty()) {
             LOG.warn("The data in the datamap return message body is null");
         } else {
             JsonElement content = data.getAsJsonObject().get("content");
@@ -744,7 +744,7 @@ public class DataMapDataSource {
         String contentStr = requestAndResponse4Nebula(param, permissionMethod, permissionPath, nebulaAccount, headerParam);
         JsonElement data = preGetJsonData(contentStr);
 
-        if (null == data || data.isJsonNull()) {
+        if (null == data || data.isJsonNull() || data.getAsJsonObject().keySet().isEmpty()) {
             LOG.warn("The data in the datamap return message body is null");
         } else {
             JsonElement content = data.getAsJsonObject().get("content");
@@ -781,7 +781,7 @@ public class DataMapDataSource {
         List<CodeMeta> metas ;
 
         JsonElement data = preGetJsonData(contentStr);
-        if (null == data || data.isJsonNull()) {
+        if (null == data || data.isJsonNull() || data.getAsJsonObject().keySet().isEmpty()) {
             LOG.warn("The data in the datamap return message body is null.");
             metas = new ArrayList<>();
         } else {
@@ -825,11 +825,12 @@ public class DataMapDataSource {
             return result;
         }
         JsonElement data = preGetJsonData(contentStr);
-        if (null == data || data.isJsonNull()) {
+        if (null == data || data.isJsonNull() || data.getAsJsonObject().keySet().isEmpty()) {
             LOG.warn("The data in the datamap return message body is null.");
             result.setView(false);
 
         } else {
+            LOG.info("The data in the datamap key is {}",data.getAsJsonObject().keySet());
             String storageType = data.getAsJsonObject().get("storageType").getAsString();
             result.setView("View".equalsIgnoreCase(storageType));
         }
