@@ -19,6 +19,7 @@ package com.webank.wedatasphere.dss.flow.execution.entrance.resolver
 import java.util
 
 import com.webank.wedatasphere.dss.flow.execution.entrance.FlowContext
+import com.webank.wedatasphere.dss.flow.execution.entrance.enums.ExecuteStrategyEnum
 import com.webank.wedatasphere.dss.flow.execution.entrance.job.FlowEntranceJob
 import com.webank.wedatasphere.dss.flow.execution.entrance.utils.BranchExpressionUtils
 import com.webank.wedatasphere.dss.workflow.core.entity.WorkflowNode
@@ -38,6 +39,10 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
     val nodes = flowContext.getPendingNodes.toMap.values.map(_.getNode)
     val workflowNodesById = flow.getWorkflowNodes.map(node => node.getId -> node).toMap
     val workflowEdges = flow.getWorkflowNodeEdges.map(_.getDSSEdge)
+    val executeStrategy = Option(flowJob.getParams)
+      .map(_.get("executeStrategy"))
+      .map(_.toString)
+      .orNull
 
     def incomingEdges(node: WorkflowNode) = workflowEdges.filter(_.getTarget == node.getId)
 
@@ -66,7 +71,8 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
     }
 
     def shouldSkip(node: WorkflowNode): Boolean = {
-      shouldSkipByBranch(node) || areAllParentsSkipped(node)
+      shouldSkipByBranch(node) ||
+        (!ExecuteStrategyEnum.IS_SELECTED_EXECUTE.getValue.equalsIgnoreCase(executeStrategy) && areAllParentsSkipped(node))
     }
 
     def isBranchRouteMatched(node: WorkflowNode): Boolean = {
@@ -104,4 +110,3 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
     info(s"${flowJob.getId} Finished to get executable node(${flowContext.getScheduledNodes.size()})")
   }
 }
-
