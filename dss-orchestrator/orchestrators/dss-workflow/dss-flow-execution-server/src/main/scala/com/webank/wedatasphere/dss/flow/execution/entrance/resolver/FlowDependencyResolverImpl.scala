@@ -19,6 +19,7 @@ package com.webank.wedatasphere.dss.flow.execution.entrance.resolver
 import java.util
 
 import com.webank.wedatasphere.dss.flow.execution.entrance.FlowContext
+import com.webank.wedatasphere.dss.flow.execution.entrance.enums.ExecuteStrategyEnum
 import com.webank.wedatasphere.dss.flow.execution.entrance.job.FlowEntranceJob
 import com.webank.wedatasphere.dss.flow.execution.entrance.utils.BranchExpressionUtils
 import com.webank.wedatasphere.dss.workflow.core.entity.WorkflowNode
@@ -38,6 +39,10 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
     val nodes = flowContext.getPendingNodes.toMap.values.map(_.getNode)
     val workflowNodesById = flow.getWorkflowNodes.map(node => node.getId -> node).toMap
     val workflowEdges = flow.getWorkflowNodeEdges.map(_.getDSSEdge)
+    val executeStrategy = Option(flowJob.getParams)
+      .map(_.get("executeStrategy"))
+      .map(_.toString)
+      .orNull
 
     def incomingEdges(node: WorkflowNode) = workflowEdges.filter(_.getTarget == node.getId)
 
@@ -59,25 +64,30 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
         workflowNodesById.get(edge.getSource).exists { sourceNode =>
           BranchExpressionUtils.isBranchNode(sourceNode) &&
             flowContext.isNodeCompleted(sourceNode.getName) &&
-            flowJob.hasBranchSelection(sourceNode.getId) &&
-            !flowJob.isBranchTargetSelected(sourceNode.getId, node.getId)
+            (flowContext.isNodeSkipped(sourceNode.getName) ||
+              !flowJob.hasBranchSelection(sourceNode.getId) ||
+              !flowJob.isBranchTargetSelected(sourceNode.getId, node.getId))
         }
       }
     }
 
     def shouldSkip(node: WorkflowNode): Boolean = {
-      shouldSkipByBranch(node) || areAllParentsSkipped(node)
+      shouldSkipByBranch(node) ||
+        (!ExecuteStrategyEnum.IS_SELECTED_EXECUTE.getValue.equalsIgnoreCase(executeStrategy) && areAllParentsSkipped(node))
     }
 
     def isBranchRouteMatched(node: WorkflowNode): Boolean = {
       incomingEdges(node).forall { edge =>
         workflowNodesById.get(edge.getSource) match {
           case Some(sourceNode) if BranchExpressionUtils.isBranchNode(sourceNode) =>
-            flowJob.hasBranchSelection(sourceNode.getId) && flowJob.isBranchTargetSelected(sourceNode.getId, node.getId)
+            flowContext.isNodeSucceed(sourceNode.getName) &&
+              flowJob.hasBranchSelection(sourceNode.getId) &&
+              flowJob.isBranchTargetSelected(sourceNode.getId, node.getId)
           case _ => true
         }
       }
     }
+
 
     nodes.foreach { node =>
       val nodeName = node.getName
@@ -104,4 +114,3 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
     info(s"${flowJob.getId} Finished to get executable node(${flowContext.getScheduledNodes.size()})")
   }
 }
-

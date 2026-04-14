@@ -189,10 +189,9 @@ object BranchExpressionUtils extends Logging {
         operator match {
           case "==" => left == right
           case "!=" => left != right
-          case ">" => left > right
-          case "<" => left < right
-          case ">=" => left >= right
-          case "<=" => left <= right
+          case ">" | "<" | ">=" | "<=" =>
+            warn(s"Branch numeric comparison requires numeric operands: left=$left, operator=$operator, right=$right")
+            false
         }
     }
   }
