@@ -64,8 +64,9 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
         workflowNodesById.get(edge.getSource).exists { sourceNode =>
           BranchExpressionUtils.isBranchNode(sourceNode) &&
             flowContext.isNodeCompleted(sourceNode.getName) &&
-            flowJob.hasBranchSelection(sourceNode.getId) &&
-            !flowJob.isBranchTargetSelected(sourceNode.getId, node.getId)
+            (flowContext.isNodeSkipped(sourceNode.getName) ||
+              !flowJob.hasBranchSelection(sourceNode.getId) ||
+              !flowJob.isBranchTargetSelected(sourceNode.getId, node.getId))
         }
       }
     }
@@ -79,11 +80,14 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
       incomingEdges(node).forall { edge =>
         workflowNodesById.get(edge.getSource) match {
           case Some(sourceNode) if BranchExpressionUtils.isBranchNode(sourceNode) =>
-            flowJob.hasBranchSelection(sourceNode.getId) && flowJob.isBranchTargetSelected(sourceNode.getId, node.getId)
+            flowContext.isNodeSucceed(sourceNode.getName) &&
+              flowJob.hasBranchSelection(sourceNode.getId) &&
+              flowJob.isBranchTargetSelected(sourceNode.getId, node.getId)
           case _ => true
         }
       }
     }
+
 
     nodes.foreach { node =>
       val nodeName = node.getName
