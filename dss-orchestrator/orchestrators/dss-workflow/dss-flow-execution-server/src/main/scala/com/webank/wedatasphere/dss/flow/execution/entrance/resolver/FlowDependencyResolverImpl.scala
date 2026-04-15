@@ -44,6 +44,7 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
       .map(_.toString)
       .orNull
 
+    val isSelectedExecute = ExecuteStrategyEnum.IS_SELECTED_EXECUTE.getValue.equalsIgnoreCase(executeStrategy)
     def incomingEdges(node: WorkflowNode) = workflowEdges.filter(_.getTarget == node.getId)
 
     def isAllParentDependencyCompleted(parents: util.List[String]): Boolean = {
@@ -60,30 +61,38 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
     }
 
     def shouldSkipByBranch(node: WorkflowNode): Boolean = {
-      incomingEdges(node).exists { edge =>
-        workflowNodesById.get(edge.getSource).exists { sourceNode =>
-          BranchExpressionUtils.isBranchNode(sourceNode) &&
-            flowContext.isNodeCompleted(sourceNode.getName) &&
-            (flowContext.isNodeSkipped(sourceNode.getName) ||
-              !flowJob.hasBranchSelection(sourceNode.getId) ||
-              !flowJob.isBranchTargetSelected(sourceNode.getId, node.getId))
+      if (isSelectedExecute) {
+        false
+      } else {
+        incomingEdges(node).exists { edge =>
+          workflowNodesById.get(edge.getSource).exists { sourceNode =>
+            BranchExpressionUtils.isBranchNode(sourceNode) &&
+              flowContext.isNodeCompleted(sourceNode.getName) &&
+              (flowContext.isNodeSkipped(sourceNode.getName) ||
+                !flowJob.hasBranchSelection(sourceNode.getId) ||
+                !flowJob.isBranchTargetSelected(sourceNode.getId, node.getId))
+          }
         }
       }
     }
 
     def shouldSkip(node: WorkflowNode): Boolean = {
       shouldSkipByBranch(node) ||
-        (!ExecuteStrategyEnum.IS_SELECTED_EXECUTE.getValue.equalsIgnoreCase(executeStrategy) && areAllParentsSkipped(node))
+        (!isSelectedExecute && areAllParentsSkipped(node))
     }
 
     def isBranchRouteMatched(node: WorkflowNode): Boolean = {
-      incomingEdges(node).forall { edge =>
-        workflowNodesById.get(edge.getSource) match {
-          case Some(sourceNode) if BranchExpressionUtils.isBranchNode(sourceNode) =>
-            flowContext.isNodeSucceed(sourceNode.getName) &&
-              flowJob.hasBranchSelection(sourceNode.getId) &&
-              flowJob.isBranchTargetSelected(sourceNode.getId, node.getId)
-          case _ => true
+      if (isSelectedExecute) {
+        true
+      } else {
+        incomingEdges(node).forall { edge =>
+          workflowNodesById.get(edge.getSource) match {
+            case Some(sourceNode) if BranchExpressionUtils.isBranchNode(sourceNode) =>
+              flowContext.isNodeSucceed(sourceNode.getName) &&
+                flowJob.hasBranchSelection(sourceNode.getId) &&
+                flowJob.isBranchTargetSelected(sourceNode.getId, node.getId)
+            case _ => true
+          }
         }
       }
     }
