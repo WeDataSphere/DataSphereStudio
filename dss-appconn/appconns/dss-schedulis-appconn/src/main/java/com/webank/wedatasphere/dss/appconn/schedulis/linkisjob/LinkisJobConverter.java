@@ -168,7 +168,7 @@ public class LinkisJobConverter implements NodeConverter {
 
     private List<DecisionRule> parseDecisionRules(String branchRuleText) {
         List<DecisionRule> rules = new ArrayList<>();
-        for (String ruleText : branchRuleText.split(";")) {
+        for (String ruleText : branchRuleText.split("[\\r\\n;]+")) {
             if (StringUtils.isBlank(ruleText)) {
                 continue;
             }
@@ -181,14 +181,21 @@ public class LinkisJobConverter implements NodeConverter {
             if (StringUtils.isBlank(condition) || StringUtils.isBlank(targetJobName)) {
                 continue;
             }
-            if ("default".equalsIgnoreCase(condition)) {
-                condition = "true";
+            if (isUnsupportedDefaultKeyword(condition)) {
+                continue;
             }
             rules.add(new DecisionRule(condition, targetJobName));
         }
         return rules;
     }
 
+    private boolean isUnsupportedDefaultKeyword(String condition) {
+        if (StringUtils.isBlank(condition)) {
+            return false;
+        }
+        String normalized = condition.trim().toLowerCase();
+        return "default".equals(normalized) || "else".equals(normalized) || "*".equals(normalized);
+    }
     private void putBranchConf(LinkisJob job, Map<String, Object> params, String key) {
         Object value = params.get(key);
         if (value != null) {

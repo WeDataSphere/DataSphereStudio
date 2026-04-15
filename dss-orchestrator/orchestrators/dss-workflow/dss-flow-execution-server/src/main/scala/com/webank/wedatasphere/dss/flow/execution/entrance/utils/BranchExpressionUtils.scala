@@ -29,7 +29,6 @@ object BranchExpressionUtils extends Logging {
 
   val BranchNodeType = "workflow.branch"
   val BranchRuleKey = "branch.rules"
-  val DefaultRuleValues = Set("default", "else", "*")
 
   case class BranchRule(condition: String, targetName: String)
 
@@ -92,15 +91,13 @@ object BranchExpressionUtils extends Logging {
     } else {
       val condition = line.substring(0, separatorIndex).trim
       val targetName = line.substring(separatorIndex + 1).trim
-      if (condition.nonEmpty && targetName.nonEmpty) Some(BranchRule(condition, targetName))
+      if (condition.nonEmpty && targetName.nonEmpty && !isUnsupportedDefaultKeyword(condition)) Some(BranchRule(condition, targetName))
       else {
         warn(s"Invalid branch rule syntax: $line")
         None
       }
     }
   }
-
-  def isDefaultRule(rule: BranchRule): Boolean = DefaultRuleValues.contains(Option(rule.condition).map(_.trim.toLowerCase).getOrElse(""))
 
   def evaluateCondition(condition: String, context: Map[String, String]): Boolean = {
     val normalized = Option(condition).map(_.trim).getOrElse("")
@@ -110,6 +107,7 @@ object BranchExpressionUtils extends Logging {
       val expr = stripExpressionWrapper(normalized)
       if (expr.equalsIgnoreCase("true")) return true
       if (expr.equalsIgnoreCase("false")) return false
+      if (isUnsupportedDefaultKeyword(expr)) return false
       val operators = Seq("==", "!=", ">=", "<=", ">", "<")
       operators.collectFirst {
         case operator if expr.contains(operator) =>
@@ -173,6 +171,10 @@ object BranchExpressionUtils extends Logging {
   }
 
   private def getStringValue(value: Any): Option[String] = Option(value).map(_.toString.trim).filter(_.nonEmpty)
+  private def isUnsupportedDefaultKeyword(condition: String): Boolean = {
+    val normalized = Option(condition).map(_.trim.toLowerCase).getOrElse("")
+    normalized == "default" || normalized == "else" || normalized == "*"
+  }
 
   private def compare(left: String, right: String, operator: String): Boolean = {
     (toBigDecimal(left), toBigDecimal(right)) match {
@@ -204,4 +206,5 @@ object BranchExpressionUtils extends Logging {
     }
   }
 }
+
 

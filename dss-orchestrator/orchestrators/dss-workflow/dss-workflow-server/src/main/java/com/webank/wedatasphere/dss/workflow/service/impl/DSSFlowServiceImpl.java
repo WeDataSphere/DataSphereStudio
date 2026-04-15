@@ -588,14 +588,27 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             if (StringUtils.isBlank(rawRule)) {
                 continue;
             }
-            String[] parts = rawRule.split("=", 2);
-            if (parts.length == 2 && StringUtils.isNotBlank(parts[0]) && StringUtils.isNotBlank(parts[1])) {
-                branchRules.add(new String[]{parts[0].trim(), parts[1].trim()});
+            int separatorIndex = rawRule.lastIndexOf('=');
+            if (separatorIndex <= 0 || separatorIndex >= rawRule.length() - 1) {
+                continue;
+            }
+            String condition = rawRule.substring(0, separatorIndex).trim();
+            String targetName = rawRule.substring(separatorIndex + 1).trim();
+            if (StringUtils.isNotBlank(condition) && StringUtils.isNotBlank(targetName) && !isUnsupportedDefaultKeyword(condition)) {
+                branchRules.add(new String[]{condition, targetName});
             }
         }
         return branchRules;
     }
 
+
+    private boolean isUnsupportedDefaultKeyword(String condition) {
+        if (StringUtils.isBlank(condition)) {
+            return false;
+        }
+        String normalized = condition.trim().toLowerCase();
+        return "default".equals(normalized) || "else".equals(normalized) || "*".equals(normalized);
+    }
     private boolean parseEdgeDefault(JsonObject edge) {
         if (edge == null || !edge.has("isDefault") || edge.get("isDefault").isJsonNull()) {
             return false;
@@ -4103,6 +4116,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
 
 }
+
 
 
 

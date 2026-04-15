@@ -30,9 +30,6 @@ public class BranchExpressionUtils {
         return rules;
     }
 
-    public static boolean isDefaultRule(BranchRule rule) {
-        return rule != null && DEFAULT_RULE_VALUES.contains(normalize(rule.getCondition()));
-    }
 
     public static boolean evaluateCondition(String condition, Map<String, String> context) {
         String normalized = trimToEmpty(condition);
@@ -44,6 +41,9 @@ public class BranchExpressionUtils {
             return true;
         }
         if ("false".equalsIgnoreCase(expr)) {
+            return false;
+        }
+        if (isUnsupportedDefaultKeyword(expr)) {
             return false;
         }
         String[] operators = new String[]{"==", "!=", ">=", "<=", ">", "<"};
@@ -74,7 +74,7 @@ public class BranchExpressionUtils {
         }
         String condition = line.substring(0, separatorIndex).trim();
         String targetName = line.substring(separatorIndex + 1).trim();
-        if (condition.isEmpty() || targetName.isEmpty()) {
+        if (condition.isEmpty() || targetName.isEmpty() || isUnsupportedDefaultKeyword(condition)) {
             return null;
         }
         return new BranchRule(condition, targetName);
@@ -167,6 +167,13 @@ public class BranchExpressionUtils {
         return "true".equalsIgnoreCase(token) || "false".equalsIgnoreCase(token) || toBigDecimal(token) != null;
     }
 
+    private static boolean isUnsupportedDefaultKeyword(String condition) {
+        if (isBlank(condition)) {
+            return false;
+        }
+        String normalized = trimToEmpty(condition).toLowerCase();
+        return "default".equals(normalized) || "else".equals(normalized) || "*".equals(normalized);
+    }
     private static boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
@@ -175,9 +182,6 @@ public class BranchExpressionUtils {
         return value == null ? "" : value.trim();
     }
 
-    private static String normalize(String value) {
-        return trimToEmpty(value).toLowerCase();
-    }
 
     public static class BranchRule {
         private final String condition;

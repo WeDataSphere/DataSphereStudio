@@ -133,23 +133,13 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner with Logging {
       }
     }
     rules.find { rule =>
-      if (BranchExpressionUtils.isDefaultRule(rule)) {
-        false
-      } else {
-        val matched = BranchExpressionUtils.evaluateCondition(rule.condition, context)
-        logInfo(s"Branch node ${node.getName} rule evaluated: ${rule.condition} => ${rule.targetName}, matched=$matched")
-        matched
-      }
+      val matched = BranchExpressionUtils.evaluateCondition(rule.condition, context)
+      logInfo(s"Branch node ${node.getName} rule evaluated: ${rule.condition} => ${rule.targetName}, matched=$matched")
+      matched
     }.flatMap { rule =>
       val target = matchEdge(rule.targetName)
       logInfo(s"Branch node ${node.getName} matched rule target lookup: ${rule.targetName}, found=${target.isDefined}")
       target
-    }.orElse {
-      rules.find(BranchExpressionUtils.isDefaultRule).flatMap { rule =>
-        val target = matchEdge(rule.targetName)
-        logInfo(s"Branch node ${node.getName} use default rule target lookup: ${rule.targetName}, found=${target.isDefined}")
-        target
-      }
     }
   }
 

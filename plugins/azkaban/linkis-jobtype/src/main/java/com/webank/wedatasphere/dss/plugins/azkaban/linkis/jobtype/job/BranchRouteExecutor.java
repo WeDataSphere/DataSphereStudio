@@ -88,22 +88,14 @@ public class BranchRouteExecutor {
     private String selectTarget(String branchRuleText, Map<String, String> targetNameToId, Map<String, String> context) {
         List<BranchExpressionUtils.BranchRule> rules = BranchExpressionUtils.parseBranchRules(branchRuleText);
         for (BranchExpressionUtils.BranchRule rule : rules) {
-            if (!BranchExpressionUtils.isDefaultRule(rule) && BranchExpressionUtils.evaluateCondition(rule.getCondition(), context)) {
+            if (BranchExpressionUtils.evaluateCondition(rule.getCondition(), context)) {
                 String targetId = targetNameToId.get(rule.getTargetName());
                 if (!isBlank(targetId)) {
                     return targetId;
                 }
             }
         }
-        for (BranchExpressionUtils.BranchRule rule : rules) {
-            if (BranchExpressionUtils.isDefaultRule(rule)) {
-                String targetId = targetNameToId.get(rule.getTargetName());
-                if (!isBlank(targetId)) {
-                    return targetId;
-                }
-            }
-        }
-        throw new IllegalStateException("No branch rule matched and no default rule was resolved.");
+        throw new IllegalStateException("No branch rule matched.");
     }
 
     private List<Map<String, Object>> parseTargetDefinitions(String json) throws Exception {
