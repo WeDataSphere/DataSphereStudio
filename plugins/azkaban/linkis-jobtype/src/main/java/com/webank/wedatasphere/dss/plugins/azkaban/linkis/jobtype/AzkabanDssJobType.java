@@ -107,7 +107,7 @@ public class AzkabanDssJobType extends AbstractJob {
             String endLog = LinkisNodeExecutionImpl.getLinkisNodeExecution().getLog(this.job);
             info(endLog);
         } catch (Throwable e){
-            info("Failed to get log", e);
+            info("Skip fetching end log because no final log content is available from Linkis.");
         }
 
         LinkisExecutionListener listener = (LinkisExecutionListener)LinkisNodeExecutionImpl.getLinkisNodeExecution();
