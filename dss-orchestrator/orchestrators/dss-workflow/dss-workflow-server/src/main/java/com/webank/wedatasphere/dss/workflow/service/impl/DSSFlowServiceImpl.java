@@ -543,14 +543,16 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             if (StringUtils.isBlank(branchRuleText)) {
                 throw new DSSErrorException(80001, "Branch node [" + branchNodeName + "] must define branch rules on the node properties.");
             }
-            List<String[]> branchRules = parseBranchRules(branchRuleText);
+            List<BranchRuleHolder> branchRules = parseBranchRules(branchRuleText);
             if (branchRules.isEmpty()) {
                 throw new DSSErrorException(80001, "Branch node [" + branchNodeName + "] has invalid branch rules.");
             }
-            for (String[] branchRule : branchRules) {
-                String targetName = branchRule[1];
-                if (!targetNames.contains(targetName) && !targetIds.contains(targetName)) {
-                    throw new DSSErrorException(80001, "Branch node [" + branchNodeName + "] references a non-outgoing target node [" + targetName + "].");
+            for (BranchRuleHolder branchRule : branchRules) {
+                if (StringUtils.isNotBlank(branchRule.targetName) && !targetNames.contains(branchRule.targetName) && !targetIds.contains(branchRule.targetName)) {
+                    throw new DSSErrorException(80001, "Branch node [" + branchNodeName + "] references a non-outgoing target node [" + branchRule.targetName + "].");
+                }
+                if (StringUtils.isNotBlank(branchRule.onFailure) && !targetNames.contains(branchRule.onFailure) && !targetIds.contains(branchRule.onFailure)) {
+                    throw new DSSErrorException(80001, "Branch node [" + branchNodeName + "] references a non-outgoing failure target node [" + branchRule.onFailure + "].");
                 }
             }
         }
@@ -578,8 +580,9 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         return special.get("branch.rules").getAsString();
     }
 
-    private List<String[]> parseBranchRules(String branchRuleText) {
-        List<String[]> branchRules = new ArrayList<>();
+    private List<BranchRuleHolder> parseBranchRules(String branchRuleText) {
+        Map<Integer, BranchRuleHolder> branchRuleMap = new java.util.TreeMap<>();
+        List<BranchRuleHolder> branchRules = new ArrayList<>();
         if (StringUtils.isBlank(branchRuleText)) {
             return branchRules;
         }
@@ -588,19 +591,59 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             if (StringUtils.isBlank(rawRule)) {
                 continue;
             }
-            int separatorIndex = rawRule.lastIndexOf('=');
-            if (separatorIndex <= 0 || separatorIndex >= rawRule.length() - 1) {
+            int separatorIndex = rawRule.indexOf('=');
+            if (separatorIndex <= 0) {
                 continue;
             }
-            String condition = rawRule.substring(0, separatorIndex).trim();
-            String targetName = rawRule.substring(separatorIndex + 1).trim();
-            if (StringUtils.isNotBlank(condition) && StringUtils.isNotBlank(targetName) && !isUnsupportedDefaultKeyword(condition)) {
-                branchRules.add(new String[]{condition, targetName});
+            String key = rawRule.substring(0, separatorIndex).trim();
+            String value = rawRule.substring(separatorIndex + 1);
+            IndexedBranchRuleKey indexedRuleKey = parseIndexedBranchRuleKey(key);
+            if (indexedRuleKey == null) {
+                continue;
+            }
+            BranchRuleHolder holder = branchRuleMap.computeIfAbsent(indexedRuleKey.index, ignored -> new BranchRuleHolder());
+            if ("condition".equals(indexedRuleKey.ruleType)) {
+                holder.condition = value == null ? null : value.trim();
+            } else if ("on.success".equals(indexedRuleKey.ruleType)) {
+                holder.targetName = value == null ? null : value.trim();
+            } else if ("on.failure".equals(indexedRuleKey.ruleType)) {
+                holder.onFailure = value == null ? "" : value.trim();
+            }
+        }
+        for (BranchRuleHolder holder : branchRuleMap.values()) {
+            if (StringUtils.isNotBlank(holder.condition) && !isUnsupportedDefaultKeyword(holder.condition) && (StringUtils.isNotBlank(holder.targetName) || StringUtils.isNotBlank(holder.onFailure))) {
+                branchRules.add(holder);
             }
         }
         return branchRules;
     }
 
+    private IndexedBranchRuleKey parseIndexedBranchRuleKey(String key) {
+        if (StringUtils.isBlank(key)) {
+            return null;
+        }
+        if (key.startsWith("condition.")) {
+            return buildIndexedBranchRuleKey("condition", key.substring("condition.".length()));
+        }
+        if (key.startsWith("on.success.")) {
+            return buildIndexedBranchRuleKey("on.success", key.substring("on.success.".length()));
+        }
+        if (key.startsWith("on.failure.")) {
+            return buildIndexedBranchRuleKey("on.failure", key.substring("on.failure.".length()));
+        }
+        return null;
+    }
+
+    private IndexedBranchRuleKey buildIndexedBranchRuleKey(String ruleType, String rawIndex) {
+        if (StringUtils.isBlank(rawIndex)) {
+            return null;
+        }
+        try {
+            return new IndexedBranchRuleKey(ruleType, Integer.parseInt(rawIndex.trim()));
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
 
     private boolean isUnsupportedDefaultKeyword(String condition) {
         if (StringUtils.isBlank(condition)) {
@@ -608,6 +651,22 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         }
         String normalized = condition.trim().toLowerCase();
         return "default".equals(normalized) || "else".equals(normalized) || "*".equals(normalized);
+    }
+
+    private static class BranchRuleHolder {
+        private String condition;
+        private String targetName;
+        private String onFailure;
+    }
+
+    private static class IndexedBranchRuleKey {
+        private final String ruleType;
+        private final int index;
+
+        private IndexedBranchRuleKey(String ruleType, int index) {
+            this.ruleType = ruleType;
+            this.index = index;
+        }
     }
     private boolean parseEdgeDefault(JsonObject edge) {
         if (edge == null || !edge.has("isDefault") || edge.get("isDefault").isJsonNull()) {

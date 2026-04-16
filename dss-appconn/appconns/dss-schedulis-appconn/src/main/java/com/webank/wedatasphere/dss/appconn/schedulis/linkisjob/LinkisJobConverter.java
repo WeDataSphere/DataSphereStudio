@@ -162,31 +162,73 @@ public class LinkisJobConverter implements NodeConverter {
             int index = i + 1;
             job.getConf().put(BranchSchedulisConstant.DECISION_CONDITION_PREFIX + index, rule.condition);
             job.getConf().put(BranchSchedulisConstant.DECISION_ON_SUCCESS_PREFIX + index, rule.targetJobName);
-            job.getConf().put(BranchSchedulisConstant.DECISION_ON_FAILURE_PREFIX + index, "");
+            job.getConf().put(BranchSchedulisConstant.DECISION_ON_FAILURE_PREFIX + index, rule.onFailure);
         }
     }
 
     private List<DecisionRule> parseDecisionRules(String branchRuleText) {
-        List<DecisionRule> rules = new ArrayList<>();
+        Map<Integer, DecisionRuleBuilder> decisionRuleMap = new java.util.TreeMap<>();
         for (String ruleText : branchRuleText.split("[\\r\\n;]+")) {
             if (StringUtils.isBlank(ruleText)) {
                 continue;
             }
-            int separatorIndex = ruleText.lastIndexOf('=');
-            if (separatorIndex <= 0 || separatorIndex >= ruleText.length() - 1) {
+            int separatorIndex = ruleText.indexOf('=');
+            if (separatorIndex <= 0) {
                 continue;
             }
-            String condition = ruleText.substring(0, separatorIndex).trim();
-            String targetJobName = ruleText.substring(separatorIndex + 1).trim();
-            if (StringUtils.isBlank(condition) || StringUtils.isBlank(targetJobName)) {
+            String key = ruleText.substring(0, separatorIndex).trim();
+            String value = ruleText.substring(separatorIndex + 1);
+            IndexedRuleKey indexedRuleKey = parseIndexedRuleKey(key);
+            if (indexedRuleKey == null) {
                 continue;
             }
-            if (isUnsupportedDefaultKeyword(condition)) {
+            DecisionRuleBuilder builder = decisionRuleMap.computeIfAbsent(indexedRuleKey.index, ignored -> new DecisionRuleBuilder());
+            if ("condition".equals(indexedRuleKey.ruleType)) {
+                builder.condition = value.trim();
+            } else if ("on.success".equals(indexedRuleKey.ruleType)) {
+                builder.targetJobName = value.trim();
+            } else if ("on.failure".equals(indexedRuleKey.ruleType)) {
+                builder.onFailure = value == null ? "" : value.trim();
+            }
+        }
+        List<DecisionRule> rules = new ArrayList<>();
+        for (DecisionRuleBuilder builder : decisionRuleMap.values()) {
+            if (StringUtils.isBlank(builder.condition) || StringUtils.isBlank(builder.targetJobName)) {
                 continue;
             }
-            rules.add(new DecisionRule(condition, targetJobName));
+            if (isUnsupportedDefaultKeyword(builder.condition)) {
+                continue;
+            }
+            rules.add(new DecisionRule(builder.condition, builder.targetJobName, StringUtils.defaultString(builder.onFailure)));
         }
         return rules;
+    }
+
+    private IndexedRuleKey parseIndexedRuleKey(String key) {
+        if (StringUtils.isBlank(key)) {
+            return null;
+        }
+        if (key.startsWith("condition.")) {
+            return buildIndexedRuleKey("condition", key.substring("condition.".length()));
+        }
+        if (key.startsWith("on.success.")) {
+            return buildIndexedRuleKey("on.success", key.substring("on.success.".length()));
+        }
+        if (key.startsWith("on.failure.")) {
+            return buildIndexedRuleKey("on.failure", key.substring("on.failure.".length()));
+        }
+        return null;
+    }
+
+    private IndexedRuleKey buildIndexedRuleKey(String ruleType, String rawIndex) {
+        if (StringUtils.isBlank(rawIndex)) {
+            return null;
+        }
+        try {
+            return new IndexedRuleKey(ruleType, Integer.parseInt(rawIndex.trim()));
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     private boolean isUnsupportedDefaultKeyword(String condition) {
@@ -228,10 +270,28 @@ public class LinkisJobConverter implements NodeConverter {
     private static class DecisionRule {
         private final String condition;
         private final String targetJobName;
+        private final String onFailure;
 
-        private DecisionRule(String condition, String targetJobName) {
+        private DecisionRule(String condition, String targetJobName, String onFailure) {
             this.condition = condition;
             this.targetJobName = targetJobName;
+            this.onFailure = onFailure;
+        }
+    }
+
+    private static class DecisionRuleBuilder {
+        private String condition;
+        private String targetJobName;
+        private String onFailure;
+    }
+
+    private static class IndexedRuleKey {
+        private final String ruleType;
+        private final int index;
+
+        private IndexedRuleKey(String ruleType, int index) {
+            this.ruleType = ruleType;
+            this.index = index;
         }
     }
 }

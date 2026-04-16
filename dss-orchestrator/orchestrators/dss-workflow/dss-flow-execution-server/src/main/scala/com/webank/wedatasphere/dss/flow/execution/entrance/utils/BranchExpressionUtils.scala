@@ -24,13 +24,18 @@ import com.webank.wedatasphere.dss.workflow.core.entity.WorkflowNode
 import org.apache.linkis.common.utils.Logging
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 object BranchExpressionUtils extends Logging {
 
   val BranchNodeType = "workflow.branch"
   val BranchRuleKey = "branch.rules"
+  private val ConditionPrefix = "condition."
+  private val OnSuccessPrefix = "on.success."
+  private val OnFailurePrefix = "on.failure."
 
-  case class BranchRule(condition: String, targetName: String)
+  case class BranchRule(condition: String, targetName: Option[String], onFailureTarget: Option[String])
+  private case class IndexedBranchRule(condition: Option[String] = None, targetName: Option[String] = None, onFailure: Option[String] = None)
 
   def isBranchNode(node: WorkflowNode): Boolean = node != null && BranchNodeType.equalsIgnoreCase(node.getNodeType)
 
@@ -77,25 +82,65 @@ object BranchExpressionUtils extends Logging {
   }
 
   def parseBranchRules(raw: String): Seq[BranchRule] = {
+    val indexedRules = mutable.LinkedHashMap[Int, IndexedBranchRule]()
     Option(raw).map(_.split("[\\r\\n;]+").toSeq).getOrElse(Seq.empty)
       .map(_.trim)
       .filter(_.nonEmpty)
-      .flatMap(parseBranchRule)
+      .foreach { line =>
+        parseBranchRuleEntry(line).foreach { case (ruleType, index, ruleValue) =>
+          val current = indexedRules.getOrElse(index, IndexedBranchRule())
+          val updated = ruleType match {
+            case ConditionPrefix => current.copy(condition = Some(ruleValue))
+            case OnSuccessPrefix => current.copy(targetName = Some(ruleValue))
+            case OnFailurePrefix => current.copy(onFailure = Some(ruleValue))
+          }
+          indexedRules.put(index, updated)
+        }
+      }
+    indexedRules.toSeq.sortBy(_._1).flatMap { case (_, rule) =>
+      (rule.condition.map(_.trim), rule.targetName.map(_.trim).filter(_.nonEmpty), rule.onFailure.map(_.trim).filter(_.nonEmpty)) match {
+        case (Some(condition), targetName, onFailureTarget)
+          if condition.nonEmpty && !isUnsupportedDefaultKeyword(condition) && (targetName.isDefined || onFailureTarget.isDefined) =>
+          Some(BranchRule(condition, targetName, onFailureTarget))
+        case _ => None
+      }
+    }
   }
 
-  private def parseBranchRule(line: String): Option[BranchRule] = {
-    val separatorIndex = Option(line).map(_.lastIndexOf('=')).getOrElse(-1)
-    if (separatorIndex <= 0 || separatorIndex >= line.length - 1) {
+  private def parseBranchRuleEntry(line: String): Option[(String, Int, String)] = {
+    val separatorIndex = Option(line).map(_.indexOf('=')).getOrElse(-1)
+    if (separatorIndex <= 0) {
       warn(s"Invalid branch rule syntax: $line")
       None
     } else {
-      val condition = line.substring(0, separatorIndex).trim
-      val targetName = line.substring(separatorIndex + 1).trim
-      if (condition.nonEmpty && targetName.nonEmpty && !isUnsupportedDefaultKeyword(condition)) Some(BranchRule(condition, targetName))
-      else {
-        warn(s"Invalid branch rule syntax: $line")
-        None
+      val key = line.substring(0, separatorIndex).trim
+      val value = line.substring(separatorIndex + 1)
+      parseIndexedRuleKey(key) match {
+        case Some((ruleType, index)) => Some((ruleType, index, value))
+        case None =>
+          warn(s"Invalid branch rule syntax: $line")
+          None
       }
+    }
+  }
+
+  private def parseIndexedRuleKey(key: String): Option[(String, Int)] = {
+    if (key.startsWith(ConditionPrefix)) {
+      parseRuleIndex(key.substring(ConditionPrefix.length)).map(index => (ConditionPrefix, index))
+    } else if (key.startsWith(OnSuccessPrefix)) {
+      parseRuleIndex(key.substring(OnSuccessPrefix.length)).map(index => (OnSuccessPrefix, index))
+    } else if (key.startsWith(OnFailurePrefix)) {
+      parseRuleIndex(key.substring(OnFailurePrefix.length)).map(index => (OnFailurePrefix, index))
+    } else {
+      None
+    }
+  }
+
+  private def parseRuleIndex(rawIndex: String): Option[Int] = {
+    try {
+      Some(rawIndex.trim.toInt)
+    } catch {
+      case _: Throwable => None
     }
   }
 
