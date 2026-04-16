@@ -183,7 +183,10 @@ public class AzkabanDssJobType extends AbstractJob {
             if (entry.getKey() != null
                     && entry.getKey().startsWith(LinkisJobTypeConf.FLOW_VARIABLE_PREFIX)
                     && entry.getValue() != null) {
-                flowVariables.put(entry.getKey().substring(LinkisJobTypeConf.FLOW_VARIABLE_PREFIX.length()), entry.getValue());
+                String variableKey = entry.getKey().substring(LinkisJobTypeConf.FLOW_VARIABLE_PREFIX.length());
+                if (!"user.to.proxy".equals(variableKey)) {
+                    flowVariables.put(variableKey, entry.getValue());
+                }
             }
         }
         return flowVariables;
