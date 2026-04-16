@@ -101,17 +101,18 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner with Logging {
       val parsedRules = BranchExpressionUtils.parseBranchRules(branchRuleText)
       logInfo(s"Branch node ${node.getName} parsed rules: ${parsedRules.map(rule => s"${rule.condition}=>success=${rule.targetName.getOrElse("")},failure=${rule.onFailureTarget.getOrElse("")}").mkString(", ")}")
       val selectedEdge = selectEdgeByRules(outgoingEdges, parsedRules, context)
-      if (selectedEdge.isEmpty) {
-        throw new IllegalStateException(s"No branch rule matched for node ${node.getName}.")
-      }
       val selectedTarget = selectedEdge.map(_.getTarget).orNull
-      logInfo(s"Branch node ${node.getName} selected target id: ${Option(selectedTarget).getOrElse("")}")
+      if (selectedEdge.isEmpty) {
+        logInfo(s"Branch node ${node.getName} selected no downstream target.")
+      } else {
+        logInfo(s"Branch node ${node.getName} selected target id: ${Option(selectedTarget).getOrElse("")}")
+      }
       getNodeRunnerListener match {
         case flowEntranceJob: FlowEntranceJob =>
           flowEntranceJob.recordBranchSelection(currentNodeId, selectedTarget)
         case _ =>
       }
-      this.executedInfo = Option(selectedTarget).getOrElse("default")
+      this.executedInfo = Option(selectedTarget).getOrElse("")
       this.transitionState(NodeExecutionState.Succeed)
     } catch {
       case t: Throwable =>
