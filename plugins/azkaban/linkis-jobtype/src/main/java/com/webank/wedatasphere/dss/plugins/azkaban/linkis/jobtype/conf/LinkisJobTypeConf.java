@@ -44,12 +44,6 @@ public class LinkisJobTypeConf {
     public static final String LINKIS_TYPE_KEY = "linkistype";
     public static final String FLOW_VARIABLE_PREFIX = "flow.variable.";
 
-    public static final String BRANCH_ROUTE_LINKIS_TYPE = "linkis.appconn.branch.route";
-    public static final String BRANCH_ROUTE_NODE_ID = "wds.branch.route.node.id";
-    public static final String BRANCH_ROUTE_NODE_NAME = "wds.branch.route.node.name";
-    public static final String BRANCH_ROUTE_RULE_TEXT = "wds.branch.route.rule.text";
-    public static final String BRANCH_ROUTE_TARGETS = "wds.branch.route.targets";
-    public static final String BRANCH_GUARD_RULES = "wds.branch.guard.rules";
     public static final String BRANCH_OUTPUT_MAPPING = "node.conf.special.branch.output.mapping";
     public static final String BRANCH_OUTPUT_MAPPING_ALIAS = "node.conf.special.branchOutputMapping";
 
