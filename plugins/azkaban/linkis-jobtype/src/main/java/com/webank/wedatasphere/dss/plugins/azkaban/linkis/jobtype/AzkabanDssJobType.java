@@ -153,21 +153,40 @@ public class AzkabanDssJobType extends AbstractJob {
     }
 
     private void collectBranchVariables() {
-        if (this.job == null) {
-            return;
-        }
+        Map<String, String> mergedVariables = new LinkedHashMap<>(collectFlowVariablesFromJobProps());
         try {
-            Map<String, String> resultVariables = LinkisNodeExecutionImpl.getLinkisNodeExecution().getResultVariables(this.job, 128);
-            Map<String, String> resolvedVariables = resolveBranchOutputVariables(resultVariables);
-            if (!resolvedVariables.isEmpty()) {
-                Props props = new Props();
-                props.putAll(resolvedVariables);
-                this.generatedProperties = props;
-                info("Collected branch flow variables: " + resolvedVariables);
+            if (this.job != null) {
+                Map<String, String> resultVariables = LinkisNodeExecutionImpl.getLinkisNodeExecution().getResultVariables(this.job, 128);
+                Map<String, String> resolvedVariables = resolveBranchOutputVariables(resultVariables);
+                if (!resolvedVariables.isEmpty()) {
+                    mergedVariables.putAll(resolvedVariables);
+                    info("Collected branch result variables: " + resolvedVariables);
+                }
             }
         } catch (Throwable t) {
             warn("Failed to collect branch flow variables from current job.", t);
         }
+        if (!mergedVariables.isEmpty()) {
+            Props props = new Props();
+            props.putAll(mergedVariables);
+            this.generatedProperties = props;
+            info("Collected generated flow variables: " + mergedVariables);
+        }
+    }
+
+    private Map<String, String> collectFlowVariablesFromJobProps() {
+        Map<String, String> flowVariables = new LinkedHashMap<>();
+        if (this.jobPropsMap == null || this.jobPropsMap.isEmpty()) {
+            return flowVariables;
+        }
+        for (Map.Entry<String, String> entry : this.jobPropsMap.entrySet()) {
+            if (entry.getKey() != null
+                    && entry.getKey().startsWith(LinkisJobTypeConf.FLOW_VARIABLE_PREFIX)
+                    && entry.getValue() != null) {
+                flowVariables.put(entry.getKey().substring(LinkisJobTypeConf.FLOW_VARIABLE_PREFIX.length()), entry.getValue());
+            }
+        }
+        return flowVariables;
     }
     private Map<String, String> resolveBranchOutputVariables(Map<String, String> resultVariables) {
         if (resultVariables == null || resultVariables.isEmpty()) {
