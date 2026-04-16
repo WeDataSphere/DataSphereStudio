@@ -99,7 +99,7 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner with Logging {
         throw new IllegalStateException(s"Branch node ${node.getName} must define branch.rules.")
       }
       val parsedRules = BranchExpressionUtils.parseBranchRules(branchRuleText)
-      logInfo(s"Branch node ${node.getName} parsed rules: ${parsedRules.map(rule => s"${rule.condition}=>${rule.targetName}").mkString(", ")}")
+      logInfo(s"Branch node ${node.getName} parsed rules: ${parsedRules.map(rule => s"${rule.condition}=>success=${rule.targetName.getOrElse("")},failure=${rule.onFailureTarget.getOrElse("")}").mkString(", ")}")
       val selectedEdge = selectEdgeByRules(outgoingEdges, parsedRules, context)
       if (selectedEdge.isEmpty) {
         throw new IllegalStateException(s"No branch rule matched for node ${node.getName}.")
@@ -132,15 +132,16 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner with Logging {
         }
       }
     }
-    rules.find { rule =>
+    rules.iterator.map { rule =>
       val matched = BranchExpressionUtils.evaluateCondition(rule.condition, context)
-      logInfo(s"Branch node ${node.getName} rule evaluated: ${rule.condition} => ${rule.targetName}, matched=$matched")
-      matched
-    }.flatMap { rule =>
-      val target = matchEdge(rule.targetName)
-      logInfo(s"Branch node ${node.getName} matched rule target lookup: ${rule.targetName}, found=${target.isDefined}")
-      target
-    }
+      val selectedTargetName = if (matched) rule.targetName else rule.onFailureTarget
+      logInfo(s"Branch node ${node.getName} rule evaluated: ${rule.condition}, matched=$matched, selectedTarget=${selectedTargetName.getOrElse("")}")
+      selectedTargetName.flatMap { targetName =>
+        val target = matchEdge(targetName)
+        logInfo(s"Branch node ${node.getName} target lookup: ${targetName}, found=${target.isDefined}")
+        target
+      }
+    }.find(_.isDefined).flatten
   }
 
   private def describeEdges(edges: Seq[DSSEdge]): String = {
