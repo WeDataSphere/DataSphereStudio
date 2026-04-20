@@ -45,6 +45,8 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
       .orNull
 
     val isSelectedExecute = ExecuteStrategyEnum.IS_SELECTED_EXECUTE.getValue.equalsIgnoreCase(executeStrategy)
+    val isReExecute = ExecuteStrategyEnum.IS_RE_EXECUTE.getValue.equalsIgnoreCase(executeStrategy)
+    val isPartialExecute = isSelectedExecute || isReExecute
     def incomingEdges(node: WorkflowNode) = workflowEdges.filter(_.getTarget == node.getId)
 
     def isAllParentDependencyCompleted(parents: util.List[String]): Boolean = {
@@ -61,7 +63,7 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
     }
 
     def shouldSkipByBranch(node: WorkflowNode): Boolean = {
-      if (isSelectedExecute) {
+      if (isPartialExecute) {
         false
       } else {
         incomingEdges(node).exists { edge =>
@@ -78,11 +80,11 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
 
     def shouldSkip(node: WorkflowNode): Boolean = {
       shouldSkipByBranch(node) ||
-        (!isSelectedExecute && areAllParentsSkipped(node))
+        (!isPartialExecute && areAllParentsSkipped(node))
     }
 
     def isBranchRouteMatched(node: WorkflowNode): Boolean = {
-      if (isSelectedExecute) {
+      if (isPartialExecute) {
         true
       } else {
         incomingEdges(node).forall { edge =>
