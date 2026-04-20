@@ -134,13 +134,18 @@ class BranchNodeRunner(flow: Workflow) extends NodeRunner with Logging {
       }
     }
     rules.iterator.map { rule =>
-      val matched = BranchExpressionUtils.evaluateCondition(rule.condition, context)
-      val selectedTargetName = if (matched) rule.targetName else rule.onFailureTarget
-      logInfo(s"Branch node ${node.getName} rule evaluated: ${rule.condition}, matched=$matched, selectedTarget=${selectedTargetName.getOrElse("")}")
-      selectedTargetName.flatMap { targetName =>
-        val target = matchEdge(targetName)
-        logInfo(s"Branch node ${node.getName} target lookup: ${targetName}, found=${target.isDefined}")
-        target
+      if (!BranchExpressionUtils.isStrictConditionSyntaxValid(rule.condition)) {
+        logInfo(s"Branch node ${node.getName} skip invalid rule condition: ${rule.condition}")
+        None
+      } else {
+        val matched = BranchExpressionUtils.evaluateCondition(rule.condition, context)
+        val selectedTargetName = if (matched) rule.targetName else rule.onFailureTarget
+        logInfo(s"Branch node ${node.getName} rule evaluated: ${rule.condition}, matched=$matched, selectedTarget=${selectedTargetName.getOrElse("")}")
+        selectedTargetName.flatMap { targetName =>
+          val target = matchEdge(targetName)
+          logInfo(s"Branch node ${node.getName} target lookup: ${targetName}, found=${target.isDefined}")
+          target
+        }
       }
     }.find(_.isDefined).flatten
   }

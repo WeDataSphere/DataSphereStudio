@@ -146,20 +146,11 @@ object BranchExpressionUtils extends Logging {
 
   def evaluateCondition(condition: String, context: Map[String, String]): Boolean = {
     val normalized = Option(condition).map(_.trim).getOrElse("")
-    if (normalized.isEmpty) {
+    if (!isStrictConditionSyntaxValid(normalized)) {
       false
     } else {
-      if (normalized.startsWith("${") && normalized.endsWith("}")) {
-        warn(s"Invalid branch condition syntax, wrapper `$${...}` is not allowed: $condition")
-        return false
-      }
       val expr = normalized
-      if (isUnsupportedDefaultKeyword(expr)) return false
       val operators = Seq("==", "!=", ">=", "<=", ">", "<")
-      if (!operators.exists(expr.contains)) {
-        warn(s"Invalid branch condition syntax, explicit comparison is required: $condition")
-        return false
-      }
       operators.collectFirst {
         case operator if expr.contains(operator) =>
           val parts = expr.split(java.util.regex.Pattern.quote(operator), 2).map(_.trim)
@@ -178,6 +169,21 @@ object BranchExpressionUtils extends Logging {
             }
           }
       }.getOrElse(false)
+    }
+  }
+
+  private val StrictConditionPattern = "^[A-Za-z0-9_.-]+\s*(==|!=|>=|<=|>|<)\s*([A-Za-z0-9_.-]+|\"[^\"]*\"|'[^']*')$".r
+
+  def isStrictConditionSyntaxValid(condition: String): Boolean = {
+    val normalized = Option(condition).map(_.trim).getOrElse("")
+    if (normalized.isEmpty || isUnsupportedDefaultKeyword(normalized)) {
+      false
+    } else {
+      val valid = StrictConditionPattern.pattern.matcher(normalized).matches()
+      if (!valid) {
+        warn(s"Invalid branch condition syntax, explicit comparison expression is required: $condition")
+      }
+      valid
     }
   }
 
