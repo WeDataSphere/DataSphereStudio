@@ -172,7 +172,7 @@ object BranchExpressionUtils extends Logging {
     }
   }
 
-  private val StrictConditionPattern = "^[A-Za-z0-9_.-]+\s*(==|!=|>=|<=|>|<)\s*([A-Za-z0-9_.-]+|\"[^\"]*\"|'[^']*')$".r
+  private val StrictConditionPattern = "^[A-Za-z0-9_.-]+\\s*(==|!=|>=|<=|>|<)\\s*([A-Za-z0-9_.-]+|\"[^\"]*\"|'[^']*')$".r
 
   def isStrictConditionSyntaxValid(condition: String): Boolean = {
     val normalized = Option(condition).map(_.trim).getOrElse("")
