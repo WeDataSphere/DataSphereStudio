@@ -611,7 +611,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             }
         }
         for (BranchRuleHolder holder : branchRuleMap.values()) {
-            if (StringUtils.isNotBlank(holder.condition) && !isUnsupportedDefaultKeyword(holder.condition) && (StringUtils.isNotBlank(holder.targetName) || StringUtils.isNotBlank(holder.onFailure))) {
+            if (StringUtils.isNotBlank(holder.condition) && !isUnsupportedDefaultKeyword(holder.condition) && isStrictBranchCondition(holder.condition) && (StringUtils.isNotBlank(holder.targetName) || StringUtils.isNotBlank(holder.onFailure))) {
                 branchRules.add(holder);
             }
         }
@@ -643,6 +643,17 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         } catch (NumberFormatException ignored) {
             return null;
         }
+    }
+
+    private boolean isStrictBranchCondition(String condition) {
+        if (StringUtils.isBlank(condition)) {
+            return false;
+        }
+        String expr = condition.trim();
+        if (expr.startsWith("${") && expr.endsWith("}")) {
+            return false;
+        }
+        return expr.contains("==") || expr.contains("!=") || expr.contains(">=") || expr.contains("<=") || expr.contains(">") || expr.contains("<");
     }
 
     private boolean isUnsupportedDefaultKeyword(String condition) {

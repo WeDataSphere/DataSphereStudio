@@ -103,7 +103,7 @@ object BranchExpressionUtils extends Logging {
           if condition.nonEmpty && !isUnsupportedDefaultKeyword(condition) && (targetName.isDefined || onFailureTarget.isDefined) =>
           Some(BranchRule(condition, targetName, onFailureTarget))
         case _ => None
-      }
+      }.getOrElse(false)
     }
   }
 
@@ -120,7 +120,7 @@ object BranchExpressionUtils extends Logging {
         case None =>
           warn(s"Invalid branch rule syntax: $line")
           None
-      }
+      }.getOrElse(false)
     }
   }
 
@@ -149,11 +149,17 @@ object BranchExpressionUtils extends Logging {
     if (normalized.isEmpty) {
       false
     } else {
-      val expr = stripExpressionWrapper(normalized)
-      if (expr.equalsIgnoreCase("true")) return true
-      if (expr.equalsIgnoreCase("false")) return false
+      if (normalized.startsWith("${") && normalized.endsWith("}")) {
+        warn(s"Invalid branch condition syntax, wrapper ${} is not allowed: $condition")
+        return false
+      }
+      val expr = normalized
       if (isUnsupportedDefaultKeyword(expr)) return false
       val operators = Seq("==", "!=", ">=", "<=", ">", "<")
+      if (!operators.exists(expr.contains)) {
+        warn(s"Invalid branch condition syntax, explicit comparison is required: $condition")
+        return false
+      }
       operators.collectFirst {
         case operator if expr.contains(operator) =>
           val parts = expr.split(java.util.regex.Pattern.quote(operator), 2).map(_.trim)
@@ -171,17 +177,7 @@ object BranchExpressionUtils extends Logging {
                 false
             }
           }
-      }.getOrElse {
-        resolveValue(expr, context) match {
-          case Some(resolved) =>
-            val matched = resolved.equalsIgnoreCase("true") || resolved.nonEmpty
-            info(s"Branch condition evaluated: expr=$expr, value=$resolved, matched=$matched")
-            matched
-          case None =>
-            warn(s"Branch condition unresolved token: expr=$expr, contextKeys=${context.keys.toSeq.sorted.mkString(",")}")
-            false
-        }
-      }
+      }.getOrElse(false)
     }
   }
 
@@ -203,7 +199,7 @@ object BranchExpressionUtils extends Logging {
         context.get(normalized)
           .orElse(context.get(unquoted))
           .orElse(if (isLiteralToken(unquoted)) Some(unquoted) else None)
-      }
+      }.getOrElse(false)
     }
   }
 
@@ -239,7 +235,7 @@ object BranchExpressionUtils extends Logging {
           case ">" | "<" | ">=" | "<=" =>
             warn(s"Branch numeric comparison requires numeric operands: left=$left, operator=$operator, right=$right")
             false
-        }
+        }.getOrElse(false)
     }
   }
 
