@@ -173,6 +173,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     private static final String nodeUIViewIdKey = "viewId";
 
     private static final Pattern pattern = Pattern.compile("^[a-zA-Z][a-zA-Z0-9_-]*$");
+    private static final Pattern STRICT_BRANCH_CONDITION_PATTERN = Pattern.compile("^[A-Za-z0-9_.-]+\\s*(==|!=|>=|<=|>|<)\\s*([A-Za-z0-9_.-]+|\\"[^\\"]*\\"|'[^']*')$");
     private static final String BRANCH_NODE_TYPE = "workflow.branch";
 
     protected Sender getOrchestratorSender() {
@@ -650,10 +651,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             return false;
         }
         String expr = condition.trim();
-        if (expr.startsWith("${") && expr.endsWith("}")) {
-            return false;
-        }
-        return expr.contains("==") || expr.contains("!=") || expr.contains(">=") || expr.contains("<=") || expr.contains(">") || expr.contains("<");
+        return STRICT_BRANCH_CONDITION_PATTERN.matcher(expr).matches();
     }
 
     private boolean isUnsupportedDefaultKeyword(String condition) {
