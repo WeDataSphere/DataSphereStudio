@@ -103,7 +103,7 @@ object BranchExpressionUtils extends Logging {
           if condition.nonEmpty && !isUnsupportedDefaultKeyword(condition) && (targetName.isDefined || onFailureTarget.isDefined) =>
           Some(BranchRule(condition, targetName, onFailureTarget))
         case _ => None
-      }.getOrElse(false)
+      }
     }
   }
 
@@ -120,7 +120,7 @@ object BranchExpressionUtils extends Logging {
         case None =>
           warn(s"Invalid branch rule syntax: $line")
           None
-      }.getOrElse(false)
+      }
     }
   }
 
@@ -150,7 +150,7 @@ object BranchExpressionUtils extends Logging {
       false
     } else {
       if (normalized.startsWith("${") && normalized.endsWith("}")) {
-        warn(s"Invalid branch condition syntax, wrapper ${} is not allowed: $condition")
+        warn(s"Invalid branch condition syntax, wrapper `$${...}` is not allowed: $condition")
         return false
       }
       val expr = normalized
@@ -199,7 +199,7 @@ object BranchExpressionUtils extends Logging {
         context.get(normalized)
           .orElse(context.get(unquoted))
           .orElse(if (isLiteralToken(unquoted)) Some(unquoted) else None)
-      }.getOrElse(false)
+      }
     }
   }
 
@@ -235,7 +235,7 @@ object BranchExpressionUtils extends Logging {
           case ">" | "<" | ">=" | "<=" =>
             warn(s"Branch numeric comparison requires numeric operands: left=$left, operator=$operator, right=$right")
             false
-        }.getOrElse(false)
+        }
     }
   }
 
