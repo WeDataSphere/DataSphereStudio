@@ -12,6 +12,8 @@ public class EditFlowRequest {
     private String desc;
     private String businessTag;
     private String appTag;
+    private String viewId;
+    private String datasourceId;
     private String params;
     private String ecConfTemplateId;
     private String ecConfTemplateName;
@@ -78,6 +80,22 @@ public class EditFlowRequest {
 
     public void setAppTag(String appTag) {
         this.appTag = appTag;
+    }
+
+    public String getViewId() {
+        return viewId;
+    }
+
+    public void setViewId(String viewId) {
+        this.viewId = viewId;
+    }
+
+    public String getDatasourceId() {
+        return datasourceId;
+    }
+
+    public void setDatasourceId(String datasourceId) {
+        this.datasourceId = datasourceId;
     }
 
     public String getEcConfTemplateId() {

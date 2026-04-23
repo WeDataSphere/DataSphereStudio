@@ -2641,6 +2641,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         String desc = editFlowRequest.getDesc();
         String appTag = editFlowRequest.getAppTag();
         String businessTag = editFlowRequest.getBusinessTag();
+        String viewId = editFlowRequest.getViewId();
+        String datasourceId = editFlowRequest.getDatasourceId();
         String ecConfTemplateId = editFlowRequest.getEcConfTemplateId();
         String ecConfTemplateName = editFlowRequest.getEcConfTemplateName();
         JsonObject jsonObject = JsonParser.parseString(flowJson).getAsJsonObject();
@@ -2660,6 +2662,27 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 flowJsonAddPointProperty(obj, "desc", desc);
                 flowJsonAddProperty(obj, "appTag", appTag);
                 flowJsonAddProperty(obj, "businessTag", businessTag);
+
+                if (StringUtils.isNotEmpty(viewId)) {
+                    JsonObject jobContent = new JsonObject();
+                    if (obj.has("jobContent") && obj.get("jobContent").isJsonObject()) {
+                        jobContent = obj.getAsJsonObject("jobContent");
+                    } else {
+                        obj.add("jobContent", jobContent);
+                    }
+                    jobContent.addProperty("viewId", viewId);
+                }
+
+                if (StringUtils.isNotEmpty(datasourceId)) {
+                    JsonObject jobContent = new JsonObject();
+                    if (obj.has("jobContent") && obj.get("jobContent").isJsonObject()) {
+                        jobContent = obj.getAsJsonObject("jobContent");
+                    } else {
+                        obj.add("jobContent", jobContent);
+                    }
+                    jobContent.addProperty("datasourceId", datasourceId);
+                }
+
                 flowJsonAddProperty(obj, "ecConfTemplateId", ecConfTemplateId);
                 flowJsonAddProperty(obj, "ecConfTemplateName", ecConfTemplateName);
                 break;
