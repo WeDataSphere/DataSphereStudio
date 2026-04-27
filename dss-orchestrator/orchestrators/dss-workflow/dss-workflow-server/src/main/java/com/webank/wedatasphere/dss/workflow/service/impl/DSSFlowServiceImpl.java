@@ -32,7 +32,9 @@ import com.webank.wedatasphere.dss.common.entity.project.DSSProject;
 import com.webank.wedatasphere.dss.common.entity.workspace.DSSStarRocksCluster;
 import com.webank.wedatasphere.dss.common.exception.DSSErrorException;
 import com.webank.wedatasphere.dss.common.exception.DSSRuntimeException;
+import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
 import com.webank.wedatasphere.dss.common.label.DSSLabel;
+import com.webank.wedatasphere.dss.common.label.EnvDSSLabel;
 import com.webank.wedatasphere.dss.common.label.LabelRouteVO;
 import com.webank.wedatasphere.dss.common.protocol.project.*;
 import com.webank.wedatasphere.dss.common.protocol.workspace.StarRocksClusterListRequest;
@@ -2540,6 +2542,9 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                     List<EditFlowRequest> editFlowRequestsList = editFlowRequestTOFlowIDMap.containsKey(targetFlowId) ?
                             editFlowRequestTOFlowIDMap.get(targetFlowId) : new ArrayList<>();
 
+                    // 校验 tableau/tableauDataRefre 节点的 viewId/datasourceId
+                    validateTableauNode(editFlowRequest, nodeContentByContentId, targetFlowId, workspace, userName);
+
                     //  处理starrocks节点
                     if ("linkis.jdbc.starrocks".equals(nodeContentByContentId.getJobType())) {
                         starRocksNodeParamsHandle(editFlowRequest, starRocksClusterMap);
@@ -2585,6 +2590,72 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
     }
 
+
+    /**
+     * 判断是否为 tableau 或 tableauDataRefre 节点
+     */
+    private boolean isTableauNode(String nodeType) {
+        return "linkis.appconn.newVisualis.tableau".equals(nodeType)
+                || "linkis.appconn.newVisualis.tableauDataRefre".equals(nodeType);
+    }
+
+    /**
+     * 校验 tableau/tableauDataRefre 节点的 viewId/datasourceId
+     * 1. 必填校验：tableau节点viewId不能为空，tableauDataRefre节点datasourceId不能为空
+     * 2. 真实性校验：通过调用 workflowNodeService.updateNode 触发 AppConn 校验
+     */
+    private void validateTableauNode(EditFlowRequest editFlowRequest, NodeContentDO nodeContentDO,
+                                      Long flowId, Workspace workspace, String userName) throws ExternalOperationFailedException {
+        String nodeType = nodeContentDO.getJobType();
+
+        // 只处理 tableau 相关节点
+        if (!isTableauNode(nodeType)) {
+            return;
+        }
+
+        String viewId = editFlowRequest.getViewId();
+        String datasourceId = editFlowRequest.getDatasourceId();
+
+        // 必填校验
+        if ("linkis.appconn.newVisualis.tableau".equals(nodeType) && StringUtils.isEmpty(viewId)) {
+            throw new ExternalOperationFailedException(80001, "视图ID不能为空");
+        }
+        if ("linkis.appconn.newVisualis.tableauDataRefre".equals(nodeType) && StringUtils.isEmpty(datasourceId)) {
+            throw new ExternalOperationFailedException(80001, "数据源ID或视图不能为空");
+        }
+
+        // 真实性校验：构建 jobContent 并调用 updateNode
+        Map<String, Object> jobContent = new HashMap<>();
+        if (StringUtils.isNotEmpty(viewId)) {
+            jobContent.put("viewId", viewId);
+        }
+        if (StringUtils.isNotEmpty(datasourceId)) {
+            jobContent.put("datasourceId", datasourceId);
+        }
+        if (StringUtils.isNotEmpty(editFlowRequest.getTitle())) {
+            jobContent.put("title", editFlowRequest.getTitle());
+        }
+        if (StringUtils.isNotEmpty(editFlowRequest.getDesc())) {
+            jobContent.put("desc", editFlowRequest.getDesc());
+        }
+
+        // 获取 projectId
+        DSSFlow flow = getFlow(flowId);
+        Long projectId = flow.getProjectId();
+
+        // 构建 CommonAppConnNode
+        CommonAppConnNode node = new CommonAppConnNode();
+        node.setNodeType(nodeType);
+        node.setFlowId(flowId);
+        node.setProjectId(projectId);
+        node.setJobContent(jobContent);
+        node.setWorkspace(workspace);
+        node.setParams(jobContent);
+        node.setDssLabels(Collections.singletonList(new EnvDSSLabel(DSSCommonUtils.ENV_LABEL_VALUE_DEV)));
+        logger.info("validateTableauNode node:{}", DSSCommonUtils.COMMON_GSON.toJson(node));
+        // 调用 updateNode 进行校验，如果校验失败会抛出异常
+        workflowNodeService.updateNode(userName, node);
+    }
 
     private void validNodeDisableEdit(List<Long> contentIdList) {
 
