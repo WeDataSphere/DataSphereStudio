@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.dss.framework.workspace.bean.itsm;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -11,6 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ItsmRequest {
 
     private static final String dataKey = "dataList";

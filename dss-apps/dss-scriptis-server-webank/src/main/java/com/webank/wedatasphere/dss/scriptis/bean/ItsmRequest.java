@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.dss.scriptis.bean;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -17,6 +18,7 @@ import java.util.Map;
  * Author: xlinliu
  * Date: 2024/5/22
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ItsmRequest {
     private static final String dataKey = "dataList";
 
