@@ -2543,7 +2543,14 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                             editFlowRequestTOFlowIDMap.get(targetFlowId) : new ArrayList<>();
 
                     // 校验 tableau/tableauDataRefre 节点的 viewId/datasourceId
-                    validateTableauNode(editFlowRequest, nodeContentByContentId, targetFlowId, workspace, userName);
+                    try{
+                        validateTableauNode(editFlowRequest, nodeContentByContentId, targetFlowId, workspace, userName);
+                    }catch (Exception e){
+                        logger.error("user is {}, node is {} validateTableauNode error msg is {}",userName,editFlowRequest.getTitle()
+                                ,e.getMessage(),e);
+                        workFlowManager.unlockWorkflow(userName, flowId, true, workspace);
+                        throw e;
+                    }
 
                     //  处理starrocks节点
                     if ("linkis.jdbc.starrocks".equals(nodeContentByContentId.getJobType())) {
