@@ -1,0 +1,1018 @@
+{
+  "root": {
+    "data": {
+      "text": "DSS"
+    },
+    "children": [
+      {
+        "data": {
+          "text": "/所有目录/SIT/V1.22.0/Tableau节点视图ID属性测试"
+        },
+        "children": [
+          {
+            "data": {
+              "text": "需求：Tableau节点视图ID属性编辑功能"
+            },
+            "children": [
+              {
+                "data": {
+                  "text": "后端接口测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】EditFlowRequest支持viewId字段"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：后端服务已启动"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造包含viewId的EditFlowRequest对象\n2. 调用getter方法获取viewId\n3. 调用setter方法设置viewId"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. getter能正确获取设置的viewId值\n2. setter能正确设置viewId值"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】EditFlowRequest支持datasourceId字段"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：后端服务已启动"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造包含datasourceId的EditFlowRequest对象\n2. 调用getter方法获取datasourceId\n3. 调用setter方法设置datasourceId"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. getter能正确获取设置的datasourceId值\n2. setter能正确设置datasourceId值"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】modifyJson正确处理tableau节点的viewId"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 后端服务已启动\n2. 已存在tableau类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 调用modifyJson接口，传入viewId参数\n2. 查询节点的jobContent"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. jobContent中存在viewId属性\n2. jobContent.viewId = 传入的viewId值"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】modifyJson正确处理tableauDataRefre节点的datasourceId"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 后端服务已启动\n2. 已存在tableauDataRefre类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 调用modifyJson接口，传入datasourceId参数\n2. 查询节点的jobContent"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. jobContent中存在datasourceId属性\n2. jobContent.datasourceId = 传入的datasourceId值"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】modifyJson无jobContent时自动创建"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 后端服务已启动\n2. 节点的jobContent为空或不存在"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 调用modifyJson接口，传入viewId参数\n2. 查询节点的jobContent"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 自动创建jobContent对象\n2. jobContent.viewId = 传入的viewId值"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】tableau节点viewId必填校验"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 后端服务已启动\n2. 已存在tableau类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 调用batchEditFlow接口\n2. 传入viewId为空或null"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回错误码80001\n2. 错误信息：\"视图ID不能为空\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】tableauDataRefre节点datasourceId必填校验"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 后端服务已启动\n2. 已存在tableauDataRefre类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 调用batchEditFlow接口\n2. 传入datasourceId为空或null"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回错误码80001\n2. 错误信息：\"数据源ID不能为空\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】tableau节点viewId真实性校验-无效ID"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 后端服务已启动\n2. Tableau服务可连接\n3. 已存在tableau类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 调用batchEditFlow接口\n2. 传入不存在的viewId"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回错误\n2. 错误信息包含\"视图ID不存在\"或类似提示"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】tableauDataRefre节点datasourceId真实性校验-无效ID"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 后端服务已启动\n2. Tableau服务可连接\n3. 已存在tableauDataRefre类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 调用batchEditFlow接口\n2. 传入不存在的datasourceId"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回错误\n2. 错误信息包含\"数据源ID不存在\"或类似提示"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】tableau节点viewId真实性校验-有效ID"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 后端服务已启动\n2. Tableau服务可连接\n3. 已存在tableau类型节点\n4. Tableau中存在有效的viewId"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 调用batchEditFlow接口\n2. 传入有效的viewId"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 校验通过\n2. 成功更新节点数据"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】非Tableau节点跳过校验"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 后端服务已启动\n2. 已存在非Tableau类型节点（如spark节点）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 调用batchEditFlow接口\n2. 不传入viewId/datasourceId"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 不执行校验\n2. 正常处理其他字段"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "数据可视化页面测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】节点列表正确显示tableau节点的viewId"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 存在tableau类型节点且已配置viewId"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 进入数据可视化页面\n2. 查看tableau类型节点列表"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点列表显示viewId列\n2. viewId值正确显示"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】节点列表正确显示tableauDataRefre节点的datasourceId"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 存在tableauDataRefre类型节点且已配置datasourceId"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 进入数据可视化页面\n2. 查看tableauDataRefre类型节点列表"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点列表显示datasourceId列\n2. datasourceId值正确显示"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】编辑弹窗正确显示tableau节点viewId"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 存在tableau类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 点击tableau节点的编辑按钮\n2. 查看编辑弹窗"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 编辑弹窗显示viewId输入框\n2. 输入框显示当前viewId值"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】编辑弹窗正确显示tableauDataRefre节点datasourceId"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 存在tableauDataRefre类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 点击tableauDataRefre节点的编辑按钮\n2. 查看编辑弹窗"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 编辑弹窗显示datasourceId输入框\n2. 输入框显示当前datasourceId值"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】编辑tableau节点viewId并保存"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 存在tableau类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 点击tableau节点的编辑按钮\n2. 修改viewId值\n3. 点击保存"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 保存成功\n2. 节点列表显示新的viewId\n3. 后端jobContent.viewId已更新"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】编辑tableauDataRefre节点datasourceId并保存"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 存在tableauDataRefre类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 点击tableauDataRefre节点的编辑按钮\n2. 修改datasourceId值\n3. 点击保存"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 保存成功\n2. 节点列表显示新的datasourceId\n3. 后端jobContent.datasourceId已更新"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】批量编辑多个tableau节点viewId"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 存在多个tableau类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 勾选多个tableau节点\n2. 点击批量编辑\n3. 修改viewId\n4. 点击保存"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 所有选中节点的viewId更新成功\n2. 节点列表显示更新后的viewId"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】批量编辑混合类型节点"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 存在tableau和tableauDataRefre类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 勾选tableau和tableauDataRefre节点\n2. 点击批量编辑\n3. 查看编辑弹窗"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 根据节点类型分别显示viewId和datasourceId字段\n2. 保存时分别处理对应字段"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】批量编辑时必填校验"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 存在tableau类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 勾选tableau节点\n2. 点击批量编辑\n3. 清空viewId\n4. 点击保存"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 显示错误提示\"视图ID不能为空\"\n2. 不保存数据"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "工作流页面测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】工作流节点参数显示tableau的viewId"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 存在包含tableau节点的工作流\n3. tableau节点已配置viewId"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 打开工作流\n2. 点击tableau节点\n3. 查看节点参数面板"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点参数面板显示viewId字段\n2. 显示值正确"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】工作流节点参数显示tableauDataRefre的datasourceId"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 存在包含tableauDataRefre节点的工作流\n3. 节点已配置datasourceId"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 打开工作流\n2. 点击tableauDataRefre节点\n3. 查看节点参数面板"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点参数面板显示datasourceId字段\n2. 显示值正确"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】修改tableau节点viewId并保存"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 打开包含tableau节点的工作流"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 点击tableau节点\n2. 修改viewId值\n3. 点击保存节点参数"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 保存成功\n2. jobContent.viewId更新为新值\n3. 下次打开显示新值"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】修改tableauDataRefre节点datasourceId并保存"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 打开包含tableauDataRefre节点的工作流"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 点击tableauDataRefre节点\n2. 修改datasourceId值\n3. 点击保存节点参数"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 保存成功\n2. jobContent.datasourceId更新为新值\n3. 下次打开显示新值"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】updateAppConnNode失败时不更新数据"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 打开包含tableau节点的工作流\n3. Tableau服务不可用或ID无效"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 点击tableau节点\n2. 修改viewId为无效值\n3. 点击保存节点参数"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 显示错误提示\n2. this.json.nodes数据不变\n3. 不调用saveFlow接口\n4. 页面数据保持原值"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】updateAppConnNode失败后loading状态重置"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 打开包含tableau节点的工作流"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 点击tableau节点\n2. 修改viewId为无效值\n3. 点击保存\n4. 观察loading状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 保存失败后loading状态变为false\n2. 按钮恢复可点击状态"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】jobContent中viewId正确回显到表单"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 工作流节点的jobContent中存在viewId"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 打开工作流\n2. 切换到tableau节点\n3. 查看节点参数面板"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. currentNode.viewId值正确\n2. 表单显示viewId值正确"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】jobContent中datasourceId正确回显到表单"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 工作流节点的jobContent中存在datasourceId"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 打开工作流\n2. 切换到tableauDataRefre节点\n3. 查看节点参数面板"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. currentNode.datasourceId值正确\n2. 表单显示datasourceId值正确"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "边界场景测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】viewId超长字符串处理"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 存在tableau类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 编辑tableau节点\n2. 输入超长viewId（如1000字符）\n3. 保存"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 系统正常处理或提示长度限制\n2. 不出现系统异常"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】viewId包含特殊字符"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 存在tableau类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 编辑tableau节点\n2. 输入包含特殊字符的viewId\n3. 保存"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 特殊字符被正确转义或提示非法字符\n2. 不存在XSS漏洞"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】viewId包含空格处理"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 存在tableau类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 编辑tableau节点\n2. 输入包含前后空格的viewId\n3. 保存"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 系统自动trim空格或保留原值\n2. 保存成功"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】viewId包含中文字符"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 存在tableau类型节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 编辑tableau节点\n2. 输入包含中文的viewId\n3. 保存"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 中文正常显示和保存\n2. 无乱码"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】节点无jobContent对象时创建"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 节点的jobContent为null"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 编辑节点\n2. 输入viewId\n3. 保存"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 自动创建jobContent对象\n2. jobContent.viewId = 输入的值"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "异常场景测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】Tableau服务不可用时的校验处理"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. Tableau服务不可用"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 编辑tableau节点\n2. 输入viewId\n3. 保存"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 显示友好的错误提示\n2. 不出现系统异常堆栈"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】网络超时处理"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 模拟网络延迟或超时"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 编辑tableau节点\n2. 输入viewId\n3. 保存\n4. 模拟网络超时"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 显示网络超时提示\n2. 系统不崩溃"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】并发编辑同一节点"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 两个用户同时编辑同一节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 用户A打开节点编辑\n2. 用户B同时打开节点编辑\n3. A保存viewId\n4. B保存viewId"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 后提交者覆盖前者或提示冲突\n2. 数据一致性有保障"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】数据库连接异常"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 已登录系统\n2. 模拟数据库连接异常"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 编辑tableau节点\n2. 输入viewId\n3. 保存"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 显示数据库错误提示\n2. 不出现系统异常"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,568 @@
+{
+  "root": {
+    "data": {
+      "text": "DSS"
+    },
+    "children": [
+      {
+        "data": {
+          "text": "/所有目录/SIT/V1.22.0/ITSM接口字段适配测试"
+        },
+        "children": [
+          {
+            "data": {
+              "text": "需求：ITSM接口字段适配功能"
+            },
+            "children": [
+              {
+                "data": {
+                  "text": "updateWorkspace接口测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】updateWorkspace接口-正常请求无未知字段"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. ITSM鉴权配置正确"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造标准ITSM请求报文（无未知字段）\n2. 调用 /dss/framework/workspace/updateWorkspace 接口\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回 success: true\n3. 工作空间创建成功"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】updateWorkspace接口-包含未知字段静默忽略"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. ITSM鉴权配置正确"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造包含未知字段的ITSM请求报文（newField1、newField2）\n2. 调用 /dss/framework/workspace/updateWorkspace 接口\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回 success: true\n3. 工作空间创建成功\n4. 未知字段被静默忽略，不影响业务"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】updateWorkspace接口-数据为空"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. ITSM鉴权配置正确"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造dataList为空的请求报文\n2. 调用 /dss/framework/workspace/updateWorkspace 接口\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回错误信息 \"data is empty\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】updateWorkspace接口-鉴权失败"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：DSS服务正常运行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造错误的鉴权头（timestamp/sign无效）\n2. 调用 /dss/framework/workspace/updateWorkspace 接口\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 403\n2. 返回错误信息 \"Authentication failed.\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】updateWorkspace接口-修改工作空间包含未知字段"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. 已存在测试工作空间\n3. ITSM鉴权配置正确"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造修改工作空间的请求报文（包含未知字段）\n2. 调用 /dss/framework/workspace/updateWorkspace 接口\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回 success: true\n3. 工作空间修改成功\n4. 未知字段被静默忽略"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "addOrchestratorWhite接口测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】addOrchestratorWhite接口-正常请求无未知字段"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. ITSM鉴权配置正确\n3. 项目和工作流已存在"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造标准ITSM请求报文\n2. 调用 /dss/framework/orchestrator/addOrchestratorWhite 接口\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回 success: true\n3. 白名单添加成功"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】addOrchestratorWhite接口-包含未知字段静默忽略"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. ITSM鉴权配置正确\n3. 项目和工作流已存在"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造包含未知字段的ITSM请求报文（newField、extraData）\n2. 调用 /dss/framework/orchestrator/addOrchestratorWhite 接口\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回 success: true\n3. 白名单添加成功\n4. 未知字段被静默忽略"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】addOrchestratorWhite接口-项目不存在"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. ITSM鉴权配置正确"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造不存在的项目名称\n2. 调用 /dss/framework/orchestrator/addOrchestratorWhite 接口\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回错误信息"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "addUserProxy接口测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】addUserProxy接口-正常请求无未知字段"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. ITSM鉴权配置正确"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造标准ITSM请求报文\n2. 调用 /dss/scriptis/proxy/addUserProxy 接口\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回 success: true\n3. 代理用户添加成功"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】addUserProxy接口-包含未知字段静默忽略"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. ITSM鉴权配置正确"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造包含未知字段的ITSM请求报文（newField1、newField2、extraInfo）\n2. 调用 /dss/scriptis/proxy/addUserProxy 接口\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回 success: true\n3. 代理用户添加成功\n4. 未知字段被静默忽略"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】addUserProxy接口-数据为空"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. ITSM鉴权配置正确"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造dataList为空的请求报文\n2. 调用 /dss/scriptis/proxy/addUserProxy 接口\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回错误信息 \"data is empty\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】addUserProxy接口-鉴权失败"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：DSS服务正常运行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造错误的鉴权头（timestamp/sign无效）\n2. 调用 /dss/scriptis/proxy/addUserProxy 接口\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 403\n2. 返回错误信息 \"Authentication failed.\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】addUserProxy接口-多个未知字段"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. ITSM鉴权配置正确"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造包含5个未知字段的请求报文（field1、field2、field3、field4、field5）\n2. field4为嵌套对象，field5为数组\n3. 调用 /dss/scriptis/proxy/addUserProxy 接口\n4. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回 success: true\n3. 代理用户添加成功\n4. 所有未知字段被静默忽略"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "向后兼容性测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】旧版请求格式兼容"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. ITSM鉴权配置正确"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 使用旧版ITSM请求格式（标准字段）\n2. 调用 updateWorkspace 接口\n3. 调用 addOrchestratorWhite 接口\n4. 调用 addUserProxy 接口\n5. 检查所有返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 所有接口返回正常\n2. 功能与升级前一致"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】新旧请求混合场景"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. ITSM鉴权配置正确"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 交替发送旧版请求和新版请求（含未知字段）\n2. 调用各接口\n3. 验证功能一致性"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 所有请求正常处理\n2. 功能表现一致\n3. 无异常抛出"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "ItsmRequest单元测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】ItsmRequest反序列化-已知字段"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：无"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造包含所有已知字段的JSON字符串\n2. 使用Jackson ObjectMapper反序列化为ItsmRequest对象\n3. 验证各字段值"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 反序列化成功，无异常\n2. 所有字段值正确"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】ItsmRequest反序列化-未知字段被忽略"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：无"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造包含未知字段的JSON字符串\n2. 使用Jackson ObjectMapper反序列化为ItsmRequest对象\n3. 验证是否抛出异常"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 不抛出 UnrecognizedPropertyException\n2. 已知字段正确解析\n3. 未知字段被静默忽略"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】ItsmRequest反序列化-空JSON对象"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：无"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造空JSON对象{}\n2. 使用Jackson ObjectMapper反序列化为ItsmRequest对象\n3. 验证对象状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 不抛出异常\n2. 对象创建成功\n3. 所有字段为null"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】ItsmRequest反序列化-多个未知字段类型"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：无"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造包含不同类型未知字段的JSON（字符串、对象、数组、数字、布尔）\n2. 使用Jackson ObjectMapper反序列化\n3. 验证是否成功"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 所有类型的未知字段都被忽略\n2. 已知字段正确解析\n3. 无异常抛出"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
