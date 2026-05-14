@@ -54,4 +54,8 @@
         select * from dss_project_orchestrator_white where project_id = #{projectId} and orchestrator_id = #{orchestratorId}  order by id desc limit 1;
     </select>
 
+    <select id="selectByProjectIdAndType" resultType="com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite">
+        select * from dss_project_orchestrator_white where project_id = #{projectId} and orchestrator_id in (0,#{orchestratorId}) and type = #{type} order by id desc limit 1;
+    </select>
+
 </mapper>

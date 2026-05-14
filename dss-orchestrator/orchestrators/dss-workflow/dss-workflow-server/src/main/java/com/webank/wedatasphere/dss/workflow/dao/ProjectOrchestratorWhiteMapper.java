@@ -31,4 +31,6 @@ public interface ProjectOrchestratorWhiteMapper {
 
     ProjectOrchestratorWhite selectByProjectIdAndOrchestratorId(@Param("projectId") Long projectId,@Param("orchestratorId") Long orchestratorId);
 
+    ProjectOrchestratorWhite selectByProjectIdAndType(@Param("projectId") Long projectId, @Param("orchestratorId") Long orchestratorId, @Param("type") String type);
+
 }

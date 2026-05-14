@@ -22,4 +22,6 @@ public interface ProjectOrchestratorWhiteService {
 
     List<ProjectOrchestratorWhite> getWhiteListByProjectId(Long projectId);
 
+    public boolean checkProjectAndOrchestratorIsWhiteWithType(Long projectId, Long orchestratorId, String type);
+
 }

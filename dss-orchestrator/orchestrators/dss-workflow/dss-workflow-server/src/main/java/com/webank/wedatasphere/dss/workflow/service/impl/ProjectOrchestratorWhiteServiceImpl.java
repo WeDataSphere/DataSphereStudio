@@ -3,6 +3,7 @@ package com.webank.wedatasphere.dss.workflow.service.impl;
 import com.webank.wedatasphere.dss.workflow.dao.ProjectOrchestratorWhiteMapper;
 import com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite;
 import com.webank.wedatasphere.dss.workflow.service.ProjectOrchestratorWhiteService;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,6 +75,17 @@ public class ProjectOrchestratorWhiteServiceImpl implements ProjectOrchestratorW
     @Override
     public List<ProjectOrchestratorWhite> getWhiteListByProjectId(Long projectId) {
         return projectOrchestratorWhiteMapper.getWhiteListByProjectId(projectId);
+    }
+
+    @Override
+    public boolean checkProjectAndOrchestratorIsWhiteWithType(Long projectId, Long orchestratorId, String type) {
+        if (projectId == null || orchestratorId == null || StringUtils.isEmpty(type)) {
+            logger.info("projectId or orchestratorId or type is null, project is {}, orchestrator is {}, type is {}", projectId, orchestratorId, type);
+            return false;
+        }
+        ProjectOrchestratorWhite projectOrchestratorWhite = projectOrchestratorWhiteMapper.selectByProjectIdAndType(projectId, orchestratorId, type);
+        logger.info("checkWhiteWithType result is {}, projectId:{}, orchestratorId:{}, type:{}", projectOrchestratorWhite, projectId, orchestratorId, type);
+        return projectOrchestratorWhite != null;
     }
 
 }

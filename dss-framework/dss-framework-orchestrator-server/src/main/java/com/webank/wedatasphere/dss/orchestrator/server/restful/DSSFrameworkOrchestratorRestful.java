@@ -1048,4 +1048,17 @@ public class DSSFrameworkOrchestratorRestful {
             return Message.error(errorMsg);
         }
     }
+
+    /**
+     * 判断项目或工作流是否在白名单中
+     */
+    @RequestMapping(path = "checkWhiteList", method = RequestMethod.GET)
+    public Message checkWhiteList(@RequestParam("projectId") Long projectId,
+                                  @RequestParam(value = "orchestratorId", required = false, defaultValue = "0") Long orchestratorId) {
+        String username = SecurityFilter.getLoginUsername(httpServletRequest);
+        LOGGER.info("user {} check whitelist, projectId:{}, orchestratorId:{}", username, projectId, orchestratorId);
+        boolean isWhite = projectOrchestratorWhiteService.checkProjectAndOrchestratorIsWhiteWithType(projectId, orchestratorId, "dss");
+        return Message.ok().data("isWhite", isWhite);
+    }
+
 }
