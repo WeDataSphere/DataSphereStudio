@@ -42,8 +42,14 @@ object PictureEmailContentParser extends AbstractEmailContentParser[PictureEmail
         case "checkData" =>
           //对于邮件校验数据不进行处理
         case "pdf" =>
-          val pdfUUID: String = UUID.randomUUID.toString
-          val pdfName = pdfUUID + ".pdf"
+          // PDF附件命名优化：优先使用viewName，为空时降级为UUID
+          var pdfName = emailContent.getFileName
+          if (pdfName == null || pdfName.isEmpty) {
+            // 兜底机制：viewName为空时使用UUID
+            pdfName = UUID.randomUUID.toString
+          }
+          pdfName = sanitizeFileName(pdfName + ".pdf")
+
           val decoder = Base64.getDecoder
           val byteArr = decoder.decode(imageStr)
           multiContentEmail.addAttachment(new PdfAttachment(pdfName, Base64.getEncoder.encodeToString(byteArr)))
@@ -127,6 +133,34 @@ object PictureEmailContentParser extends AbstractEmailContentParser[PictureEmail
       }
       s"""<img width="${iWidth}" height="${iHeight}" src="cid:$imageName"></img>"""
     }.toArray
+  }
+
+  /**
+   * 文件名安全过滤
+   *
+   * <p>核心逻辑：
+   * <ul>
+   *   <li>过滤Windows/Linux文件名非法字符</li>
+   *   <li>限制文件名最大长度为255字符</li>
+   * </ul>
+   *
+   * <p>安全措施：
+   * <ul>
+   *   <li>防止路径遍历攻击（过滤 /, \ 等路径分隔符）</li>
+   *   <li>防止文件系统错误（长度限制）</li>
+   * </ul>
+   *
+   * @param fileName 原始文件名
+   * @return 过滤后的安全文件名
+   */
+  private def sanitizeFileName(fileName: String): String = {
+    // Windows/Linux文件名非法字符集（防止路径遍历攻击）
+    val invalidChars = Set('/', '\\', ':', '*', '?', '"', '<', '>', '|')
+
+    // 过滤非法字符并限制长度（文件系统最大文件名长度限制）
+    fileName
+      .filterNot(invalidChars.contains)
+      .take(255)
   }
 
 }
