@@ -1,0 +1,440 @@
+{
+  "root": {
+    "data": {
+      "text": "DSS"
+    },
+    "children": [
+      {
+        "data": {
+          "text": "/所有目录/SIT/V1.22.0/项目工作流白名单校验接口测试"
+        },
+        "children": [
+          {
+            "data": {
+              "text": "需求：项目工作流白名单校验接口"
+            },
+            "children": [
+              {
+                "data": {
+                  "text": "白名单校验接口测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】校验项目级白名单-项目在白名单中"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. 白名单表中存在项目级白名单记录（project_id=1, orchestrator_id=0）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造GET请求\n2. 调用 /dss/framework/project/checkIsWhite?projectId=1&orchestratorId=0\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回 isWhite: true"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】校验项目级白名单-项目不在白名单中"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. 白名单表中不存在该项目的记录"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造GET请求\n2. 调用 /dss/framework/project/checkIsWhite?projectId=999&orchestratorId=0\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回 isWhite: false"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】校验工作流级白名单-工作流在白名单中"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. 白名单表中存在工作流级白名单记录（project_id=1, orchestrator_id=100）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造GET请求\n2. 调用 /dss/framework/project/checkIsWhite?projectId=1&orchestratorId=100\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回 isWhite: true"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】项目级白名单覆盖所有工作流"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. 白名单表中存在项目级白名单记录（project_id=1, orchestrator_id=0）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造GET请求\n2. 调用 /dss/framework/project/checkIsWhite?projectId=1&orchestratorId=50（任意工作流ID）\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回 isWhite: true（项目级白名单覆盖所有工作流）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】校验工作流级白名单-工作流不在白名单中"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. 项目没有项目级白名单\n3. 工作流没有工作流级白名单"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造GET请求\n2. 调用 /dss/framework/project/checkIsWhite?projectId=1&orchestratorId=200\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回 isWhite: false"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】projectId为空返回isWhite=false"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：DSS服务正常运行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造GET请求，不传projectId参数\n2. 调用 /dss/framework/project/checkIsWhite\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 返回 isWhite: false"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】orchestratorId为空默认校验项目级白名单"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. 白名单表中存在项目级白名单记录"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 构造GET请求，只传projectId\n2. 调用 /dss/framework/project/checkIsWhite?projectId=1\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 返回状态码 200\n2. 按orchestratorId=0处理\n3. 返回项目级白名单校验结果"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】未登录用户调用接口被拦截"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：DSS服务正常运行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 不携带SSO认证信息\n2. 调用 /dss/framework/project/checkIsWhite?projectId=1\n3. 检查返回结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：请求被SSO拦截，返回认证失败"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "前端功能测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】项目列表页面-白名单项目显示复制按钮"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 用户已登录DSS系统\n2. 项目A在白名单中\n3. 项目B不在白名单中"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 进入项目列表页面（#/workspaceHome）\n2. 观察项目A的卡片\n3. 观察项目B的卡片"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 项目A的\"复制项目\"按钮可见\n2. 项目B的\"复制项目\"按钮隐藏"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】工作流页面-白名单工作流显示复制按钮"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 用户已登录DSS系统\n2. 工作流A在白名单中\n3. 工作流B不在白名单中"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 进入工作流页面\n2. 观察工作流A的操作按钮\n3. 观察工作流B的操作按钮"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 工作流A的\"复制工作流\"按钮可见\n2. 工作流B的\"复制工作流\"按钮隐藏"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】点击白名单项目的复制按钮弹出复制对话框"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 项目在白名单中\n2. \"复制项目\"按钮可见"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 点击\"复制项目\"按钮\n2. 观察弹窗"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 弹出项目复制对话框\n2. 可正常填写目标项目名称等参数"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】白名单项目复制后新项目也加入白名单"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 源项目在白名单中\n2. 用户已成功执行项目复制"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 复制白名单项目\n2. 检查新项目的白名单状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 新项目自动添加到白名单\n2. 新项目的\"复制项目\"按钮可见"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "回归测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：回归案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】listNodeType接口白名单功能回归"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. 白名单校验接口已上线"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 调用 /dss/workflow/listNodeType 接口\n2. 检查isWhite字段返回值\n3. 与新增checkIsWhite接口返回值对比"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 接口功能正常\n2. isWhite字段返回值与新增接口一致"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】copyProject接口白名单功能回归"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. 白名单校验接口已上线"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 调用 /dss/framework/project/copyProject 接口\n2. 检查isWhite字段返回值\n3. 验证白名单项目复制后新项目也加入白名单"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 项目复制功能正常\n2. isWhite字段返回值正确\n3. 白名单项目复制后新项目也加入白名单"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】copyOrchestrator接口白名单功能回归"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务正常运行\n2. 白名单校验接口已上线"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 调用 /dss/framework/orchestrator/copyOrchestrator 接口\n2. 检查isWhite字段返回值\n3. 验证白名单工作流复制后新工作流也加入白名单"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 工作流复制功能正常\n2. isWhite字段返回值正确\n3. 白名单工作流复制后新工作流也加入白名单"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
