@@ -38,6 +38,7 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
     val flow = flowJob.getFlow
     val nodes = flowContext.getPendingNodes.toMap.values.map(_.getNode)
     val workflowNodesById = flow.getWorkflowNodes.map(node => node.getId -> node).toMap
+    val workflowNodesByName = flow.getWorkflowNodes.map(node => node.getName -> node).toMap
     val workflowEdges = flow.getWorkflowNodeEdges.map(_.getDSSEdge)
     val executeStrategy = Option(flowJob.getParams)
       .map(_.get("executeStrategy"))
@@ -56,10 +57,20 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
       true
     }
 
-    def areAllParentsSkipped(node: WorkflowNode): Boolean = {
-      node.getDependencys != null &&
-        !node.getDependencys.isEmpty &&
-        node.getDependencys.forall(flowContext.isNodeSkipped)
+    def isAutoDisabledNode(node: WorkflowNode): Boolean = {
+      Option(node).map(_.getDSSNode)
+        .flatMap(node => Option(node.getParams))
+        .flatMap(params => Option(params.get("configuration")))
+        .flatMap {
+          case config: util.Map[_, _] => Option(config.get("special"))
+          case _ => None
+        }
+        .flatMap {
+          case special: util.Map[_, _] => Option(special.get("auto.disabled"))
+          case _ => None
+        }
+        .map(_.toString)
+        .exists("true".equalsIgnoreCase)
     }
 
     def shouldSkipByBranch(node: WorkflowNode): Boolean = {
@@ -78,9 +89,30 @@ class FlowDependencyResolverImpl extends FlowDependencyResolver with Logging {
       }
     }
 
+    def isSkippedByBranchRoute(node: WorkflowNode, visited: Set[String] = Set.empty): Boolean = {
+      node != null &&
+        !visited.contains(node.getName) &&
+        flowContext.isNodeSkipped(node.getName) &&
+        !isAutoDisabledNode(node) &&
+        (shouldSkipByBranch(node) ||
+          (node.getDependencys != null &&
+            !node.getDependencys.isEmpty &&
+            node.getDependencys.forall(parent =>
+              workflowNodesByName.get(parent).exists(parentNode => isSkippedByBranchRoute(parentNode, visited + node.getName))
+            )))
+    }
+
+    def areAllParentsSkippedByBranchRoute(node: WorkflowNode): Boolean = {
+      node.getDependencys != null &&
+        !node.getDependencys.isEmpty &&
+        node.getDependencys.forall(parent =>
+          workflowNodesByName.get(parent).exists(parentNode => isSkippedByBranchRoute(parentNode))
+        )
+    }
+
     def shouldSkip(node: WorkflowNode): Boolean = {
       shouldSkipByBranch(node) ||
-        (!isPartialExecute && areAllParentsSkipped(node))
+        (!isPartialExecute && areAllParentsSkippedByBranchRoute(node))
     }
 
     def isBranchRouteMatched(node: WorkflowNode): Boolean = {
