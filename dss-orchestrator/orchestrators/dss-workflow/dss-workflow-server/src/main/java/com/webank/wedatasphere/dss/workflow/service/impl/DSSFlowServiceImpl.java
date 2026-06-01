@@ -4290,6 +4290,9 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         String flowName = request.getFlowName();
         Map<String, Object> variables = request.getVariables();
 
+        logger.info("updateGlobalVariables request: workspaceId={}, projectId={}, orchestratorId={}, flowName={}, unlock={}, variables={}",
+                request.getWorkspaceId(), request.getProjectId(), request.getOrchestratorId(), flowName, request.getUnlock(), variables);
+
         if (MapUtils.isEmpty(variables)) {
             DSSExceptionUtils.dealErrorException(90003, "全局变量不能为空", DSSErrorException.class);
         }
@@ -4340,7 +4343,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         try {
             // 解析并合并全局变量
             String flowJson = targetFlow.getFlowJson();
-            String updatedFlowJson = mergeGlobalVariables(flowJson, variables);
+            String updatedFlowJson = mergeGlobalVariables(flowJson, variables, flowName);
             targetFlow.setFlowJson(updatedFlowJson);
 
             // 保存工作流
@@ -4379,7 +4382,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         return null;
     }
 
-    private String mergeGlobalVariables(String flowJson, Map<String, Object> newVariables) {
+    private String mergeGlobalVariables(String flowJson, Map<String, Object> newVariables, String flowName) {
         List<Map<String, Object>> existingProps = DSSCommonUtils.getFlowAttribute(flowJson, "props");
         String proxyUser = null;
         // 用 LinkedHashMap 保留现有变量的顺序
@@ -4393,6 +4396,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 mergedVars.putAll(prop);
             }
         }
+
+        logger.info("updateGlobalVariables flowName={}, existingVariables={}, newVariables={}", flowName, mergedVars, newVariables);
 
         // 禁止通过此接口覆盖 user.to.proxy
         if (newVariables.containsKey("user.to.proxy")) {
