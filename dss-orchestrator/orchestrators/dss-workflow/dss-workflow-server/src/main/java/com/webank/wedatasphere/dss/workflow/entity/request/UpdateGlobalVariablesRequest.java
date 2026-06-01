@@ -16,6 +16,16 @@ public class UpdateGlobalVariablesRequest {
 
     private String username;
 
+    private boolean unlock;
+
+    public boolean getUnlock() {
+        return unlock;
+    }
+
+    public void setUnlock(boolean unlock) {
+        this.unlock = unlock;
+    }
+
     public Long getWorkspaceId() {
         return workspaceId;
     }

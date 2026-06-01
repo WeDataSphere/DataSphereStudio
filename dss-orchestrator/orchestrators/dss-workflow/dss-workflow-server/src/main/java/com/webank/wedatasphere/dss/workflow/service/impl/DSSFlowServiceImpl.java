@@ -4334,7 +4334,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         // 工作流加锁
         Workspace workspace = new Workspace();
         workspace.setWorkspaceId(request.getWorkspaceId());
-        forceUnlockWorkflow(rootFlow, ticketId, username, true, workspace);
+        forceUnlockWorkflow(rootFlow, ticketId, username, request.getUnlock(), workspace);
         lockFlow(rootFlow, username, ticketId);
 
         try {
