@@ -134,4 +134,6 @@ public interface DSSFlowService {
 
     List<DSSNodeDefault> getNodeInfoByName(QueryNodeInfoByNameRequest queryNodeInfoByNameRequest);
 
+    void updateGlobalVariables(UpdateGlobalVariablesRequest request, String ticketId) throws Exception;
+
 }

@@ -465,6 +465,24 @@ public class FlowRestfulApi {
     }
 
 
+    @RequestMapping(value = "/updateGlobalVariables", method = RequestMethod.POST)
+    public Message updateGlobalVariables(@RequestBody UpdateGlobalVariablesRequest request) {
+        String userName = SecurityFilter.getLoginUsername(httpServletRequest);
+        String flowName = request.getFlowName();
+        request.setUsername(userName);
+
+        try {
+            Cookie[] cookies = httpServletRequest.getCookies();
+            String ticketId = Arrays.stream(cookies).filter(cookie -> DSSWorkFlowConstant.BDP_USER_TICKET_ID.equals(cookie.getName()))
+                    .findFirst().map(Cookie::getValue).get();
+            dssFlowService.updateGlobalVariables(request, ticketId);
+        } catch (Exception e) {
+            LOGGER.error(String.format("工作流 %s 全局变量更新失败", flowName), e);
+            return Message.error(String.format("工作流 %s 全局变量更新失败，原因为：%s", flowName, e.getMessage()));
+        }
+        return Message.ok(String.format("工作流 %s 全局变量更新成功", flowName));
+    }
+
     @RequestMapping(value = "/getNodeInfoByName",method = RequestMethod.POST)
     public Message getNodeInfoByName(@RequestBody QueryNodeInfoByNameRequest queryNodeInfoByNameRequest){
 

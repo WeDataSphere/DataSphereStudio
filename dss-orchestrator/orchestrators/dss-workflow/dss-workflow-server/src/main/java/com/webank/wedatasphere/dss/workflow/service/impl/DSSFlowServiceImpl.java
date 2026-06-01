@@ -4284,6 +4284,143 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
 
+    @Override
+    public void updateGlobalVariables(UpdateGlobalVariablesRequest request, String ticketId) throws Exception {
+        String username = request.getUsername();
+        String flowName = request.getFlowName();
+        Map<String, Object> variables = request.getVariables();
+
+        if (MapUtils.isEmpty(variables)) {
+            DSSExceptionUtils.dealErrorException(90003, "全局变量不能为空", DSSErrorException.class);
+        }
+        if (request.getOrchestratorId() == null) {
+            DSSExceptionUtils.dealErrorException(90003, "orchestratorId不能为空", DSSErrorException.class);
+        }
+        if (StringUtils.isEmpty(flowName)) {
+            DSSExceptionUtils.dealErrorException(90003, "flowName不能为空", DSSErrorException.class);
+        }
+
+        // 鉴权
+        DSSProject dssProject = validateOperation(request.getProjectId(), username);
+
+        if (!request.getWorkspaceId().equals(Long.valueOf(dssProject.getWorkspaceId()))) {
+            DSSExceptionUtils.dealErrorException(90003, "传入的工作空间与项目所属工作空间不一致", DSSErrorException.class);
+        }
+
+        // 获取编排信息
+        RequestQueryByIdOrchestrator requestQueryByIdOrchestrator = new RequestQueryByIdOrchestrator();
+        requestQueryByIdOrchestrator.setOrchestratorId(request.getOrchestratorId());
+
+        OrchestratorVo orchestratorVo = RpcAskUtils.processAskException(
+                getOrchestratorSender().ask(requestQueryByIdOrchestrator),
+                OrchestratorVo.class, RequestQueryByIdOrchestrator.class);
+
+        if (orchestratorVo.getDssOrchestratorInfo() == null || orchestratorVo.getDssOrchestratorVersion() == null) {
+            DSSExceptionUtils.dealErrorException(90003, "工作流不存在", DSSErrorException.class);
+        }
+
+        DSSOrchestratorVersion dssOrchestratorVersion = orchestratorVo.getDssOrchestratorVersion();
+
+        // 构建工作流树
+        DSSFlow rootFlow = genDSSFlowTree(dssOrchestratorVersion.getAppId());
+
+        // 通过flowName定位目标工作流
+        DSSFlow targetFlow = findTargetFlow(rootFlow, flowName);
+        if (targetFlow == null) {
+            DSSExceptionUtils.dealErrorException(90003,
+                    String.format("工作流不存在，flowName: %s", flowName), DSSErrorException.class);
+        }
+
+        // 工作流加锁
+        Workspace workspace = new Workspace();
+        workspace.setWorkspaceId(request.getWorkspaceId());
+        forceUnlockWorkflow(rootFlow, ticketId, username, true, workspace);
+        lockFlow(rootFlow, username, ticketId);
+
+        try {
+            // 解析并合并全局变量
+            String flowJson = targetFlow.getFlowJson();
+            String updatedFlowJson = mergeGlobalVariables(flowJson, variables);
+            targetFlow.setFlowJson(updatedFlowJson);
+
+            // 保存工作流
+            saveFlow(targetFlow.getId(), updatedFlowJson, targetFlow.getDescription(),
+                    targetFlow.getCreator(), dssProject.getWorkspaceName(), dssProject.getName(), null);
+
+            logger.info("工作流 {} 全局变量更新成功, 更新变量数: {}", flowName, variables.size());
+        } catch (Exception e) {
+            logger.error("工作流 {} 全局变量更新失败", flowName, e);
+            throw new DSSErrorException(80001, "全局变量更新失败，原因为：" + e.getMessage());
+        } finally {
+            workFlowManager.unlockWorkflow(username, dssOrchestratorVersion.getAppId(), true, workspace);
+        }
+    }
+
+    private DSSFlow findTargetFlow(DSSFlow rootFlow, String flowName) {
+        if (flowName.equals(rootFlow.getName())) {
+            return rootFlow;
+        }
+        return findSubFlowByName(rootFlow, flowName);
+    }
+
+    private DSSFlow findSubFlowByName(DSSFlow flow, String flowName) {
+        if (CollectionUtils.isEmpty(flow.getChildren())) {
+            return null;
+        }
+        for (DSSFlow child : flow.getChildren()) {
+            if (flowName.equals(child.getName())) {
+                return child;
+            }
+            DSSFlow found = findSubFlowByName(child, flowName);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    private String mergeGlobalVariables(String flowJson, Map<String, Object> newVariables) {
+        List<Map<String, Object>> existingProps = DSSCommonUtils.getFlowAttribute(flowJson, "props");
+        String proxyUser = null;
+        // 用 LinkedHashMap 保留现有变量的顺序
+        Map<String, Object> mergedVars = new LinkedHashMap<>();
+
+        for (Map<String, Object> prop : existingProps) {
+            if (prop.containsKey("user.to.proxy")) {
+                proxyUser = prop.get("user.to.proxy") != null ? prop.get("user.to.proxy").toString() : null;
+            } else {
+                // 每个 prop Map 对应一个全局变量，提取到 mergedVars 中
+                mergedVars.putAll(prop);
+            }
+        }
+
+        // 禁止通过此接口覆盖 user.to.proxy
+        if (newVariables.containsKey("user.to.proxy")) {
+            throw new DSSRuntimeException(90003, "不允许通过全局变量接口修改 user.to.proxy");
+        }
+
+        // 增量合并：同key覆盖，新key追加
+        mergedVars.putAll(newVariables);
+
+        // 重建 props 数组，每个变量一个 Map
+        List<Map<String, Object>> newProps = new ArrayList<>();
+        if (proxyUser != null) {
+            Map<String, Object> proxyMap = new HashMap<>();
+            proxyMap.put("user.to.proxy", proxyUser);
+            newProps.add(proxyMap);
+        }
+        for (Map.Entry<String, Object> entry : mergedVars.entrySet()) {
+            Map<String, Object> varMap = new HashMap<>();
+            varMap.put(entry.getKey(), entry.getValue());
+            newProps.add(varMap);
+        }
+
+        // 写回 flowJson
+        JsonObject flowJsonObj = new JsonParser().parse(flowJson).getAsJsonObject();
+        flowJsonObj.add("props", DSSCommonUtils.COMMON_GSON.toJsonTree(newProps));
+        return DSSCommonUtils.COMMON_GSON.toJson(flowJsonObj);
+    }
+
 }
 
 
