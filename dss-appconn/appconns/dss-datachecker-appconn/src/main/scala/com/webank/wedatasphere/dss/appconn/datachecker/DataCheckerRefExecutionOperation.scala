@@ -49,6 +49,11 @@ class DataCheckerRefExecutionOperation
     // 节点上的配置
     val runTimeParams = requestRef.getExecutionRequestRefContext.getRuntimeMap
     logger.info(s"runTimeParams is ${runTimeParams}")
+    logger.info("------------------------")
+    logger.info(s"variable is ${requestRef.getRefJobContent.get("variable")}")
+    logger.info("------------------------")
+    logger.info(s"requestRef jobContent is ${requestRef.getRefJobContent}")
+    logger.info("------------------------")
     // 自定义变量
     val variableParams: mutable.Map[String, Object]= requestRef.getRefJobContent.get("variable"). asInstanceOf[java.util.Map[String,Object]]
     logger.info(s"variableParams is ${variableParams}")
