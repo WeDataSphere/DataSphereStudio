@@ -58,8 +58,8 @@ class DataCheckerRefExecutionOperation
     // val variableParams: mutable.Map[String, Object]= requestRef.getRefJobContent.get("variable"). asInstanceOf[java.util.Map[String,Object]]
     // 自定义变量，处理null情况：若variable为null则创建空map
     val variableParams: mutable.Map[String, Object] = Option(requestRef.getRefJobContent.get("variable"))
-      .map(_.asInstanceOf[java.util.Map[String, Object]])
-      .getOrElse(new java.util.HashMap[String, Object]())
+      .map(v => mapAsScalaMap(v.asInstanceOf[java.util.Map[String, Object]]))
+      .getOrElse(mutable.Map.empty[String, Object])
     logger.info(s"variableParams is ${variableParams}")
     val inputParams = runTimeParams ++ variableParams
     logger.info(s"inputParams is ${inputParams}")
