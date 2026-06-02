@@ -40,6 +40,7 @@ class DataCheckerRefExecutionOperation
   }
 
   override def submit(requestRef: RefExecutionRequestRef.RefExecutionRequestRefImpl): RefExecutionAction = {
+    logger.info("------------------submit--------------")
     val nodeAction = new DataCheckerExecutionAction()
     nodeAction.setId(UUID.randomUUID().toString)
     import scala.collection.JavaConversions.mapAsScalaMap
@@ -47,12 +48,16 @@ class DataCheckerRefExecutionOperation
     val InstanceConfig = this.service.getAppInstance.getConfig
     // 节点上的配置
     val runTimeParams = requestRef.getExecutionRequestRefContext.getRuntimeMap
+    logger.info(s"runTimeParams is ${runTimeParams}")
     // 自定义变量
     val variableParams: mutable.Map[String, Object]= requestRef.getRefJobContent.get("variable"). asInstanceOf[java.util.Map[String,Object]]
+    logger.info(s"variableParams is ${variableParams}")
     val inputParams = runTimeParams ++ variableParams
+    logger.info(s"inputParams is ${inputParams}")
     val properties = new Properties()
     // 解析contextId数据
     val contextID = DSSCommonUtils.COMMON_GSON.fromJson(runTimeParams.get("contextID").toString, classOf[util.Map[String, String]])
+    logger.info(s"context id is ${contextID}")
     // 去掉左右两侧花括号 以及字符的引号
     val value = contextID.get("value").drop(1).dropRight(1).replaceAll("\"", "")
     val info = value.split(",").map(_.split(":")).map(arr => (arr(0), arr(1))).toMap
