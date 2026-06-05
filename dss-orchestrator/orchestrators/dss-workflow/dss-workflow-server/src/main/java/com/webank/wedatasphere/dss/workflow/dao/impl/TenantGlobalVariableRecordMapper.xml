@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webank.wedatasphere.dss.workflow.dao.TenantGlobalVariableRecordMapper">
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        insert into dss_workflow_tenant_global_variable_record
+        (request_id, root_flow_id, flow_id, flow_name, workspace_name, project_name, tenant, bml_version, operate_user, create_time)
+        values
+        <foreach collection="list" item="record" separator=",">
+            (#{record.requestId}, #{record.rootFlowId}, #{record.flowId}, #{record.flowName}, #{record.workspaceName},
+             #{record.projectName}, #{record.tenant}, #{record.bmlVersion}, #{record.operateUser}, #{record.createTime})
+        </foreach>
+    </insert>
+</mapper>
