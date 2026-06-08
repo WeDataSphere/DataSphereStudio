@@ -136,4 +136,6 @@ public interface DSSFlowService {
 
     void updateGlobalVariables(UpdateGlobalVariablesRequest request, String ticketId) throws Exception;
 
+    void updateTenantVariable(UpdateTenantVariableRequest request, String ticketId) throws Exception;
+
 }

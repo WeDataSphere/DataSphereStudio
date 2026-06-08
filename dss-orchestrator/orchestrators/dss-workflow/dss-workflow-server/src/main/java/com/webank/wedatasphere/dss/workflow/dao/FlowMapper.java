@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.dss.workflow.dao;
 
 
+import com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorInfo;
 import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlow;
 import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlowRelation;
 import com.webank.wedatasphere.dss.workflow.entity.vo.FlowInfoVo;
@@ -63,4 +64,6 @@ public interface FlowMapper {
     List<String> getSubflowName(Long parentFlowID);
 
     List<DSSFlow> selectFlowListByOrchestratorId(@Param("orchestratorIdList") List<Long> orchestratorIdList);
+
+    List<DSSOrchestratorInfo> selectOrchestratorByName(@Param("projectId") Long projectId,@Param("orchestratorName") String orchestratorName);
 }

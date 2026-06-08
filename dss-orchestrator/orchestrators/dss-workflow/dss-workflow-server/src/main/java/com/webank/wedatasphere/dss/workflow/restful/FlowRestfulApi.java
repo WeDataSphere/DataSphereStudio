@@ -33,6 +33,7 @@ import com.webank.wedatasphere.dss.common.label.DSSLabel;
 import com.webank.wedatasphere.dss.common.label.EnvDSSLabel;
 import com.webank.wedatasphere.dss.common.label.LabelRouteVO;
 import com.webank.wedatasphere.dss.common.utils.AuditLogUtils;
+import com.webank.wedatasphere.dss.common.conf.DSSCommonConf;
 import com.webank.wedatasphere.dss.common.utils.DSSCommonUtils;
 import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
 import com.webank.wedatasphere.dss.contextservice.service.ContextService;
@@ -57,6 +58,7 @@ import com.webank.wedatasphere.dss.workflow.service.DSSFlowService;
 import com.webank.wedatasphere.dss.workflow.service.PublishService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.linkis.common.exception.ErrorException;
 import org.apache.linkis.cs.client.utils.SerializeHelper;
 import org.apache.linkis.cs.common.entity.source.LinkisHAWorkFlowContextID;
@@ -660,6 +662,39 @@ public class FlowRestfulApi {
         }
 
         return Message.ok("获取节点信息成功").data("data",dssNodeDefaultList);
+    }
+
+    /**
+     * 更新租户变量接口，仅超级管理员可调用
+     * 将tenant全局变量写入到指定根工作流中（子工作流通过getRootFlowProxy动态继承）
+     *
+     * @param request 包含orchestratorName、projectName、tenantValue的请求体
+     * @return 操作结果
+     */
+    @RequestMapping(value = "/updateTenantVariable", method = RequestMethod.POST)
+    public Message updateTenantVariable(@RequestBody UpdateTenantVariableRequest request) {
+        String userName = SecurityFilter.getLoginUsername(httpServletRequest);
+
+        // 校验超级用户权限
+        if (!ArrayUtils.contains(DSSCommonConf.SUPER_ADMIN_LIST, userName)) {
+            return Message.error("仅超级管理员可执行此操作").data("errCode", 90005);
+        }
+
+        request.setOperator(userName);
+
+        try {
+            Cookie[] cookies = httpServletRequest.getCookies();
+            String ticketId = Arrays.stream(cookies)
+                    .filter(cookie -> DSSWorkFlowConstant.BDP_USER_TICKET_ID.equals(cookie.getName()))
+                    .findFirst().map(Cookie::getValue).get();
+            dssFlowService.updateTenantVariable(request, ticketId);
+        } catch (Exception e) {
+            LOGGER.error("租户变量更新失败, orchestratorName={}, projectName={}",
+                    request.getOrchestratorName(), request.getProjectName(), e);
+            return Message.error("租户变量更新失败，原因为：" + e.getMessage());
+        }
+
+        return Message.ok("租户变量写入成功");
     }
 
 }
