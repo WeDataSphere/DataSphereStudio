@@ -165,8 +165,8 @@
     </select>
 
 
-    <select id="selectOrchestratorByName" resultType="com.webank.wedatasphere.dss.orchestrator.common.entity.DSSOrchestratorInfo">
-        select * from dss_orchestrator_info where project_id = #{projectId} and name =#{orchestratorName} limit 1
+    <select id="selectOrchestratorByName">
+        select * from dss_orchestrator_info where project_id = #{projectId} and name =#{orchestratorName}
     </select>
 
 </mapper>

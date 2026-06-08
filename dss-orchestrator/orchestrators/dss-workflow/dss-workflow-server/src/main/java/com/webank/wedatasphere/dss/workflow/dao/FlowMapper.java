@@ -65,5 +65,5 @@ public interface FlowMapper {
 
     List<DSSFlow> selectFlowListByOrchestratorId(@Param("orchestratorIdList") List<Long> orchestratorIdList);
 
-    DSSOrchestratorInfo selectOrchestratorByName(@Param("projectId") Long projectId,@Param("orchestratorName") String orchestratorName);
+    List<DSSOrchestratorInfo> selectOrchestratorByName(@Param("projectId") Long projectId,@Param("orchestratorName") String orchestratorName);
 }
