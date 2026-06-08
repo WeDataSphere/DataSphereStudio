@@ -39,6 +39,7 @@ import com.webank.wedatasphere.dss.common.label.LabelRouteVO;
 import com.webank.wedatasphere.dss.common.protocol.project.*;
 import com.webank.wedatasphere.dss.common.protocol.workspace.StarRocksClusterListRequest;
 import com.webank.wedatasphere.dss.common.protocol.workspace.StarRocksClusterListResponse;
+import com.webank.wedatasphere.dss.common.conf.DSSCommonConf;
 import com.webank.wedatasphere.dss.common.utils.*;
 import com.webank.wedatasphere.dss.contextservice.service.ContextService;
 import com.webank.wedatasphere.dss.contextservice.service.impl.ContextServiceImpl;
@@ -86,10 +87,12 @@ import com.webank.wedatasphere.dss.workflow.scheduler.DssJobThreadPool;
 import com.webank.wedatasphere.dss.workflow.service.DSSFlowService;
 import com.webank.wedatasphere.dss.workflow.service.ProjectOrchestratorWhiteService;
 import com.webank.wedatasphere.dss.workflow.service.SaveFlowHook;
+import com.webank.wedatasphere.dss.workflow.service.TenantVariableProtector;
 import com.webank.wedatasphere.dss.workflow.service.WorkflowNodeService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -165,6 +168,9 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
     @Autowired
     private StaffInfoGetter staffInfoGetter;
+
+    @Autowired
+    private TenantVariableLogMapper tenantVariableLogMapper;
 
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -292,19 +298,29 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 }
                 DSSFlow rootFlow = getFlowByID(rootFlowId);
                 Map<String, Object> json = bmlService.query(rootFlow.getName(), rootFlow.getResourceId(), rootFlow.getBmlVersion());
+                String rootFlowJson = json.get("string").toString();
 
-                List<Map<String, Object>> props = DSSCommonUtils.getFlowAttribute(json.get("string").toString(), "props");
+                List<Map<String, Object>> props = DSSCommonUtils.getFlowAttribute(rootFlowJson, "props");
                 String proxyUser = "";
+                String tenantValue = null;
                 if (CollectionUtils.isNotEmpty(props)) {
                     for (Map<String, Object> prop : props) {
-                        if (prop.containsKey("user.to.proxy") && prop.get("user.to.proxy") != null) {
+                        if (proxyUser.isEmpty() && prop.containsKey("user.to.proxy") && prop.get("user.to.proxy") != null) {
                             proxyUser = prop.get("user.to.proxy").toString();
+                        }
+                        if (tenantValue == null && prop.containsKey("tenant") && prop.get("tenant") != null) {
+                            tenantValue = prop.get("tenant").toString();
+                        }
+                        if (!proxyUser.isEmpty() && tenantValue != null) {
                             break;
                         }
                     }
                 }
 
                 dssFlow.setDefaultProxyUser(proxyUser);
+                if (tenantValue != null) {
+                    dssFlow.setDefaultTenant(tenantValue);
+                }
             }
 
         } catch (Exception e) {
@@ -4383,6 +4399,10 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
     private String mergeGlobalVariables(String flowJson, Map<String, Object> newVariables, String flowName) {
+        return mergeGlobalVariables(flowJson, newVariables, flowName, false);
+    }
+
+    private String mergeGlobalVariables(String flowJson, Map<String, Object> newVariables, String flowName, boolean allowTenantOverride) {
         List<Map<String, Object>> existingProps = DSSCommonUtils.getFlowAttribute(flowJson, "props");
         String proxyUser = null;
         // 用 LinkedHashMap 保留现有变量的顺序
@@ -4402,6 +4422,12 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         // 禁止通过此接口覆盖 user.to.proxy
         if (newVariables.containsKey("user.to.proxy")) {
             throw new DSSRuntimeException(90003, "不允许通过全局变量接口修改 user.to.proxy");
+        }
+
+        // 保护tenant变量不被updateGlobalVariables接口修改
+        if (newVariables.containsKey("tenant") && !allowTenantOverride) {
+            logger.warn("Attempt to add or modify tenant variable via updateGlobalVariables is blocked for flow: {}", flowName);
+            newVariables.remove("tenant");
         }
 
         // 增量合并：同key覆盖，新key追加
@@ -4424,6 +4450,163 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         JsonObject flowJsonObj = new JsonParser().parse(flowJson).getAsJsonObject();
         flowJsonObj.add("props", DSSCommonUtils.COMMON_GSON.toJsonTree(newProps));
         return DSSCommonUtils.COMMON_GSON.toJson(flowJsonObj);
+    }
+
+    @Override
+    public void updateTenantVariable(UpdateTenantVariableRequest request, String ticketId) throws Exception {
+        String username = request.getOperator();
+        String orchestratorName = request.getOrchestratorName();
+        String projectName = request.getProjectName();
+        String tenantValue = request.getTenantValue();
+
+        logger.info("updateTenantVariable request: orchestratorName={}, projectName={}, operator={}",
+                orchestratorName, projectName, username);
+
+        // 1. 参数校验
+        if (StringUtils.isEmpty(orchestratorName)) {
+            DSSExceptionUtils.dealErrorException(90003, "orchestratorName不能为空", DSSErrorException.class);
+        }
+        if (StringUtils.isEmpty(projectName)) {
+            DSSExceptionUtils.dealErrorException(90003, "projectName不能为空", DSSErrorException.class);
+        }
+        if (StringUtils.isEmpty(tenantValue)) {
+            DSSExceptionUtils.dealErrorException(90003, "tenant变量值不能为空", DSSErrorException.class);
+        }
+
+        // 2. 通过项目名称和工作空间ID查找项目
+        DSSProject dssProject = getProjectByName(projectName);
+        if (dssProject == null) {
+            DSSExceptionUtils.dealErrorException(90003, "项目不存在，projectName: " + projectName, DSSErrorException.class);
+        }
+        Long projectId = dssProject.getId();
+
+        // 3. 通过编排名称查找编排
+        DSSOrchestratorInfo orchestrator = flowMapper.selectOrchestratorByName(projectId,orchestratorName);
+
+        if(orchestrator == null){
+            DSSExceptionUtils.dealErrorException(90003, "编排不存在，orchestratorName: " + orchestratorName, DSSErrorException.class);
+        }
+
+        RequestQueryByIdOrchestrator RequestQueryByIdOrchestrator = new RequestQueryByIdOrchestrator();
+        RequestQueryByIdOrchestrator.setOrchestratorId(orchestrator.getId());
+
+        OrchestratorVo orchestratorVo = RpcAskUtils.processAskException(getOrchestratorSender().ask(RequestQueryByIdOrchestrator),
+                OrchestratorVo.class, RequestQueryByIdOrchestrator.class);
+
+        if (orchestratorVo == null || orchestratorVo.getDssOrchestratorInfo() == null || orchestratorVo.getDssOrchestratorVersion() == null) {
+
+            DSSExceptionUtils.dealErrorException(90003, "工作流不存在", DSSErrorException.class);
+        }
+
+        DSSOrchestratorVersion dssOrchestratorVersion = orchestratorVo.getDssOrchestratorVersion();
+        DSSOrchestratorInfo dssOrchestratorInfo = orchestratorVo.getDssOrchestratorInfo();
+        Long orchestratorId = dssOrchestratorInfo.getId();
+
+        // 4. 构建工作流树
+        Long rootFlowId = dssOrchestratorVersion.getAppId();
+        DSSFlow rootFlow = genDSSFlowTree(rootFlowId);
+
+        // 5. 锁检测：检查主工作流是否被锁定
+        DSSFlowEditLock editLock = lockMapper.getFlowEditLockByID(rootFlow.getId());
+        if (editLock != null && !editLock.getExpire()) {
+            throw new DSSErrorException(60056, String.format("主工作流[%s]正在被用户%s编辑，无法修改租户变量",
+                    rootFlow.getName(), editLock.getUsername()));
+        }
+
+        // 6. 对rootFlow加锁
+        lockFlow(rootFlow, username, ticketId);
+
+        // 7. 提取旧tenant值用于审计
+        String oldTenantValue = TenantVariableProtector.extractTenantValue(rootFlow.getFlowJson());
+
+        try {
+            // 8. 遍历工作流树，修改tenant变量
+            updateTenantVariableForFlowTree(rootFlow, tenantValue, dssProject.getWorkspaceName(), dssProject.getName());
+
+            // 9. 写入审计日志 - 成功
+            saveTenantVariableLog(orchestratorId, orchestratorName, projectId, projectName,
+                    oldTenantValue, tenantValue, username, "SUCCESS", null);
+
+            logger.info("租户变量更新成功, orchestratorName={}, tenantValue={}", orchestratorName, tenantValue);
+        } catch (Exception e) {
+            saveTenantVariableLog(orchestratorId, orchestratorName, projectId, projectName,
+                    oldTenantValue, tenantValue, username, "FAILED", e.getMessage());
+            throw new DSSErrorException(80001, "租户变量更新失败，原因为：" + e.getMessage());
+        } finally {
+            // 10. 释放锁
+            workFlowManager.unlockWorkflow(username, dssOrchestratorVersion.getAppId(), true, new Workspace());
+        }
+    }
+
+    /**
+     * 递归遍历工作流树，对每个工作流设置tenant变量
+     */
+    private void updateTenantVariableForFlowTree(DSSFlow flow, String tenantValue, String workspaceName, String projectName) throws Exception {
+        String flowJson = flow.getFlowJson();
+
+        // 构造tenant变量Map
+        Map<String, Object> variables = new HashMap<>(1);
+        variables.put("tenant", tenantValue);
+
+        // 复用mergeGlobalVariables合并变量，allowTenantOverride=true允许覆盖已有tenant
+        String updatedFlowJson = mergeGlobalVariables(flowJson, variables, flow.getName(), true);
+        flow.setFlowJson(updatedFlowJson);
+
+        // 复用saveFlow保存
+        saveFlow(flow.getId(), updatedFlowJson, flow.getDescription(),
+                flow.getCreator(), workspaceName, projectName, null);
+
+        // 递归处理子工作流
+        if (!CollectionUtils.isEmpty(flow.getChildren())) {
+            for (DSSFlow child : flow.getChildren()) {
+                updateTenantVariableForFlowTree(child, tenantValue, workspaceName, projectName);
+            }
+        }
+    }
+
+    /**
+     * 通过项目名称和工作空间ID查找项目
+     */
+    private DSSProject getProjectByName(String projectName) throws DSSErrorException {
+
+        ProjectInfoListRequest request =new ProjectInfoListRequest();
+        request.setProjectNames(Collections.singletonList(projectName));
+
+        ProjectInfoListResponse response = RpcAskUtils.processAskException(
+                DSSSenderServiceFactory.getOrCreateServiceInstance().getProjectServerSender().ask(request),
+                ProjectInfoListResponse.class, ProjectInfoListRequest.class);
+        if (response == null || CollectionUtils.isEmpty(response.getDssProjects())) {
+            return null;
+        }
+        for (DSSProject project : response.getDssProjects()) {
+            if (projectName.equals(project.getName())) {
+                return project;
+            }
+        }
+        return null;
+    }
+
+
+    /**
+     * 保存租户变量审计日志
+     */
+    private void saveTenantVariableLog(Long orchestratorId, String orchestratorName, Long projectId, String projectName,
+            String oldTenantValue, String newTenantValue, String operator, String status, String errorMessage) {
+        try {
+            TenantVariableLogEntry logEntry = new TenantVariableLogEntry();
+            logEntry.setOrchestratorId(orchestratorId);
+            logEntry.setOrchestratorName(orchestratorName);
+            logEntry.setProjectId(projectId);
+            logEntry.setProjectName(projectName);
+            logEntry.setOldTenantValue(oldTenantValue);
+            logEntry.setNewTenantValue(newTenantValue);
+            logEntry.setOperator(operator);
+            logEntry.setStatus(status);
+            logEntry.setErrorMessage(errorMessage);
+            tenantVariableLogMapper.insert(logEntry);
+        } catch (Exception e) {
+            logger.warn("租户变量审计日志写入失败", e);
+        }
     }
 
 }
