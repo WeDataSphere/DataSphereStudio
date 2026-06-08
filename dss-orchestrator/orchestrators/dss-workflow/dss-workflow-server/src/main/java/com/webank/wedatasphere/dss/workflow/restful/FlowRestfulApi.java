@@ -503,7 +503,7 @@ public class FlowRestfulApi {
 
     /**
      * 更新租户变量接口，仅超级管理员可调用
-     * 将tenant全局变量写入到指定根工作流中（子工作流通过getRootFlowProxy动态继承）
+     * 将tenant全局变量写入到所有工作流中（新增的子工作流通过getRootFlowProxy动态继承）
      *
      * @param request 包含orchestratorName、projectName、tenantValue的请求体
      * @return 操作结果

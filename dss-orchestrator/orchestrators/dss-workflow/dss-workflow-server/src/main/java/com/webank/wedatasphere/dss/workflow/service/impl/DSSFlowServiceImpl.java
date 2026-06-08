@@ -305,22 +305,23 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 String tenantValue = null;
                 if (CollectionUtils.isNotEmpty(props)) {
                     for (Map<String, Object> prop : props) {
-                        if (proxyUser.isEmpty() && prop.containsKey("user.to.proxy") && prop.get("user.to.proxy") != null) {
+                        if (prop.containsKey("user.to.proxy") && prop.get("user.to.proxy") != null) {
                             proxyUser = prop.get("user.to.proxy").toString();
-                        }
-                        if (tenantValue == null && prop.containsKey("tenant") && prop.get("tenant") != null) {
-                            tenantValue = prop.get("tenant").toString();
-                        }
-                        if (!proxyUser.isEmpty() && tenantValue != null) {
                             break;
                         }
                     }
+
+                    for (Map<String, Object> prop : props) {
+                        if (prop.containsKey("tenant") && prop.get("tenant") != null) {
+                            tenantValue = prop.get("tenant").toString();
+                            break;
+                        }
+                    }
+
                 }
 
                 dssFlow.setDefaultProxyUser(proxyUser);
-                if (tenantValue != null) {
-                    dssFlow.setDefaultTenant(tenantValue);
-                }
+                dssFlow.setDefaultTenant(tenantValue);
             }
 
         } catch (Exception e) {
@@ -455,7 +456,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             }
         }
 
-        if(PYSPARK_PYTHON_ENABLE.getValue()){
+        if (PYSPARK_PYTHON_ENABLE.getValue()) {
             // 新增的pyspark节点添加spark.python.version=python3,强制使用python3环境
             jsonFlow = updatePysparkPythonVersion(jsonFlow);
         }
@@ -695,6 +696,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             this.index = index;
         }
     }
+
     private boolean parseEdgeDefault(JsonObject edge) {
         if (edge == null || !edge.has("isDefault") || edge.get("isDefault").isJsonNull()) {
             return false;
@@ -711,83 +713,84 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         }
         return jsonObject.get(key).getAsString();
     }
+
     private String updatePysparkPythonVersion(String jsonFlow) {
 
         try {
 
             logger.info("updatePysparkPythonVersion json flow is {}", jsonFlow);
             String pythonDateTime = PYSPARK_PYTHON_DATETIME.getValue();
-            long pythonDateTimeLong = DateUtils.parseDate(pythonDateTime,new String[]{"yyyy-MM-dd HH:mm:ss"}).getTime();
+            long pythonDateTimeLong = DateUtils.parseDate(pythonDateTime, new String[]{"yyyy-MM-dd HH:mm:ss"}).getTime();
             String pythonVersion = PYSPARK_PYTHON_VERSION.getValue();
 
             logger.info("pyspark python enable,python version is {}, pyspark python time is [{},{}]",
-                    pythonVersion, pythonDateTime,pythonDateTimeLong);
+                    pythonVersion, pythonDateTime, pythonDateTimeLong);
 
             // 新增的pyspark节点添加spark.python.version=python3,强制使用python3环境
             JsonParser parser = new JsonParser();
             JsonObject jsonObject = parser.parse(jsonFlow).getAsJsonObject();
             JsonArray nodeJsonArray = jsonObject.getAsJsonArray("nodes");
 
-            if(nodeJsonArray == null || nodeJsonArray.isEmpty()){
+            if (nodeJsonArray == null || nodeJsonArray.isEmpty()) {
                 logger.info("nodes is empty");
                 return jsonFlow;
             }
 
             List<JsonObject> updateNodes = new ArrayList<>();
-            for(JsonElement nodeJson: nodeJsonArray){
+            for (JsonElement nodeJson : nodeJsonArray) {
 
                 JsonObject node = nodeJson.getAsJsonObject();
 
                 // 过滤非pyspark节点
-                if (node.get("jobType") == null || !"linkis.spark.py".equalsIgnoreCase(node.get("jobType").getAsString())){
+                if (node.get("jobType") == null || !"linkis.spark.py".equalsIgnoreCase(node.get("jobType").getAsString())) {
                     continue;
                 }
 
                 // 过滤非新增节点
                 if (node.get("createTime") == null || node.get("createTime").getAsLong() < pythonDateTimeLong) {
 
-                    String createDateTime =  node.get("createTime") == null ?
+                    String createDateTime = node.get("createTime") == null ?
                             null :
-                            DateFormatUtils.format(new Date(node.get("createTime").getAsLong()),"yyyy-MM-dd HH:mm:ss");
+                            DateFormatUtils.format(new Date(node.get("createTime").getAsLong()), "yyyy-MM-dd HH:mm:ss");
 
                     logger.info("{} Not new nodes, node createTime is [{},{}], python3DateTime is [{},{}]",
-                            node.get("title"),node.get("createTime"),createDateTime,pythonDateTimeLong,pythonDateTime);
+                            node.get("title"), node.get("createTime"), createDateTime, pythonDateTimeLong, pythonDateTime);
                     continue;
                 }
 
 
                 if (node.get("params") == null) {
-                    node.add("params",new JsonObject());
+                    node.add("params", new JsonObject());
                 }
 
-                if(node.get("params").getAsJsonObject().get("configuration") == null) {
+                if (node.get("params").getAsJsonObject().get("configuration") == null) {
 
-                    node.get("params").getAsJsonObject().add("configuration",new JsonObject());
+                    node.get("params").getAsJsonObject().add("configuration", new JsonObject());
                 }
 
-                JsonObject configuration =node.get("params").getAsJsonObject().get("configuration").getAsJsonObject();
+                JsonObject configuration = node.get("params").getAsJsonObject().get("configuration").getAsJsonObject();
 
-                if (configuration.get("special") == null){
-                    configuration.add("special",new JsonObject());
+                if (configuration.get("special") == null) {
+                    configuration.add("special", new JsonObject());
                 }
 
-                if (configuration.get("runtime") == null){
-                    configuration.add("runtime",new JsonObject());
+                if (configuration.get("runtime") == null) {
+                    configuration.add("runtime", new JsonObject());
                 }
 
-                if(configuration.get("startup") == null){
-                    configuration.add("startup",new JsonObject());
+                if (configuration.get("startup") == null) {
+                    configuration.add("startup", new JsonObject());
                 }
 
-                JsonObject startup =  configuration.get("startup").getAsJsonObject();
+                JsonObject startup = configuration.get("startup").getAsJsonObject();
 
                 logger.info("{} node spark.python.version  is {}, python version is {}",
-                        node.get("title"),startup.get("spark.python.version"),pythonVersion);
+                        node.get("title"), startup.get("spark.python.version"), pythonVersion);
 
                 if (startup.get("spark.python.version") != null
                         && pythonVersion.equals(startup.get("spark.python.version").getAsString())) {
                     logger.info("{} node python version is {}",
-                            node.get("title"),startup.get("spark.python.version"));
+                            node.get("title"), startup.get("spark.python.version"));
                     continue;
                 }
 
@@ -798,9 +801,9 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 updateNodes.add(node);
             }
 
-            logger.info("updatePysparkPythonVersion update node is {}",DSSCommonUtils.COMMON_GSON.toJson(updateNodes));
+            logger.info("updatePysparkPythonVersion update node is {}", DSSCommonUtils.COMMON_GSON.toJson(updateNodes));
 
-            if (CollectionUtils.isNotEmpty(updateNodes)){
+            if (CollectionUtils.isNotEmpty(updateNodes)) {
                 logger.info("updatePysparkPythonVersion success, jsonFlow is {}", jsonObject);
                 return jsonObject.toString();
             }
@@ -2559,11 +2562,11 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                             editFlowRequestTOFlowIDMap.get(targetFlowId) : new ArrayList<>();
 
                     // 校验 tableau/tableauDataRefre 节点的 viewId/datasourceId
-                    try{
+                    try {
                         validateTableauNode(editFlowRequest, nodeContentByContentId, targetFlowId, workspace, userName);
-                    }catch (Exception e){
-                        logger.error("user is {}, node is {} validateTableauNode error msg is {}",userName,editFlowRequest.getTitle()
-                                ,e.getMessage(),e);
+                    } catch (Exception e) {
+                        logger.error("user is {}, node is {} validateTableauNode error msg is {}", userName, editFlowRequest.getTitle()
+                                , e.getMessage(), e);
                         workFlowManager.unlockWorkflow(userName, flowId, true, workspace);
                         throw e;
                     }
@@ -2574,7 +2577,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                     }
 
                     // 批量编辑 白名单项目中的节点和非白名单中的节点(非白名单的节点没有spark版本属性), 会修改白名单节点的spark版本
-                    handleWhiteNodeParams(editFlowRequest,dssOrchestratorInfo);
+                    handleWhiteNodeParams(editFlowRequest, dssOrchestratorInfo);
 
                     editFlowRequestsList.add(editFlowRequest);
                     editFlowRequestTOFlowIDMap.put(targetFlowId, editFlowRequestsList);
@@ -2628,7 +2631,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
      * 2. 真实性校验：通过调用 workflowNodeService.updateNode 触发 AppConn 校验
      */
     private void validateTableauNode(EditFlowRequest editFlowRequest, NodeContentDO nodeContentDO,
-                                      Long flowId, Workspace workspace, String userName) throws ExternalOperationFailedException {
+                                     Long flowId, Workspace workspace, String userName) throws ExternalOperationFailedException {
         String nodeType = nodeContentDO.getJobType();
 
         // 只处理 tableau 相关节点
@@ -4231,71 +4234,71 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     }
 
 
-    private void handleWhiteNodeParams(EditFlowRequest editFlowRequest,DSSOrchestratorInfo dssOrchestratorInfo) {
+    private void handleWhiteNodeParams(EditFlowRequest editFlowRequest, DSSOrchestratorInfo dssOrchestratorInfo) {
 
-       try {
-           // 检查项目和工作流编排器是否在白名单中
-           boolean isWhite = projectOrchestratorWhiteService.checkProjectAndOrchestratorIsWhite(dssOrchestratorInfo.getProjectId(), dssOrchestratorInfo.getId());
+        try {
+            // 检查项目和工作流编排器是否在白名单中
+            boolean isWhite = projectOrchestratorWhiteService.checkProjectAndOrchestratorIsWhite(dssOrchestratorInfo.getProjectId(), dssOrchestratorInfo.getId());
 
-           // 如果在白名单中，则跳过处理，直接返回
-           if(isWhite){
-               return;
-           }
+            // 如果在白名单中，则跳过处理，直接返回
+            if (isWhite) {
+                return;
+            }
 
-           // 解析工作流参数为JSON对象
-           JsonObject params = JsonParser.parseString(editFlowRequest.getParams()).getAsJsonObject();
+            // 解析工作流参数为JSON对象
+            JsonObject params = JsonParser.parseString(editFlowRequest.getParams()).getAsJsonObject();
 
-           // 获取配置对象
-           JsonObject configuration = params.get("configuration").getAsJsonObject();
+            // 获取配置对象
+            JsonObject configuration = params.get("configuration").getAsJsonObject();
 
-           // 获取运行时配置对象
-           JsonObject runtime = configuration.get("runtime").getAsJsonObject();
+            // 获取运行时配置对象
+            JsonObject runtime = configuration.get("runtime").getAsJsonObject();
 
-           // 定义Spark版本参数的键名
-           String sparkVersionKey = "sparkVersion";
-           // 从运行时配置中获取Spark版本参数值
-           String sparkVersion = runtime.get(sparkVersionKey) == null ? null : runtime.get(sparkVersionKey).getAsString();
+            // 定义Spark版本参数的键名
+            String sparkVersionKey = "sparkVersion";
+            // 从运行时配置中获取Spark版本参数值
+            String sparkVersion = runtime.get(sparkVersionKey) == null ? null : runtime.get(sparkVersionKey).getAsString();
 
-           // 查询节点的UI配置列表
-           List<NodeContentUIDO> nodeContentUIDOList = nodeContentUIMapper.queryNodeContentUIList(Collections.singletonList(editFlowRequest.getId()));
+            // 查询节点的UI配置列表
+            List<NodeContentUIDO> nodeContentUIDOList = nodeContentUIMapper.queryNodeContentUIList(Collections.singletonList(editFlowRequest.getId()));
 
-           // 如果节点UI配置列表不为空
-           if (CollectionUtils.isNotEmpty(nodeContentUIDOList)) {
+            // 如果节点UI配置列表不为空
+            if (CollectionUtils.isNotEmpty(nodeContentUIDOList)) {
 
-               // 从配置列表中查找sparkVersion对应的配置项
-               NodeContentUIDO nodeContentUIDO = nodeContentUIDOList.stream()
-                       .filter(nodeUi -> sparkVersionKey.equalsIgnoreCase(nodeUi.getNodeUIKey()))
-                       .findFirst().orElse(null);
+                // 从配置列表中查找sparkVersion对应的配置项
+                NodeContentUIDO nodeContentUIDO = nodeContentUIDOList.stream()
+                        .filter(nodeUi -> sparkVersionKey.equalsIgnoreCase(nodeUi.getNodeUIKey()))
+                        .findFirst().orElse(null);
 
-               // 如果找到了sparkVersion的配置项
-               if (nodeContentUIDO != null) {
+                // 如果找到了sparkVersion的配置项
+                if (nodeContentUIDO != null) {
 
-                   // 如果请求中的sparkVersion不为空，且与数据库中存储的值不一致，则抛出异常
-                   // 说明不允许修改sparkVersion参数
-                   if(sparkVersion != null && !nodeContentUIDO.getNodeUIValue().equals(sparkVersion)) {
-                       throw new DSSErrorException(90003, dssOrchestratorInfo.getName() + "工作流不支持修改sparkVersion参数");
-                   }
+                    // 如果请求中的sparkVersion不为空，且与数据库中存储的值不一致，则抛出异常
+                    // 说明不允许修改sparkVersion参数
+                    if (sparkVersion != null && !nodeContentUIDO.getNodeUIValue().equals(sparkVersion)) {
+                        throw new DSSErrorException(90003, dssOrchestratorInfo.getName() + "工作流不支持修改sparkVersion参数");
+                    }
 
-                   // 如果请求中的sparkVersion为空，则将数据库中的默认值添加到运行时配置中
-                   if(sparkVersion == null ){
-                       runtime.addProperty(nodeContentUIDO.getNodeUIKey(), nodeContentUIDO.getNodeUIValue());
-                       logger.info("{} node ,add sparkVersion to runtime, value is {}",editFlowRequest.getTitle(), nodeContentUIDO.getNodeUIValue());
+                    // 如果请求中的sparkVersion为空，则将数据库中的默认值添加到运行时配置中
+                    if (sparkVersion == null) {
+                        runtime.addProperty(nodeContentUIDO.getNodeUIKey(), nodeContentUIDO.getNodeUIValue());
+                        logger.info("{} node ,add sparkVersion to runtime, value is {}", editFlowRequest.getTitle(), nodeContentUIDO.getNodeUIValue());
 
-                       // 更新请求参数
-                       editFlowRequest.setParams(params.toString());
+                        // 更新请求参数
+                        editFlowRequest.setParams(params.toString());
 
-                       logger.info("{} node params is {}", editFlowRequest.getTitle(),editFlowRequest.getParams());
-                   }
+                        logger.info("{} node params is {}", editFlowRequest.getTitle(), editFlowRequest.getParams());
+                    }
 
-               }
+                }
 
-           }
-       } catch (DSSErrorException e){
-           logger.error("[{},{}] node handleWhiteNodeParams err msg is {}",editFlowRequest.getId(),editFlowRequest.getTitle(),e);
-           throw e;
-       }catch (Exception e){
-           logger.error("[{},{}] node handleWhiteNodeParams err msg is {}",editFlowRequest.getId(),editFlowRequest.getTitle(),e);
-       }
+            }
+        } catch (DSSErrorException e) {
+            logger.error("[{},{}] node handleWhiteNodeParams err msg is {}", editFlowRequest.getId(), editFlowRequest.getTitle(), e);
+            throw e;
+        } catch (Exception e) {
+            logger.error("[{},{}] node handleWhiteNodeParams err msg is {}", editFlowRequest.getId(), editFlowRequest.getTitle(), e);
+        }
 
     }
 
@@ -4481,9 +4484,9 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         Long projectId = dssProject.getId();
 
         // 3. 通过编排名称查找编排
-        DSSOrchestratorInfo orchestrator = flowMapper.selectOrchestratorByName(projectId,orchestratorName);
+        DSSOrchestratorInfo orchestrator = flowMapper.selectOrchestratorByName(projectId, orchestratorName);
 
-        if(orchestrator == null){
+        if (orchestrator == null) {
             DSSExceptionUtils.dealErrorException(90003, "编排不存在，orchestratorName: " + orchestratorName, DSSErrorException.class);
         }
 
@@ -4569,7 +4572,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
      */
     private DSSProject getProjectByName(String projectName) throws DSSErrorException {
 
-        ProjectInfoListRequest request =new ProjectInfoListRequest();
+        ProjectInfoListRequest request = new ProjectInfoListRequest();
         request.setProjectNames(Collections.singletonList(projectName));
 
         ProjectInfoListResponse response = RpcAskUtils.processAskException(
@@ -4591,7 +4594,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
      * 保存租户变量审计日志
      */
     private void saveTenantVariableLog(Long orchestratorId, String orchestratorName, Long projectId, String projectName,
-            String oldTenantValue, String newTenantValue, String operator, String status, String errorMessage) {
+                                       String oldTenantValue, String newTenantValue, String operator, String status, String errorMessage) {
         try {
             TenantVariableLogEntry logEntry = new TenantVariableLogEntry();
             logEntry.setOrchestratorId(orchestratorId);
