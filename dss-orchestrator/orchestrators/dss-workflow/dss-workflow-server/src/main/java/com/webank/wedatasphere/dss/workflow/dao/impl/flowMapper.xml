@@ -163,10 +163,6 @@
           </foreach>
         ) t2 on t1.id = t2.app_id
     </select>
-
-
-    <select id="selectOrchestratorByName">
-        select * from dss_orchestrator_info where project_id = #{projectId} and name =#{orchestratorName}
-    </select>
-
+    
+    
 </mapper>

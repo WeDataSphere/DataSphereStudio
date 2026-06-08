@@ -39,7 +39,6 @@ import com.webank.wedatasphere.dss.common.label.LabelRouteVO;
 import com.webank.wedatasphere.dss.common.protocol.project.*;
 import com.webank.wedatasphere.dss.common.protocol.workspace.StarRocksClusterListRequest;
 import com.webank.wedatasphere.dss.common.protocol.workspace.StarRocksClusterListResponse;
-import com.webank.wedatasphere.dss.common.conf.DSSCommonConf;
 import com.webank.wedatasphere.dss.common.utils.*;
 import com.webank.wedatasphere.dss.contextservice.service.ContextService;
 import com.webank.wedatasphere.dss.contextservice.service.impl.ContextServiceImpl;
@@ -87,12 +86,10 @@ import com.webank.wedatasphere.dss.workflow.scheduler.DssJobThreadPool;
 import com.webank.wedatasphere.dss.workflow.service.DSSFlowService;
 import com.webank.wedatasphere.dss.workflow.service.ProjectOrchestratorWhiteService;
 import com.webank.wedatasphere.dss.workflow.service.SaveFlowHook;
-import com.webank.wedatasphere.dss.workflow.service.TenantVariableProtector;
 import com.webank.wedatasphere.dss.workflow.service.WorkflowNodeService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -169,9 +166,6 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     @Autowired
     private StaffInfoGetter staffInfoGetter;
 
-    @Autowired
-    private TenantVariableLogMapper tenantVariableLogMapper;
-
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private static ContextService contextService = ContextServiceImpl.getInstance();
@@ -183,6 +177,10 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     private static final Pattern pattern = Pattern.compile("^[a-zA-Z][a-zA-Z0-9_-]*$");
     private static final Pattern STRICT_BRANCH_CONDITION_PATTERN = Pattern.compile("^[A-Za-z0-9_.-]+\\s*(==|!=|>=|<=|>|<)\\s*([A-Za-z0-9_.-]+|\"[^\"]*\"|'[^']*')$");
     private static final String BRANCH_NODE_TYPE = "workflow.branch";
+    private static final String SUPER_USER_HADOOP = "hadoop";
+    private static final String FLOW_PROPS_KEY = "props";
+    private static final String TENANT_KEY = "tenant";
+    private static final String PROXY_USER_KEY = "user.to.proxy";
 
     protected Sender getOrchestratorSender() {
         return DSSSenderServiceFactory.getOrCreateServiceInstance().getOrcSender();
@@ -227,6 +225,12 @@ public class DSSFlowServiceImpl implements DSSFlowService {
     public DSSFlow addFlow(DSSFlow dssFlow,
                            String contextID, String orcVersion,
                            String schedulerAppConn) throws DSSErrorException {
+        return addFlow(dssFlow, contextID, orcVersion, schedulerAppConn, null);
+    }
+
+    private DSSFlow addFlow(DSSFlow dssFlow,
+                           String contextID, String orcVersion,
+                           String schedulerAppConn, JsonElement inheritedTenant) throws DSSErrorException {
         try {
             flowMapper.insertFlow(dssFlow);
         } catch (DuplicateKeyException e) {
@@ -245,6 +249,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             flowJsonMap.put(SCHEDULER_APP_CONN_NAME, schedulerAppConn);
         }
         String jsonFlow = DSSCommonUtils.COMMON_GSON.toJson(flowJsonMap);
+        jsonFlow = addTenantGlobalVariable(jsonFlow, inheritedTenant);
         Map<String, Object> bmlReturnMap = bmlService.upload(userName, jsonFlow, UUID.randomUUID().toString() + ".json",
                 dssFlow.getName());
 
@@ -270,7 +275,8 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         }
         DSSFlow parentFlow = flowMapper.selectFlowByID(parentFlowID);
         dssFlow.setProjectId(parentFlow.getProjectId());
-        DSSFlow subFlow = addFlow(dssFlow, contextIDStr, orcVersion, schedulerAppConn);
+        JsonElement inheritedTenant = getInheritedTenantGlobalVariable(parentFlowID, parentFlow);
+        DSSFlow subFlow = addFlow(dssFlow, contextIDStr, orcVersion, schedulerAppConn, inheritedTenant);
         //数据库中插入关联信息
         flowMapper.insertFlowRelation(subFlow.getId(), parentFlowID);
         return subFlow;
@@ -298,29 +304,19 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                 }
                 DSSFlow rootFlow = getFlowByID(rootFlowId);
                 Map<String, Object> json = bmlService.query(rootFlow.getName(), rootFlow.getResourceId(), rootFlow.getBmlVersion());
-                String rootFlowJson = json.get("string").toString();
 
-                List<Map<String, Object>> props = DSSCommonUtils.getFlowAttribute(rootFlowJson, "props");
+                List<Map<String, Object>> props = DSSCommonUtils.getFlowAttribute(json.get("string").toString(), "props");
                 String proxyUser = "";
-                String tenantValue = null;
                 if (CollectionUtils.isNotEmpty(props)) {
                     for (Map<String, Object> prop : props) {
-                        if (proxyUser.isEmpty() && prop.containsKey("user.to.proxy") && prop.get("user.to.proxy") != null) {
+                        if (prop.containsKey("user.to.proxy") && prop.get("user.to.proxy") != null) {
                             proxyUser = prop.get("user.to.proxy").toString();
-                        }
-                        if (tenantValue == null && prop.containsKey("tenant") && prop.get("tenant") != null) {
-                            tenantValue = prop.get("tenant").toString();
-                        }
-                        if (!proxyUser.isEmpty() && tenantValue != null) {
                             break;
                         }
                     }
                 }
 
                 dssFlow.setDefaultProxyUser(proxyUser);
-                if (tenantValue != null) {
-                    dssFlow.setDefaultTenant(tenantValue);
-                }
             }
 
         } catch (Exception e) {
@@ -387,6 +383,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                            String workspaceName,
                            String projectName,
                            LabelRouteVO labels) throws Exception {
+        String operatorUser = userName;
 
         // 判断工作流中是否存在命名相同的节点
         if (checkIsExistSameFlow(jsonFlow)) {
@@ -420,6 +417,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
             userName = creator;
         }
         String flowJsonOld = getFlowJson(userName, projectName, dssFlow);
+        jsonFlow = protectTenantGlobalVariable(flowJsonOld, jsonFlow, operatorUser);
 
         // 解析并保存元数据
         Long orchestratorId = dssOrchestratorVersion != null ? dssOrchestratorVersion.getOrchestratorId() : null;
@@ -492,6 +490,105 @@ public class DSSFlowServiceImpl implements DSSFlowService {
         updateTOSaveStatus(dssFlow.getProjectId(), updateFlowId, orchestratorId);
 
         return version;
+    }
+
+    private String protectTenantGlobalVariable(String oldFlowJson, String newFlowJson, String operatorUser) {
+        if (SUPER_USER_HADOOP.equals(operatorUser)) {
+            return newFlowJson;
+        }
+        try {
+            JsonElement oldTenant = getTenantGlobalVariable(oldFlowJson);
+            return addTenantGlobalVariable(newFlowJson, oldTenant);
+        } catch (Exception e) {
+            logger.warn("protect tenant global variable failed, operatorUser is {}, use origin json.", operatorUser, e);
+            return newFlowJson;
+        }
+    }
+
+    private JsonElement getInheritedTenantGlobalVariable(Long parentFlowID, DSSFlow parentFlow) {
+        JsonElement inheritedTenant = getTenantGlobalVariable(parentFlow);
+        if (inheritedTenant != null || Boolean.TRUE.equals(parentFlow.getRootFlow())) {
+            return inheritedTenant;
+        }
+        Long rootFlowId = getRootFlowId(parentFlowID);
+        if (rootFlowId == null || rootFlowId.equals(parentFlowID)) {
+            return inheritedTenant;
+        }
+        return getTenantGlobalVariable(flowMapper.selectFlowByID(rootFlowId));
+    }
+
+    private JsonElement getTenantGlobalVariable(DSSFlow dssFlow) {
+        if (dssFlow == null || StringUtils.isBlank(dssFlow.getResourceId()) || StringUtils.isBlank(dssFlow.getBmlVersion())) {
+            return null;
+        }
+        Map<String, Object> query = bmlService.query(dssFlow.getCreator(), dssFlow.getResourceId(), dssFlow.getBmlVersion());
+        Object flowJson = query.get("string");
+        return flowJson == null ? null : getTenantGlobalVariable(flowJson.toString());
+    }
+
+    private JsonElement getTenantGlobalVariable(String flowJson) {
+        if (StringUtils.isBlank(flowJson)) {
+            return null;
+        }
+        JsonObject flowJsonObject = JsonParser.parseString(flowJson).getAsJsonObject();
+        JsonElement propsElement = flowJsonObject.get(FLOW_PROPS_KEY);
+        if (propsElement == null || !propsElement.isJsonArray()) {
+            return null;
+        }
+        JsonArray props = propsElement.getAsJsonArray();
+        for (JsonElement propElement : props) {
+            if (propElement != null && propElement.isJsonObject()) {
+                JsonObject prop = propElement.getAsJsonObject();
+                if (prop.has(TENANT_KEY)) {
+                    return prop.get(TENANT_KEY);
+                }
+            }
+        }
+        return null;
+    }
+
+    private String addTenantGlobalVariable(String flowJson, JsonElement tenant) {
+        if (tenant == null) {
+            return flowJson;
+        }
+        JsonObject flowJsonObject = JsonParser.parseString(flowJson).getAsJsonObject();
+        JsonArray props = getOrCreateProps(flowJsonObject);
+        removeTenantGlobalVariable(props);
+        JsonObject tenantProps = getOrCreateTenantProps(props);
+        tenantProps.add(TENANT_KEY, JsonParser.parseString(tenant.toString()));
+        return DSSCommonUtils.COMMON_GSON.toJson(flowJsonObject);
+    }
+
+    private JsonArray getOrCreateProps(JsonObject flowJsonObject) {
+        JsonElement propsElement = flowJsonObject.get(FLOW_PROPS_KEY);
+        if (propsElement != null && propsElement.isJsonArray()) {
+            return propsElement.getAsJsonArray();
+        }
+        JsonArray props = new JsonArray();
+        flowJsonObject.add(FLOW_PROPS_KEY, props);
+        return props;
+    }
+
+    private JsonObject getOrCreateTenantProps(JsonArray props) {
+        for (JsonElement propElement : props) {
+            if (propElement != null && propElement.isJsonObject()) {
+                JsonObject prop = propElement.getAsJsonObject();
+                if (!prop.has(PROXY_USER_KEY)) {
+                    return prop;
+                }
+            }
+        }
+        JsonObject prop = new JsonObject();
+        props.add(prop);
+        return prop;
+    }
+
+    private void removeTenantGlobalVariable(JsonArray props) {
+        for (JsonElement propElement : props) {
+            if (propElement != null && propElement.isJsonObject()) {
+                propElement.getAsJsonObject().remove(TENANT_KEY);
+            }
+        }
     }
 
 
@@ -895,7 +992,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
                         proxyUser = prop.get("user.to.proxy").toString();
                     } else {
                         for (Map.Entry<String, Object> map : prop.entrySet()) {
-                            if (map.getValue() != null) {
+                            if (!TENANT_KEY.equals(map.getKey()) && map.getValue() != null) {
                                 globalVar.append(map.getKey() + "=" + map.getValue());
                                 globalVar.append(";");
                             }
@@ -2628,7 +2725,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
      * 2. 真实性校验：通过调用 workflowNodeService.updateNode 触发 AppConn 校验
      */
     private void validateTableauNode(EditFlowRequest editFlowRequest, NodeContentDO nodeContentDO,
-                                      Long flowId, Workspace workspace, String userName) throws ExternalOperationFailedException {
+                                     Long flowId, Workspace workspace, String userName) throws ExternalOperationFailedException {
         String nodeType = nodeContentDO.getJobType();
 
         // 只处理 tableau 相关节点
@@ -4233,381 +4330,72 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
     private void handleWhiteNodeParams(EditFlowRequest editFlowRequest,DSSOrchestratorInfo dssOrchestratorInfo) {
 
-       try {
-           // 检查项目和工作流编排器是否在白名单中
-           boolean isWhite = projectOrchestratorWhiteService.checkProjectAndOrchestratorIsWhite(dssOrchestratorInfo.getProjectId(), dssOrchestratorInfo.getId());
-
-           // 如果在白名单中，则跳过处理，直接返回
-           if(isWhite){
-               return;
-           }
-
-           // 解析工作流参数为JSON对象
-           JsonObject params = JsonParser.parseString(editFlowRequest.getParams()).getAsJsonObject();
-
-           // 获取配置对象
-           JsonObject configuration = params.get("configuration").getAsJsonObject();
-
-           // 获取运行时配置对象
-           JsonObject runtime = configuration.get("runtime").getAsJsonObject();
-
-           // 定义Spark版本参数的键名
-           String sparkVersionKey = "sparkVersion";
-           // 从运行时配置中获取Spark版本参数值
-           String sparkVersion = runtime.get(sparkVersionKey) == null ? null : runtime.get(sparkVersionKey).getAsString();
-
-           // 查询节点的UI配置列表
-           List<NodeContentUIDO> nodeContentUIDOList = nodeContentUIMapper.queryNodeContentUIList(Collections.singletonList(editFlowRequest.getId()));
-
-           // 如果节点UI配置列表不为空
-           if (CollectionUtils.isNotEmpty(nodeContentUIDOList)) {
-
-               // 从配置列表中查找sparkVersion对应的配置项
-               NodeContentUIDO nodeContentUIDO = nodeContentUIDOList.stream()
-                       .filter(nodeUi -> sparkVersionKey.equalsIgnoreCase(nodeUi.getNodeUIKey()))
-                       .findFirst().orElse(null);
-
-               // 如果找到了sparkVersion的配置项
-               if (nodeContentUIDO != null) {
-
-                   // 如果请求中的sparkVersion不为空，且与数据库中存储的值不一致，则抛出异常
-                   // 说明不允许修改sparkVersion参数
-                   if(sparkVersion != null && !nodeContentUIDO.getNodeUIValue().equals(sparkVersion)) {
-                       throw new DSSErrorException(90003, dssOrchestratorInfo.getName() + "工作流不支持修改sparkVersion参数");
-                   }
-
-                   // 如果请求中的sparkVersion为空，则将数据库中的默认值添加到运行时配置中
-                   if(sparkVersion == null ){
-                       runtime.addProperty(nodeContentUIDO.getNodeUIKey(), nodeContentUIDO.getNodeUIValue());
-                       logger.info("{} node ,add sparkVersion to runtime, value is {}",editFlowRequest.getTitle(), nodeContentUIDO.getNodeUIValue());
-
-                       // 更新请求参数
-                       editFlowRequest.setParams(params.toString());
-
-                       logger.info("{} node params is {}", editFlowRequest.getTitle(),editFlowRequest.getParams());
-                   }
-
-               }
-
-           }
-       } catch (DSSErrorException e){
-           logger.error("[{},{}] node handleWhiteNodeParams err msg is {}",editFlowRequest.getId(),editFlowRequest.getTitle(),e);
-           throw e;
-       }catch (Exception e){
-           logger.error("[{},{}] node handleWhiteNodeParams err msg is {}",editFlowRequest.getId(),editFlowRequest.getTitle(),e);
-       }
-
-    }
-
-
-    @Override
-    public void updateGlobalVariables(UpdateGlobalVariablesRequest request, String ticketId) throws Exception {
-        String username = request.getUsername();
-        String flowName = request.getFlowName();
-        Map<String, Object> variables = request.getVariables();
-
-        logger.info("updateGlobalVariables request: workspaceId={}, projectId={}, orchestratorId={}, flowName={}, unlock={}, variables={}",
-                request.getWorkspaceId(), request.getProjectId(), request.getOrchestratorId(), flowName, request.getUnlock(), variables);
-
-        if (MapUtils.isEmpty(variables)) {
-            DSSExceptionUtils.dealErrorException(90003, "全局变量不能为空", DSSErrorException.class);
-        }
-        if (request.getOrchestratorId() == null) {
-            DSSExceptionUtils.dealErrorException(90003, "orchestratorId不能为空", DSSErrorException.class);
-        }
-        if (StringUtils.isEmpty(flowName)) {
-            DSSExceptionUtils.dealErrorException(90003, "flowName不能为空", DSSErrorException.class);
-        }
-
-        // 鉴权
-        DSSProject dssProject = validateOperation(request.getProjectId(), username);
-
-        if (!request.getWorkspaceId().equals(Long.valueOf(dssProject.getWorkspaceId()))) {
-            DSSExceptionUtils.dealErrorException(90003, "传入的工作空间与项目所属工作空间不一致", DSSErrorException.class);
-        }
-
-        // 获取编排信息
-        RequestQueryByIdOrchestrator requestQueryByIdOrchestrator = new RequestQueryByIdOrchestrator();
-        requestQueryByIdOrchestrator.setOrchestratorId(request.getOrchestratorId());
-
-        OrchestratorVo orchestratorVo = RpcAskUtils.processAskException(
-                getOrchestratorSender().ask(requestQueryByIdOrchestrator),
-                OrchestratorVo.class, RequestQueryByIdOrchestrator.class);
-
-        if (orchestratorVo.getDssOrchestratorInfo() == null || orchestratorVo.getDssOrchestratorVersion() == null) {
-            DSSExceptionUtils.dealErrorException(90003, "工作流不存在", DSSErrorException.class);
-        }
-
-        DSSOrchestratorVersion dssOrchestratorVersion = orchestratorVo.getDssOrchestratorVersion();
-
-        // 构建工作流树
-        DSSFlow rootFlow = genDSSFlowTree(dssOrchestratorVersion.getAppId());
-
-        // 通过flowName定位目标工作流
-        DSSFlow targetFlow = findTargetFlow(rootFlow, flowName);
-        if (targetFlow == null) {
-            DSSExceptionUtils.dealErrorException(90003,
-                    String.format("工作流不存在，flowName: %s", flowName), DSSErrorException.class);
-        }
-
-        // 工作流加锁
-        Workspace workspace = new Workspace();
-        workspace.setWorkspaceId(request.getWorkspaceId());
-        forceUnlockWorkflow(rootFlow, ticketId, username, request.getUnlock(), workspace);
-        lockFlow(rootFlow, username, ticketId);
-
         try {
-            // 解析并合并全局变量
-            String flowJson = targetFlow.getFlowJson();
-            String updatedFlowJson = mergeGlobalVariables(flowJson, variables, flowName);
-            targetFlow.setFlowJson(updatedFlowJson);
+            // 检查项目和工作流编排器是否在白名单中
+            boolean isWhite = projectOrchestratorWhiteService.checkProjectAndOrchestratorIsWhite(dssOrchestratorInfo.getProjectId(), dssOrchestratorInfo.getId());
 
-            // 保存工作流
-            saveFlow(targetFlow.getId(), updatedFlowJson, targetFlow.getDescription(),
-                    targetFlow.getCreator(), dssProject.getWorkspaceName(), dssProject.getName(), null);
-
-            logger.info("工作流 {} 全局变量更新成功, 更新变量数: {}", flowName, variables.size());
-        } catch (Exception e) {
-            logger.error("工作流 {} 全局变量更新失败", flowName, e);
-            throw new DSSErrorException(80001, "全局变量更新失败，原因为：" + e.getMessage());
-        } finally {
-            workFlowManager.unlockWorkflow(username, dssOrchestratorVersion.getAppId(), true, workspace);
-        }
-    }
-
-    private DSSFlow findTargetFlow(DSSFlow rootFlow, String flowName) {
-        if (flowName.equals(rootFlow.getName())) {
-            return rootFlow;
-        }
-        return findSubFlowByName(rootFlow, flowName);
-    }
-
-    private DSSFlow findSubFlowByName(DSSFlow flow, String flowName) {
-        if (CollectionUtils.isEmpty(flow.getChildren())) {
-            return null;
-        }
-        for (DSSFlow child : flow.getChildren()) {
-            if (flowName.equals(child.getName())) {
-                return child;
+            // 如果在白名单中，则跳过处理，直接返回
+            if(isWhite){
+                return;
             }
-            DSSFlow found = findSubFlowByName(child, flowName);
-            if (found != null) {
-                return found;
+
+            // 解析工作流参数为JSON对象
+            JsonObject params = JsonParser.parseString(editFlowRequest.getParams()).getAsJsonObject();
+
+            // 获取配置对象
+            JsonObject configuration = params.get("configuration").getAsJsonObject();
+
+            // 获取运行时配置对象
+            JsonObject runtime = configuration.get("runtime").getAsJsonObject();
+
+            // 定义Spark版本参数的键名
+            String sparkVersionKey = "sparkVersion";
+            // 从运行时配置中获取Spark版本参数值
+            String sparkVersion = runtime.get(sparkVersionKey) == null ? null : runtime.get(sparkVersionKey).getAsString();
+
+            // 查询节点的UI配置列表
+            List<NodeContentUIDO> nodeContentUIDOList = nodeContentUIMapper.queryNodeContentUIList(Collections.singletonList(editFlowRequest.getId()));
+
+            // 如果节点UI配置列表不为空
+            if (CollectionUtils.isNotEmpty(nodeContentUIDOList)) {
+
+                // 从配置列表中查找sparkVersion对应的配置项
+                NodeContentUIDO nodeContentUIDO = nodeContentUIDOList.stream()
+                        .filter(nodeUi -> sparkVersionKey.equalsIgnoreCase(nodeUi.getNodeUIKey()))
+                        .findFirst().orElse(null);
+
+                // 如果找到了sparkVersion的配置项
+                if (nodeContentUIDO != null) {
+
+                    // 如果请求中的sparkVersion不为空，且与数据库中存储的值不一致，则抛出异常
+                    // 说明不允许修改sparkVersion参数
+                    if(sparkVersion != null && !nodeContentUIDO.getNodeUIValue().equals(sparkVersion)) {
+                        throw new DSSErrorException(90003, dssOrchestratorInfo.getName() + "工作流不支持修改sparkVersion参数");
+                    }
+
+                    // 如果请求中的sparkVersion为空，则将数据库中的默认值添加到运行时配置中
+                    if(sparkVersion == null ){
+                        runtime.addProperty(nodeContentUIDO.getNodeUIKey(), nodeContentUIDO.getNodeUIValue());
+                        logger.info("{} node ,add sparkVersion to runtime, value is {}",editFlowRequest.getTitle(), nodeContentUIDO.getNodeUIValue());
+
+                        // 更新请求参数
+                        editFlowRequest.setParams(params.toString());
+
+                        logger.info("{} node params is {}", editFlowRequest.getTitle(),editFlowRequest.getParams());
+                    }
+
+                }
+
             }
+        } catch (DSSErrorException e){
+            logger.error("[{},{}] node handleWhiteNodeParams err msg is {}",editFlowRequest.getId(),editFlowRequest.getTitle(),e);
+            throw e;
+        }catch (Exception e){
+            logger.error("[{},{}] node handleWhiteNodeParams err msg is {}",editFlowRequest.getId(),editFlowRequest.getTitle(),e);
         }
-        return null;
+
     }
 
-    private String mergeGlobalVariables(String flowJson, Map<String, Object> newVariables, String flowName) {
-        return mergeGlobalVariables(flowJson, newVariables, flowName, false);
-    }
-
-    private String mergeGlobalVariables(String flowJson, Map<String, Object> newVariables, String flowName, boolean allowTenantOverride) {
-        List<Map<String, Object>> existingProps = DSSCommonUtils.getFlowAttribute(flowJson, "props");
-        String proxyUser = null;
-        // 用 LinkedHashMap 保留现有变量的顺序
-        Map<String, Object> mergedVars = new LinkedHashMap<>();
-
-        for (Map<String, Object> prop : existingProps) {
-            if (prop.containsKey("user.to.proxy")) {
-                proxyUser = prop.get("user.to.proxy") != null ? prop.get("user.to.proxy").toString() : null;
-            } else {
-                // 每个 prop Map 对应一个全局变量，提取到 mergedVars 中
-                mergedVars.putAll(prop);
-            }
-        }
-
-        logger.info("updateGlobalVariables flowName={}, existingVariables={}, newVariables={}", flowName, mergedVars, newVariables);
-
-        // 禁止通过此接口覆盖 user.to.proxy
-        if (newVariables.containsKey("user.to.proxy")) {
-            throw new DSSRuntimeException(90003, "不允许通过全局变量接口修改 user.to.proxy");
-        }
-
-        // 保护tenant变量不被updateGlobalVariables接口修改
-        if (newVariables.containsKey("tenant") && !allowTenantOverride) {
-            logger.warn("Attempt to add or modify tenant variable via updateGlobalVariables is blocked for flow: {}", flowName);
-            newVariables.remove("tenant");
-        }
-
-        // 增量合并：同key覆盖，新key追加
-        mergedVars.putAll(newVariables);
-
-        // 重建 props 数组，每个变量一个 Map
-        List<Map<String, Object>> newProps = new ArrayList<>();
-        if (proxyUser != null) {
-            Map<String, Object> proxyMap = new HashMap<>();
-            proxyMap.put("user.to.proxy", proxyUser);
-            newProps.add(proxyMap);
-        }
-        for (Map.Entry<String, Object> entry : mergedVars.entrySet()) {
-            Map<String, Object> varMap = new HashMap<>();
-            varMap.put(entry.getKey(), entry.getValue());
-            newProps.add(varMap);
-        }
-
-        // 写回 flowJson
-        JsonObject flowJsonObj = new JsonParser().parse(flowJson).getAsJsonObject();
-        flowJsonObj.add("props", DSSCommonUtils.COMMON_GSON.toJsonTree(newProps));
-        return DSSCommonUtils.COMMON_GSON.toJson(flowJsonObj);
-    }
-
-    @Override
-    public void updateTenantVariable(UpdateTenantVariableRequest request, String ticketId) throws Exception {
-        String username = request.getOperator();
-        String orchestratorName = request.getOrchestratorName();
-        String projectName = request.getProjectName();
-        String tenantValue = request.getTenantValue();
-
-        logger.info("updateTenantVariable request: orchestratorName={}, projectName={}, operator={}",
-                orchestratorName, projectName, username);
-
-        // 1. 参数校验
-        if (StringUtils.isEmpty(orchestratorName)) {
-            DSSExceptionUtils.dealErrorException(90003, "orchestratorName不能为空", DSSErrorException.class);
-        }
-        if (StringUtils.isEmpty(projectName)) {
-            DSSExceptionUtils.dealErrorException(90003, "projectName不能为空", DSSErrorException.class);
-        }
-        if (StringUtils.isEmpty(tenantValue)) {
-            DSSExceptionUtils.dealErrorException(90003, "tenant变量值不能为空", DSSErrorException.class);
-        }
-
-        // 2. 通过项目名称和工作空间ID查找项目
-        DSSProject dssProject = getProjectByName(projectName);
-        if (dssProject == null) {
-            DSSExceptionUtils.dealErrorException(90003, "项目不存在，projectName: " + projectName, DSSErrorException.class);
-        }
-        Long projectId = dssProject.getId();
-
-        // 3. 通过编排名称查找编排
-        DSSOrchestratorInfo orchestrator = flowMapper.selectOrchestratorByName(projectId,orchestratorName);
-
-        if(orchestrator == null){
-            DSSExceptionUtils.dealErrorException(90003, "编排不存在，orchestratorName: " + orchestratorName, DSSErrorException.class);
-        }
-
-        RequestQueryByIdOrchestrator RequestQueryByIdOrchestrator = new RequestQueryByIdOrchestrator();
-        RequestQueryByIdOrchestrator.setOrchestratorId(orchestrator.getId());
-
-        OrchestratorVo orchestratorVo = RpcAskUtils.processAskException(getOrchestratorSender().ask(RequestQueryByIdOrchestrator),
-                OrchestratorVo.class, RequestQueryByIdOrchestrator.class);
-
-        if (orchestratorVo == null || orchestratorVo.getDssOrchestratorInfo() == null || orchestratorVo.getDssOrchestratorVersion() == null) {
-
-            DSSExceptionUtils.dealErrorException(90003, "工作流不存在", DSSErrorException.class);
-        }
-
-        DSSOrchestratorVersion dssOrchestratorVersion = orchestratorVo.getDssOrchestratorVersion();
-        DSSOrchestratorInfo dssOrchestratorInfo = orchestratorVo.getDssOrchestratorInfo();
-        Long orchestratorId = dssOrchestratorInfo.getId();
-
-        // 4. 构建工作流树
-        Long rootFlowId = dssOrchestratorVersion.getAppId();
-        DSSFlow rootFlow = genDSSFlowTree(rootFlowId);
-
-        // 5. 锁检测：检查主工作流是否被锁定
-        DSSFlowEditLock editLock = lockMapper.getFlowEditLockByID(rootFlow.getId());
-        if (editLock != null && !editLock.getExpire()) {
-            throw new DSSErrorException(60056, String.format("主工作流[%s]正在被用户%s编辑，无法修改租户变量",
-                    rootFlow.getName(), editLock.getUsername()));
-        }
-
-        // 6. 对rootFlow加锁
-        lockFlow(rootFlow, username, ticketId);
-
-        // 7. 提取旧tenant值用于审计
-        String oldTenantValue = TenantVariableProtector.extractTenantValue(rootFlow.getFlowJson());
-
-        try {
-            // 8. 遍历工作流树，修改tenant变量
-            updateTenantVariableForFlowTree(rootFlow, tenantValue, dssProject.getWorkspaceName(), dssProject.getName());
-
-            // 9. 写入审计日志 - 成功
-            saveTenantVariableLog(orchestratorId, orchestratorName, projectId, projectName,
-                    oldTenantValue, tenantValue, username, "SUCCESS", null);
-
-            logger.info("租户变量更新成功, orchestratorName={}, tenantValue={}", orchestratorName, tenantValue);
-        } catch (Exception e) {
-            saveTenantVariableLog(orchestratorId, orchestratorName, projectId, projectName,
-                    oldTenantValue, tenantValue, username, "FAILED", e.getMessage());
-            throw new DSSErrorException(80001, "租户变量更新失败，原因为：" + e.getMessage());
-        } finally {
-            // 10. 释放锁
-            workFlowManager.unlockWorkflow(username, dssOrchestratorVersion.getAppId(), true, new Workspace());
-        }
-    }
-
-    /**
-     * 递归遍历工作流树，对每个工作流设置tenant变量
-     */
-    private void updateTenantVariableForFlowTree(DSSFlow flow, String tenantValue, String workspaceName, String projectName) throws Exception {
-        String flowJson = flow.getFlowJson();
-
-        // 构造tenant变量Map
-        Map<String, Object> variables = new HashMap<>(1);
-        variables.put("tenant", tenantValue);
-
-        // 复用mergeGlobalVariables合并变量，allowTenantOverride=true允许覆盖已有tenant
-        String updatedFlowJson = mergeGlobalVariables(flowJson, variables, flow.getName(), true);
-        flow.setFlowJson(updatedFlowJson);
-
-        // 复用saveFlow保存
-        saveFlow(flow.getId(), updatedFlowJson, flow.getDescription(),
-                flow.getCreator(), workspaceName, projectName, null);
-
-        // 递归处理子工作流
-        if (!CollectionUtils.isEmpty(flow.getChildren())) {
-            for (DSSFlow child : flow.getChildren()) {
-                updateTenantVariableForFlowTree(child, tenantValue, workspaceName, projectName);
-            }
-        }
-    }
-
-    /**
-     * 通过项目名称和工作空间ID查找项目
-     */
-    private DSSProject getProjectByName(String projectName) throws DSSErrorException {
-
-        ProjectInfoListRequest request =new ProjectInfoListRequest();
-        request.setProjectNames(Collections.singletonList(projectName));
-
-        ProjectInfoListResponse response = RpcAskUtils.processAskException(
-                DSSSenderServiceFactory.getOrCreateServiceInstance().getProjectServerSender().ask(request),
-                ProjectInfoListResponse.class, ProjectInfoListRequest.class);
-        if (response == null || CollectionUtils.isEmpty(response.getDssProjects())) {
-            return null;
-        }
-        for (DSSProject project : response.getDssProjects()) {
-            if (projectName.equals(project.getName())) {
-                return project;
-            }
-        }
-        return null;
-    }
-
-
-    /**
-     * 保存租户变量审计日志
-     */
-    private void saveTenantVariableLog(Long orchestratorId, String orchestratorName, Long projectId, String projectName,
-            String oldTenantValue, String newTenantValue, String operator, String status, String errorMessage) {
-        try {
-            TenantVariableLogEntry logEntry = new TenantVariableLogEntry();
-            logEntry.setOrchestratorId(orchestratorId);
-            logEntry.setOrchestratorName(orchestratorName);
-            logEntry.setProjectId(projectId);
-            logEntry.setProjectName(projectName);
-            logEntry.setOldTenantValue(oldTenantValue);
-            logEntry.setNewTenantValue(newTenantValue);
-            logEntry.setOperator(operator);
-            logEntry.setStatus(status);
-            logEntry.setErrorMessage(errorMessage);
-            tenantVariableLogMapper.insert(logEntry);
-        } catch (Exception e) {
-            logger.warn("租户变量审计日志写入失败", e);
-        }
-    }
 
 }
 

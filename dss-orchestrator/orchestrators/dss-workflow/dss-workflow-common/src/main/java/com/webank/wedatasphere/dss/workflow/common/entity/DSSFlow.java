@@ -57,8 +57,6 @@ public class DSSFlow implements Flow {
 
     private String defaultProxyUser;
 
-    private String defaultTenant;
-
     public List<String[]> getFlowIdParamConfTemplateIdTuples() {
         return flowIdParamConfTemplateIdTuples;
     }
@@ -296,13 +294,5 @@ public class DSSFlow implements Flow {
 
     public void setDefaultProxyUser(String defaultProxyUser) {
         this.defaultProxyUser = defaultProxyUser;
-    }
-
-    public String getDefaultTenant() {
-        return defaultTenant;
-    }
-
-    public void setDefaultTenant(String defaultTenant) {
-        this.defaultTenant = defaultTenant;
     }
 }
