@@ -4532,6 +4532,7 @@ public class DSSFlowServiceImpl implements DSSFlowService {
 
             logger.info("租户变量更新成功, orchestratorName={}, tenantValue={}", orchestratorName, tenantValue);
         } catch (Exception e) {
+            logger.error("租户变量更新失败, orchestratorName={}, tenantValue={} ,原因为: {}", orchestratorName, tenantValue, e.getMessage(),e);
             saveTenantVariableLog(orchestratorId, orchestratorName, projectId, projectName,
                     oldTenantValue, tenantValue, username, "FAILED", e.getMessage());
             throw new DSSErrorException(80001, "租户变量更新失败，原因为：" + e.getMessage());
@@ -4546,6 +4547,12 @@ public class DSSFlowServiceImpl implements DSSFlowService {
      */
     private void updateTenantVariableForFlowTree(DSSFlow flow, String tenantValue, String workspaceName, String projectName) throws Exception {
         String flowJson = flow.getFlowJson();
+
+        // 空工作流不做更新
+        List<DSSNode> workFlowNodes = workFlowParser.getWorkFlowNodes(flowJson);
+        if(CollectionUtils.isEmpty(workFlowNodes)){
+            return;
+        }
 
         // 构造tenant变量Map
         Map<String, Object> variables = new HashMap<>(1);
