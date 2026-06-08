@@ -18,7 +18,10 @@ package com.webank.wedatasphere.dss.workflow.restful;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.webank.wedatasphere.dss.appconn.manager.utils.AppConnManagerUtils;
 import com.webank.wedatasphere.dss.common.StaffInfo;
 import com.webank.wedatasphere.dss.common.StaffInfoGetter;
@@ -42,7 +45,9 @@ import com.webank.wedatasphere.dss.workflow.WorkFlowManager;
 import com.webank.wedatasphere.dss.workflow.common.entity.DSSFlow;
 import com.webank.wedatasphere.dss.workflow.constant.DSSWorkFlowConstant;
 import com.webank.wedatasphere.dss.workflow.dao.LockMapper;
+import com.webank.wedatasphere.dss.workflow.dao.TenantGlobalVariableRecordMapper;
 import com.webank.wedatasphere.dss.workflow.entity.DSSFlowEditLock;
+import com.webank.wedatasphere.dss.workflow.entity.TenantGlobalVariableRecord;
 import com.webank.wedatasphere.dss.workflow.entity.request.*;
 import com.webank.wedatasphere.dss.workflow.entity.response.BatchEditNodeContentResponse;
 import com.webank.wedatasphere.dss.workflow.entity.vo.ExtraToolBarsVO;
@@ -76,6 +81,10 @@ import java.util.*;
 @RequestMapping(path = "/dss/workflow", produces = {"application/json"})
 public class FlowRestfulApi {
     private static final Logger LOGGER = LoggerFactory.getLogger(FlowRestfulApi.class);
+    private static final String SUPER_USER_HADOOP = "hadoop";
+    private static final String TENANT_KEY = "tenant";
+    private static final String FLOW_PROPS_KEY = "props";
+    private static final String PROXY_USER_KEY = "user.to.proxy";
 
     private ContextService contextService = ContextServiceImpl.getInstance();
     @Autowired
@@ -89,6 +98,8 @@ public class FlowRestfulApi {
     private WorkFlowManager workFlowManager;
     @Autowired
     private LockMapper lockMapper;
+    @Autowired
+    private TenantGlobalVariableRecordMapper tenantGlobalVariableRecordMapper;
     @Autowired
     private HttpServletRequest httpServletRequest;
     @Autowired
@@ -161,18 +172,18 @@ public class FlowRestfulApi {
 
         return DSSExceptionUtils.getMessage(() -> publishService.submitPublish(publishUser, workflowId, labels, workspace, comment),
                 taskId -> {
-                if (DSSWorkFlowConstant.PUBLISHING_ERROR_CODE.equals(taskId)) {
-                    return Message.error("发布工程已经含有工作流，正在发布中，请稍后再试");
-                } else if (StringUtils.isNotEmpty(taskId)) {
-                    //发布正常，说明dssflow一定存在，所以不需要判空。
-                    DSSFlow dssFlow = flowService.getFlowByID(workflowId);
-                    AuditLogUtils.printLog(publishUser,workspace.getWorkspaceId(), workspace.getWorkspaceName(),
-                            TargetTypeEnum.WORKFLOW,workflowId, dssFlow.getName(),OperateTypeEnum.PUBLISH, publishWorkflowRequest);
-                    return Message.ok("生成工作流发布任务成功").data("releaseTaskId", taskId);
-                } else {
-                    LOGGER.error("taskId {} is error.", taskId);
-                    return Message.error("发布工作流失败");
-                }},
+                    if (DSSWorkFlowConstant.PUBLISHING_ERROR_CODE.equals(taskId)) {
+                        return Message.error("发布工程已经含有工作流，正在发布中，请稍后再试");
+                    } else if (StringUtils.isNotEmpty(taskId)) {
+                        //发布正常，说明dssflow一定存在，所以不需要判空。
+                        DSSFlow dssFlow = flowService.getFlowByID(workflowId);
+                        AuditLogUtils.printLog(publishUser,workspace.getWorkspaceId(), workspace.getWorkspaceName(),
+                                TargetTypeEnum.WORKFLOW,workflowId, dssFlow.getName(),OperateTypeEnum.PUBLISH, publishWorkflowRequest);
+                        return Message.ok("生成工作流发布任务成功").data("releaseTaskId", taskId);
+                    } else {
+                        LOGGER.error("taskId {} is error.", taskId);
+                        return Message.error("发布工作流失败");
+                    }},
                 String.format("用户 %s 发布工作流 %s 失败.", publishUser, workflowId));
     }
 
@@ -184,7 +195,7 @@ public class FlowRestfulApi {
         labels.put(EnvDSSLabel.DSS_ENV_LABEL_KEY, publishWorkflowRequest.getLabels().getRoute());
         String taskId;
         try {
-           taskId= publishService.batchPublish(publishWorkflowRequest, workspace, publishUser, labels);
+            taskId= publishService.batchPublish(publishWorkflowRequest, workspace, publishUser, labels);
         } catch (Exception e) {
             return Message.error("批量发布失败，原因为：" + e.getMessage());
         }
@@ -282,6 +293,7 @@ public class FlowRestfulApi {
         } catch (NullPointerException e) {
             return Message.error("The workflow is not exists, please check to delete. (打开了不存在的工作流，请确保是否已删除.)");
         }
+        hideTenantInFlowJson(dssFlow);
         if ((isNotHaveLock != null && isNotHaveLock) || (StringUtils.isNotEmpty(labels) && DSSCommonUtils.ENV_LABEL_VALUE_PROD.equals(labels))) {
             return Message.ok().data("flow", dssFlow);
         }
@@ -363,6 +375,175 @@ public class FlowRestfulApi {
         AuditLogUtils.printLog(username, workspace.getWorkspaceId(), workspaceName, TargetTypeEnum.WORKFLOW,
                 flowID, dssFlow.getName(), OperateTypeEnum.UPDATE, saveFlowRequest);
         return Message.ok().data("flowVersion", version);
+    }
+
+    @RequestMapping(value = "addTenantGlobalVariable", method = RequestMethod.POST)
+    public Message addTenantGlobalVariable(@RequestBody AddTenantGlobalVariableRequest request) {
+        if (request == null || request.getFlowId() == null) {
+            return Message.error("flowId不能为空");
+        }
+        if (!SUPER_USER_HADOOP.equals(request.getUserName())) {
+            return Message.error("仅允许传入hadoop用户修改工作流tenant全局变量");
+        }
+        if (StringUtils.isBlank(request.getTenant())) {
+            return Message.error("tenant不能为空");
+        }
+        if (StringUtils.isBlank(request.getProjectName())) {
+            return Message.error("projectName不能为空");
+        }
+        try {
+            Long rootFlowId = getRootFlowId(request.getFlowId());
+            if (rootFlowId == null) {
+                return Message.error("工作流不存在，flowId：" + request.getFlowId());
+            }
+            synchronized (DSSWorkFlowConstant.saveFlowLock.intern(rootFlowId)) {
+                DSSFlow rootFlow = flowService.getFlowWithJsonAndSubFlowsByID(rootFlowId);
+                List<DSSFlow> flowList = new ArrayList<>();
+                collectFlows(rootFlow, flowList);
+                DSSFlowEditLock lockedFlow = findLockedFlow(flowList);
+                if (lockedFlow != null) {
+                    return Message.error("工作流或子工作流正在被用户" + lockedFlow.getUsername() +
+                            "编辑，暂不允许修改tenant变量");
+                }
+                Collections.reverse(flowList);
+                String workspaceName = request.getWorkspaceName();
+                Workspace workspace = null;
+                if (StringUtils.isBlank(workspaceName)) {
+                    workspace = SSOHelper.getWorkspace(httpServletRequest);
+                    workspaceName = workspace.getWorkspaceName();
+                }
+                Map<Long, String> versions = new HashMap<>();
+                String requestId = UUID.randomUUID().toString();
+                List<TenantGlobalVariableRecord> records = new ArrayList<>();
+                for (DSSFlow flow : flowList) {
+                    String updatedJson = addTenantToFlowJson(flow.getFlowJson(), request.getTenant());
+                    String version = flowService.saveFlow(flow.getId(), updatedJson, flow.getDescription(),
+                            request.getUserName(), workspaceName, request.getProjectName(), request.getLabels());
+                    versions.put(flow.getId(), version);
+                    records.add(createTenantGlobalVariableRecord(requestId, rootFlowId, flow, workspaceName,
+                            request.getProjectName(), request.getTenant(), version, request.getUserName()));
+                }
+                tenantGlobalVariableRecordMapper.batchInsert(records);
+                if (workspace == null) {
+                    workspace = SSOHelper.getWorkspace(httpServletRequest);
+                }
+                AuditLogUtils.printLog(request.getUserName(), workspace.getWorkspaceId(), workspaceName,
+                        TargetTypeEnum.WORKFLOW, rootFlowId, rootFlow.getName(), OperateTypeEnum.UPDATE, request);
+                return Message.ok().data("flowVersions", versions).data("requestId", requestId);
+            }
+        } catch (Exception e) {
+            LOGGER.error("修改工作流tenant全局变量失败", e);
+            return Message.error("修改工作流tenant全局变量失败，原因为：" + e.getMessage());
+        }
+    }
+
+    private TenantGlobalVariableRecord createTenantGlobalVariableRecord(String requestId, Long rootFlowId,
+                                                                        DSSFlow flow, String workspaceName, String projectName, String tenant, String version, String userName) {
+        TenantGlobalVariableRecord record = new TenantGlobalVariableRecord();
+        record.setRequestId(requestId);
+        record.setRootFlowId(rootFlowId);
+        record.setFlowId(flow.getId());
+        record.setFlowName(flow.getName());
+        record.setWorkspaceName(workspaceName);
+        record.setProjectName(projectName);
+        record.setTenant(tenant);
+        record.setBmlVersion(version);
+        record.setOperateUser(userName);
+        record.setCreateTime(new Date());
+        return record;
+    }
+
+    private Long getRootFlowId(Long flowId) {
+        DSSFlow flow = flowService.getFlowByID(flowId);
+        if (flow == null) {
+            return null;
+        }
+        if (Boolean.TRUE.equals(flow.getRootFlow())) {
+            return flow.getId();
+        }
+        Long parentFlowId = flowService.getParentFlowID(flowId);
+        return parentFlowId == null ? flowId : getRootFlowId(parentFlowId);
+    }
+
+    private void collectFlows(DSSFlow flow, List<DSSFlow> flowList) {
+        if (flow == null) {
+            return;
+        }
+        flowList.add(flow);
+        if (CollectionUtils.isNotEmpty(flow.getChildren())) {
+            for (DSSFlow child : flow.getChildren()) {
+                collectFlows(child, flowList);
+            }
+        }
+    }
+
+    private DSSFlowEditLock findLockedFlow(List<DSSFlow> flowList) {
+        for (DSSFlow flow : flowList) {
+            DSSFlowEditLock flowEditLock = lockMapper.getFlowEditLockByID(flow.getId());
+            if (flowEditLock != null) {
+                return flowEditLock;
+            }
+        }
+        return null;
+    }
+
+    private String addTenantToFlowJson(String flowJson, String tenant) {
+        JsonObject flowJsonObject = new JsonParser().parse(flowJson).getAsJsonObject();
+        JsonArray props = getOrCreateProps(flowJsonObject);
+        JsonObject tenantProps = getOrCreateTenantProps(props);
+        removeTenant(props);
+        tenantProps.addProperty(TENANT_KEY, tenant);
+        flowJsonObject.addProperty("updateTime", System.currentTimeMillis());
+        flowJsonObject.addProperty("updateUser", SUPER_USER_HADOOP);
+        return new Gson().toJson(flowJsonObject);
+    }
+
+    private JsonArray getOrCreateProps(JsonObject flowJsonObject) {
+        JsonElement propsElement = flowJsonObject.get(FLOW_PROPS_KEY);
+        if (propsElement != null && propsElement.isJsonArray()) {
+            return propsElement.getAsJsonArray();
+        }
+        JsonArray props = new JsonArray();
+        flowJsonObject.add(FLOW_PROPS_KEY, props);
+        return props;
+    }
+
+    private JsonObject getOrCreateTenantProps(JsonArray props) {
+        for (JsonElement propElement : props) {
+            if (propElement != null && propElement.isJsonObject()) {
+                JsonObject prop = propElement.getAsJsonObject();
+                if (!prop.has(PROXY_USER_KEY)) {
+                    return prop;
+                }
+            }
+        }
+        JsonObject prop = new JsonObject();
+        props.add(prop);
+        return prop;
+    }
+
+    private void removeTenant(JsonArray props) {
+        for (JsonElement propElement : props) {
+            if (propElement != null && propElement.isJsonObject()) {
+                propElement.getAsJsonObject().remove(TENANT_KEY);
+            }
+        }
+    }
+
+    private void hideTenantInFlowJson(DSSFlow dssFlow) {
+        if (dssFlow == null || StringUtils.isBlank(dssFlow.getFlowJson())) {
+            return;
+        }
+        try {
+            JsonObject flowJsonObject = new JsonParser().parse(dssFlow.getFlowJson()).getAsJsonObject();
+            JsonElement propsElement = flowJsonObject.get(FLOW_PROPS_KEY);
+            if (propsElement != null && propsElement.isJsonArray()) {
+                removeTenant(propsElement.getAsJsonArray());
+                dssFlow.setFlowJson(new Gson().toJson(flowJsonObject));
+            }
+        } catch (Exception e) {
+            LOGGER.warn("hide tenant in flow json failed, flowId is {}", dssFlow.getId(), e);
+        }
     }
 
 
@@ -464,24 +645,6 @@ public class FlowRestfulApi {
 
     }
 
-
-    @RequestMapping(value = "/updateGlobalVariables", method = RequestMethod.POST)
-    public Message updateGlobalVariables(@RequestBody UpdateGlobalVariablesRequest request) {
-        String userName = SecurityFilter.getLoginUsername(httpServletRequest);
-        String flowName = request.getFlowName();
-        request.setUsername(userName);
-
-        try {
-            Cookie[] cookies = httpServletRequest.getCookies();
-            String ticketId = Arrays.stream(cookies).filter(cookie -> DSSWorkFlowConstant.BDP_USER_TICKET_ID.equals(cookie.getName()))
-                    .findFirst().map(Cookie::getValue).get();
-            dssFlowService.updateGlobalVariables(request, ticketId);
-        } catch (Exception e) {
-            LOGGER.error(String.format("工作流 %s 全局变量更新失败", flowName), e);
-            return Message.error(String.format("工作流 %s 全局变量更新失败，原因为：%s", flowName, e.getMessage()));
-        }
-        return Message.ok(String.format("工作流 %s 全局变量更新成功", flowName));
-    }
 
     @RequestMapping(value = "/getNodeInfoByName",method = RequestMethod.POST)
     public Message getNodeInfoByName(@RequestBody QueryNodeInfoByNameRequest queryNodeInfoByNameRequest){
