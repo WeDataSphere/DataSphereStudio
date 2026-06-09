@@ -10,39 +10,39 @@
           "children": [{
             "data": {"text": "分类：功能案例"},
             "children": [{
-              "data": {"text": "【AIGC】飞书启用且配置完整-校验通过"},
+              "data": {"text": "【AIGC】节点选择发送飞书且配置完整-校验通过"},
               "children": [
-                {"data": {"text": "条件：wds.dss.appconn.feishu.enabled=true，appId和appSecret已配置有效值"}, "children": []},
+                {"data": {"text": "条件：sendemail节点参数sendFeishu=true，appId和appSecret已配置有效值"}, "children": []},
                 {"data": {"text": "步骤：\n1、设置所有飞书配置项为有效值\n2、调用FeishuConfig.validate()"}, "children": []},
-                {"data": {"text": "预期结果：不抛出任何异常，日志输出Feishu integration is enabled"}, "children": []}
+                {"data": {"text": "预期结果：不抛出任何异常，日志输出Feishu integration config validated"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】飞书启用但appId为空-校验失败"},
+              "data": {"text": "【AIGC】节点选择发送飞书但appId为空-校验失败"},
               "children": [
-                {"data": {"text": "条件：wds.dss.appconn.feishu.enabled=true，wds.dss.appconn.feishu.app.id为空字符串"}, "children": []},
-                {"data": {"text": "步骤：\n1、设置enabled=true，appId为空\n2、调用FeishuConfig.validate()"}, "children": []},
+                {"data": {"text": "条件：sendemail节点参数sendFeishu=true，wds.dss.appconn.feishu.app.id为空字符串"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置sendFeishu=true，appId为空\n2、调用FeishuConfig.validate()"}, "children": []},
                 {"data": {"text": "预期结果：抛出IllegalArgumentException，异常消息包含app.id is not configured"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】飞书启用但appSecret为空-校验失败"},
+              "data": {"text": "【AIGC】节点选择发送飞书但appSecret为空-校验失败"},
               "children": [
-                {"data": {"text": "条件：wds.dss.appconn.feishu.enabled=true，wds.dss.appconn.feishu.app.secret为空字符串"}, "children": []},
-                {"data": {"text": "步骤：\n1、设置enabled=true，appSecret为空\n2、调用FeishuConfig.validate()"}, "children": []},
+                {"data": {"text": "条件：sendemail节点参数sendFeishu=true，wds.dss.appconn.feishu.app.secret为空字符串"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置sendFeishu=true，appSecret为空\n2、调用FeishuConfig.validate()"}, "children": []},
                 {"data": {"text": "预期结果：抛出IllegalArgumentException，异常消息包含app.secret is not configured"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】飞书未启用-校验通过"},
+              "data": {"text": "【AIGC】节点未选择发送飞书-校验通过"},
               "children": [
-                {"data": {"text": "条件：wds.dss.appconn.feishu.enabled=false"}, "children": []},
-                {"data": {"text": "步骤：\n1、设置enabled=false\n2、调用FeishuConfig.validate()"}, "children": []},
-                {"data": {"text": "预期结果：不抛出异常，日志输出Feishu integration is disabled"}, "children": []}
+                {"data": {"text": "条件：sendemail节点参数sendFeishu=false，执行逻辑不调用FeishuMessageSender.send"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置sendFeishu=false\n2、调用FeishuConfig.validate()"}, "children": []},
+                {"data": {"text": "预期结果：仅发送邮件，不调用FeishuConfig.validate()"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】飞书配置默认值验证"},
               "children": [
                 {"data": {"text": "条件：未配置任何飞书相关配置项"}, "children": []},
                 {"data": {"text": "步骤：\n1、不设置任何飞书配置\n2、读取各配置项的默认值"}, "children": []},
-                {"data": {"text": "预期结果：FEISHU_ENABLED=false，APP_ID和APP_SECRET为空字符串，API_BASE_URL为https://open.feishu.cn/open-apis"}, "children": []}
+                {"data": {"text": "预期结果：APP_ID和APP_SECRET为空字符串，API_BASE_URL为https://open.feishu.cn/open-apis"}, "children": []}
               ]
             }]
           }]
@@ -165,25 +165,25 @@
                 {"data": {"text": "预期结果：不抛出异常，不调用任何飞书API"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】发送飞书消息-feishuTo仅含空格和逗号"},
+              "data": {"text": "【AIGC】发送飞书消息-feishuTo仅含空格和分号"},
               "children": [
-                {"data": {"text": "条件：Email对象feishuTo为\"  ,  ,  \""}, "children": []},
-                {"data": {"text": "步骤：\n1、构造Email对象feishuTo为空格和逗号\n2、调用FeishuMessageSender.send(email)"}, "children": []},
+                {"data": {"text": "条件：Email对象feishuTo为\"  ;  ;  \""}, "children": []},
+                {"data": {"text": "步骤：\n1、构造Email对象feishuTo为空格和分号\n2、调用FeishuMessageSender.send(email)"}, "children": []},
                 {"data": {"text": "预期结果：不抛出异常，receivers列表为空，日志输出No valid Feishu receiver IDs found"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】发送飞书消息-多接收者逗号分隔"},
+              "data": {"text": "【AIGC】发送飞书消息-多接收者分号分隔"},
               "children": [
-                {"data": {"text": "条件：Email对象feishuTo为ou_user1,ou_user2,ou_user3，含1个附件"}, "children": []},
+                {"data": {"text": "条件：Email对象feishuTo为ou_user1;ou_user2;ou_user3，含1个附件"}, "children": []},
                 {"data": {"text": "步骤：\n1、构造Email对象feishuTo含3个接收者\n2、Mock FeishuClient所有方法成功\n3、调用FeishuMessageSender.send(email)"}, "children": []},
                 {"data": {"text": "预期结果：sendTextMessage调用3次，uploadFile调用1次，sendFileMessage调用3次，总计7次飞书API调用"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】发送飞书消息-接收者含前后空格"},
               "children": [
-                {"data": {"text": "条件：Email对象feishuTo为\"  ou_user1  ,  ou_user2  \""}, "children": []},
+                {"data": {"text": "条件：Email对象feishuTo为\"  ou_user1  ;  ou_user2  \""}, "children": []},
                 {"data": {"text": "步骤：\n1、构造Email对象feishuTo含带空格的接收者\n2、调用FeishuMessageSender.send(email)"}, "children": []},
-                {"data": {"text": "预期结果：空格被trim，receivers为[ou_user1,ou_user2]，每个接收者收到消息"}, "children": []}
+                {"data": {"text": "预期结果：空格被trim，receivers分别为ou_user1和ou_user2，每个接收者收到消息"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】发送飞书消息-subject为null时使用默认主题"},
@@ -261,8 +261,8 @@
             }, {
               "data": {"text": "【AIGC】飞书配置校验失败-validate抛出IllegalArgumentException"},
               "children": [
-                {"data": {"text": "条件：飞书enabled=true但appId为空"}, "children": []},
-                {"data": {"text": "步骤：\n1、设置FeishuConfig.enabled=true, appId为空\n2、构造Email对象feishuTo=ou_user1\n3、调用FeishuMessageSender.send(email)"}, "children": []},
+                {"data": {"text": "条件：节点sendFeishu=true但appId为空"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置节点参数sendFeishu=true，并将appId为空\n2、构造Email对象feishuTo=ou_user1\n3、调用FeishuMessageSender.send(email)"}, "children": []},
                 {"data": {"text": "预期结果：抛出IllegalArgumentException，消息包含app.id is not configured"}, "children": []}
               ]
             }]
@@ -272,45 +272,45 @@
           "children": [{
             "data": {"text": "分类：流程案例"},
             "children": [{
-              "data": {"text": "【AIGC】邮件发送后-飞书启用且feishuTo有值-执行飞书发送"},
+              "data": {"text": "【AIGC】邮件发送后-节点选择发送飞书且feishuTo有值-执行飞书发送"},
               "children": [
-                {"data": {"text": "条件：飞书enabled=true，feishuTo=ou_user1，邮件发送成功，飞书Mock成功"}, "children": []},
+                {"data": {"text": "条件：节点sendFeishu=true，feishuTo=ou_user1，邮件发送成功，飞书Mock成功"}, "children": []},
                 {"data": {"text": "步骤：\n1、Mock emailSender.send()成功\n2、Mock FeishuMessageSender.send()成功\n3、构造requestRef设置feishuTo=ou_user1\n4、调用execute(requestRef)"}, "children": []},
                 {"data": {"text": "预期结果：邮件先发送成功，FeishuMessageSender.send()被调用，返回成功响应"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】邮件发送后-飞书未启用-不执行飞书发送"},
+              "data": {"text": "【AIGC】邮件发送后-节点未选择发送飞书-不执行飞书发送"},
               "children": [
-                {"data": {"text": "条件：飞书enabled=false，feishuTo=ou_user1"}, "children": []},
-                {"data": {"text": "步骤：\n1、设置enabled=false\n2、Mock emailSender.send()成功\n3、构造requestRef设置feishuTo=ou_user1\n4、调用execute(requestRef)"}, "children": []},
+                {"data": {"text": "条件：节点sendFeishu=false，feishuTo=ou_user1"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置sendFeishu=false\n2、Mock emailSender.send()成功\n3、构造requestRef设置feishuTo=ou_user1\n4、调用execute(requestRef)"}, "children": []},
                 {"data": {"text": "预期结果：仅发送邮件，FeishuMessageSender.send()不被调用，返回成功响应"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】邮件发送后-feishuTo为空-不执行飞书发送"},
               "children": [
-                {"data": {"text": "条件：飞书enabled=true，feishuTo为null或空字符串"}, "children": []},
-                {"data": {"text": "步骤：\n1、设置enabled=true\n2、Mock emailSender.send()成功\n3、构造requestRef不设置feishuTo\n4、调用execute(requestRef)"}, "children": []},
+                {"data": {"text": "条件：节点sendFeishu=true，feishuTo为null或空字符串"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置sendFeishu=true\n2、Mock emailSender.send()成功\n3、构造requestRef不设置feishuTo\n4、调用execute(requestRef)"}, "children": []},
                 {"data": {"text": "预期结果：仅发送邮件，FeishuMessageSender.send()不被调用，返回成功响应"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】飞书发送失败-节点标记为错误"},
               "children": [
-                {"data": {"text": "条件：飞书enabled=true，feishuTo=ou_user1，邮件发送成功，飞书发送失败"}, "children": []},
+                {"data": {"text": "条件：节点sendFeishu=true，feishuTo=ou_user1，邮件发送成功，飞书发送失败"}, "children": []},
                 {"data": {"text": "步骤：\n1、Mock emailSender.send()成功\n2、Mock FeishuMessageSender.send()抛出EmailSendFailedException\n3、构造requestRef设置feishuTo=ou_user1\n4、调用execute(requestRef)"}, "children": []},
                 {"data": {"text": "预期结果：邮件发送成功但飞书发送失败，返回错误响应，错误消息为飞书发送失败！"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】邮件发送失败-不执行飞书发送"},
               "children": [
-                {"data": {"text": "条件：邮件发送失败，飞书已启用且feishuTo有值"}, "children": []},
+                {"data": {"text": "条件：邮件发送失败，节点已选择发送飞书且feishuTo有值"}, "children": []},
                 {"data": {"text": "步骤：\n1、Mock emailSender.send()抛出异常\n2、构造requestRef设置feishuTo=ou_user1\n3、调用execute(requestRef)"}, "children": []},
                 {"data": {"text": "预期结果：邮件发送失败时立即返回错误，FeishuMessageSender.send()不被调用，错误消息为发送邮件失败！"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】feishuTo为纯空格-不执行飞书发送"},
               "children": [
-                {"data": {"text": "条件：飞书enabled=true，feishuTo为纯空格"}, "children": []},
-                {"data": {"text": "步骤：\n1、设置enabled=true\n2、Mock emailSender.send()成功\n3、构造requestRef设置feishuTo为纯空格\n4、调用execute(requestRef)"}, "children": []},
+                {"data": {"text": "条件：节点sendFeishu=true，feishuTo为纯空格"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置sendFeishu=true\n2、Mock emailSender.send()成功\n3、构造requestRef设置feishuTo为纯空格\n4、调用execute(requestRef)"}, "children": []},
                 {"data": {"text": "预期结果：仅发送邮件，feishuTo.trim.nonEmpty为false跳过飞书发送"}, "children": []}
               ]
             }]
@@ -322,9 +322,9 @@
             "children": [{
               "data": {"text": "【AIGC】从runtimeMap读取feishuTo-正常值"},
               "children": [
-                {"data": {"text": "条件：runtimeMap中feishuTo=ou_user1,ou_user2"}, "children": []},
-                {"data": {"text": "步骤：\n1、构造requestRef，runtimeMap中设置feishuTo=ou_user1,ou_user2\n2、调用emailGenerator.generateEmail(requestRef)\n3、验证email.getFeishuTo()"}, "children": []},
-                {"data": {"text": "预期结果：email.getFeishuTo()返回ou_user1,ou_user2"}, "children": []}
+                {"data": {"text": "条件：runtimeMap中feishuTo=ou_user1;ou_user2"}, "children": []},
+                {"data": {"text": "步骤：\n1、构造requestRef，runtimeMap中设置feishuTo=ou_user1;ou_user2\n2、调用emailGenerator.generateEmail(requestRef)\n3、验证email.getFeishuTo()"}, "children": []},
+                {"data": {"text": "预期结果：email.getFeishuTo()返回ou_user1;ou_user2"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】从runtimeMap读取feishuTo-不存在时默认为空字符串"},
@@ -412,16 +412,16 @@
                 {"data": {"text": "预期结果：邮件发送成功，飞书接收者仅收到文本消息，不发送文件消息"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】端到端-飞书未启用仅发邮件"},
+              "data": {"text": "【AIGC】端到端-节点未选择发送飞书仅发邮件"},
               "children": [
-                {"data": {"text": "条件：飞书enabled=false，sendemail节点配置了feishuTo"}, "children": []},
-                {"data": {"text": "步骤：\n1、设置飞书enabled=false\n2、配置sendemail节点设置feishuTo\n3、执行工作流"}, "children": []},
+                {"data": {"text": "条件：节点sendFeishu=false，sendemail节点配置了feishuTo"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置节点sendFeishu=false\n2、配置sendemail节点设置feishuTo\n3、执行工作流"}, "children": []},
                 {"data": {"text": "预期结果：仅发送邮件，飞书不发送任何消息，工作流节点状态为成功"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】端到端-飞书发送失败工作流节点失败"},
               "children": [
-                {"data": {"text": "条件：飞书enabled=true，appId/appSecret配置错误或API不可达，feishuTo有值"}, "children": []},
+                {"data": {"text": "条件：节点sendFeishu=true，appId/appSecret配置错误或API不可达，feishuTo有值"}, "children": []},
                 {"data": {"text": "步骤：\n1、配置无效的飞书appId/appSecret\n2、配置sendemail节点设置feishuTo\n3、执行工作流"}, "children": []},
                 {"data": {"text": "预期结果：邮件发送成功但飞书发送失败，工作流节点标记为失败，日志包含飞书发送失败"}, "children": []}
               ]
@@ -439,11 +439,11 @@
                 {"data": {"text": "预期结果：返回自定义URL，飞书API请求发送到自定义地址"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】配置项-feishu.enabled设为true字符串"},
+              "data": {"text": "【AIGC】节点参数-sendFeishu设为true字符串"},
               "children": [
                 {"data": {"text": "条件：配置值为字符串true"}, "children": []},
-                {"data": {"text": "步骤：\n1、设置wds.dss.appconn.feishu.enabled=true\n2、调用FeishuConfig.isEnabled"}, "children": []},
-                {"data": {"text": "预期结果：isEnabled返回true（布尔值）"}, "children": []}
+                {"data": {"text": "步骤：\n1、设置sendemail节点参数sendFeishu=true\n2、执行SendEmailRefExecutionOperation并读取runtimeMap中的sendFeishu"}, "children": []},
+                {"data": {"text": "预期结果：sendFeishu按true处理，满足feishuTo非空时执行飞书发送"}, "children": []}
               ]
             }]
           }]
@@ -452,3 +452,6 @@
     }]
   }
 }
+
+
+
