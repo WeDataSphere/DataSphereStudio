@@ -43,4 +43,7 @@ public interface Email {
 
     String getEmailType();
     void setEmailType(String emailType);
+
+    String getFeishuTo();
+    void setFeishuTo(String feishuTo);
 }

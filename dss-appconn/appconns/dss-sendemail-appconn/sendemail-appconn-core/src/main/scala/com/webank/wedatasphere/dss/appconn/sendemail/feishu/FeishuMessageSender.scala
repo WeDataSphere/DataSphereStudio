@@ -43,8 +43,8 @@ object FeishuMessageSender extends Logging {
     // Validate Feishu configuration
     FeishuConfig.validate()
 
-    // Parse receiver IDs (comma separated)
-    val receivers = feishuTo.split(",").map(_.trim).filter(_.nonEmpty)
+    // Parse receiver IDs (semicolon separated)
+    val receivers = feishuTo.split(";").map(_.trim).filter(_.nonEmpty)
     if (receivers.isEmpty) {
       logger.warn("No valid Feishu receiver IDs found, skip Feishu sending.")
       return

@@ -25,8 +25,6 @@ import org.apache.linkis.common.utils.Logging
  */
 object FeishuConfig extends Logging {
 
-  def isEnabled: Boolean = SendEmailAppConnConfiguration.FEISHU_ENABLED.getValue
-
   def getAppId: String = SendEmailAppConnConfiguration.FEISHU_APP_ID.getValue
 
   def getAppSecret: String = SendEmailAppConnConfiguration.FEISHU_APP_SECRET.getValue
@@ -34,19 +32,15 @@ object FeishuConfig extends Logging {
   def getApiBaseUrl: String = SendEmailAppConnConfiguration.FEISHU_API_BASE_URL.getValue
 
   def validate(): Unit = {
-    if (isEnabled) {
-      if (getAppId.isEmpty) {
-        throw new IllegalArgumentException("Feishu is enabled but app.id is not configured. " +
-          "Please set wds.dss.appconn.feishu.app.id in appconn.properties.")
-      }
-      if (getAppSecret.isEmpty) {
-        throw new IllegalArgumentException("Feishu is enabled but app.secret is not configured. " +
-          "Please set wds.dss.appconn.feishu.app.secret in appconn.properties.")
-      }
-      logger.info(s"Feishu integration is enabled. App ID: ${getAppId}, API Base URL: ${getApiBaseUrl}")
-    } else {
-      logger.info("Feishu integration is disabled.")
+    if (getAppId.isEmpty) {
+      throw new IllegalArgumentException("Feishu app.id is not configured. " +
+        "Please set wds.dss.appconn.feishu.app.id in appconn.properties.")
     }
+    if (getAppSecret.isEmpty) {
+      throw new IllegalArgumentException("Feishu app.secret is not configured. " +
+        "Please set wds.dss.appconn.feishu.app.secret in appconn.properties.")
+    }
+    logger.info(s"Feishu integration config validated. App ID: ${getAppId}, API Base URL: ${getApiBaseUrl}")
   }
 
 }

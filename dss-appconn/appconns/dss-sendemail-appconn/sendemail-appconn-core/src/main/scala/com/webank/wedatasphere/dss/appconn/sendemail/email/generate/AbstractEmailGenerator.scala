@@ -68,6 +68,8 @@ trait AbstractEmailGenerator extends EmailGenerator with Logging{
     email.setFrom(from)
     val to = if (runtimeMap.get("to") != null) runtimeMap.get("to").toString else ""
     email.setTo(to)
+    val feishuTo = if (runtimeMap.get("feishuTo") != null) runtimeMap.get("feishuTo").toString else ""
+    email.setFeishuTo(feishuTo)
   }
 
   protected def generateEmailContent(requestRef: RefExecutionRequestRef.RefExecutionRequestRefImpl, email: AbstractEmail): Unit

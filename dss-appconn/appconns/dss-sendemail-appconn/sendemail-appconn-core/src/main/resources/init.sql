@@ -20,6 +20,18 @@ delete from `dss_workflow_node_to_group` where `node_id`=@sendemail_nodeId;
 
 delete from `dss_workflow_node_to_ui` where `workflow_node_id`=@sendemail_nodeId;
 
+select @sendemail_node_ui_send_feishu:=id from `dss_workflow_node_ui` where `key` = 'sendFeishu' limit 1;
+insert into `dss_workflow_node_ui`(`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`)
+select 'sendFeishu','请选择是否发送飞书','Please choose whether to send Feishu message','是否发送飞书','Send Feishu','Select',0,'["true","false"]','false',0,NULL,0,1,1,0,'runtime'
+where @sendemail_node_ui_send_feishu is null;
+select @sendemail_node_ui_send_feishu:=id from `dss_workflow_node_ui` where `key` = 'sendFeishu' limit 1;
+
+select @sendemail_node_ui_feishu_to:=id from `dss_workflow_node_ui` where `key` = 'feishuTo' limit 1;
+insert into `dss_workflow_node_ui`(`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`)
+select 'feishuTo','请填写飞书接收人英文名，多个用英文分号分隔','Please enter Feishu receiver name, separated by semicolons','飞书接收人','Feishu To','Input',0,NULL,NULL,0,NULL,0,1,1,0,'runtime'
+where @sendemail_node_ui_feishu_to is null;
+select @sendemail_node_ui_feishu_to:=id from `dss_workflow_node_ui` where `key` = 'feishuTo' limit 1;
+
 -- 查找节点所属组的id
 select @sendemail_node_groupId:=id from `dss_workflow_node_group` where `name` = '数据输出';
 
@@ -49,3 +61,5 @@ INSERT INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@sende
 INSERT INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@sendemail_nodeId, @sendemail_node_ui_lable_name_9);
 INSERT INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@sendemail_nodeId, @sendemail_node_ui_lable_name_10);
 INSERT INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@sendemail_nodeId, @sendemail_node_ui_lable_name_11);
+INSERT INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@sendemail_nodeId, @sendemail_node_ui_send_feishu);
+INSERT INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@sendemail_nodeId, @sendemail_node_ui_feishu_to);

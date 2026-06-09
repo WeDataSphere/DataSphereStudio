@@ -56,4 +56,9 @@ object SendEmailAppConnConfiguration {
       "com.webank.wedatasphere.dss.appconn.sendemail.hook.entity.visualis.VisualisEmailInfo," +
       "com.webank.wedatasphere.dss.appconn.sendemail.hook.entity.visualis.MetaBaseEmailInfo," +
       "com.webank.wedatasphere.dss.appconn.sendemail.hook.entity.mlssv2.Mlssv2EmailInfo")
+
+  // Feishu integration configuration
+  val FEISHU_APP_ID = CommonVars("wds.dss.appconn.feishu.app.id", "")
+  val FEISHU_APP_SECRET = CommonVars("wds.dss.appconn.feishu.app.secret", "")
+  val FEISHU_API_BASE_URL = CommonVars("wds.dss.appconn.feishu.api.base.url", "https://open.feishu.cn/open-apis")
 }

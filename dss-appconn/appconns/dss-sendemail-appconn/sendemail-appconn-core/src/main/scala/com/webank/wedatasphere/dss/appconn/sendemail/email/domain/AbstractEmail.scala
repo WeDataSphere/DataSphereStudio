@@ -30,6 +30,7 @@ class AbstractEmail extends Email {
   private var cc: String = _
   private var bcc: String = _
   private var emialType: String = _
+  private var feishuTo: String = _
 
   override def getContent: String = content
   override def setContent(content: String): Unit = this.content = content
@@ -56,4 +57,7 @@ class AbstractEmail extends Email {
 
   override def getEmailType: String = emialType
   override def setEmailType(emailType: String): Unit = this.emialType = emailType
+
+  override def getFeishuTo: String = feishuTo
+  override def setFeishuTo(feishuTo: String): Unit = this.feishuTo = feishuTo
 }

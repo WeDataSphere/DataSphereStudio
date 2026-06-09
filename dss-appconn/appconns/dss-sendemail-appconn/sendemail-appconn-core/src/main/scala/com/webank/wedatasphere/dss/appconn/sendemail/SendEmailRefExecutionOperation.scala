@@ -19,6 +19,7 @@ package com.webank.wedatasphere.dss.appconn.sendemail
 import java.util
 
 import com.webank.wedatasphere.dss.appconn.sendemail.conf.SendEmailAppConnInstanceConfiguration
+import com.webank.wedatasphere.dss.appconn.sendemail.feishu.FeishuMessageSender
 import com.webank.wedatasphere.dss.standard.app.development.listener.ref.ExecutionResponseRef.ExecutionResponseRefBuilder
 import com.webank.wedatasphere.dss.standard.app.development.listener.ref.{ExecutionResponseRef, RefExecutionRequestRef}
 import com.webank.wedatasphere.dss.standard.app.development.operation.{AbstractDevelopmentOperation, RefExecutionOperation}
@@ -63,9 +64,28 @@ class SendEmailRefExecutionOperation
       return putErrorMsg(t.getMessage, t)
     }
     Utils.tryCatch {
+      // Step1: send email
       emailSender.send(email)
-      new ExecutionResponseRefBuilder().success()
-    }(putErrorMsg("发送邮件失败！", _))
+    } { t =>
+      return putErrorMsg("发送邮件失败！", t)
+    }
+
+    // Step 2: Send to Feishu (optional, controlled by node runtime parameter and feishuTo field)
+    val runtimeMap = requestRef.getExecutionRequestRefContext.getRuntimeMap
+    val sendFeishu = Option(runtimeMap.get("sendFeishu")).exists(_.toString.equalsIgnoreCase("true"))
+    if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) {
+      logger.info(s"Feishu sending is selected and feishuTo is configured: ${email.getFeishuTo}")
+      Utils.tryCatch {
+        FeishuMessageSender.send(email)
+        logger.info("Feishu sending completed successfully.")
+      } { t =>
+        return putErrorMsg("飞书发送失败！", t)
+      }
+    } else if (sendFeishu) {
+      logger.warn("Feishu sending is selected but feishuTo is empty, skip Feishu sending.")
+    }
+
+    new ExecutionResponseRefBuilder().success()
   }
 
   protected def putErrorMsg(errorMsg: String, t: Throwable): ExecutionResponseRef = {
