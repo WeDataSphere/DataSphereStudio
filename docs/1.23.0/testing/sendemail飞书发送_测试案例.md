@@ -51,10 +51,10 @@ Mock框架: Mockito（Spring Boot Test集成）
 |---------|:--------:|:-------:|:-------:|
 | Email.java | MODIFIED | 2 (getFeishuTo/setFeishuTo) | 0 |
 | AbstractEmail.scala | MODIFIED | 2 (getFeishuTo/setFeishuTo) | 0 |
-| SendEmailAppConnConfiguration.scala | MODIFIED | 4 (FEISHU_ENABLED/APP_ID/APP_SECRET/API_BASE_URL) | 0 |
+| SendEmailAppConnConfiguration.scala | MODIFIED | 3 (FEISHU_APP_ID/FEISHU_APP_SECRET/FEISHU_API_BASE_URL) | 0 |
 | AbstractEmailGenerator.scala | MODIFIED | 0 | 1 (generateEmailInfo) |
 | SendEmailRefExecutionOperation.scala | MODIFIED | 0 | 1 (execute) |
-| FeishuConfig.scala | NEW | 4 (isEnabled/getAppId/getAppSecret/getApiBaseUrl/validate) | 0 |
+| FeishuConfig.scala | NEW | 4 (getAppId/getAppSecret/getApiBaseUrl/validate) | 0 |
 | FeishuClient.scala | NEW | 6 (getTenantAccessToken/refreshTenantToken/uploadFile/sendFileMessage/sendTextMessage等) | 0 |
 | FeishuMessageSender.scala | NEW | 2 (send/uploadAttachment) | 0 |
 
@@ -64,11 +64,10 @@ Mock框架: Mockito（Spring Boot Test集成）
 
 | 方法 | 签名 | 说明 |
 |------|------|------|
-| isEnabled | `def isEnabled: Boolean` | 读取飞书启用配置 |
 | getAppId | `def getAppId: String` | 读取App ID |
 | getAppSecret | `def getAppSecret: String` | 读取App Secret |
 | getApiBaseUrl | `def getApiBaseUrl: String` | 读取API基础URL |
-| validate | `def validate(): Unit` | 校验配置完整性，启用时appId/appSecret不能为空 |
+| validate | `def validate(): Unit` | 校验连接配置完整性，appId/appSecret不能为空 |
 
 #### FeishuClient.scala
 
@@ -92,15 +91,15 @@ Mock框架: Mockito（Spring Boot Test集成）
 
 ```scala
 // 新增飞书发送逻辑（邮件发送之后）
-if (FeishuConfig.isEnabled && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) {
+if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) {
   FeishuMessageSender.send(email)
 }
 ```
 
 **控制流分支**：
-1. 飞书未启用 (isEnabled=false) -> 跳过飞书发送
-2. 飞书已启用但feishuTo为空 -> 跳过飞书发送
-3. 飞书已启用且feishuTo非空 -> 执行飞书发送
+1. 节点未选择发送飞书 (sendFeishu=false) -> 跳过飞书发送
+2. 节点已选择发送飞书但feishuTo为空 -> 跳过飞书发送
+3. 节点已选择发送飞书且feishuTo非空 -> 执行飞书发送
 
 ### 2.3 静态代码分析结果
 
@@ -110,10 +109,10 @@ if (FeishuConfig.isEnabled && email.getFeishuTo != null && email.getFeishuTo.tri
 
 | 路径编号 | 描述 | 条件 | 预期结果 |
 |---------|------|------|---------|
-| 路径1 | 飞书未启用 | isEnabled=false | 跳过飞书发送，仅发邮件 |
-| 路径2 | 飞书已启用，feishuTo为空 | isEnabled=true, feishuTo=null/空 | 跳过飞书发送，仅发邮件 |
-| 路径3 | 飞书已启用，feishuTo有值，无附件 | isEnabled=true, feishuTo非空, attachments为空 | 仅发送文本主题消息 |
-| 路径4 | 飞书已启用，feishuTo有值，有附件 | isEnabled=true, feishuTo非空, attachments非空 | 发送文本+文件消息 |
+| 路径1 | 节点未选择发送飞书 | sendFeishu=false | 跳过飞书发送，仅发邮件 |
+| 路径2 | 节点已选择发送飞书，feishuTo为空 | sendFeishu=true, feishuTo=null/空 | 跳过飞书发送，仅发邮件 |
+| 路径3 | 节点已选择发送飞书，feishuTo有值，无附件 | sendFeishu=true, feishuTo非空, attachments为空 | 仅发送文本主题消息 |
+| 路径4 | 节点已选择发送飞书，feishuTo有值，有附件 | sendFeishu=true, feishuTo非空, attachments非空 | 发送文本+文件消息 |
 | 路径5 | 飞书发送失败 | Token获取失败/上传失败/发送失败 | 节点标记为失败 |
 | 路径6 | 邮件发送失败 | 邮件发送异常 | 不执行飞书发送 |
 
@@ -121,7 +120,7 @@ if (FeishuConfig.isEnabled && email.getFeishuTo != null && email.getFeishuTo.tri
 
 | 变量 | 边界值 | 特殊值 |
 |------|-------|-------|
-| feishuTo | 空字符串""、仅空格"   "、单接收者、多接收者(逗号分隔)、含空格的接收者"ou_xxx, ou_yyy" | null |
+| feishuTo | 空字符串""、仅空格"   "、单接收者、多接收者(分号分隔)、含空格的接收者"ou_xxx; ou_yyy" | null |
 | appId | 空字符串"" | - |
 | appSecret | 空字符串"" | - |
 | apiBaseUrl | 默认值"https://open.feishu.cn/open-apis"、自定义URL | - |
@@ -143,7 +142,7 @@ if (FeishuConfig.isEnabled && email.getFeishuTo != null && email.getFeishuTo.tri
 | 80006 | 发送主题文本消息到飞书用户失败 | 抛出EmailSendFailedException |
 | 80007 | 上传附件到飞书失败 | 抛出EmailSendFailedException |
 | 80008 | 向用户发送附件文件消息失败 | 抛出EmailSendFailedException |
-| IllegalArgumentException | 飞书启用但appId/appSecret为空 | 抛出IllegalArgumentException |
+| IllegalArgumentException | 节点选择发送飞书但appId/appSecret为空 | 抛出IllegalArgumentException |
 
 ---
 
@@ -151,14 +150,13 @@ if (FeishuConfig.isEnabled && email.getFeishuTo != null && email.getFeishuTo.tri
 
 ### 3.1 FeishuConfig 配置校验测试
 
-#### TC001：飞书启用且配置完整 - 校验通过
+#### TC001：飞书连接配置完整 - 校验通过
 
 **来源**：代码变更分析 - FeishuConfig.scala, validate()方法
 
 **测试类型**：单元测试
 
 **前置条件**：
-- wds.dss.appconn.feishu.enabled=true
 - wds.dss.appconn.feishu.app.id=cli_test_app_id
 - wds.dss.appconn.feishu.app.secret=test_app_secret
 - wds.dss.appconn.feishu.api.base.url=https://open.feishu.cn/open-apis
@@ -169,7 +167,7 @@ if (FeishuConfig.isEnabled && email.getFeishuTo != null && email.getFeishuTo.tri
 
 **预期结果**：
 - 不抛出任何异常
-- 日志输出"Feishu integration is enabled"
+- 日志输出"Feishu integration config validated"
 
 **优先级**：P0
 **测试类型**：单元测试
@@ -177,19 +175,18 @@ if (FeishuConfig.isEnabled && email.getFeishuTo != null && email.getFeishuTo.tri
 
 ---
 
-#### TC002：飞书启用但appId为空 - 校验失败
+#### TC002：appId为空 - 校验失败
 
 **来源**：代码变更分析 - FeishuConfig.scala, validate()方法
 
 **测试类型**：单元测试
 
 **前置条件**：
-- wds.dss.appconn.feishu.enabled=true
 - wds.dss.appconn.feishu.app.id="" (空)
 - wds.dss.appconn.feishu.app.secret=test_secret
 
 **测试步骤**：
-1. 设置enabled=true，appId为空
+1. 设置appId为空
 2. 调用 `FeishuConfig.validate()`
 
 **预期结果**：
@@ -202,19 +199,18 @@ if (FeishuConfig.isEnabled && email.getFeishuTo != null && email.getFeishuTo.tri
 
 ---
 
-#### TC003：飞书启用但appSecret为空 - 校验失败
+#### TC003：appSecret为空 - 校验失败
 
 **来源**：代码变更分析 - FeishuConfig.scala, validate()方法
 
 **测试类型**：单元测试
 
 **前置条件**：
-- wds.dss.appconn.feishu.enabled=true
 - wds.dss.appconn.feishu.app.id=cli_test_app_id
 - wds.dss.appconn.feishu.app.secret="" (空)
 
 **测试步骤**：
-1. 设置enabled=true，appSecret为空
+1. 设置appSecret为空
 2. 调用 `FeishuConfig.validate()`
 
 **预期结果**：
@@ -227,30 +223,7 @@ if (FeishuConfig.isEnabled && email.getFeishuTo != null && email.getFeishuTo.tri
 
 ---
 
-#### TC004：飞书未启用 - 校验通过
-
-**来源**：代码变更分析 - FeishuConfig.scala, validate()方法
-
-**测试类型**：单元测试
-
-**前置条件**：
-- wds.dss.appconn.feishu.enabled=false
-
-**测试步骤**：
-1. 设置enabled=false（appId/appSecret无论为何值）
-2. 调用 `FeishuConfig.validate()`
-
-**预期结果**：
-- 不抛出任何异常
-- 日志输出"Feishu integration is disabled"
-
-**优先级**：P0
-**测试类型**：单元测试
-**覆盖场景**：正向场景 - 功能关闭
-
----
-
-#### TC005：飞书配置默认值验证
+#### TC004：飞书连接配置默认值验证
 
 **来源**：代码变更分析 - SendEmailAppConnConfiguration.scala
 
@@ -264,7 +237,6 @@ if (FeishuConfig.isEnabled && email.getFeishuTo != null && email.getFeishuTo.tri
 2. 读取各配置项的值
 
 **预期结果**：
-- FEISHU_ENABLED = false
 - FEISHU_APP_ID = "" (空字符串)
 - FEISHU_APP_SECRET = "" (空字符串)
 - FEISHU_API_BASE_URL = "https://open.feishu.cn/open-apis"
@@ -692,17 +664,17 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 ---
 
-#### TC021：发送飞书消息 - feishuTo仅含空格和逗号
+#### TC021：发送飞书消息 - feishuTo仅含空格和分号
 
 **来源**：代码变更分析 - FeishuMessageSender.scala, send()
 
 **测试类型**：单元测试
 
 **前置条件**：
-- Email对象feishuTo为"  ,  ,  "
+- Email对象feishuTo为"  ;  ;  "
 
 **测试步骤**：
-1. 构造Email对象：feishuTo="  ,  ,  "
+1. 构造Email对象：feishuTo="  ;  ;  "
 2. 调用 `FeishuMessageSender.send(email)`
 
 **预期结果**：
@@ -716,17 +688,17 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 ---
 
-#### TC022：发送飞书消息 - 多接收者（逗号分隔）
+#### TC022：发送飞书消息 - 多接收者（分号分隔）
 
 **来源**：代码变更分析 - FeishuMessageSender.scala, send()
 
 **测试类型**：单元测试
 
 **前置条件**：
-- Email对象feishuTo为"ou_user1,ou_user2,ou_user3"
+- Email对象feishuTo为"ou_user1;ou_user2;ou_user3"
 
 **测试步骤**：
-1. 构造Email对象：feishuTo="ou_user1,ou_user2,ou_user3"，含1个附件
+1. 构造Email对象：feishuTo="ou_user1;ou_user2;ou_user3"，含1个附件
 2. Mock FeishuClient所有方法成功
 3. 调用 `FeishuMessageSender.send(email)`
 
@@ -739,7 +711,7 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试数据**：
 ```json
 {
-  "feishuTo": "ou_user1,ou_user2,ou_user3",
+  "feishuTo": "ou_user1;ou_user2;ou_user3",
   "attachments": [{"name": "report.csv"}]
 }
 ```
@@ -757,10 +729,10 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试类型**：单元测试
 
 **前置条件**：
-- Email对象feishuTo为"  ou_user1  ,  ou_user2  "
+- Email对象feishuTo为"  ou_user1  ;  ou_user2  "
 
 **测试步骤**：
-1. 构造Email对象：feishuTo="  ou_user1  ,  ou_user2  "
+1. 构造Email对象：feishuTo="  ou_user1  ;  ou_user2  "
 2. 调用 `FeishuMessageSender.send(email)`
 
 **预期结果**：
@@ -1034,10 +1006,10 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试类型**：单元测试
 
 **前置条件**：
-- 飞书enabled=true但appId为空
+- 节点sendFeishu=true但appId为空
 
 **测试步骤**：
-1. 设置FeishuConfig.enabled=true, appId=""
+1. 设置节点参数sendFeishu=true，并将飞书appId置为空
 2. 构造Email对象：feishuTo="ou_user1"
 3. 调用 `FeishuMessageSender.send(email)`
 
@@ -1053,14 +1025,13 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 ### 3.4 SendEmailRefExecutionOperation 集成测试
 
-#### TC035：邮件发送后 - 飞书启用且feishuTo有值 - 执行飞书发送
+#### TC035：邮件发送后 - 节点选择发送飞书且feishuTo有值 - 执行飞书发送
 
 **来源**：代码变更分析 - SendEmailRefExecutionOperation.scala, execute()
 
 **测试类型**：集成测试
 
 **前置条件**：
-- wds.dss.appconn.feishu.enabled=true
 - Email的feishuTo="ou_user1"
 - 邮件发送成功
 - 飞书发送Mock成功
@@ -1082,18 +1053,18 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 ---
 
-#### TC036：邮件发送后 - 飞书未启用 - 不执行飞书发送
+#### TC036：邮件发送后 - 节点未选择发送飞书 - 不执行飞书发送
 
 **来源**：代码变更分析 - SendEmailRefExecutionOperation.scala, execute()
 
 **测试类型**：集成测试
 
 **前置条件**：
-- wds.dss.appconn.feishu.enabled=false
+- sendemail节点参数sendFeishu=false
 - Email的feishuTo="ou_user1"
 
 **测试步骤**：
-1. 设置enabled=false
+1. 设置节点参数sendFeishu=false
 2. Mock emailSender.send() 成功
 3. 构造requestRef，runtimeMap中设置feishuTo="ou_user1"
 4. 调用 `execute(requestRef)`
@@ -1105,7 +1076,7 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **优先级**：P0
 **测试类型**：集成测试
-**覆盖场景**：关键路径 - 飞书未启用
+**覆盖场景**：关键路径 - 节点未选择发送飞书
 
 ---
 
@@ -1116,11 +1087,10 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试类型**：集成测试
 
 **前置条件**：
-- wds.dss.appconn.feishu.enabled=true
 - Email的feishuTo=null或""
 
 **测试步骤**：
-1. 设置enabled=true
+1. 设置节点参数sendFeishu=true
 2. Mock emailSender.send() 成功
 3. 构造requestRef，runtimeMap中不设置feishuTo
 4. 调用 `execute(requestRef)`
@@ -1143,7 +1113,6 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试类型**：集成测试
 
 **前置条件**：
-- wds.dss.appconn.feishu.enabled=true
 - Email的feishuTo="ou_user1"
 - 邮件发送成功
 - 飞书发送失败
@@ -1174,7 +1143,7 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **前置条件**：
 - 邮件发送失败
-- 飞书已启用且feishuTo有值
+- 节点已选择发送飞书且feishuTo有值
 
 **测试步骤**：
 1. Mock emailSender.send() 抛出异常
@@ -1199,11 +1168,10 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试类型**：集成测试
 
 **前置条件**：
-- wds.dss.appconn.feishu.enabled=true
 - Email的feishuTo="   "（纯空格）
 
 **测试步骤**：
-1. 设置enabled=true
+1. 设置节点参数sendFeishu=true
 2. Mock emailSender.send() 成功
 3. 构造requestRef，runtimeMap中设置feishuTo="   "
 4. 调用 `execute(requestRef)`
@@ -1228,15 +1196,15 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试类型**：单元测试
 
 **前置条件**：
-- runtimeMap中feishuTo="ou_user1,ou_user2"
+- runtimeMap中feishuTo="ou_user1;ou_user2"
 
 **测试步骤**：
-1. 构造requestRef，runtimeMap中设置feishuTo="ou_user1,ou_user2"
+1. 构造requestRef，runtimeMap中设置feishuTo="ou_user1;ou_user2"
 2. 调用 `emailGenerator.generateEmail(requestRef)`
 3. 验证email.getFeishuTo()
 
 **预期结果**：
-- email.getFeishuTo() 返回 "ou_user1,ou_user2"
+- email.getFeishuTo() 返回 "ou_user1;ou_user2"
 
 **优先级**：P0
 **测试类型**：单元测试
@@ -1347,7 +1315,7 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **前置条件**：
 - DSS工作流含sendemail节点
-- 飞书配置正确（enabled=true, 有效appId/appSecret）
+- 节点参数sendFeishu=true，飞书连接配置有效appId/appSecret
 - 节点参数feishuTo配置了有效open_id
 - 附件为CSV格式
 
@@ -1495,18 +1463,17 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 ---
 
-#### TC052：端到端 - 飞书未启用，仅发邮件
+#### TC052：端到端 - 节点未选择发送飞书，仅发邮件
 
 **来源**：集成场景
 
 **测试类型**：功能测试
 
 **前置条件**：
-- wds.dss.appconn.feishu.enabled=false
-- sendemail节点配置了feishuTo
+- sendemail- sendemail节点配置了feishuTo
 
 **测试步骤**：
-1. 设置飞书enabled=false
+1. 设置节点sendFeishu=false
 2. 配置sendemail节点，设置feishuTo
 3. 执行工作流
 
@@ -1528,7 +1495,7 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试类型**：功能测试
 
 **前置条件**：
-- 飞书enabled=true
+- 节点sendFeishu=true
 - appId/appSecret配置错误或飞书API不可达
 - feishuTo有值
 
@@ -1574,7 +1541,7 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 ---
 
-#### TC055：配置项 - feishu.enabled设为true字符串
+#### TC055：节点参数 - sendFeishu设为true字符串
 
 **来源**：代码变更分析 - SendEmailAppConnConfiguration.scala
 
@@ -1584,11 +1551,11 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 - 配置值为字符串"true"
 
 **测试步骤**：
-1. 设置 `wds.dss.appconn.feishu.enabled=true`
-2. 调用 `FeishuConfig.isEnabled`
+1. 设置 `sendemail节点参数sendFeishu=true`
+2. 执行SendEmailRefExecutionOperation并读取runtimeMap中的sendFeishu
 
 **预期结果**：
-- isEnabled返回true（布尔值）
+- sendFeishu按true处理，满足feishuTo非空时执行飞书发送
 
 **优先级**：P1
 **测试类型**：单元测试
@@ -1647,7 +1614,7 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 | 验收标准 | 覆盖用例 | 状态 |
 |---------|---------|:----:|
 | 飞书发送是可选功能，由配置控制 | TC004, TC036, TC052 | OK |
-| 接收者通过feishuTo指定，多个逗号分隔 | TC022, TC023, TC041 | OK |
+| 接收者通过feishuTo指定，多个分号分隔 | TC022, TC023, TC041 | OK |
 | 发送内容：主题为文本消息+附件为文件消息 | TC018, TC046-TC051 | OK |
 | 飞书发送失败则节点标记失败 | TC038, TC053 | OK |
 | 附件格式全支持 | TC047-TC050 | OK |
@@ -1674,28 +1641,28 @@ public class FeishuConfigTest {
 
     @Test
     public void testValidate_EnabledWithValidConfig_ShouldNotThrow() {
-        // Given: enabled=true, appId and appSecret configured
+        // Given: node sendFeishu=true, appId and appSecret configured
         // When: FeishuConfig.validate() is called
         // Then: No exception thrown
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testValidate_EnabledWithEmptyAppId_ShouldThrow() {
-        // Given: enabled=true, appId=""
+        // Given: node sendFeishu=true, appId=""
         // When: FeishuConfig.validate() is called
         // Then: IllegalArgumentException thrown
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testValidate_EnabledWithEmptyAppSecret_ShouldThrow() {
-        // Given: enabled=true, appSecret=""
+        // Given: node sendFeishu=true, appSecret=""
         // When: FeishuConfig.validate() is called
         // Then: IllegalArgumentException thrown
     }
 
     @Test
     public void testValidate_Disabled_ShouldNotThrow() {
-        // Given: enabled=false
+        // Given: node sendFeishu=false
         // When: FeishuConfig.validate() is called
         // Then: No exception thrown
     }
@@ -1757,7 +1724,7 @@ public class FeishuMessageSenderTest {
     @Test
     public void testSend_MultipleReceivers_ShouldSendToAll() {
         // Given
-        when(email.getFeishuTo()).thenReturn("ou_user1,ou_user2,ou_user3");
+        when(email.getFeishuTo()).thenReturn("ou_user1;ou_user2;ou_user3");
         when(email.getSubject()).thenReturn("Test Subject");
         when(email.getAttachments()).thenReturn(new Attachment[]{attachment});
         when(attachment.getName()).thenReturn("report.csv");
@@ -1804,3 +1771,6 @@ public class FeishuMessageSenderTest {
     }
 }
 ```
+
+
+

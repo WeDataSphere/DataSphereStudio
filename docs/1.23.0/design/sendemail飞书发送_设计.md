@@ -11,7 +11,7 @@
 
 ## 一、设计概述
 
-本设计在DSS工作流sendemail节点现有邮件发送功能的基础上，新增飞书消息发送能力。采用"后置增强"模式，在邮件发送成功后，根据配置和参数决定是否执行飞书发送，对现有代码侵入最小。
+本设计在DSS工作流sendemail节点现有邮件发送功能的基础上，新增飞书消息发送能力。采用"后置增强"模式，在邮件发送成功后，根据节点参数和飞书接收者决定是否执行飞书发送，对现有代码侵入最小。
 
 ---
 
@@ -64,14 +64,15 @@ SendEmailRefExecutionOperation.execute(requestRef)
     +--> sendEmailAppConnHooks.preSend()
     +--> emailSender.send(email)                    <-- Step 1: 邮件发送
     |
-    +--> if (FeishuConfig.isEnabled
+    +--> 从runtimeMap读取sendFeishu
+    +--> if (sendFeishu == true
     |       && email.getFeishuTo != null
     |       && email.getFeishuTo.trim.nonEmpty)
     |       |
     |       +--> FeishuMessageSender.send(email)     <-- Step 2: 飞书发送
     |               |
     |               +--> FeishuConfig.validate()     <-- 配置校验
-    |               +--> 解析feishuTo（逗号分隔）
+    |               +--> 解析feishuTo（分号分隔）
     |               +--> FeishuClient.sendTextMessage()  (主题通知)
     |               +--> uploadAttachment() * N           (附件上传)
     |               |       +--> FeishuClient.uploadFile()
@@ -95,20 +96,20 @@ public interface Email {
     // ... 原有方法 ...
 
     /**
-     * 获取飞书接收者open_id列表（逗号分隔）
+     * 获取飞书接收者open_id列表（分号分隔）
      */
     String getFeishuTo();
 
     /**
      * 设置飞书接收者open_id列表
-     * @param feishuTo 逗号分隔的open_id字符串
+     * @param feishuTo 分号分隔的open_id字符串
      */
     void setFeishuTo(String feishuTo);
 }
 ```
 
 **设计决策**:
-- feishuTo与to/cc/bcc字段对齐，采用逗号分隔的字符串格式
+- feishuTo与to/cc/bcc字段对齐，采用分号分隔的字符串格式
 - 不使用独立的FeishuEmail子接口，避免接口膨胀
 - 默认值为null（AbstractEmail中），运行时由AbstractEmailGenerator从runtimeMap读取并设置为空字符串
 
@@ -132,25 +133,23 @@ class AbstractEmail extends Email {
 
 **文件**: `SendEmailAppConnConfiguration.scala`
 
-**新增配置项**:
+**新增系统连接配置项**:
 
 | 配置键 | 类型 | 默认值 | 说明 |
 |-------|------|-------|------|
-| wds.dss.appconn.feishu.enabled | Boolean | false | 飞书发送全局开关 |
 | wds.dss.appconn.feishu.app.id | String | "" | 飞书应用App ID |
 | wds.dss.appconn.feishu.app.secret | String | "" | 飞书应用App Secret |
 | wds.dss.appconn.feishu.api.base.url | String | https://open.feishu.cn/open-apis | 飞书API基础地址 |
 
 ```scala
-val FEISHU_ENABLED = CommonVars("wds.dss.appconn.feishu.enabled", false)
 val FEISHU_APP_ID = CommonVars("wds.dss.appconn.feishu.app.id", "")
 val FEISHU_APP_SECRET = CommonVars("wds.dss.appconn.feishu.app.secret", "")
 val FEISHU_API_BASE_URL = CommonVars("wds.dss.appconn.feishu.api.base.url", "https://open.feishu.cn/open-apis")
 ```
 
 **设计决策**:
-- 所有配置项通过CommonVars管理，与现有邮件配置风格一致
-- 默认关闭飞书功能，确保升级兼容性
+- 连接配置项通过CommonVars管理，与现有邮件配置风格一致
+- 是否发送飞书不放在配置文件中，由sendemail节点参数 `sendFeishu` 控制
 - 支持自定义api.base.url，便于代理部署场景
 
 ### 3.4 FeishuConfig配置校验
@@ -161,24 +160,22 @@ val FEISHU_API_BASE_URL = CommonVars("wds.dss.appconn.feishu.api.base.url", "htt
 
 ```scala
 object FeishuConfig extends Logging {
-  def isEnabled: Boolean = SendEmailAppConnConfiguration.FEISHU_ENABLED.getValue
   def getAppId: String = SendEmailAppConnConfiguration.FEISHU_APP_ID.getValue
   def getAppSecret: String = SendEmailAppConnConfiguration.FEISHU_APP_SECRET.getValue
   def getApiBaseUrl: String = SendEmailAppConnConfiguration.FEISHU_API_BASE_URL.getValue
 
   def validate(): Unit = {
-    if (isEnabled) {
-      if (getAppId.isEmpty)
-        throw new IllegalArgumentException("Feishu is enabled but app.id is not configured.")
-      if (getAppSecret.isEmpty)
-        throw new IllegalArgumentException("Feishu is enabled but app.secret is not configured.")
-    }
+    if (getAppId.isEmpty)
+      throw new IllegalArgumentException("Feishu app.id is not configured.")
+    if (getAppSecret.isEmpty)
+      throw new IllegalArgumentException("Feishu app.secret is not configured.")
   }
 }
 ```
 
 **校验逻辑**:
-- 仅在enabled=true时校验appId和appSecret
+- FeishuConfig只负责连接配置读取和校验，不负责判断节点是否发送飞书
+- 仅当节点sendFeishu=true且feishuTo非空、实际进入飞书发送流程时调用validate()
 - 校验失败抛出IllegalArgumentException（快速失败，不做静默降级）
 - 不校验apiBaseUrl（默认值可用，自定义地址由用户自行保证正确性）
 
@@ -274,7 +271,7 @@ send(email: Email): Unit
     |
     +--> 1. 校验feishuTo（null/空/纯空格 -> 跳过）
     +--> 2. FeishuConfig.validate()（配置校验）
-    +--> 3. 解析接收者: feishuTo.split(",").map(_.trim).filter(_.nonEmpty)
+    +--> 3. 解析接收者: feishuTo.split(";").map(_.trim).filter(_.nonEmpty)
     +--> 4. 发送主题文本消息
     |       for each receiver:
     |           FeishuClient.sendTextMessage(receiver, "open_id", "[DSS邮件通知] " + subject)
@@ -326,15 +323,21 @@ override def execute(requestRef): ExecutionResponseRef = {
   // Step 1: 发送邮件
   Utils.tryCatch {
     emailSender.send(email)
-  }(putErrorMsg("发送邮件失败！", _))
+  } { t =>
+    return putErrorMsg("发送邮件失败！", t)
+  }
 
   // Step 2: 发送到飞书（可选）
-  if (FeishuConfig.isEnabled && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) {
-    logger.info(s"Feishu sending is enabled and feishuTo is configured: ${email.getFeishuTo}")
+  val runtimeMap = requestRef.getExecutionRequestRefContext.getRuntimeMap
+  val sendFeishu = Option(runtimeMap.get("sendFeishu")).exists(_.toString.equalsIgnoreCase("true"))
+  if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) {
+    logger.info(s"Feishu sending is selected and feishuTo is configured: ${email.getFeishuTo}")
     Utils.tryCatch {
       FeishuMessageSender.send(email)
       logger.info("Feishu sending completed successfully.")
-    }(putErrorMsg("飞书发送失败！", _))
+    } { t =>
+      return putErrorMsg("飞书发送失败！", t)
+    }
   }
 
   new ExecutionResponseRefBuilder().success()
@@ -343,7 +346,7 @@ override def execute(requestRef): ExecutionResponseRef = {
 
 **关键设计决策**:
 - 飞书发送在邮件发送之后执行（邮件失败直接return，不走飞书）
-- 飞书发送条件：enabled=true AND feishuTo非null AND feishuTo.trim非空
+- 飞书发送条件：sendFeishu=true AND feishuTo非null AND feishuTo.trim非空
 - 飞书发送失败时，节点标记为失败（不静默忽略）
 - 使用Utils.tryCatch包装，保持与邮件发送一致的异常处理风格
 
@@ -402,13 +405,12 @@ email.setFeishuTo(feishuTo)
 
 | 字段 | 类型 | 默认值 | 说明 |
 |------|------|-------|------|
-| feishuTo | String | null（AbstractEmail中）/ ""（Generator设置后） | 飞书接收者open_id列表，逗号分隔 |
+| feishuTo | String | null（AbstractEmail中）/ ""（Generator设置后） | 飞书接收者open_id列表，分号分隔 |
 
 ### 5.2 配置数据模型
 
 | 配置键 | CommonVars变量 | 类型 | 默认值 |
 |-------|---------------|------|-------|
-| wds.dss.appconn.feishu.enabled | FEISHU_ENABLED | Boolean | false |
 | wds.dss.appconn.feishu.app.id | FEISHU_APP_ID | String | "" |
 | wds.dss.appconn.feishu.app.secret | FEISHU_APP_SECRET | String | "" |
 | wds.dss.appconn.feishu.api.base.url | FEISHU_API_BASE_URL | String | https://open.feishu.cn/open-apis |
@@ -443,8 +445,7 @@ email.setFeishuTo(feishuTo)
 在 `appconn.properties` 中添加以下配置：
 
 ```properties
-# 飞书发送功能（默认关闭，启用前需配置appId和appSecret）
-wds.dss.appconn.feishu.enabled=true
+# 飞书连接配置（是否发送飞书由sendemail节点参数sendFeishu控制）
 wds.dss.appconn.feishu.app.id=cli_xxxxxxxxxxxx
 wds.dss.appconn.feishu.app.secret=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # 自定义API地址（可选，默认为飞书官方地址）
@@ -453,10 +454,11 @@ wds.dss.appconn.feishu.app.secret=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ### 6.3 sendemail节点配置
 
-在工作流sendemail节点的参数中，新增feishuTo字段：
+在工作流sendemail节点的参数中，新增sendFeishu和feishuTo字段：
 
 ```
-feishuTo=ou_xxxxxxxxxxxxxxxx,ou_yyyyyyyyyyyyyyyy
+sendFeishu=true
+feishuTo=ou_xxxxxxxxxxxxxxxx;ou_yyyyyyyyyyyyyyyy
 ```
 
 ---
@@ -480,3 +482,5 @@ feishuTo=ou_xxxxxxxxxxxxxxxx,ou_yyyyyyyyyyyyyyyy
 | Token安全 | 内存缓存，不持久化到磁盘 |
 | 接收者验证 | 依赖飞书平台验证open_id有效性，无效ID返回错误 |
 | 网络安全 | 支持HTTPS（默认），支持自定义代理地址 |
+
+
