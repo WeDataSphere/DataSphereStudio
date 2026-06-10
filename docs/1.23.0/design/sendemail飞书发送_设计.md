@@ -1,4 +1,4 @@
-# sendemail节点飞书发送功能 设计文档
+﻿# sendemail节点飞书发送功能 设计文档
 
 | 属性 | 值 |
 |------|-----|
@@ -33,7 +33,7 @@
                        |             (配置校验)      (API客户端)
                        |                              /    |    \
                        |                             /     |     \
-                       |                    Token管理  文件上传  消息发送
+                       |                    签名认证  文件上传  模板消息发送
                        |
           Email接口（新增feishuTo字段）
                |
@@ -73,10 +73,9 @@ SendEmailRefExecutionOperation.execute(requestRef)
     |               |
     |               +--> FeishuConfig.validate()     <-- 配置校验
     |               +--> 解析feishuTo（分号分隔）
-    |               +--> FeishuClient.sendTextMessage()  (主题通知)
-    |               +--> uploadAttachment() * N           (附件上传)
+    |               +--> uploadImageAttachments()           (仅上传图片附件)
     |               |       +--> FeishuClient.uploadFile()
-    |               +--> FeishuClient.sendFileMessage() * N * M  (文件消息)
+    |               +--> FeishuClient.sendTemplateMessage() * N  (携带subject和图片key的飞书模板消息)
     |
     +--> return ExecutionResponseRef
 ```
@@ -96,13 +95,13 @@ public interface Email {
     // ... 原有方法 ...
 
     /**
-     * 获取飞书接收者open_id列表（分号分隔）
+     * 获取飞书接收者飞书接收人英文名列表（分号分隔）
      */
     String getFeishuTo();
 
     /**
-     * 设置飞书接收者open_id列表
-     * @param feishuTo 分号分隔的open_id字符串
+     * 设置飞书接收者飞书接收人英文名列表
+     * @param feishuTo 分号分隔的飞书接收人英文名字符串
      */
     void setFeishuTo(String feishuTo);
 }
@@ -138,13 +137,17 @@ class AbstractEmail extends Email {
 | 配置键 | 类型 | 默认值 | 说明 |
 |-------|------|-------|------|
 | wds.dss.appconn.feishu.app.id | String | "" | 飞书应用App ID |
-| wds.dss.appconn.feishu.app.secret | String | "" | 飞书应用App Secret |
-| wds.dss.appconn.feishu.api.base.url | String | https://open.feishu.cn/open-apis | 飞书API基础地址 |
+| wds.dss.appconn.feishu.app.token | String | "" | 飞书应用App Token，用于生成FS-Signature |
+| wds.dss.appconn.feishu.source | String | DSS | 请求来源，写入FS-Source |
+| wds.dss.appconn.feishu.template.code | String | "" | 飞书消息模板code，仅发送消息时传入 |
+| wds.dss.appconn.feishu.api.base.url | String |  | 飞书API基础地址 |
 
 ```scala
 val FEISHU_APP_ID = CommonVars("wds.dss.appconn.feishu.app.id", "")
-val FEISHU_APP_SECRET = CommonVars("wds.dss.appconn.feishu.app.secret", "")
-val FEISHU_API_BASE_URL = CommonVars("wds.dss.appconn.feishu.api.base.url", "https://open.feishu.cn/open-apis")
+val FEISHU_APP_TOKEN = CommonVars("wds.dss.appconn.feishu.app.token", "")
+val FEISHU_SOURCE = CommonVars("wds.dss.appconn.feishu.source", "DSS")
+val FEISHU_TEMPLATE_CODE = CommonVars("wds.dss.appconn.feishu.template.code", "")
+val FEISHU_API_BASE_URL = CommonVars("wds.dss.appconn.feishu.api.base.url", "")
 ```
 
 **设计决策**:
@@ -161,14 +164,18 @@ val FEISHU_API_BASE_URL = CommonVars("wds.dss.appconn.feishu.api.base.url", "htt
 ```scala
 object FeishuConfig extends Logging {
   def getAppId: String = SendEmailAppConnConfiguration.FEISHU_APP_ID.getValue
-  def getAppSecret: String = SendEmailAppConnConfiguration.FEISHU_APP_SECRET.getValue
+  def getAppToken: String = SendEmailAppConnConfiguration.FEISHU_APP_TOKEN.getValue
+  def getSource: String = SendEmailAppConnConfiguration.FEISHU_SOURCE.getValue
+  def getTemplateCode: String = SendEmailAppConnConfiguration.FEISHU_TEMPLATE_CODE.getValue
   def getApiBaseUrl: String = SendEmailAppConnConfiguration.FEISHU_API_BASE_URL.getValue
 
   def validate(): Unit = {
     if (getAppId.isEmpty)
       throw new IllegalArgumentException("Feishu app.id is not configured.")
-    if (getAppSecret.isEmpty)
-      throw new IllegalArgumentException("Feishu app.secret is not configured.")
+    if (getAppToken.isEmpty)
+      throw new IllegalArgumentException("Feishu app.token is not configured.")
+    if (getSource.isEmpty)
+      throw new IllegalArgumentException("Feishu source is not configured.")
   }
 }
 ```
@@ -177,7 +184,7 @@ object FeishuConfig extends Logging {
 - FeishuConfig只负责连接配置读取和校验，不负责判断节点是否发送飞书
 - 仅当节点sendFeishu=true且feishuTo非空、实际进入飞书发送流程时调用validate()
 - 校验失败抛出IllegalArgumentException（快速失败，不做静默降级）
-- 不校验apiBaseUrl（默认值可用，自定义地址由用户自行保证正确性）
+- 校验apiBaseUrl非空（地址由飞书统一接入网关提供）
 
 ### 3.5 FeishuClient飞书API客户端
 
@@ -185,58 +192,43 @@ object FeishuConfig extends Logging {
 
 **职责**: 封装飞书开放平台API调用
 
-#### 3.5.1 Tenant Token管理
+#### 3.5.1 飞书接口认证
 
-```
-getTenantAccessToken()
-    |
-    +--> 缓存未过期? --> 返回缓存token
-    |
-    +--> 缓存过期 --> refreshTenantToken()
-                          |
-                          +--> POST /auth/v3/tenant_access_token/internal
-                          |    Body: {"app_id":"xxx","app_secret":"xxx"}
-                          |
-                          +--> 成功 --> 缓存token，设置过期时间（expire - 5分钟）
-                          +--> 失败 --> 抛出EmailSendFailedException(80002)
-```
+所有请求飞书统一接入接口时均增加以下请求头：
 
-**缓存策略**:
-- 使用synchronized保证线程安全
-- 提前5分钟（TOKEN_REFRESH_MARGIN = 300000ms）刷新，避免token在使用中过期
-- 缓存字段: `tenantToken: String`, `tokenExpireTime: Long`
+| Header | 说明 |
+|--------|------|
+| FS-AppId | 配置项 `wds.dss.appconn.feishu.app.id` |
+| FS-Nonce | 5位随机数字字符串 |
+| FS-Timestamp | Unix秒级时间戳 |
+| FS-Signature | `sha256(sha256(AppId + Nonce + Timestamp) + appToken)`，UTF-8编码，十六进制大写 |
+| FS-Source | 配置项 `wds.dss.appconn.feishu.source` |
 
 #### 3.5.2 文件上传
 
 ```
-uploadFile(file: File, fileName: String): String
+uploadFile(file: File, fileName: String, fileType: String): String
     |
-    +--> POST /im/v1/files (multipart/form-data)
-    |    Header: Authorization: Bearer {token}
-    |    Fields: file_type=stream, file_name={fileName}, file={fileBytes}
+    +--> POST /feishu/external/access/file/upload (multipart/form-data)
+    |    Header: FS-AppId/FS-Nonce/FS-Timestamp/FS-Signature/FS-Source
+    |    Fields: fileType={fileType}, fileName={fileName}, file={fileBytes}
     |
-    +--> 成功 --> 返回 file_key
+    +--> 成功 --> 返回 data字段中的文件/图片key
     +--> 失败 --> 抛出EmailSendFailedException(80003)
 ```
+
+**fileType选择**:
+- 图片附件（`PngAttachment` 或 `image/*` media type）：使用 `message` 上传，返回key后放入消息模板参数
+- 普通附件不上传到飞书；飞书消息只携带邮件主题和图片上传后返回的key
 
 #### 3.5.3 消息发送
 
 ```
-sendTextMessage(receiveId, receiveIdType, text): Unit
+sendTemplateMessage(receiver, templateCode, paramsJson): Unit
     |
-    +--> POST /im/v1/messages?receive_id_type={receiveIdType}
-    |    Header: Authorization: Bearer {token}
-    |    Body: {"receive_id":"xxx","msg_type":"text","content":"{\"text\":\"xxx\"}"}
-    |
-    +--> 特殊字符转义: 双引号 -> \"，换行 -> \n
-    +--> 成功 --> 无返回值
-    +--> 失败 --> 抛出EmailSendFailedException(80004)
-
-sendFileMessage(receiveId, receiveIdType, fileKey): Unit
-    |
-    +--> POST /im/v1/messages?receive_id_type={receiveIdType}
-    |    Header: Authorization: Bearer {token}
-    |    Body: {"receive_id":"xxx","msg_type":"file","content":"{\"file_key\":\"xxx\"}"}
+    +--> POST /feishu/external/access/sendMessage
+    |    Header: FS-AppId/FS-Nonce/FS-Timestamp/FS-Signature/FS-Source
+    |    Body: {"receiver":"xxx","templateCode":"xxx","params":{...},"appId":"xxx"}
     |
     +--> 成功 --> 无返回值
     +--> 失败 --> 抛出EmailSendFailedException(80004)
@@ -272,17 +264,15 @@ send(email: Email): Unit
     +--> 1. 校验feishuTo（null/空/纯空格 -> 跳过）
     +--> 2. FeishuConfig.validate()（配置校验）
     +--> 3. 解析接收者: feishuTo.split(";").map(_.trim).filter(_.nonEmpty)
-    +--> 4. 发送主题文本消息
-    |       for each receiver:
-    |           FeishuClient.sendTextMessage(receiver, "open_id", "[DSS邮件通知] " + subject)
-    |           失败 --> EmailSendFailedException(80006)
+    +--> 4. 上传图片附件
+    |       imageKeys = uploadImageAttachments(attachments)
+    |       仅图片附件调用 FeishuClient.uploadFile(file, fileName, "message")
     |
-    +--> 5. 发送附件文件消息
-            for each attachment:
-                fileKey = uploadAttachment(attachment)
-                for each receiver:
-                    FeishuClient.sendFileMessage(receiver, "open_id", fileKey)
-                    失败 --> EmailSendFailedException(80008)
+    +--> 5. 发送飞书模板消息
+            params = {"content": "...", "subject": "...", "imgKeys": [...], "imgKey": {"img_key": firstKey}}
+            for each receiver:
+                FeishuClient.sendTemplateMessage(receiver, templateCode, params)
+                失败 --> EmailSendFailedException(80006)
 
 uploadAttachment(attachment: Attachment): String
     |
@@ -302,13 +292,13 @@ uploadAttachment(attachment: Attachment): String
 
 | 异常码 | 含义 | 触发场景 |
 |:------:|------|---------|
-| 80002 | 飞书Token获取失败 | appId/appSecret错误、网络不通 |
+| 80002 | （保留） | 旧Token获取失败场景保留 |
 | 80003 | 飞书文件上传失败 | 文件损坏、网络中断 |
-| 80004 | 飞书消息发送失败 | 无效open_id、接收者不存在 |
+| 80004 | 飞书消息发送失败 | 无效接收人英文名、模板code错误、认证失败 |
 | 80005 | 飞书HTTP响应无body | 服务端异常 |
-| 80006 | 飞书主题消息发送失败 | sendTextMessage异常 |
+| 80006 | 飞书主题消息发送失败 | sendTemplateMessage异常 |
 | 80007 | 飞书附件上传失败 | uploadAttachment异常 |
-| 80008 | 飞书文件消息发送失败 | sendFileMessage异常 |
+| 80008 | 飞书飞书消息发送失败 | sendTemplateMessage异常 |
 
 ### 3.7 SendEmailRefExecutionOperation集成
 
@@ -374,28 +364,20 @@ email.setFeishuTo(feishuTo)
 | 配置项 | 值/要求 |
 |-------|--------|
 | 应用类型 | 自建应用 |
-| 权限 - 消息 | `im:message:send_as_bot`（获取与发送单聊、群组消息） |
-| 权限 - 文件 | `im:resource`（上传文件和图片） |
-| 事件订阅 | 无需配置（非事件回调模式） |
-| 机器人 | 需启用机器人能力 |
+| 接入信息 | 需获取App ID、App Token、Source及消息模板code |
+| 模板 | 需在飞书侧配置飞书消息模板 |
+| 认证 | 所有请求均使用FS-*请求头签名认证 |
 
 ### 4.2 飞书API调用清单
 
-| API | 方法 | 用途 | 限流 |
-|-----|------|------|------|
-| /auth/v3/tenant_access_token/internal | POST | 获取Tenant Access Token | 无特殊限制 |
-| /im/v1/files | POST(multipart) | 上传文件 | 50次/分钟 |
-| /im/v1/messages | POST | 发送消息 | 100次/分钟 |
+| API | 方法 | 用途 |
+|-----|------|------|
+| /feishu/external/access/file/upload | POST(multipart) | 上传图片/文件，返回后续发送消息使用的key |
+| /feishu/external/access/sendMessage | POST | 按receiver、templateCode和params发送模板消息 |
 
 ### 4.3 接收者标识类型
 
-当前固定使用 `open_id` 类型。飞书支持的接收者标识类型：
-
-| 类型 | 说明 | 当前支持 |
-|------|------|:-------:|
-| open_id | 用户在应用内的唯一标识 | 支持 |
-| user_id | 用户在企业内的唯一标识 | 不支持 |
-| chat_id | 群聊ID | 不支持 |
+当前按飞书接入文档使用接收人英文名（对应HRM英文名）作为 `receiver`。
 
 ---
 
@@ -405,28 +387,30 @@ email.setFeishuTo(feishuTo)
 
 | 字段 | 类型 | 默认值 | 说明 |
 |------|------|-------|------|
-| feishuTo | String | null（AbstractEmail中）/ ""（Generator设置后） | 飞书接收者open_id列表，分号分隔 |
+| feishuTo | String | null（AbstractEmail中）/ ""（Generator设置后） | 飞书接收人英文名列表，分号分隔 |
 
 ### 5.2 配置数据模型
 
 | 配置键 | CommonVars变量 | 类型 | 默认值 |
 |-------|---------------|------|-------|
 | wds.dss.appconn.feishu.app.id | FEISHU_APP_ID | String | "" |
-| wds.dss.appconn.feishu.app.secret | FEISHU_APP_SECRET | String | "" |
-| wds.dss.appconn.feishu.api.base.url | FEISHU_API_BASE_URL | String | https://open.feishu.cn/open-apis |
+| wds.dss.appconn.feishu.app.token | FEISHU_APP_TOKEN | String | "" |
+| wds.dss.appconn.feishu.source | FEISHU_SOURCE | String | DSS |
+| wds.dss.appconn.feishu.template.code | FEISHU_TEMPLATE_CODE | String | "" |
+| wds.dss.appconn.feishu.api.base.url | FEISHU_API_BASE_URL | String |  |
 
 ### 5.3 异常码分配
 
 | 异常码范围 | 用途 |
 |-----------|------|
 | 80001 | （保留） |
-| 80002 | 飞书Token获取失败 |
+| 80002 | （保留） |
 | 80003 | 飞书文件上传失败 |
 | 80004 | 飞书消息发送失败 |
 | 80005 | 飞书HTTP响应异常 |
 | 80006 | 飞书主题消息发送失败 |
 | 80007 | 飞书附件上传失败 |
-| 80008 | 飞书文件消息发送失败 |
+| 80008 | 飞书飞书消息发送失败 |
 
 ---
 
@@ -434,11 +418,9 @@ email.setFeishuTo(feishuTo)
 
 ### 6.1 飞书应用创建步骤
 
-1. 登录飞书开放平台（https://open.feishu.cn）
-2. 创建自建应用，获取App ID和App Secret
-3. 开通权限：`im:message:send_as_bot`、`im:resource`
-4. 启用机器人能力
-5. 发布应用
+1. 获取飞书统一接入接口的App ID、App Token和Source
+2. 在飞书侧配置飞书消息模板，获取templateCode
+3. 确认DSS服务器可访问飞书统一接入接口
 
 ### 6.2 DSS配置步骤
 
@@ -447,9 +429,11 @@ email.setFeishuTo(feishuTo)
 ```properties
 # 飞书连接配置（是否发送飞书由sendemail节点参数sendFeishu控制）
 wds.dss.appconn.feishu.app.id=cli_xxxxxxxxxxxx
-wds.dss.appconn.feishu.app.secret=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# 自定义API地址（可选，默认为飞书官方地址）
-# wds.dss.appconn.feishu.api.base.url=https://open.feishu.cn/open-apis
+wds.dss.appconn.feishu.app.token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+wds.dss.appconn.feishu.source=DSS
+wds.dss.appconn.feishu.template.code=dss_email_message
+# 飞书统一接入接口基础地址
+# wds.dss.appconn.feishu.api.base.url=
 ```
 
 ### 6.3 sendemail节点配置
@@ -458,7 +442,7 @@ wds.dss.appconn.feishu.app.secret=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ```
 sendFeishu=true
-feishuTo=ou_xxxxxxxxxxxxxxxx;ou_yyyyyyyyyyyyyyyy
+feishuTo=zhangsan;lisi
 ```
 
 ---
@@ -467,7 +451,7 @@ feishuTo=ou_xxxxxxxxxxxxxxxx;ou_yyyyyyyyyyyyyyyy
 
 | 场景 | 性能影响 | 优化措施 |
 |------|---------|---------|
-| Token缓存 | 首次获取约200ms，后续缓存命中0ms | 缓存+提前5分钟刷新 |
+| 签名认证 | 每次请求生成nonce、timestamp和signature | 算法轻量，无需缓存Token |
 | 文件上传 | 与附件大小成正比 | 无特殊优化，使用流式上传 |
 | 多接收者 | 消息数 = 接收者数 * (1 + 附件数) | 逐个发送，无批量API |
 | 多附件 | 附件数 * (上传 + 接收者数 * 发送) | File直接上传模式避免Base64编解码 |
@@ -478,9 +462,8 @@ feishuTo=ou_xxxxxxxxxxxxxxxx;ou_yyyyyyyyyyyyyyyy
 
 | 安全项 | 措施 |
 |-------|------|
-| App Secret存储 | 配置文件明文存储，与邮件密码同等保护级别，需限制配置文件访问权限 |
-| Token安全 | 内存缓存，不持久化到磁盘 |
-| 接收者验证 | 依赖飞书平台验证open_id有效性，无效ID返回错误 |
+| App Token存储 | 配置文件明文存储，与邮件密码同等保护级别，需限制配置文件访问权限 |
+| 认证安全 | appToken仅参与签名，不写入请求体 |
+| 接收者验证 | 依赖飞书平台验证接收人英文名有效性，无效接收人返回错误 |
 | 网络安全 | 支持HTTPS（默认），支持自定义代理地址 |
-
 

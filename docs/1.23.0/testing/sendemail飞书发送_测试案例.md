@@ -1,4 +1,4 @@
-# sendemail节点飞书发送功能 测试案例
+﻿# sendemail节点飞书发送功能 测试案例
 
 ## 1. 概述
 
@@ -30,7 +30,7 @@
 
 **测试用例生成策略**：
 - 侧重接口测试、业务逻辑测试、异常场景测试
-- 辅助性能测试（Token缓存、文件上传）
+- 辅助性能测试（签名认证、文件上传）
 
 ### 1.4 项目测试框架摘要
 
@@ -51,11 +51,11 @@ Mock框架: Mockito（Spring Boot Test集成）
 |---------|:--------:|:-------:|:-------:|
 | Email.java | MODIFIED | 2 (getFeishuTo/setFeishuTo) | 0 |
 | AbstractEmail.scala | MODIFIED | 2 (getFeishuTo/setFeishuTo) | 0 |
-| SendEmailAppConnConfiguration.scala | MODIFIED | 3 (FEISHU_APP_ID/FEISHU_APP_SECRET/FEISHU_API_BASE_URL) | 0 |
+| SendEmailAppConnConfiguration.scala | MODIFIED | 3 (FEISHU_APP_ID/FEISHU_APP_TOKEN/FEISHU_API_BASE_URL) | 0 |
 | AbstractEmailGenerator.scala | MODIFIED | 0 | 1 (generateEmailInfo) |
 | SendEmailRefExecutionOperation.scala | MODIFIED | 0 | 1 (execute) |
-| FeishuConfig.scala | NEW | 4 (getAppId/getAppSecret/getApiBaseUrl/validate) | 0 |
-| FeishuClient.scala | NEW | 6 (getTenantAccessToken/refreshTenantToken/uploadFile/sendFileMessage/sendTextMessage等) | 0 |
+| FeishuConfig.scala | NEW | 4 (getAppId/getappToken/getApiBaseUrl/validate) | 0 |
+| FeishuClient.scala | NEW | 6 (sendTemplateMessage/addAuthHeaders/uploadFile/sendTemplateMessage/sendTemplateMessage等) | 0 |
 | FeishuMessageSender.scala | NEW | 2 (send/uploadAttachment) | 0 |
 
 ### 2.2 新增/修改方法详情
@@ -65,19 +65,19 @@ Mock框架: Mockito（Spring Boot Test集成）
 | 方法 | 签名 | 说明 |
 |------|------|------|
 | getAppId | `def getAppId: String` | 读取App ID |
-| getAppSecret | `def getAppSecret: String` | 读取App Secret |
+| getappToken | `def getappToken: String` | 读取App Token |
 | getApiBaseUrl | `def getApiBaseUrl: String` | 读取API基础URL |
-| validate | `def validate(): Unit` | 校验连接配置完整性，appId/appSecret不能为空 |
+| validate | `def validate(): Unit` | 校验连接配置完整性，appId/appToken不能为空 |
 
 #### FeishuClient.scala
 
 | 方法 | 签名 | 异常 |
 |------|------|------|
-| getTenantAccessToken | `def getTenantAccessToken(): String` | EmailSendFailedException(80002) |
-| refreshTenantToken | `private def refreshTenantToken(): Unit` | EmailSendFailedException(80002) |
-| uploadFile | `def uploadFile(file: File, fileName: String): String` | EmailSendFailedException(80003) |
-| sendFileMessage | `def sendFileMessage(receiveId: String, receiveIdType: String, fileKey: String): Unit` | EmailSendFailedException(80004) |
-| sendTextMessage | `def sendTextMessage(receiveId: String, receiveIdType: String, text: String): Unit` | EmailSendFailedException(80004) |
+| sendTemplateMessage | `private def addAuthHeaders(connection: HttpURLConnection): Unit` | EmailSendFailedException(80002) |
+| addAuthHeaders | `private def addAuthHeaders(): Unit` | EmailSendFailedException(80002) |
+| uploadFile | `def uploadFile(file: File, fileName: String, fileType: String): String` | EmailSendFailedException(80003) |
+| sendTemplateMessage | `def sendTemplateMessage(receiver: String, templateCode: String, paramsJson: String): Unit` | EmailSendFailedException(80004) |
+| sendTemplateMessage | `def sendTemplateMessage(receiver: String, templateCode: String, paramsJson: String): Unit` | EmailSendFailedException(80004) |
 | readResponse | `private def readResponse(connection: HttpURLConnection): String` | EmailSendFailedException(80005) |
 
 #### FeishuMessageSender.scala
@@ -112,7 +112,7 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 | 路径1 | 节点未选择发送飞书 | sendFeishu=false | 跳过飞书发送，仅发邮件 |
 | 路径2 | 节点已选择发送飞书，feishuTo为空 | sendFeishu=true, feishuTo=null/空 | 跳过飞书发送，仅发邮件 |
 | 路径3 | 节点已选择发送飞书，feishuTo有值，无附件 | sendFeishu=true, feishuTo非空, attachments为空 | 仅发送文本主题消息 |
-| 路径4 | 节点已选择发送飞书，feishuTo有值，有附件 | sendFeishu=true, feishuTo非空, attachments非空 | 发送文本+文件消息 |
+| 路径4 | 节点已选择发送飞书，feishuTo有值，有附件 | sendFeishu=true, feishuTo非空, attachments非空 | 发送文本+飞书消息 |
 | 路径5 | 飞书发送失败 | Token获取失败/上传失败/发送失败 | 节点标记为失败 |
 | 路径6 | 邮件发送失败 | 邮件发送异常 | 不执行飞书发送 |
 
@@ -122,27 +122,27 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 |------|-------|-------|
 | feishuTo | 空字符串""、仅空格"   "、单接收者、多接收者(分号分隔)、含空格的接收者"ou_xxx; ou_yyy" | null |
 | appId | 空字符串"" | - |
-| appSecret | 空字符串"" | - |
-| apiBaseUrl | 默认值"https://open.feishu.cn/open-apis"、自定义URL | - |
+| appToken | 空字符串"" | - |
+| apiBaseUrl | 默认值""、自定义URL | - |
 | subject | null、空字符串、含特殊字符(引号/换行)、超长主题 | - |
 | attachments | null、空数组、单附件、多附件 | - |
 | attachment.getFile | null、文件不存在、文件存在 | - |
 | attachment.getBase64Str | null、非法base64、合法base64 | - |
-| tenantToken | 未缓存(首次)、已缓存未过期、已缓存即将过期(5分钟内)、已缓存已过期 | - |
+| fsSignature | 未缓存(首次)、已缓存未过期、已缓存即将过期(5分钟内)、已缓存已过期 | - |
 | HTTP响应码 | 200-299(成功)、300+(失败)、无响应体 | - |
 
 #### 异常场景分析
 
 | 异常码 | 触发条件 | 预期行为 |
 |-------|---------|---------|
-| 80002 | 获取Tenant Token失败(appId/appSecret错误、网络不通) | 抛出EmailSendFailedException |
+| 80002 | 获取FS签名认证失败(appId/appToken错误、网络不通) | 抛出EmailSendFailedException |
 | 80003 | 上传文件失败(文件损坏、网络中断、Token过期) | 抛出EmailSendFailedException |
-| 80004 | 发送消息失败(无效open_id、接收者不存在) | 抛出EmailSendFailedException |
+| 80004 | 发送消息失败(无效飞书接收人英文名、接收者不存在) | 抛出EmailSendFailedException |
 | 80005 | HTTP响应无body(服务端异常) | 抛出EmailSendFailedException |
 | 80006 | 发送主题文本消息到飞书用户失败 | 抛出EmailSendFailedException |
 | 80007 | 上传附件到飞书失败 | 抛出EmailSendFailedException |
-| 80008 | 向用户发送附件文件消息失败 | 抛出EmailSendFailedException |
-| IllegalArgumentException | 节点选择发送飞书但appId/appSecret为空 | 抛出IllegalArgumentException |
+| 80008 | 向用户发送附件飞书消息失败 | 抛出EmailSendFailedException |
+| IllegalArgumentException | 节点选择发送飞书但appId/appToken为空 | 抛出IllegalArgumentException |
 
 ---
 
@@ -158,8 +158,8 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 
 **前置条件**：
 - wds.dss.appconn.feishu.app.id=cli_test_app_id
-- wds.dss.appconn.feishu.app.secret=test_app_secret
-- wds.dss.appconn.feishu.api.base.url=https://open.feishu.cn/open-apis
+- wds.dss.appconn.feishu.app.token=test_app_secret
+- wds.dss.appconn.feishu.api.base.url=
 
 **测试步骤**：
 1. 设置所有飞书配置项为有效值
@@ -183,7 +183,7 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 
 **前置条件**：
 - wds.dss.appconn.feishu.app.id="" (空)
-- wds.dss.appconn.feishu.app.secret=test_secret
+- wds.dss.appconn.feishu.app.token=test_secret
 
 **测试步骤**：
 1. 设置appId为空
@@ -199,7 +199,7 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 
 ---
 
-#### TC003：appSecret为空 - 校验失败
+#### TC003：appToken为空 - 校验失败
 
 **来源**：代码变更分析 - FeishuConfig.scala, validate()方法
 
@@ -207,15 +207,15 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 
 **前置条件**：
 - wds.dss.appconn.feishu.app.id=cli_test_app_id
-- wds.dss.appconn.feishu.app.secret="" (空)
+- wds.dss.appconn.feishu.app.token="" (空)
 
 **测试步骤**：
-1. 设置appSecret为空
+1. 设置appToken为空
 2. 调用 `FeishuConfig.validate()`
 
 **预期结果**：
 - 抛出 `IllegalArgumentException`
-- 异常消息包含"app.secret is not configured"
+- 异常消息包含"app.token is not configured"
 
 **优先级**：P0
 **测试类型**：单元测试
@@ -238,8 +238,8 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 
 **预期结果**：
 - FEISHU_APP_ID = "" (空字符串)
-- FEISHU_APP_SECRET = "" (空字符串)
-- FEISHU_API_BASE_URL = "https://open.feishu.cn/open-apis"
+- FEISHU_APP_TOKEN = "" (空字符串)
+- FEISHU_API_BASE_URL = ""
 
 **优先级**：P1
 **测试类型**：单元测试
@@ -249,29 +249,29 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 
 ### 3.2 FeishuClient 飞书API客户端测试
 
-#### TC006：获取Tenant Token - 正常流程
+#### TC006：获取FS签名认证 - 正常流程
 
-**来源**：代码变更分析 - FeishuClient.scala, getTenantAccessToken()/refreshTenantToken()
+**来源**：代码变更分析 - FeishuClient.scala, sendTemplateMessage()/addAuthHeaders()
 
 **测试类型**：单元测试
 
 **前置条件**：
-- FeishuConfig配置正确（appId/appSecret有效）
+- FeishuConfig配置正确（appId/appToken有效）
 - 飞书API可访问
 
 **测试步骤**：
-1. Mock HTTP返回 `{"code":0,"msg":"ok","tenant_access_token":"test_token","expire":7200}`
-2. 首次调用 `FeishuClient.getTenantAccessToken()`
+1. Mock HTTP返回 `{"code":0,"msg":"ok","FS-Signature":"test_token","expire":7200}`
+2. 首次调用 `FeishuClient.sendTemplateMessage()`
 3. 验证返回值为"test_token"
 
 **预期结果**：
-- 返回有效的tenant_access_token
-- 发送POST请求到 `/auth/v3/tenant_access_token/internal`
-- tokenExpireTime被正确设置
+- 返回有效的FS-Signature
+- 发送POST请求到 `/feishu/external/access/sendMessage`
+- fsTimestamp被正确设置
 
 **Mock配置**：
 ```java
-when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_access_token\":\"test_token\",\"expire\":7200}");
+when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"FS-Signature\":\"test_token\",\"expire\":7200}");
 ```
 
 **优先级**：P0
@@ -280,51 +280,51 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 ---
 
-#### TC007：获取Tenant Token - 缓存命中（未过期）
+#### TC007：获取FS签名认证 - 缓存命中（未过期）
 
-**来源**：代码变更分析 - FeishuClient.scala, getTenantAccessToken()
+**来源**：代码变更分析 - FeishuClient.scala, sendTemplateMessage()
 
 **测试类型**：单元测试
 
 **前置条件**：
 - 已成功获取过Token
-- 当前时间 < tokenExpireTime
+- 当前时间 < fsTimestamp
 
 **测试步骤**：
-1. 首次调用 `getTenantAccessToken()` 获取Token
-2. 立即再次调用 `getTenantAccessToken()`
+1. 首次调用 `sendTemplateMessage()` 获取Token
+2. 立即再次调用 `sendTemplateMessage()`
 3. 验证第二次调用未发起HTTP请求
 
 **预期结果**：
 - 返回缓存的Token
-- 不发起新的HTTP请求（refreshTenantToken不被调用）
+- 不发起新的HTTP请求（addAuthHeaders不被调用）
 
 **优先级**：P1
 **测试类型**：单元测试
-**覆盖场景**：关键路径 - Token缓存
+**覆盖场景**：关键路径 - 签名认证
 
 ---
 
-#### TC008：获取Tenant Token - 缓存过期自动刷新
+#### TC008：获取FS签名认证 - 缓存过期自动刷新
 
-**来源**：代码变更分析 - FeishuClient.scala, getTenantAccessToken()
+**来源**：代码变更分析 - FeishuClient.scala, sendTemplateMessage()
 
 **测试类型**：单元测试
 
 **前置条件**：
 - 已成功获取过Token
-- 当前时间 > tokenExpireTime（模拟过期）
+- 当前时间 > fsTimestamp（模拟过期）
 
 **测试步骤**：
-1. 首次调用 `getTenantAccessToken()` 获取Token
-2. 修改系统时间或tokenExpireTime使其过期
-3. 再次调用 `getTenantAccessToken()`
+1. 首次调用 `sendTemplateMessage()` 获取Token
+2. 修改系统时间或fsTimestamp使其过期
+3. 再次调用 `sendTemplateMessage()`
 4. 验证发起了新的HTTP请求刷新Token
 
 **预期结果**：
 - 返回新的Token
-- refreshTenantToken被调用
-- 新的tokenExpireTime被设置
+- addAuthHeaders被调用
+- 新的fsTimestamp被设置
 
 **优先级**：P1
 **测试类型**：单元测试
@@ -332,23 +332,23 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 ---
 
-#### TC009：获取Tenant Token - appId/appSecret错误
+#### TC009：获取FS签名认证 - appId/appToken错误
 
-**来源**：代码变更分析 - FeishuClient.scala, refreshTenantToken()
+**来源**：代码变更分析 - FeishuClient.scala, addAuthHeaders()
 
 **测试类型**：单元测试
 
 **前置条件**：
-- FeishuConfig配置了无效的appId/appSecret
+- FeishuConfig配置了无效的appId/appToken
 
 **测试步骤**：
 1. Mock HTTP返回 `{"code":40014,"msg":"invalid app_id"}`
-2. 调用 `FeishuClient.getTenantAccessToken()`
+2. 调用 `FeishuClient.sendTemplateMessage()`
 
 **预期结果**：
 - 抛出 `EmailSendFailedException`
 - 错误码为80002
-- 异常消息包含"Failed to get Feishu tenant token"
+- 异常消息包含"Failed to get Feishu FS签名认证"
 - 异常消息包含"code=40014"
 
 **优先级**：P0
@@ -357,9 +357,9 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 ---
 
-#### TC010：获取Tenant Token - 网络不可达
+#### TC010：获取FS签名认证 - 网络不可达
 
-**来源**：代码变更分析 - FeishuClient.scala, refreshTenantToken()
+**来源**：代码变更分析 - FeishuClient.scala, addAuthHeaders()
 
 **测试类型**：单元测试
 
@@ -368,7 +368,7 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **测试步骤**：
 1. Mock HTTP连接抛出ConnectException
-2. 调用 `FeishuClient.getTenantAccessToken()`
+2. 调用 `FeishuClient.sendTemplateMessage()`
 
 **预期结果**：
 - 抛出异常（IOException或EmailSendFailedException）
@@ -387,18 +387,18 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试类型**：单元测试
 
 **前置条件**：
-- 已获取有效的Tenant Token
+- 已获取有效的FS签名认证
 - 文件存在且可读
 
 **测试步骤**：
 1. 准备一个测试文件（如test_report.csv）
-2. Mock HTTP返回 `{"code":0,"msg":"ok","data":{"file_key":"file_abc123"}}`
+2. Mock HTTP返回 `{"code":0,"msg":"ok","data":{"file key":"file_abc123"}}`
 3. 调用 `FeishuClient.uploadFile(testFile, "test_report.csv")`
 
 **预期结果**：
-- 返回file_key = "file_abc123"
+- 返回图片key = "file_abc123"
 - 请求Content-Type为multipart/form-data
-- 包含file_type=stream、file_name、file三个表单字段
+- 包含fileType=message、fileName、file三个表单字段
 - 请求头包含Authorization: Bearer {token}
 
 **测试数据**：
@@ -418,7 +418,7 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试类型**：单元测试
 
 **前置条件**：
-- 已获取有效的Tenant Token
+- 已获取有效的FS签名认证
 - 文件存在
 
 **测试步骤**：
@@ -437,57 +437,57 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 ---
 
-#### TC013：发送文件消息 - 正常流程
+#### TC013：发送飞书消息 - 正常流程
 
-**来源**：代码变更分析 - FeishuClient.scala, sendFileMessage()
+**来源**：代码变更分析 - FeishuClient.scala, sendTemplateMessage()
 
 **测试类型**：单元测试
 
 **前置条件**：
-- 已获取有效的Tenant Token
-- 已上传文件获得file_key
+- 已获取有效的FS签名认证
+- 已上传文件获得file key
 
 **测试步骤**：
 1. Mock HTTP返回 `{"code":0,"msg":"ok"}`
-2. 调用 `FeishuClient.sendFileMessage("ou_test123", "open_id", "file_abc123")`
+2. 调用 `FeishuClient.sendTemplateMessage("ou_test123", "飞书接收人英文名", "file_abc123")`
 
 **预期结果**：
 - 不抛出异常
-- 请求URL包含 `?receive_id_type=open_id`
-- 请求体包含receive_id、msg_type="file"、file_key
+- 请求URL包含 `?receiver为飞书接收人英文名`
+- 请求体包含receiver、templateCode、params
 
 **测试数据**：
 - receiveId: "ou_test123"
-- receiveIdType: "open_id"
-- fileKey: "file_abc123"
+- receiveIdType: "飞书接收人英文名"
+- imageKey: "file_abc123"
 
 **优先级**：P0
 **测试类型**：单元测试
-**覆盖场景**：关键路径 - 文件消息发送
+**覆盖场景**：关键路径 - 飞书消息发送
 
 ---
 
 #### TC014：发送文本消息 - 正常流程
 
-**来源**：代码变更分析 - FeishuClient.scala, sendTextMessage()
+**来源**：代码变更分析 - FeishuClient.scala, sendTemplateMessage()
 
 **测试类型**：单元测试
 
 **前置条件**：
-- 已获取有效的Tenant Token
+- 已获取有效的FS签名认证
 
 **测试步骤**：
 1. Mock HTTP返回 `{"code":0,"msg":"ok"}`
-2. 调用 `FeishuClient.sendTextMessage("ou_test123", "open_id", "[DSS邮件通知] 测试主题")`
+2. 调用 `FeishuClient.sendTemplateMessage("ou_test123", "飞书接收人英文名", "[DSS邮件通知] 测试主题")`
 
 **预期结果**：
 - 不抛出异常
-- 请求体msg_type为"text"
+- 请求体templateCode为"text"
 - content中text字段包含主题文本
 
 **测试数据**：
 - receiveId: "ou_test123"
-- receiveIdType: "open_id"
+- receiveIdType: "飞书接收人英文名"
 - text: "[DSS邮件通知] 测试主题"
 
 **优先级**：P0
@@ -498,16 +498,16 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 #### TC015：发送文本消息 - 主题含特殊字符（双引号、换行）
 
-**来源**：代码变更分析 - FeishuClient.scala, sendTextMessage()
+**来源**：代码变更分析 - FeishuClient.scala, sendTemplateMessage()
 
 **测试类型**：单元测试
 
 **前置条件**：
-- 已获取有效的Tenant Token
+- 已获取有效的FS签名认证
 
 **测试步骤**：
 1. Mock HTTP返回 `{"code":0,"msg":"ok"}`
-2. 调用 `FeishuClient.sendTextMessage("ou_test123", "open_id", "报表\"季度\"\n第二行")`
+2. 调用 `FeishuClient.sendTemplateMessage("ou_test123", "飞书接收人英文名", "报表\"季度\"\n第二行")`
 
 **预期结果**：
 - 不抛出异常
@@ -524,19 +524,19 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 ---
 
-#### TC016：发送消息 - 接收者不存在（无效open_id）
+#### TC016：发送消息 - 接收者不存在（无效飞书接收人英文名）
 
-**来源**：代码变更分析 - FeishuClient.scala, sendFileMessage()/sendTextMessage()
+**来源**：代码变更分析 - FeishuClient.scala, sendTemplateMessage()/sendTemplateMessage()
 
 **测试类型**：单元测试
 
 **前置条件**：
-- 已获取有效的Tenant Token
-- open_id无效
+- 已获取有效的FS签名认证
+- 飞书接收人英文名无效
 
 **测试步骤**：
-1. Mock HTTP返回 `{"code":230002,"msg":"receive_id is invalid"}`
-2. 调用 `FeishuClient.sendTextMessage("ou_invalid_id", "open_id", "test")`
+1. Mock HTTP返回 `{"code":230002,"msg":"receiver is invalid"}`
+2. 调用 `FeishuClient.sendTemplateMessage("ou_invalid_id", "飞书接收人英文名", "test")`
 
 **预期结果**：
 - 抛出 `EmailSendFailedException`
@@ -587,23 +587,23 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 - Email对象含subject、2个附件、1个feishuTo接收者
 
 **测试步骤**：
-1. 构造Email对象：subject="测试报表", feishuTo="ou_user1", attachments含2个附件
-2. Mock FeishuClient.sendTextMessage() 成功
-3. Mock FeishuClient.uploadFile() 返回file_key
-4. Mock FeishuClient.sendFileMessage() 成功
+1. 构造Email对象：subject="测试报表", feishuTo="zhangsan", attachments含2个附件
+2. Mock FeishuClient.sendTemplateMessage() 成功
+3. Mock FeishuClient.uploadFile() 返回图片key
+4. Mock FeishuClient.sendTemplateMessage() 成功
 5. 调用 `FeishuMessageSender.send(email)`
 
 **预期结果**：
-- sendTextMessage被调用1次（发送主题）
+- sendTemplateMessage被调用1次（发送主题）
 - uploadFile被调用2次（上传2个附件）
-- sendFileMessage被调用2次（发送2个文件消息）
+- sendTemplateMessage被调用2次（发送2个飞书消息）
 - 不抛出异常
 
 **测试数据**：
 ```json
 {
   "subject": "测试报表",
-  "feishuTo": "ou_user1",
+  "feishuTo": "zhangsan",
   "attachments": [
     {"name": "report.csv", "file": "/tmp/report.csv"},
     {"name": "chart.png", "file": "/tmp/chart.png"}
@@ -695,23 +695,23 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试类型**：单元测试
 
 **前置条件**：
-- Email对象feishuTo为"ou_user1;ou_user2;ou_user3"
+- Email对象feishuTo为"zhangsan;lisi;wangwu"
 
 **测试步骤**：
-1. 构造Email对象：feishuTo="ou_user1;ou_user2;ou_user3"，含1个附件
+1. 构造Email对象：feishuTo="zhangsan;lisi;wangwu"，含1个附件
 2. Mock FeishuClient所有方法成功
 3. 调用 `FeishuMessageSender.send(email)`
 
 **预期结果**：
-- sendTextMessage被调用3次（每个接收者1次）
+- sendTemplateMessage被调用3次（每个接收者1次）
 - uploadFile被调用1次（上传附件）
-- sendFileMessage被调用3次（每个接收者1次文件消息）
+- sendTemplateMessage被调用3次（每个接收者1次飞书消息）
 - 总计7次飞书API调用
 
 **测试数据**：
 ```json
 {
-  "feishuTo": "ou_user1;ou_user2;ou_user3",
+  "feishuTo": "zhangsan;lisi;wangwu",
   "attachments": [{"name": "report.csv"}]
 }
 ```
@@ -729,14 +729,14 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试类型**：单元测试
 
 **前置条件**：
-- Email对象feishuTo为"  ou_user1  ;  ou_user2  "
+- Email对象feishuTo为"  zhangsan  ;  lisi  "
 
 **测试步骤**：
-1. 构造Email对象：feishuTo="  ou_user1  ;  ou_user2  "
+1. 构造Email对象：feishuTo="  zhangsan  ;  lisi  "
 2. 调用 `FeishuMessageSender.send(email)`
 
 **预期结果**：
-- receivers为["ou_user1", "ou_user2"]（空格被trim）
+- receivers为["zhangsan", "lisi"]（空格被trim）
 - 每个接收者收到消息
 
 **优先级**：P1
@@ -755,8 +755,8 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 - Email对象subject为null
 
 **测试步骤**：
-1. 构造Email对象：subject=null, feishuTo="ou_user1"
-2. Mock FeishuClient.sendTextMessage()
+1. 构造Email对象：subject=null, feishuTo="zhangsan"
+2. Mock FeishuClient.sendTemplateMessage()
 3. 调用 `FeishuMessageSender.send(email)`
 
 **预期结果**：
@@ -779,13 +779,13 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 - Email对象attachments为null
 
 **测试步骤**：
-1. 构造Email对象：attachments=null, feishuTo="ou_user1"
-2. Mock FeishuClient.sendTextMessage()
+1. 构造Email对象：attachments=null, feishuTo="zhangsan"
+2. Mock FeishuClient.sendTemplateMessage()
 3. 调用 `FeishuMessageSender.send(email)`
 
 **预期结果**：
 - 仅发送文本主题消息
-- 不调用uploadFile和sendFileMessage
+- 不调用uploadFile和sendTemplateMessage
 - 不抛出异常
 
 **优先级**：P1
@@ -804,12 +804,12 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 - Email对象attachments为空数组
 
 **测试步骤**：
-1. 构造Email对象：attachments=new Array[Attachment](0), feishuTo="ou_user1"
+1. 构造Email对象：attachments=new Array[Attachment](0), feishuTo="zhangsan"
 2. 调用 `FeishuMessageSender.send(email)`
 
 **预期结果**：
 - 仅发送文本主题消息
-- 不调用uploadFile和sendFileMessage
+- 不调用uploadFile和sendTemplateMessage
 
 **优先级**：P1
 **测试类型**：单元测试
@@ -824,19 +824,19 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试类型**：单元测试
 
 **前置条件**：
-- Email对象含feishuTo="ou_user1"
-- FeishuClient.sendTextMessage() 抛出异常
+- Email对象含feishuTo="zhangsan"
+- FeishuClient.sendTemplateMessage() 抛出异常
 
 **测试步骤**：
-1. Mock FeishuClient.sendTextMessage() 抛出Exception("API error")
-2. 构造Email对象：feishuTo="ou_user1"
+1. Mock FeishuClient.sendTemplateMessage() 抛出Exception("API error")
+2. 构造Email对象：feishuTo="zhangsan"
 3. 调用 `FeishuMessageSender.send(email)`
 
 **预期结果**：
 - 抛出 `EmailSendFailedException`
 - 错误码为80006
 - 异常消息包含"发送主题消息失败"
-- 异常消息包含"ou_user1"
+- 异常消息包含"zhangsan"
 
 **优先级**：P0
 **测试类型**：单元测试
@@ -855,9 +855,9 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 - FeishuClient.uploadFile() 抛出异常
 
 **测试步骤**：
-1. Mock FeishuClient.sendTextMessage() 成功
+1. Mock FeishuClient.sendTemplateMessage() 成功
 2. Mock FeishuClient.uploadFile() 抛出Exception("upload failed")
-3. 构造Email对象：feishuTo="ou_user1"，含1个附件
+3. 构造Email对象：feishuTo="zhangsan"，含1个附件
 4. 调用 `FeishuMessageSender.send(email)`
 
 **预期结果**：
@@ -872,7 +872,7 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 ---
 
-#### TC029：发送飞书消息 - 向某接收者发送文件消息失败
+#### TC029：发送飞书消息 - 向某接收者发送飞书消息失败
 
 **来源**：代码变更分析 - FeishuMessageSender.scala, send()
 
@@ -880,19 +880,19 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **前置条件**：
 - Email对象含1个附件、2个接收者
-- 向ou_user2发送文件消息失败
+- 向lisi发送飞书消息失败
 
 **测试步骤**：
-1. Mock sendTextMessage对2个接收者均成功
-2. Mock uploadFile成功返回file_key
-3. Mock sendFileMessage对ou_user1成功、对ou_user2抛出异常
+1. Mock sendTemplateMessage对2个接收者均成功
+2. Mock uploadFile成功返回图片key
+3. Mock sendTemplateMessage对zhangsan成功、对lisi抛出异常
 4. 调用 `FeishuMessageSender.send(email)`
 
 **预期结果**：
 - 抛出 `EmailSendFailedException`
 - 错误码为80008
 - 异常消息包含"发送附件"
-- 异常消息包含"ou_user2"和附件名称
+- 异常消息包含"lisi"和附件名称
 
 **优先级**：P0
 **测试类型**：单元测试
@@ -911,13 +911,13 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **测试步骤**：
 1. 构造Attachment：file=存在文件, name="report.csv"
-2. Mock FeishuClient.uploadFile() 返回"file_key_123"
+2. Mock FeishuClient.uploadFile() 返回"file key_123"
 3. 通过反射或间接调用uploadAttachment
 
 **预期结果**：
 - 直接使用File对象上传
 - 不创建临时文件
-- 返回file_key
+- 返回图片key
 
 **优先级**：P1
 **测试类型**：单元测试
@@ -937,14 +937,14 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **测试步骤**：
 1. 构造Attachment：file=null, base64Str=合法base64, name="report.csv"
-2. Mock FeishuClient.uploadFile() 返回"file_key_456"
+2. Mock FeishuClient.uploadFile() 返回"file key_456"
 3. 通过间接方式调用uploadAttachment
 
 **预期结果**：
 - 创建临时文件并写入base64解码后的内容
 - 使用临时文件上传
 - 上传完成后临时文件被删除
-- 返回file_key
+- 返回图片key
 
 **优先级**：P1
 **测试类型**：单元测试
@@ -1010,7 +1010,7 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **测试步骤**：
 1. 设置节点参数sendFeishu=true，并将飞书appId置为空
-2. 构造Email对象：feishuTo="ou_user1"
+2. 构造Email对象：feishuTo="zhangsan"
 3. 调用 `FeishuMessageSender.send(email)`
 
 **预期结果**：
@@ -1032,14 +1032,14 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试类型**：集成测试
 
 **前置条件**：
-- Email的feishuTo="ou_user1"
+- Email的feishuTo="zhangsan"
 - 邮件发送成功
 - 飞书发送Mock成功
 
 **测试步骤**：
 1. Mock emailSender.send() 成功
 2. Mock FeishuMessageSender.send() 成功
-3. 构造requestRef，runtimeMap中设置feishuTo="ou_user1"
+3. 构造requestRef，runtimeMap中设置feishuTo="zhangsan"
 4. 调用 `execute(requestRef)`
 
 **预期结果**：
@@ -1061,12 +1061,12 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **前置条件**：
 - sendemail节点参数sendFeishu=false
-- Email的feishuTo="ou_user1"
+- Email的feishuTo="zhangsan"
 
 **测试步骤**：
 1. 设置节点参数sendFeishu=false
 2. Mock emailSender.send() 成功
-3. 构造requestRef，runtimeMap中设置feishuTo="ou_user1"
+3. 构造requestRef，runtimeMap中设置feishuTo="zhangsan"
 4. 调用 `execute(requestRef)`
 
 **预期结果**：
@@ -1113,14 +1113,14 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试类型**：集成测试
 
 **前置条件**：
-- Email的feishuTo="ou_user1"
+- Email的feishuTo="zhangsan"
 - 邮件发送成功
 - 飞书发送失败
 
 **测试步骤**：
 1. Mock emailSender.send() 成功
 2. Mock FeishuMessageSender.send() 抛出EmailSendFailedException
-3. 构造requestRef，runtimeMap中设置feishuTo="ou_user1"
+3. 构造requestRef，runtimeMap中设置feishuTo="zhangsan"
 4. 调用 `execute(requestRef)`
 
 **预期结果**：
@@ -1147,7 +1147,7 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **测试步骤**：
 1. Mock emailSender.send() 抛出异常
-2. 构造requestRef，runtimeMap中设置feishuTo="ou_user1"
+2. 构造requestRef，runtimeMap中设置feishuTo="zhangsan"
 3. 调用 `execute(requestRef)`
 
 **预期结果**：
@@ -1196,15 +1196,15 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 **测试类型**：单元测试
 
 **前置条件**：
-- runtimeMap中feishuTo="ou_user1;ou_user2"
+- runtimeMap中feishuTo="zhangsan;lisi"
 
 **测试步骤**：
-1. 构造requestRef，runtimeMap中设置feishuTo="ou_user1;ou_user2"
+1. 构造requestRef，runtimeMap中设置feishuTo="zhangsan;lisi"
 2. 调用 `emailGenerator.generateEmail(requestRef)`
 3. 验证email.getFeishuTo()
 
 **预期结果**：
-- email.getFeishuTo() 返回 "ou_user1;ou_user2"
+- email.getFeishuTo() 返回 "zhangsan;lisi"
 
 **优先级**：P0
 **测试类型**：单元测试
@@ -1315,20 +1315,20 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **前置条件**：
 - DSS工作流含sendemail节点
-- 节点参数sendFeishu=true，飞书连接配置有效appId/appSecret
-- 节点参数feishuTo配置了有效open_id
+- 节点参数sendFeishu=true，飞书连接配置有效appId/appToken
+- 节点参数feishuTo配置了有效飞书接收人英文名
 - 附件为CSV格式
 
 **测试步骤**：
 1. 在DSS工作流中配置sendemail节点
 2. 设置邮件参数：to、subject、附件（CSV）
-3. 设置feishuTo为有效open_id
+3. 设置feishuTo为有效飞书接收人英文名
 4. 执行工作流
 
 **预期结果**：
 - 邮件发送成功
 - 飞书接收者收到文本消息（邮件主题）
-- 飞书接收者收到文件消息（CSV附件）
+- 飞书接收者收到飞书消息（CSV附件）
 - 工作流节点状态为成功
 
 **优先级**：P0
@@ -1349,11 +1349,11 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **测试步骤**：
 1. 配置sendemail节点，附件为Excel
-2. 设置feishuTo为有效open_id
+2. 设置feishuTo为有效飞书接收人英文名
 3. 执行工作流
 
 **预期结果**：
-- Excel文件成功上传到飞书
+- Excel附件不上传到飞书
 - 飞书接收者可下载Excel文件
 
 **优先级**：P0
@@ -1374,12 +1374,12 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **测试步骤**：
 1. 配置sendemail节点，附件为PNG图片
-2. 设置feishuTo为有效open_id
+2. 设置feishuTo为有效飞书接收人英文名
 3. 执行工作流
 
 **预期结果**：
-- PNG文件成功上传到飞书
-- 飞书接收者收到文件消息
+- PNG图片成功上传到飞书并返回key
+- 飞书接收者收到飞书消息
 
 **优先级**：P1
 **测试类型**：功能测试
@@ -1399,12 +1399,12 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **测试步骤**：
 1. 配置sendemail节点，附件为PDF
-2. 设置feishuTo为有效open_id
+2. 设置feishuTo为有效飞书接收人英文名
 3. 执行工作流
 
 **预期结果**：
-- PDF文件成功上传到飞书
-- 飞书接收者收到文件消息
+- PDF附件不上传到飞书
+- 飞书接收者收到飞书消息
 
 **优先级**：P1
 **测试类型**：功能测试
@@ -1424,12 +1424,12 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **测试步骤**：
 1. 配置sendemail节点，附件为Markdown
-2. 设置feishuTo为有效open_id
+2. 设置feishuTo为有效飞书接收人英文名
 3. 执行工作流
 
 **预期结果**：
-- Markdown文件成功上传到飞书
-- 飞书接收者收到文件消息
+- Markdown附件不上传到飞书
+- 飞书接收者收到飞书消息
 
 **优先级**：P2
 **测试类型**：功能测试
@@ -1449,13 +1449,13 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **测试步骤**：
 1. 配置sendemail节点，不添加附件
-2. 设置feishuTo为有效open_id
+2. 设置feishuTo为有效飞书接收人英文名
 3. 执行工作流
 
 **预期结果**：
 - 邮件发送成功
 - 飞书接收者仅收到文本消息（邮件主题）
-- 不发送文件消息
+- 不发送飞书消息
 
 **优先级**：P1
 **测试类型**：功能测试
@@ -1496,11 +1496,11 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 
 **前置条件**：
 - 节点sendFeishu=true
-- appId/appSecret配置错误或飞书API不可达
+- appId/appToken配置错误或飞书API不可达
 - feishuTo有值
 
 **测试步骤**：
-1. 配置无效的飞书appId/appSecret
+1. 配置无效的飞书appId/appToken
 2. 配置sendemail节点，设置feishuTo
 3. 执行工作流
 
@@ -1615,7 +1615,7 @@ when(httpResponse.getBody()).thenReturn("{\"code\":0,\"msg\":\"ok\",\"tenant_acc
 |---------|---------|:----:|
 | 飞书发送是可选功能，由配置控制 | TC004, TC036, TC052 | OK |
 | 接收者通过feishuTo指定，多个分号分隔 | TC022, TC023, TC041 | OK |
-| 发送内容：主题为文本消息+附件为文件消息 | TC018, TC046-TC051 | OK |
+| 发送内容：主题为文本消息+附件为飞书消息 | TC018, TC046-TC051 | OK |
 | 飞书发送失败则节点标记失败 | TC038, TC053 | OK |
 | 附件格式全支持 | TC047-TC050 | OK |
 | 配置完全后端化 | TC005, TC054, TC055 | OK |
@@ -1641,7 +1641,7 @@ public class FeishuConfigTest {
 
     @Test
     public void testValidate_EnabledWithValidConfig_ShouldNotThrow() {
-        // Given: node sendFeishu=true, appId and appSecret configured
+        // Given: node sendFeishu=true, appId and appToken configured
         // When: FeishuConfig.validate() is called
         // Then: No exception thrown
     }
@@ -1654,8 +1654,8 @@ public class FeishuConfigTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testValidate_EnabledWithEmptyAppSecret_ShouldThrow() {
-        // Given: node sendFeishu=true, appSecret=""
+    public void testValidate_EnabledWithEmptyappToken_ShouldThrow() {
+        // Given: node sendFeishu=true, appToken=""
         // When: FeishuConfig.validate() is called
         // Then: IllegalArgumentException thrown
     }
@@ -1724,7 +1724,7 @@ public class FeishuMessageSenderTest {
     @Test
     public void testSend_MultipleReceivers_ShouldSendToAll() {
         // Given
-        when(email.getFeishuTo()).thenReturn("ou_user1;ou_user2;ou_user3");
+        when(email.getFeishuTo()).thenReturn("zhangsan;lisi;wangwu");
         when(email.getSubject()).thenReturn("Test Subject");
         when(email.getAttachments()).thenReturn(new Attachment[]{attachment});
         when(attachment.getName()).thenReturn("report.csv");
@@ -1733,36 +1733,36 @@ public class FeishuMessageSenderTest {
         try (MockedStatic<FeishuClient> clientMock = mockStatic(FeishuClient.class);
              MockedStatic<FeishuConfig> configMock = mockStatic(FeishuConfig.class)) {
             configMock.when(FeishuConfig::validate).thenCallRealMethod();
-            clientMock.when(() -> FeishuClient.sendTextMessage(anyString(), anyString(), anyString()))
+            clientMock.when(() -> FeishuClient.sendTemplateMessage(anyString(), anyString(), anyString()))
                 .thenAnswer(inv -> null);
             clientMock.when(() -> FeishuClient.uploadFile(any(File.class), anyString()))
-                .thenReturn("file_key_123");
-            clientMock.when(() -> FeishuClient.sendFileMessage(anyString(), anyString(), anyString()))
+                .thenReturn("file key_123");
+            clientMock.when(() -> FeishuClient.sendTemplateMessage(anyString(), anyString(), anyString()))
                 .thenAnswer(inv -> null);
 
             // When
             FeishuMessageSender.send(email);
 
             // Then
-            clientMock.verify(() -> FeishuClient.sendTextMessage(eq("ou_user1"), eq("open_id"), anyString()), times(1));
-            clientMock.verify(() -> FeishuClient.sendTextMessage(eq("ou_user2"), eq("open_id"), anyString()), times(1));
-            clientMock.verify(() -> FeishuClient.sendTextMessage(eq("ou_user3"), eq("open_id"), anyString()), times(1));
+            clientMock.verify(() -> FeishuClient.sendTemplateMessage(eq("zhangsan"), eq("飞书接收人英文名"), anyString()), times(1));
+            clientMock.verify(() -> FeishuClient.sendTemplateMessage(eq("lisi"), eq("飞书接收人英文名"), anyString()), times(1));
+            clientMock.verify(() -> FeishuClient.sendTemplateMessage(eq("wangwu"), eq("飞书接收人英文名"), anyString()), times(1));
             clientMock.verify(() -> FeishuClient.uploadFile(any(File.class), eq("report.csv")), times(1));
-            clientMock.verify(() -> FeishuClient.sendFileMessage(anyString(), eq("open_id"), eq("file_key_123")), times(3));
+            clientMock.verify(() -> FeishuClient.sendTemplateMessage(anyString(), eq("飞书接收人英文名"), eq("file key_123")), times(3));
         }
     }
 
     @Test(expected = EmailSendFailedException.class)
     public void testSend_TextMessageFailed_ShouldThrow80006() {
         // Given
-        when(email.getFeishuTo()).thenReturn("ou_user1");
+        when(email.getFeishuTo()).thenReturn("zhangsan");
         when(email.getSubject()).thenReturn("Test");
         when(email.getAttachments()).thenReturn(null);
 
         try (MockedStatic<FeishuClient> clientMock = mockStatic(FeishuClient.class);
              MockedStatic<FeishuConfig> configMock = mockStatic(FeishuConfig.class)) {
             configMock.when(FeishuConfig::validate).thenCallRealMethod();
-            clientMock.when(() -> FeishuClient.sendTextMessage(anyString(), anyString(), anyString()))
+            clientMock.when(() -> FeishuClient.sendTemplateMessage(anyString(), anyString(), anyString()))
                 .thenThrow(new RuntimeException("API error"));
 
             // When
@@ -1771,6 +1771,5 @@ public class FeishuMessageSenderTest {
     }
 }
 ```
-
 
 

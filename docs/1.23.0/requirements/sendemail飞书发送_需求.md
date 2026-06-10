@@ -1,4 +1,4 @@
-# sendemail节点飞书发送功能 需求文档
+﻿# sendemail节点飞书发送功能 需求文档
 
 | 属性 | 值 |
 |------|-----|
@@ -39,7 +39,7 @@ sendemail节点飞书发送功能
 
 ### 2.2 一句话描述
 
-在工作流sendemail节点中新增飞书发送选项，当启用飞书发送并配置了飞书接收者时，自动将邮件主题以文本消息、附件以文件消息的形式发送到指定的飞书用户。
+在工作流sendemail节点中新增飞书发送选项，当启用飞书发送并配置了飞书接收者时，自动通过飞书统一接入接口将邮件主题和附件发送到指定的飞书用户；图片附件需先上传到飞书获取图片key，再作为模板参数发送图片消息。
 
 ### 2.3 目标用户
 
@@ -56,17 +56,17 @@ sendemail节点飞书发送功能
 | 编号 | 功能项 | 描述 |
 |:----:|-------|------|
 | F-P0-01 | 飞书发送开关 | 在sendemail节点参数中新增 `sendFeishu` 选项，由用户在节点上选择是否发送飞书，默认false |
-| F-P0-02 | 飞书接收者配置 | 在sendemail节点参数中新增 `feishuTo` 字段，支持配置飞书用户的open_id，多个接收者以英文分号分隔 |
+| F-P0-02 | 飞书接收者配置 | 在sendemail节点参数中新增 `feishuTo` 字段，支持配置飞书用户英文名（对应HRM英文名），多个接收者以英文分号分隔 |
 | F-P0-03 | 主题文本消息 | 将邮件主题以文本消息形式发送到飞书接收者，消息前缀为"[DSS邮件通知]" |
-| F-P0-04 | 附件文件消息 | 将邮件附件以文件消息形式发送到飞书接收者，支持CSV/Excel/PNG/PDF/Markdown等所有已有附件格式 |
+| F-P0-04 | 图片key参数 | 发送飞书消息前，仅将邮件中的图片附件使用 `fileType=message` 上传到飞书，获取返回key后随模板消息一起发送 |
 | F-P0-05 | 飞书发送失败处理 | 飞书发送失败时，sendemail节点标记为失败，工作流可感知异常并处理 |
 
 ### 3.2 增强功能 P1
 
 | 编号 | 功能项 | 描述 |
 |:----:|-------|------|
-| F-P1-01 | 飞书应用配置校验 | 节点选择发送飞书时，自动校验appId和appSecret是否已配置，未配置时抛出IllegalArgumentException |
-| F-P1-02 | Tenant Token缓存 | 缓存飞书Tenant Access Token，在过期前5分钟自动刷新，避免频繁请求 |
+| F-P1-01 | 飞书应用配置校验 | 节点选择发送飞书时，自动校验appId、appToken、source、apiBaseUrl是否已配置；发送飞书消息时校验templateCode |
+| F-P1-02 | 飞书接口认证 | 每次请求飞书接口时按接入文档生成FS-AppId、FS-Nonce、FS-Timestamp、FS-Signature、FS-Source认证头 |
 | F-P1-03 | 附件上传双模式 | 附件上传支持两种模式：File直接上传（优先）和Base64解码临时文件上传（降级） |
 | F-P1-04 | 自定义API地址 | 支持通过 `wds.dss.appconn.feishu.api.base.url` 配置自定义飞书API地址，便于代理部署 |
 
@@ -74,8 +74,8 @@ sendemail节点飞书发送功能
 
 | 编号 | 不包含项 | 说明 |
 |:----:|---------|------|
-| N-01 | 飞书群消息发送 | 当前仅支持个人消息（open_id），不支持群聊消息（chat_id） |
-| N-02 | 飞书卡片消息 | 不支持飞书富文本卡片消息，仅使用文本消息和文件消息 |
+| N-01 | 飞书群消息发送 | 当前仅支持按接收人英文名发送个人消息，不支持群聊消息（chat_id） |
+| N-02 | 飞书卡片消息 | 不支持飞书富文本卡片消息，仅使用文本消息和飞书消息 |
 | N-03 | 飞书全局发送开关 | 不再通过 `wds.dss.appconn.feishu.enabled` 统一控制是否发送飞书，是否发送由每个sendemail节点自行选择 |
 | N-04 | 邮件与飞书独立控制 | 飞书发送依赖邮件发送成功，不提供"仅飞书不邮件"的模式 |
 
@@ -90,21 +90,22 @@ sendemail节点飞书发送功能
 | 配置项 | 类型 | 默认值 | 说明 |
 |-------|------|-------|------|
 | wds.dss.appconn.feishu.app.id | String | "" | 飞书应用App ID |
-| wds.dss.appconn.feishu.app.secret | String | "" | 飞书应用App Secret |
-| wds.dss.appconn.feishu.api.base.url | String | https://open.feishu.cn/open-apis | 飞书API基础地址 |
+| wds.dss.appconn.feishu.app.token | String | "" | 飞书应用App Token |
+| wds.dss.appconn.feishu.source | String | DSS | 请求来源，写入FS-Source认证头 |
+| wds.dss.appconn.feishu.template.code | String | "" | 飞书消息模板code，仅调用sendMessage时传入；图片key以 `imgKey.img_key` 或 `imgKeys` 传入 |
+| wds.dss.appconn.feishu.api.base.url | String |  | 飞书API基础地址 |
 
 **节点参数输入**（通过工作流节点runtimeMap传入）：
 
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|-------|------|
 | sendFeishu | Boolean/String | false | 是否发送飞书，节点选择为true时才执行飞书发送 |
-| feishuTo | String | "" | 飞书接收者open_id列表，分号分隔 |
+| feishuTo | String | "" | 飞书接收人英文名列表，分号分隔 |
 
 ### 4.2 输出
 
 **飞书消息输出**：
-- 文本消息："[DSS邮件通知] {邮件主题}"，发送到所有feishuTo指定的接收者
-- 文件消息：邮件中的每个附件作为一个文件消息，发送到所有feishuTo指定的接收者
+- 飞书消息：发送前仅上传图片附件，发送时将邮件主题和图片key一起放入模板参数，发送到所有feishuTo指定的接收者
 
 **执行结果**：
 - 飞书发送成功：sendemail节点返回成功
@@ -137,11 +138,13 @@ sendemail节点执行
                 |
                 +--> 解析feishuTo（分号分隔，trim空格）
                 |
-                +--> 发送主题文本消息到所有接收者
+                +--> 请求飞书接口时生成FS-*认证头
                 |
-                +--> 上传附件到飞书，获取file_key
+                +--> 仅上传图片附件到飞书，获取返回key
                 |
-                +--> 发送文件消息到所有接收者
+                +--> 每个接收者调用一次sendMessage，传入templateCode和params
+                |
+                +--> params中包含content/subject/imgKey/imgKeys
                 |
                 +--> 飞书发送失败 --> 返回错误
                 |
@@ -157,7 +160,7 @@ sendemail节点执行
 | BR-03 | 邮件发送失败不执行飞书发送 | 邮件发送失败时直接返回错误，不走飞书流程 |
 | BR-04 | feishuTo为空时静默跳过 | 不报错，仅发邮件 |
 | BR-05 | 飞书发送失败则节点失败 | 不做部分成功处理，任一飞书API调用失败即标记节点失败 |
-| BR-06 | 接收者ID类型为open_id | 当前固定使用open_id类型接收者标识 |
+| BR-06 | 接收者标识为英文名 | 当前按飞书接入文档使用HRM英文名作为receiver |
 
 ---
 
@@ -166,12 +169,12 @@ sendemail节点执行
 | 编号 | 验收标准 | 验证方式 |
 |:----:|---------|---------|
 | AC-01 | 节点sendFeishu=false时，sendemail节点仅发送邮件，不调用任何飞书API | 配置节点参数sendFeishu=false，执行sendemail节点，检查日志无飞书相关调用 |
-| AC-02 | 节点sendFeishu=true且feishuTo有值时，邮件和飞书均发送 | 配置节点参数sendFeishu=true和有效feishuTo，执行节点，验证飞书用户收到文本+文件消息 |
+| AC-02 | 节点sendFeishu=true且feishuTo有值时，邮件和飞书均发送 | 配置节点参数sendFeishu=true和有效feishuTo，执行节点，验证飞书用户收到文本+飞书消息 |
 | AC-03 | feishuTo为空或null时，仅发送邮件 | 配置节点参数sendFeishu=true但不设feishuTo，执行节点，验证仅发邮件 |
 | AC-04 | 飞书发送失败时，节点标记为失败 | 配置无效appId，执行节点，验证节点状态为失败 |
-| AC-05 | 支持多种附件格式发送 | 分别使用CSV/Excel/PNG/PDF/Markdown附件，验证飞书均能收到文件消息 |
-| AC-06 | 支持多接收者（分号分隔） | 配置feishuTo="ou_user1;ou_user2"，验证两个用户均收到消息 |
-| AC-07 | 节点选择发送飞书但appId/appSecret为空时，抛出配置异常 | 配置节点参数sendFeishu=true但appId为空，执行节点，验证抛出IllegalArgumentException |
+| AC-05 | 支持多种附件格式发送 | 分别使用CSV/Excel/PNG/PDF/Markdown附件，验证飞书均能收到飞书消息，其中PNG图片需先上传后按图片key发送 |
+| AC-06 | 支持多接收者（分号分隔） | 配置feishuTo="zhangsan;lisi"，验证两个用户均收到消息 |
+| AC-07 | 节点选择发送飞书但appId/appToken为空时，抛出配置异常 | 配置节点参数sendFeishu=true但appId为空，执行节点，验证抛出IllegalArgumentException |
 
 ---
 
@@ -183,11 +186,11 @@ sendemail节点执行
 |------|:-------:|------|
 | Email.java | 修改 | 新增getFeishuTo/setFeishuTo接口方法 |
 | AbstractEmail.scala | 修改 | 实现feishuTo字段存取 |
-| SendEmailAppConnConfiguration.scala | 修改 | 新增3个飞书连接配置项（appId/appSecret/apiBaseUrl） |
+| SendEmailAppConnConfiguration.scala | 修改 | 新增飞书连接、认证和模板配置项（appId/appToken/source/templateCode/apiBaseUrl） |
 | AbstractEmailGenerator.scala | 修改 | generateEmailInfo中读取feishuTo参数 |
 | SendEmailRefExecutionOperation.scala | 修改 | execute方法中新增飞书发送逻辑 |
 | FeishuConfig.scala | 新增 | 飞书配置读取与校验 |
-| FeishuClient.scala | 新增 | 飞书API客户端（Token管理、文件上传、消息发送） |
+| FeishuClient.scala | 新增 | 飞书API客户端（FS签名认证、文件上传、模板消息发送） |
 | FeishuMessageSender.scala | 新增 | 飞书消息发送编排 |
 
 ### 7.2 兼容性影响
@@ -195,7 +198,7 @@ sendemail节点执行
 | 影响项 | 影响程度 | 说明 |
 |-------|:-------:|------|
 | 现有邮件发送功能 | 无影响 | 飞书发送为新增逻辑，不影响原有邮件发送代码路径 |
-| 现有配置 | 无影响 | 飞书发送不再依赖全局enabled配置，appId/appSecret仅在节点选择发送飞书时校验 |
+| 现有配置 | 无影响 | 飞书发送不再依赖全局enabled配置，appId/appToken仅在节点选择发送飞书时校验 |
 | 现有工作流 | 无影响 | sendFeishu默认为false，feishuTo默认为空，现有工作流无需修改 |
 | Email接口 | 向后兼容 | 新增方法不破坏现有实现 |
 
@@ -203,7 +206,7 @@ sendemail节点执行
 
 | 依赖 | 类型 | 说明 |
 |------|------|------|
-| 飞书开放平台 | 外部依赖 | 需要创建飞书应用获取appId/appSecret |
+| 飞书开放平台 | 外部依赖 | 需要创建飞书应用获取appId/appToken |
 | 飞书应用权限 | 外部依赖 | 需要开通"获取与发送单聊、群组消息"和"上传文件"权限 |
 | 网络连通性 | 基础设施 | DSS服务器需能访问飞书API（open.feishu.cn或自定义地址） |
 
@@ -213,10 +216,9 @@ sendemail节点执行
 
 | 编号 | 风险/约束 | 等级 | 应对措施 |
 |:----:|---------|:----:|---------|
-| R-01 | 飞书API限流（单聊消息100次/分钟、文件上传50次/分钟） | 中 | Token缓存减少请求；大批量发送需考虑限流策略 |
+| R-01 | 飞书API限流（单聊消息100次/分钟、文件上传50次/分钟） | 中 | 大批量发送需考虑限流策略 |
 | R-02 | 飞书文件大小限制（单文件最大25MB） | 低 | 当前sendemail附件通常不超过此限制 |
-| R-03 | Tenant Token过期（有效期2小时） | 低 | 已实现缓存+提前5分钟刷新机制 |
+| R-03 | 签名认证失败 | 低 | 按appId、nonce、timestamp和appToken生成FS-Signature，失败时返回明确异常 |
 | R-04 | 网络故障导致飞书不可达 | 中 | 飞书发送失败标记节点失败，不影响邮件发送结果 |
 | R-05 | 飞书应用权限不足 | 低 | 配置校验阶段明确报错，提示检查权限配置 |
-
 

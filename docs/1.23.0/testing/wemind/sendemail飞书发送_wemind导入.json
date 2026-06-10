@@ -1,4 +1,4 @@
-{
+﻿{
   "root": {
     "data": {"text": "DSS_SENDMAIL"},
     "children": [{
@@ -12,7 +12,7 @@
             "children": [{
               "data": {"text": "【AIGC】节点选择发送飞书且配置完整-校验通过"},
               "children": [
-                {"data": {"text": "条件：sendemail节点参数sendFeishu=true，appId和appSecret已配置有效值"}, "children": []},
+                {"data": {"text": "条件：sendemail节点参数sendFeishu=true，appId和appToken已配置有效值"}, "children": []},
                 {"data": {"text": "步骤：\n1、设置所有飞书配置项为有效值\n2、调用FeishuConfig.validate()"}, "children": []},
                 {"data": {"text": "预期结果：不抛出任何异常，日志输出Feishu integration config validated"}, "children": []}
               ]
@@ -24,11 +24,11 @@
                 {"data": {"text": "预期结果：抛出IllegalArgumentException，异常消息包含app.id is not configured"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】节点选择发送飞书但appSecret为空-校验失败"},
+              "data": {"text": "【AIGC】节点选择发送飞书但appToken为空-校验失败"},
               "children": [
-                {"data": {"text": "条件：sendemail节点参数sendFeishu=true，wds.dss.appconn.feishu.app.secret为空字符串"}, "children": []},
-                {"data": {"text": "步骤：\n1、设置sendFeishu=true，appSecret为空\n2、调用FeishuConfig.validate()"}, "children": []},
-                {"data": {"text": "预期结果：抛出IllegalArgumentException，异常消息包含app.secret is not configured"}, "children": []}
+                {"data": {"text": "条件：sendemail节点参数sendFeishu=true，wds.dss.appconn.feishu.app.token为空字符串"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置sendFeishu=true，appToken为空\n2、调用FeishuConfig.validate()"}, "children": []},
+                {"data": {"text": "预期结果：抛出IllegalArgumentException，异常消息包含app.token is not configured"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】节点未选择发送飞书-校验通过"},
@@ -42,7 +42,7 @@
               "children": [
                 {"data": {"text": "条件：未配置任何飞书相关配置项"}, "children": []},
                 {"data": {"text": "步骤：\n1、不设置任何飞书配置\n2、读取各配置项的默认值"}, "children": []},
-                {"data": {"text": "预期结果：APP_ID和APP_SECRET为空字符串，API_BASE_URL为https://open.feishu.cn/open-apis"}, "children": []}
+                {"data": {"text": "预期结果：APP_ID和APP_SECRET为空字符串，API_BASE_URL为"}, "children": []}
               ]
             }]
           }]
@@ -51,38 +51,38 @@
           "children": [{
             "data": {"text": "分类：接口案例"},
             "children": [{
-              "data": {"text": "【AIGC】获取Tenant Token-正常流程"},
+              "data": {"text": "【AIGC】获取FS签名认证-正常流程"},
               "children": [
                 {"data": {"text": "条件：FeishuConfig配置正确，飞书API可访问"}, "children": []},
-                {"data": {"text": "步骤：\n1、Mock HTTP返回code=0，tenant_access_token=test_token，expire=7200\n2、首次调用FeishuClient.getTenantAccessToken()\n3、验证返回值"}, "children": []},
-                {"data": {"text": "预期结果：返回有效的tenant_access_token，tokenExpireTime被正确设置"}, "children": []}
+                {"data": {"text": "步骤：\n1、Mock HTTP返回code=0，FS-Signature=test_token，expire=7200\n2、首次调用FeishuClient.sendTemplateMessage()\n3、验证返回值"}, "children": []},
+                {"data": {"text": "预期结果：返回有效的FS-Signature，fsTimestamp被正确设置"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】获取Tenant Token-缓存命中未过期"},
+              "data": {"text": "【AIGC】获取FS签名认证-缓存命中未过期"},
               "children": [
-                {"data": {"text": "条件：已成功获取过Token且当前时间小于tokenExpireTime"}, "children": []},
-                {"data": {"text": "步骤：\n1、首次调用getTenantAccessToken()获取Token\n2、立即再次调用getTenantAccessToken()\n3、验证未发起新HTTP请求"}, "children": []},
+                {"data": {"text": "条件：已成功获取过Token且当前时间小于fsTimestamp"}, "children": []},
+                {"data": {"text": "步骤：\n1、首次调用sendTemplateMessage()获取Token\n2、立即再次调用sendTemplateMessage()\n3、验证未发起新HTTP请求"}, "children": []},
                 {"data": {"text": "预期结果：返回缓存的Token，不发起新的HTTP请求"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】获取Tenant Token-缓存过期自动刷新"},
+              "data": {"text": "【AIGC】获取FS签名认证-缓存过期自动刷新"},
               "children": [
-                {"data": {"text": "条件：已获取过Token但当前时间超过tokenExpireTime"}, "children": []},
-                {"data": {"text": "步骤：\n1、首次调用getTenantAccessToken()\n2、模拟Token过期\n3、再次调用getTenantAccessToken()"}, "children": []},
-                {"data": {"text": "预期结果：返回新的Token，refreshTenantToken被调用"}, "children": []}
+                {"data": {"text": "条件：已获取过Token但当前时间超过fsTimestamp"}, "children": []},
+                {"data": {"text": "步骤：\n1、首次调用sendTemplateMessage()\n2、模拟Token过期\n3、再次调用sendTemplateMessage()"}, "children": []},
+                {"data": {"text": "预期结果：返回新的Token，addAuthHeaders被调用"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】获取Tenant Token-appId或appSecret错误"},
+              "data": {"text": "【AIGC】获取FS签名认证-appId或appToken错误"},
               "children": [
-                {"data": {"text": "条件：FeishuConfig配置了无效的appId/appSecret"}, "children": []},
-                {"data": {"text": "步骤：\n1、Mock HTTP返回code=40014，msg=invalid app_id\n2、调用FeishuClient.getTenantAccessToken()"}, "children": []},
-                {"data": {"text": "预期结果：抛出EmailSendFailedException，错误码80002，消息包含Failed to get Feishu tenant token"}, "children": []}
+                {"data": {"text": "条件：FeishuConfig配置了无效的appId/appToken"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock HTTP返回code=40014，msg=invalid app_id\n2、调用FeishuClient.sendTemplateMessage()"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException，错误码80002，消息包含Failed to get Feishu FS签名认证"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】获取Tenant Token-网络不可达"},
+              "data": {"text": "【AIGC】获取FS签名认证-网络不可达"},
               "children": [
                 {"data": {"text": "条件：飞书API地址不可达"}, "children": []},
-                {"data": {"text": "步骤：\n1、Mock HTTP连接抛出ConnectException\n2、调用FeishuClient.getTenantAccessToken()"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock HTTP连接抛出ConnectException\n2、调用FeishuClient.sendTemplateMessage()"}, "children": []},
                 {"data": {"text": "预期结果：抛出异常，连接失败被正确处理"}, "children": []}
               ]
             }]
@@ -91,43 +91,43 @@
             "children": [{
               "data": {"text": "【AIGC】上传文件-正常流程"},
               "children": [
-                {"data": {"text": "条件：已获取有效Tenant Token，文件存在且可读"}, "children": []},
-                {"data": {"text": "步骤：\n1、准备测试文件test_report.csv\n2、Mock HTTP返回code=0，file_key=file_abc123\n3、调用FeishuClient.uploadFile(testFile, test_report.csv)"}, "children": []},
-                {"data": {"text": "预期结果：返回file_key=file_abc123，请求为multipart/form-data格式，包含file_type/file_name/file字段"}, "children": []}
+                {"data": {"text": "条件：已配置有效FS签名认证参数，文件存在且可读"}, "children": []},
+                {"data": {"text": "步骤：\n1、准备测试文件test_report.csv\n2、Mock HTTP返回code=0，file key=file_abc123\n3、调用FeishuClient.uploadFile(testFile, test_report.csv)"}, "children": []},
+                {"data": {"text": "预期结果：返回图片key=file_abc123，请求为multipart/form-data格式，包含fileType/fileName/file字段"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】上传文件-飞书返回错误"},
               "children": [
-                {"data": {"text": "条件：已获取有效Tenant Token，文件存在"}, "children": []},
+                {"data": {"text": "条件：已配置有效FS签名认证参数，文件存在"}, "children": []},
                 {"data": {"text": "步骤：\n1、Mock HTTP返回code=230001，msg=file size exceeds limit\n2、调用FeishuClient.uploadFile()"}, "children": []},
                 {"data": {"text": "预期结果：抛出EmailSendFailedException，错误码80003，消息包含Failed to upload file to Feishu和文件名"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】发送文件消息-正常流程"},
+              "data": {"text": "【AIGC】发送飞书消息-正常流程"},
               "children": [
-                {"data": {"text": "条件：已获取有效Tenant Token，已上传文件获得file_key"}, "children": []},
-                {"data": {"text": "步骤：\n1、Mock HTTP返回code=0\n2、调用FeishuClient.sendFileMessage(ou_test123, open_id, file_abc123)"}, "children": []},
-                {"data": {"text": "预期结果：不抛出异常，请求URL包含receive_id_type=open_id，请求体包含receive_id/msg_type=file/file_key"}, "children": []}
+                {"data": {"text": "条件：已配置有效FS签名认证参数，已上传文件获得file key"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock HTTP返回code=0\n2、调用FeishuClient.sendTemplateMessage(ou_test123, 飞书接收人英文名, file_abc123)"}, "children": []},
+                {"data": {"text": "预期结果：不抛出异常，请求体包含receiver/templateCode/params"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】发送文本消息-正常流程"},
               "children": [
-                {"data": {"text": "条件：已获取有效Tenant Token"}, "children": []},
-                {"data": {"text": "步骤：\n1、Mock HTTP返回code=0\n2、调用FeishuClient.sendTextMessage(ou_test123, open_id, [DSS邮件通知] 测试主题)"}, "children": []},
-                {"data": {"text": "预期结果：不抛出异常，请求体msg_type为text，content中text字段包含主题文本"}, "children": []}
+                {"data": {"text": "条件：已配置有效FS签名认证参数"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock HTTP返回code=0\n2、调用FeishuClient.sendTemplateMessage(ou_test123, 飞书接收人英文名, [DSS邮件通知] 测试主题)"}, "children": []},
+                {"data": {"text": "预期结果：不抛出异常，请求体templateCode为text，content中text字段包含主题文本"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】发送文本消息-主题含特殊字符（双引号换行）"},
               "children": [
-                {"data": {"text": "条件：已获取有效Tenant Token"}, "children": []},
-                {"data": {"text": "步骤：\n1、Mock HTTP返回code=0\n2、调用sendTextMessage传入含双引号和换行符的主题文本"}, "children": []},
+                {"data": {"text": "条件：已配置有效FS签名认证参数"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock HTTP返回code=0\n2、调用sendTemplateMessage传入含双引号和换行符的主题文本"}, "children": []},
                 {"data": {"text": "预期结果：不抛出异常，双引号转义为\\\"，换行符转义为\\n，JSON格式合法"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】发送消息-接收者不存在（无效open_id）"},
+              "data": {"text": "【AIGC】发送消息-接收者不存在（无效飞书接收人英文名）"},
               "children": [
-                {"data": {"text": "条件：已获取有效Tenant Token，open_id无效"}, "children": []},
-                {"data": {"text": "步骤：\n1、Mock HTTP返回code=230002，msg=receive_id is invalid\n2、调用FeishuClient.sendTextMessage(ou_invalid_id, open_id, test)"}, "children": []},
+                {"data": {"text": "条件：已配置有效FS签名认证参数，飞书接收人英文名无效"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock HTTP返回code=230002，msg=receiver is invalid\n2、调用FeishuClient.sendTemplateMessage(ou_invalid_id, 飞书接收人英文名, test)"}, "children": []},
                 {"data": {"text": "预期结果：抛出EmailSendFailedException，错误码80004，消息包含Failed to send Feishu和receiveId"}, "children": []}
               ]
             }, {
@@ -147,8 +147,8 @@
               "data": {"text": "【AIGC】发送飞书消息-完整流程（文本+附件）"},
               "children": [
                 {"data": {"text": "条件：FeishuConfig已正确配置并启用，Email含subject、2个附件、1个feishuTo接收者"}, "children": []},
-                {"data": {"text": "步骤：\n1、构造Email对象subject=测试报表，feishuTo=ou_user1，含2个附件\n2、Mock FeishuClient所有方法成功\n3、调用FeishuMessageSender.send(email)"}, "children": []},
-                {"data": {"text": "预期结果：sendTextMessage调用1次，uploadFile调用2次，sendFileMessage调用2次，不抛出异常"}, "children": []}
+                {"data": {"text": "步骤：\n1、构造Email对象subject=测试报表，feishuTo=zhangsan，含2个附件\n2、Mock FeishuClient所有方法成功\n3、调用FeishuMessageSender.send(email)"}, "children": []},
+                {"data": {"text": "预期结果：sendTemplateMessage调用1次，uploadFile调用2次，sendTemplateMessage调用2次，不抛出异常"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】发送飞书消息-feishuTo为null"},
@@ -174,37 +174,37 @@
             }, {
               "data": {"text": "【AIGC】发送飞书消息-多接收者分号分隔"},
               "children": [
-                {"data": {"text": "条件：Email对象feishuTo为ou_user1;ou_user2;ou_user3，含1个附件"}, "children": []},
+                {"data": {"text": "条件：Email对象feishuTo为zhangsan;lisi;wangwu，含1个附件"}, "children": []},
                 {"data": {"text": "步骤：\n1、构造Email对象feishuTo含3个接收者\n2、Mock FeishuClient所有方法成功\n3、调用FeishuMessageSender.send(email)"}, "children": []},
-                {"data": {"text": "预期结果：sendTextMessage调用3次，uploadFile调用1次，sendFileMessage调用3次，总计7次飞书API调用"}, "children": []}
+                {"data": {"text": "预期结果：sendTemplateMessage调用3次，uploadFile调用1次，sendTemplateMessage调用3次，总计7次飞书API调用"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】发送飞书消息-接收者含前后空格"},
               "children": [
-                {"data": {"text": "条件：Email对象feishuTo为\"  ou_user1  ;  ou_user2  \""}, "children": []},
+                {"data": {"text": "条件：Email对象feishuTo为\"  zhangsan  ;  lisi  \""}, "children": []},
                 {"data": {"text": "步骤：\n1、构造Email对象feishuTo含带空格的接收者\n2、调用FeishuMessageSender.send(email)"}, "children": []},
-                {"data": {"text": "预期结果：空格被trim，receivers分别为ou_user1和ou_user2，每个接收者收到消息"}, "children": []}
+                {"data": {"text": "预期结果：空格被trim，receivers分别为zhangsan和lisi，每个接收者收到消息"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】发送飞书消息-subject为null时使用默认主题"},
               "children": [
                 {"data": {"text": "条件：Email对象subject为null"}, "children": []},
-                {"data": {"text": "步骤：\n1、构造Email对象subject=null，feishuTo=ou_user1\n2、Mock FeishuClient.sendTextMessage()\n3、调用FeishuMessageSender.send(email)"}, "children": []},
+                {"data": {"text": "步骤：\n1、构造Email对象subject=null，feishuTo=zhangsan\n2、Mock FeishuClient.sendTemplateMessage()\n3、调用FeishuMessageSender.send(email)"}, "children": []},
                 {"data": {"text": "预期结果：发送的文本消息使用默认主题DSS Email Notification，不抛出异常"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】发送飞书消息-附件为null"},
               "children": [
                 {"data": {"text": "条件：Email对象attachments为null"}, "children": []},
-                {"data": {"text": "步骤：\n1、构造Email对象attachments=null，feishuTo=ou_user1\n2、调用FeishuMessageSender.send(email)"}, "children": []},
-                {"data": {"text": "预期结果：仅发送文本主题消息，不调用uploadFile和sendFileMessage，不抛出异常"}, "children": []}
+                {"data": {"text": "步骤：\n1、构造Email对象attachments=null，feishuTo=zhangsan\n2、调用FeishuMessageSender.send(email)"}, "children": []},
+                {"data": {"text": "预期结果：仅发送文本主题消息，不调用uploadFile和sendTemplateMessage，不抛出异常"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】发送飞书消息-附件为空数组"},
               "children": [
                 {"data": {"text": "条件：Email对象attachments为空数组"}, "children": []},
-                {"data": {"text": "步骤：\n1、构造Email对象attachments为空数组，feishuTo=ou_user1\n2、调用FeishuMessageSender.send(email)"}, "children": []},
-                {"data": {"text": "预期结果：仅发送文本主题消息，不调用uploadFile和sendFileMessage"}, "children": []}
+                {"data": {"text": "步骤：\n1、构造Email对象attachments为空数组，feishuTo=zhangsan\n2、调用FeishuMessageSender.send(email)"}, "children": []},
+                {"data": {"text": "预期结果：仅发送文本主题消息，不调用uploadFile和sendTemplateMessage"}, "children": []}
               ]
             }]
           }, {
@@ -212,37 +212,37 @@
             "children": [{
               "data": {"text": "【AIGC】发送飞书消息-发送主题消息失败"},
               "children": [
-                {"data": {"text": "条件：FeishuClient.sendTextMessage()抛出异常"}, "children": []},
-                {"data": {"text": "步骤：\n1、Mock FeishuClient.sendTextMessage()抛出Exception(API error)\n2、构造Email对象feishuTo=ou_user1\n3、调用FeishuMessageSender.send(email)"}, "children": []},
-                {"data": {"text": "预期结果：抛出EmailSendFailedException，错误码80006，消息包含发送主题消息失败和ou_user1"}, "children": []}
+                {"data": {"text": "条件：FeishuClient.sendTemplateMessage()抛出异常"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock FeishuClient.sendTemplateMessage()抛出Exception(API error)\n2、构造Email对象feishuTo=zhangsan\n3、调用FeishuMessageSender.send(email)"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException，错误码80006，消息包含发送主题消息失败和zhangsan"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】发送飞书消息-上传附件失败"},
               "children": [
                 {"data": {"text": "条件：Email含1个附件，FeishuClient.uploadFile()抛出异常"}, "children": []},
-                {"data": {"text": "步骤：\n1、Mock sendTextMessage成功\n2、Mock uploadFile抛出Exception(upload failed)\n3、构造Email含1个附件\n4、调用FeishuMessageSender.send(email)"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock sendTemplateMessage成功\n2、Mock uploadFile抛出Exception(upload failed)\n3、构造Email含1个附件\n4、调用FeishuMessageSender.send(email)"}, "children": []},
                 {"data": {"text": "预期结果：抛出EmailSendFailedException，错误码80007，消息包含上传附件和附件名称"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】发送飞书消息-向某接收者发送文件消息失败"},
+              "data": {"text": "【AIGC】发送飞书消息-向某接收者发送飞书消息失败"},
               "children": [
-                {"data": {"text": "条件：Email含1个附件和2个接收者，向ou_user2发送文件消息失败"}, "children": []},
-                {"data": {"text": "步骤：\n1、Mock sendTextMessage对2个接收者均成功\n2、Mock uploadFile成功\n3、Mock sendFileMessage对ou_user1成功对ou_user2抛异常\n4、调用FeishuMessageSender.send(email)"}, "children": []},
-                {"data": {"text": "预期结果：抛出EmailSendFailedException，错误码80008，消息包含发送附件和ou_user2"}, "children": []}
+                {"data": {"text": "条件：Email含1个附件和2个接收者，向lisi发送飞书消息失败"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock sendTemplateMessage对2个接收者均成功\n2、Mock uploadFile成功\n3、Mock sendTemplateMessage对zhangsan成功对lisi抛异常\n4、调用FeishuMessageSender.send(email)"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException，错误码80008，消息包含发送附件和lisi"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】上传附件-使用File直接上传"},
               "children": [
                 {"data": {"text": "条件：Attachment的getFile()返回存在的File对象"}, "children": []},
-                {"data": {"text": "步骤：\n1、构造Attachment file=存在文件, name=report.csv\n2、Mock FeishuClient.uploadFile()返回file_key_123\n3、调用uploadAttachment"}, "children": []},
-                {"data": {"text": "预期结果：直接使用File对象上传，不创建临时文件，返回file_key"}, "children": []}
+                {"data": {"text": "步骤：\n1、构造Attachment file=存在文件, name=report.csv\n2、Mock FeishuClient.uploadFile()返回图片key_123\n3、调用uploadAttachment"}, "children": []},
+                {"data": {"text": "预期结果：直接使用File对象上传，不创建临时文件，返回图片key"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】上传附件-File为null时使用Base64临时文件"},
               "children": [
                 {"data": {"text": "条件：Attachment的getFile()返回null，getBase64Str()返回合法base64编码"}, "children": []},
-                {"data": {"text": "步骤：\n1、构造Attachment file=null, base64Str=合法base64, name=report.csv\n2、Mock uploadFile返回file_key_456\n3、调用uploadAttachment"}, "children": []},
-                {"data": {"text": "预期结果：创建临时文件写入base64解码后内容，上传后临时文件被删除，返回file_key"}, "children": []}
+                {"data": {"text": "步骤：\n1、构造Attachment file=null, base64Str=合法base64, name=report.csv\n2、Mock uploadFile返回图片key_456\n3、调用uploadAttachment"}, "children": []},
+                {"data": {"text": "预期结果：创建临时文件写入base64解码后内容，上传后临时文件被删除，返回图片key"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】上传附件-File不存在时使用Base64临时文件"},
@@ -262,7 +262,7 @@
               "data": {"text": "【AIGC】飞书配置校验失败-validate抛出IllegalArgumentException"},
               "children": [
                 {"data": {"text": "条件：节点sendFeishu=true但appId为空"}, "children": []},
-                {"data": {"text": "步骤：\n1、设置节点参数sendFeishu=true，并将appId为空\n2、构造Email对象feishuTo=ou_user1\n3、调用FeishuMessageSender.send(email)"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置节点参数sendFeishu=true，并将appId为空\n2、构造Email对象feishuTo=zhangsan\n3、调用FeishuMessageSender.send(email)"}, "children": []},
                 {"data": {"text": "预期结果：抛出IllegalArgumentException，消息包含app.id is not configured"}, "children": []}
               ]
             }]
@@ -274,15 +274,15 @@
             "children": [{
               "data": {"text": "【AIGC】邮件发送后-节点选择发送飞书且feishuTo有值-执行飞书发送"},
               "children": [
-                {"data": {"text": "条件：节点sendFeishu=true，feishuTo=ou_user1，邮件发送成功，飞书Mock成功"}, "children": []},
-                {"data": {"text": "步骤：\n1、Mock emailSender.send()成功\n2、Mock FeishuMessageSender.send()成功\n3、构造requestRef设置feishuTo=ou_user1\n4、调用execute(requestRef)"}, "children": []},
+                {"data": {"text": "条件：节点sendFeishu=true，feishuTo=zhangsan，邮件发送成功，飞书Mock成功"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock emailSender.send()成功\n2、Mock FeishuMessageSender.send()成功\n3、构造requestRef设置feishuTo=zhangsan\n4、调用execute(requestRef)"}, "children": []},
                 {"data": {"text": "预期结果：邮件先发送成功，FeishuMessageSender.send()被调用，返回成功响应"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】邮件发送后-节点未选择发送飞书-不执行飞书发送"},
               "children": [
-                {"data": {"text": "条件：节点sendFeishu=false，feishuTo=ou_user1"}, "children": []},
-                {"data": {"text": "步骤：\n1、设置sendFeishu=false\n2、Mock emailSender.send()成功\n3、构造requestRef设置feishuTo=ou_user1\n4、调用execute(requestRef)"}, "children": []},
+                {"data": {"text": "条件：节点sendFeishu=false，feishuTo=zhangsan"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置sendFeishu=false\n2、Mock emailSender.send()成功\n3、构造requestRef设置feishuTo=zhangsan\n4、调用execute(requestRef)"}, "children": []},
                 {"data": {"text": "预期结果：仅发送邮件，FeishuMessageSender.send()不被调用，返回成功响应"}, "children": []}
               ]
             }, {
@@ -295,15 +295,15 @@
             }, {
               "data": {"text": "【AIGC】飞书发送失败-节点标记为错误"},
               "children": [
-                {"data": {"text": "条件：节点sendFeishu=true，feishuTo=ou_user1，邮件发送成功，飞书发送失败"}, "children": []},
-                {"data": {"text": "步骤：\n1、Mock emailSender.send()成功\n2、Mock FeishuMessageSender.send()抛出EmailSendFailedException\n3、构造requestRef设置feishuTo=ou_user1\n4、调用execute(requestRef)"}, "children": []},
+                {"data": {"text": "条件：节点sendFeishu=true，feishuTo=zhangsan，邮件发送成功，飞书发送失败"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock emailSender.send()成功\n2、Mock FeishuMessageSender.send()抛出EmailSendFailedException\n3、构造requestRef设置feishuTo=zhangsan\n4、调用execute(requestRef)"}, "children": []},
                 {"data": {"text": "预期结果：邮件发送成功但飞书发送失败，返回错误响应，错误消息为飞书发送失败！"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】邮件发送失败-不执行飞书发送"},
               "children": [
                 {"data": {"text": "条件：邮件发送失败，节点已选择发送飞书且feishuTo有值"}, "children": []},
-                {"data": {"text": "步骤：\n1、Mock emailSender.send()抛出异常\n2、构造requestRef设置feishuTo=ou_user1\n3、调用execute(requestRef)"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock emailSender.send()抛出异常\n2、构造requestRef设置feishuTo=zhangsan\n3、调用execute(requestRef)"}, "children": []},
                 {"data": {"text": "预期结果：邮件发送失败时立即返回错误，FeishuMessageSender.send()不被调用，错误消息为发送邮件失败！"}, "children": []}
               ]
             }, {
@@ -322,9 +322,9 @@
             "children": [{
               "data": {"text": "【AIGC】从runtimeMap读取feishuTo-正常值"},
               "children": [
-                {"data": {"text": "条件：runtimeMap中feishuTo=ou_user1;ou_user2"}, "children": []},
-                {"data": {"text": "步骤：\n1、构造requestRef，runtimeMap中设置feishuTo=ou_user1;ou_user2\n2、调用emailGenerator.generateEmail(requestRef)\n3、验证email.getFeishuTo()"}, "children": []},
-                {"data": {"text": "预期结果：email.getFeishuTo()返回ou_user1;ou_user2"}, "children": []}
+                {"data": {"text": "条件：runtimeMap中feishuTo=zhangsan;lisi"}, "children": []},
+                {"data": {"text": "步骤：\n1、构造requestRef，runtimeMap中设置feishuTo=zhangsan;lisi\n2、调用emailGenerator.generateEmail(requestRef)\n3、验证email.getFeishuTo()"}, "children": []},
+                {"data": {"text": "预期结果：email.getFeishuTo()返回zhangsan;lisi"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】从runtimeMap读取feishuTo-不存在时默认为空字符串"},
@@ -369,37 +369,37 @@
             "children": [{
               "data": {"text": "【AIGC】端到端-sendemail节点启用飞书含CSV附件"},
               "children": [
-                {"data": {"text": "条件：DSS工作流含sendemail节点，飞书配置正确，feishuTo配置有效open_id，附件为CSV格式"}, "children": []},
-                {"data": {"text": "步骤：\n1、配置sendemail节点设置邮件参数和CSV附件\n2、设置feishuTo为有效open_id\n3、执行工作流"}, "children": []},
-                {"data": {"text": "预期结果：邮件发送成功，飞书接收者收到文本消息和文件消息，工作流节点状态为成功"}, "children": []}
+                {"data": {"text": "条件：DSS工作流含sendemail节点，飞书配置正确，feishuTo配置有效飞书接收人英文名，附件为CSV格式"}, "children": []},
+                {"data": {"text": "步骤：\n1、配置sendemail节点设置邮件参数和CSV附件\n2、设置feishuTo为有效飞书接收人英文名\n3、执行工作流"}, "children": []},
+                {"data": {"text": "预期结果：邮件发送成功，飞书接收者收到文本消息和飞书消息，工作流节点状态为成功"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】端到端-sendemail节点启用飞书含Excel附件"},
               "children": [
                 {"data": {"text": "条件：飞书配置正确，附件为Excel格式"}, "children": []},
-                {"data": {"text": "步骤：\n1、配置sendemail节点附件为Excel\n2、设置feishuTo为有效open_id\n3、执行工作流"}, "children": []},
-                {"data": {"text": "预期结果：Excel文件成功上传到飞书，接收者可下载Excel文件"}, "children": []}
+                {"data": {"text": "步骤：\n1、配置sendemail节点附件为Excel\n2、设置feishuTo为有效飞书接收人英文名\n3、执行工作流"}, "children": []},
+                {"data": {"text": "预期结果：Excel附件不上传到飞书，飞书消息不携带Excel附件key"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】端到端-sendemail节点启用飞书含PNG图片附件"},
               "children": [
                 {"data": {"text": "条件：飞书配置正确，附件为PNG图片"}, "children": []},
-                {"data": {"text": "步骤：\n1、配置sendemail节点附件为PNG\n2、设置feishuTo为有效open_id\n3、执行工作流"}, "children": []},
-                {"data": {"text": "预期结果：PNG文件成功上传到飞书，接收者收到文件消息"}, "children": []}
+                {"data": {"text": "步骤：\n1、配置sendemail节点附件为PNG\n2、设置feishuTo为有效飞书接收人英文名\n3、执行工作流"}, "children": []},
+                {"data": {"text": "预期结果：PNG图片成功上传到飞书并返回key，接收者收到飞书消息"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】端到端-sendemail节点启用飞书含PDF附件"},
               "children": [
                 {"data": {"text": "条件：飞书配置正确，附件为PDF格式"}, "children": []},
-                {"data": {"text": "步骤：\n1、配置sendemail节点附件为PDF\n2、设置feishuTo为有效open_id\n3、执行工作流"}, "children": []},
-                {"data": {"text": "预期结果：PDF文件成功上传到飞书，接收者收到文件消息"}, "children": []}
+                {"data": {"text": "步骤：\n1、配置sendemail节点附件为PDF\n2、设置feishuTo为有效飞书接收人英文名\n3、执行工作流"}, "children": []},
+                {"data": {"text": "预期结果：PDF附件不上传到飞书，接收者收到飞书消息"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】端到端-sendemail节点启用飞书含Markdown附件"},
               "children": [
                 {"data": {"text": "条件：飞书配置正确，附件为Markdown格式"}, "children": []},
-                {"data": {"text": "步骤：\n1、配置sendemail节点附件为Markdown\n2、设置feishuTo为有效open_id\n3、执行工作流"}, "children": []},
-                {"data": {"text": "预期结果：Markdown文件成功上传到飞书，接收者收到文件消息"}, "children": []}
+                {"data": {"text": "步骤：\n1、配置sendemail节点附件为Markdown\n2、设置feishuTo为有效飞书接收人英文名\n3、执行工作流"}, "children": []},
+                {"data": {"text": "预期结果：Markdown附件不上传到飞书，接收者收到飞书消息"}, "children": []}
               ]
             }]
           }, {
@@ -408,8 +408,8 @@
               "data": {"text": "【AIGC】端到端-sendemail节点启用飞书无附件"},
               "children": [
                 {"data": {"text": "条件：飞书配置正确，无附件仅邮件正文"}, "children": []},
-                {"data": {"text": "步骤：\n1、配置sendemail节点不添加附件\n2、设置feishuTo为有效open_id\n3、执行工作流"}, "children": []},
-                {"data": {"text": "预期结果：邮件发送成功，飞书接收者仅收到文本消息，不发送文件消息"}, "children": []}
+                {"data": {"text": "步骤：\n1、配置sendemail节点不添加附件\n2、设置feishuTo为有效飞书接收人英文名\n3、执行工作流"}, "children": []},
+                {"data": {"text": "预期结果：邮件发送成功，飞书接收者仅收到文本消息，不发送飞书消息"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】端到端-节点未选择发送飞书仅发邮件"},
@@ -421,8 +421,8 @@
             }, {
               "data": {"text": "【AIGC】端到端-飞书发送失败工作流节点失败"},
               "children": [
-                {"data": {"text": "条件：节点sendFeishu=true，appId/appSecret配置错误或API不可达，feishuTo有值"}, "children": []},
-                {"data": {"text": "步骤：\n1、配置无效的飞书appId/appSecret\n2、配置sendemail节点设置feishuTo\n3、执行工作流"}, "children": []},
+                {"data": {"text": "条件：节点sendFeishu=true，appId/appToken配置错误或API不可达，feishuTo有值"}, "children": []},
+                {"data": {"text": "步骤：\n1、配置无效的飞书appId/appToken\n2、配置sendemail节点设置feishuTo\n3、执行工作流"}, "children": []},
                 {"data": {"text": "预期结果：邮件发送成功但飞书发送失败，工作流节点标记为失败，日志包含飞书发送失败"}, "children": []}
               ]
             }]
@@ -452,6 +452,5 @@
     }]
   }
 }
-
 
 

@@ -59,6 +59,8 @@ object SendEmailAppConnConfiguration {
 
   // Feishu integration configuration
   val FEISHU_APP_ID = CommonVars("wds.dss.appconn.feishu.app.id", "")
-  val FEISHU_APP_SECRET = CommonVars("wds.dss.appconn.feishu.app.secret", "")
-  val FEISHU_API_BASE_URL = CommonVars("wds.dss.appconn.feishu.api.base.url", "https://open.feishu.cn/open-apis")
+  val FEISHU_APP_TOKEN = CommonVars("wds.dss.appconn.feishu.app.token", "")
+  val FEISHU_SOURCE = CommonVars("wds.dss.appconn.feishu.source", "DSS")
+  val FEISHU_TEMPLATE_CODE = CommonVars("wds.dss.appconn.feishu.template.code", "")
+  val FEISHU_API_BASE_URL = CommonVars("wds.dss.appconn.feishu.api.base.url", "")
 }

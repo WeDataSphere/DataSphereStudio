@@ -18,94 +18,47 @@ package com.webank.wedatasphere.dss.appconn.sendemail.feishu
 
 import java.io.{BufferedReader, DataOutputStream, InputStreamReader, File}
 import java.net.{HttpURLConnection, URL}
+import java.security.MessageDigest
 import java.nio.file.Files
-import scala.collection.mutable
+import scala.util.Random
 import org.apache.linkis.common.utils.Logging
 import com.webank.wedatasphere.dss.appconn.sendemail.exception.EmailSendFailedException
 
 /**
  * Feishu API client.
- * Handles Tenant Token management (with caching and auto-refresh),
- * file upload, and message sending via Feishu Open Platform API.
+ * Handles authenticated file upload and template message sending via the unified Feishu access API.
  */
 object FeishuClient extends Logging {
 
-  private var tenantToken: String = _
-  private var tokenExpireTime: Long = 0L
-  private val TOKEN_REFRESH_MARGIN: Long = 300000L // 5 minutes before expiry
-
   /**
-   * Get a valid Tenant Access Token, refreshing if necessary.
-   */
-  def getTenantAccessToken(): String = synchronized {
-    if (tenantToken != null && System.currentTimeMillis() < tokenExpireTime) {
-      return tenantToken
-    }
-    refreshTenantToken()
-    tenantToken
-  }
-
-  /**
-   * Refresh the Tenant Access Token via Feishu API.
-   */
-  private def refreshTenantToken(): Unit = {
-    val appId = FeishuConfig.getAppId
-    val appSecret = FeishuConfig.getAppSecret
-    val baseUrl = FeishuConfig.getApiBaseUrl
-
-    val url = s"${baseUrl}/auth/v3/tenant_access_token/internal"
-    val body = s"""{"app_id":"${appId}","app_secret":"${appSecret}"}"""
-
-    logger.info("Requesting Feishu Tenant Access Token...")
-    val response = sendPostRequest(url, body, "application/json; charset=utf-8")
-    val code = getFieldFromJson(response, "code")
-    if (code != "0") {
-      val msg = getFieldFromJson(response, "msg")
-      throw new EmailSendFailedException(80002, s"Failed to get Feishu tenant token: code=$code, msg=$msg")
-    }
-
-    tenantToken = getFieldFromJson(response, "tenant_access_token")
-    val expire = getFieldFromJson(response, "expire").toLong
-    tokenExpireTime = System.currentTimeMillis() + expire * 1000 - TOKEN_REFRESH_MARGIN
-
-    logger.info(s"Feishu Tenant Access Token refreshed. Expires in ${expire}s")
-  }
-
-  /**
-   * Upload a file to Feishu and return the file_key.
+   * Upload a file to Feishu and return the key used by message templates.
    *
    * @param file the file to upload
    * @param fileName the display name for the file
-   * @return file_key returned by Feishu
+   * @param fileType the Feishu material type. Use "message" for image message material.
+   * @return key returned by Feishu
    */
-  def uploadFile(file: File, fileName: String): String = {
-    val baseUrl = FeishuConfig.getApiBaseUrl
-    val token = getTenantAccessToken()
-    val url = s"${baseUrl}/im/v1/files"
+  def uploadFile(file: File, fileName: String, fileType: String): String = {
+    val url = s"${baseUrl}/feishu/external/access/file/upload"
 
-    logger.info(s"Uploading file to Feishu: ${fileName}")
+    logger.info(s"Uploading file to Feishu: ${fileName}, fileType: ${fileType}")
 
     val boundary = "----WebKitFormBoundary" + System.currentTimeMillis()
     val connection = new URL(url).openConnection().asInstanceOf[HttpURLConnection]
     connection.setRequestMethod("POST")
     connection.setDoOutput(true)
-    connection.setRequestProperty("Authorization", "Bearer " + token)
     connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary)
+    addAuthHeaders(connection)
 
     val CRLF = "\r\n"
     val outputStream = new DataOutputStream(connection.getOutputStream)
 
-    // Add file_type field
-    outputStream.writeBytes("--" + boundary + CRLF)
-    outputStream.writeBytes("Content-Disposition: form-data; name=\"file_type\"" + CRLF + CRLF)
-    outputStream.writeBytes("stream" + CRLF)
+    writeMultipartText(outputStream, boundary, "fileType", fileType)
 
-    // Add file_name field
-    outputStream.writeBytes("--" + boundary + CRLF)
-    outputStream.writeBytes("Content-Disposition: form-data; name=\"file_name\"" + CRLF + CRLF)
-    outputStream.writeBytes(fileName + CRLF)
+    if (fileName != null && fileName.trim.nonEmpty) {
+      writeMultipartText(outputStream, boundary, "fileName", fileName)
+    }
 
-    // Add file content
     outputStream.writeBytes("--" + boundary + CRLF)
     outputStream.writeBytes("Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"" + CRLF)
     outputStream.writeBytes("Content-Type: application/octet-stream" + CRLF + CRLF)
@@ -118,75 +71,45 @@ object FeishuClient extends Logging {
     outputStream.close()
 
     val response = readResponse(connection)
-    val code = getFieldFromJson(response, "code")
-    if (code != "0") {
-      val msg = getFieldFromJson(response, "msg")
-      throw new EmailSendFailedException(80003, s"Failed to upload file to Feishu: code=$code, msg=$msg, fileName=$fileName")
+    val respCode = getFieldFromJson(response, "respCode")
+    if (!isSuccess(respCode)) {
+      val respMsg = getFieldFromJson(response, "respMsg")
+      throw new EmailSendFailedException(80003, s"Failed to upload file to Feishu: respCode=$respCode, respMsg=$respMsg, fileName=$fileName")
     }
 
-    val fileKey = getFieldFromJson(response, "file_key")
-    logger.info(s"File uploaded to Feishu successfully. file_key: ${fileKey}")
+    val fileKey = getFieldFromJson(response, "data")
+    logger.info(s"File uploaded to Feishu successfully. key: ${fileKey}")
     fileKey
   }
 
   /**
-   * Send a file message to a Feishu user.
-   *
-   * @param receiveId the receiver's open_id or user_id
-   * @param receiveIdType the type of receive_id: "open_id", "user_id", or "chat_id"
-   * @param fileKey the file_key returned by uploadFile
+   * Send a template message to a Feishu receiver.
    */
-  def sendFileMessage(receiveId: String, receiveIdType: String, fileKey: String): Unit = {
-    val baseUrl = FeishuConfig.getApiBaseUrl
-    val token = getTenantAccessToken()
-    val url = s"${baseUrl}/im/v1/messages?receive_id_type=${receiveIdType}"
+  def sendTemplateMessage(receiver: String, templateCode: String, paramsJson: String): Unit = {
+    val url = s"${baseUrl}/feishu/external/access/sendMessage"
+    val body = s"""{"receiver":"${escapeJson(receiver)}","templateCode":"${escapeJson(templateCode)}","params":${paramsJson},"appId":"${escapeJson(FeishuConfig.getAppId)}"}"""
 
-    val body = s"""{"receive_id":"${receiveId}","msg_type":"file","content":"{\\"file_key\\":\\"${fileKey}\\"}"}"""
+    logger.info(s"Sending Feishu template message to receiver: ${receiver}, templateCode: ${templateCode}")
+    val response = sendPostRequest(url, body, "application/json; charset=utf-8")
 
-    logger.info(s"Sending file message to Feishu user: ${receiveId}")
-    val response = sendPostRequest(url, body, "application/json; charset=utf-8", Some(s"Bearer ${token}"))
-
-    val code = getFieldFromJson(response, "code")
-    if (code != "0") {
-      val msg = getFieldFromJson(response, "msg")
-      throw new EmailSendFailedException(80004, s"Failed to send Feishu message: code=$code, msg=$msg, receiveId=$receiveId")
+    val respCode = getFieldFromJson(response, "respCode")
+    if (!isSuccess(respCode)) {
+      val respMsg = getFieldFromJson(response, "respMsg")
+      throw new EmailSendFailedException(80004, s"Failed to send Feishu message: respCode=$respCode, respMsg=$respMsg, receiver=$receiver")
     }
 
-    logger.info(s"File message sent to Feishu user ${receiveId} successfully.")
-  }
-
-  /**
-   * Send a text message to a Feishu user (used for subject notification).
-   */
-  def sendTextMessage(receiveId: String, receiveIdType: String, text: String): Unit = {
-    val baseUrl = FeishuConfig.getApiBaseUrl
-    val token = getTenantAccessToken()
-    val url = s"${baseUrl}/im/v1/messages?receive_id_type=${receiveIdType}"
-
-    val escapedText = text.replace("\"", "\\\"").replace("\n", "\\n")
-    val body = s"""{"receive_id":"${receiveId}","msg_type":"text","content":"{\\"text\\":\\"${escapedText}\\"}"}"""
-
-    logger.info(s"Sending text message to Feishu user: ${receiveId}")
-    val response = sendPostRequest(url, body, "application/json; charset=utf-8", Some(s"Bearer ${token}"))
-
-    val code = getFieldFromJson(response, "code")
-    if (code != "0") {
-      val msg = getFieldFromJson(response, "msg")
-      throw new EmailSendFailedException(80004, s"Failed to send Feishu text message: code=$code, msg=$msg, receiveId=$receiveId")
-    }
-
-    logger.info(s"Text message sent to Feishu user ${receiveId} successfully.")
+    logger.info(s"Feishu template message sent to receiver ${receiver} successfully. feishuMsgId: ${getFieldFromJson(response, "feishuMsgId")}")
   }
 
   /**
    * Send an HTTP POST request.
    */
-  private def sendPostRequest(urlStr: String, body: String, contentType: String, authHeader: Option[String] = None): String = {
+  private def sendPostRequest(urlStr: String, body: String, contentType: String): String = {
     val connection = new URL(urlStr).openConnection().asInstanceOf[HttpURLConnection]
     connection.setRequestMethod("POST")
     connection.setDoOutput(true)
     connection.setRequestProperty("Content-Type", contentType)
-    authHeader.foreach(h => connection.setRequestProperty("Authorization", h))
+    addAuthHeaders(connection)
 
     val outputStream = connection.getOutputStream
     outputStream.write(body.getBytes("UTF-8"))
@@ -194,6 +117,30 @@ object FeishuClient extends Logging {
     outputStream.close()
 
     readResponse(connection)
+  }
+
+  private def baseUrl: String = FeishuConfig.getApiBaseUrl.stripSuffix("/")
+
+  private def addAuthHeaders(connection: HttpURLConnection): Unit = {
+    val appId = FeishuConfig.getAppId
+    val nonce = f"${Random.nextInt(100000)}%05d"
+    val timestamp = (System.currentTimeMillis() / 1000).toString
+    val firstHash = sha256(appId + nonce + timestamp)
+    val signature = sha256(firstHash + FeishuConfig.getAppToken)
+
+    connection.setRequestProperty("FS-AppId", appId)
+    connection.setRequestProperty("FS-Nonce", nonce)
+    connection.setRequestProperty("FS-Timestamp", timestamp)
+    connection.setRequestProperty("FS-Signature", signature)
+    connection.setRequestProperty("FS-Source", FeishuConfig.getSource)
+  }
+
+  private def writeMultipartText(outputStream: DataOutputStream, boundary: String, name: String, value: String): Unit = {
+    val CRLF = "\r\n"
+    outputStream.writeBytes("--" + boundary + CRLF)
+    outputStream.writeBytes("Content-Disposition: form-data; name=\"" + name + "\"" + CRLF + CRLF)
+    outputStream.write(value.getBytes("UTF-8"))
+    outputStream.writeBytes(CRLF)
   }
 
   /**
@@ -220,6 +167,26 @@ object FeishuClient extends Logging {
     reader.close()
     response.toString
   }
+
+  def escapeJson(value: String): String = {
+    if (value == null) {
+      ""
+    } else {
+      value
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+        .replace("\r", "\\r")
+        .replace("\n", "\\n")
+        .replace("\t", "\\t")
+    }
+  }
+
+  private def sha256(value: String): String = {
+    val digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes("UTF-8"))
+    digest.map(byte => "%02X".format(byte & 0xff)).mkString
+  }
+
+  private def isSuccess(respCode: String): Boolean = respCode != null && respCode.endsWith("0000")
 
   /**
    * Extract a field value from a simple JSON string.

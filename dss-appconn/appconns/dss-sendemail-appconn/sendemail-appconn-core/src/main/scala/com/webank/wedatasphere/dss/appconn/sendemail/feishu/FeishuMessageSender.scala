@@ -17,19 +17,18 @@
 package com.webank.wedatasphere.dss.appconn.sendemail.feishu
 
 import com.webank.wedatasphere.dss.appconn.sendemail.email.Email
-import com.webank.wedatasphere.dss.appconn.sendemail.email.domain.Attachment
+import com.webank.wedatasphere.dss.appconn.sendemail.email.domain.{Attachment, PngAttachment}
 import com.webank.wedatasphere.dss.appconn.sendemail.exception.EmailSendFailedException
 import org.apache.linkis.common.utils.Logging
 
 /**
  * Feishu message sender.
- * Sends email subject as text message and attachments as file messages
- * to the specified Feishu users.
+ * Uploads image attachments, then sends one template message to each Feishu receiver.
  */
 object FeishuMessageSender extends Logging {
 
   /**
-   * Send email attachments and subject to Feishu users.
+   * Send email attachments and subject to Feishu receivers.
    *
    * @param email the email object containing subject, attachments, and feishuTo
    */
@@ -40,13 +39,12 @@ object FeishuMessageSender extends Logging {
       return
     }
 
-    // Validate Feishu configuration
     FeishuConfig.validate()
 
-    // Parse receiver IDs (semicolon separated)
+    // Parse receivers (semicolon separated)
     val receivers = feishuTo.split(";").map(_.trim).filter(_.nonEmpty)
     if (receivers.isEmpty) {
-      logger.warn("No valid Feishu receiver IDs found, skip Feishu sending.")
+      logger.warn("No valid Feishu receivers found, skip Feishu sending.")
       return
     }
 
@@ -54,42 +52,42 @@ object FeishuMessageSender extends Logging {
 
     logger.info(s"Start sending to Feishu. Receivers: ${receivers.mkString(",")}, Subject: ${subject}")
 
-    // Send subject as text message to all receivers
-    for (receiver <- receivers) {
+    val imageKeys = uploadImageAttachments(email.getAttachments)
+    sendMessages(receivers, subject, imageKeys)
+
+    logger.info(s"Feishu sending completed. ${receivers.length} receivers, ${imageKeys.length} image attachments.")
+  }
+
+  private def sendMessages(receivers: Array[String], subject: String, imageKeys: Array[String]): Unit = {
+    val templateCode = FeishuConfig.getTemplateCode
+    FeishuConfig.requireTemplateCode(templateCode, "wds.dss.appconn.feishu.template.code")
+
+    val paramsJson = buildParamsJson(subject, imageKeys)
+    receivers.foreach { receiver =>
       try {
-        FeishuClient.sendTextMessage(receiver, "open_id", s"[DSS邮件通知] ${subject}")
+        FeishuClient.sendTemplateMessage(receiver, templateCode, paramsJson)
       } catch {
         case e: Exception =>
-          logger.error(s"Failed to send subject text message to Feishu user ${receiver}", e)
-          throw new EmailSendFailedException(80006, s"飞书发送失败: 向用户 ${receiver} 发送主题消息失败 - ${e.getMessage}")
+          logger.error(s"Failed to send Feishu message to receiver ${receiver}", e)
+          throw new EmailSendFailedException(80006, s"Failed to send Feishu message to receiver ${receiver}: ${e.getMessage}")
       }
     }
+  }
 
-    // Send each attachment as file message to all receivers
-    val attachments = email.getAttachments
-    if (attachments != null && attachments.nonEmpty) {
-      for (attachment <- attachments) {
-        val fileKey = try {
-          uploadAttachment(attachment)
-        } catch {
-          case e: Exception =>
-            logger.error(s"Failed to upload attachment ${attachment.getName} to Feishu", e)
-            throw new EmailSendFailedException(80007, s"飞书发送失败: 上传附件 ${attachment.getName} 失败 - ${e.getMessage}")
-        }
-
-        for (receiver <- receivers) {
-          try {
-            FeishuClient.sendFileMessage(receiver, "open_id", fileKey)
-          } catch {
-            case e: Exception =>
-              logger.error(s"Failed to send file message to Feishu user ${receiver}, file: ${attachment.getName}", e)
-              throw new EmailSendFailedException(80008, s"飞书发送失败: 向用户 ${receiver} 发送附件 ${attachment.getName} 失败 - ${e.getMessage}")
-          }
-        }
-      }
+  private def uploadImageAttachments(attachments: Array[Attachment]): Array[String] = {
+    if (attachments == null || attachments.isEmpty) {
+      return Array.empty[String]
     }
 
-    logger.info(s"Feishu sending completed. ${receivers.length} receivers, ${if (attachments != null) attachments.length else 0} attachments.")
+    attachments.filter(isImageAttachment).map { attachment =>
+      try {
+        uploadAttachment(attachment)
+      } catch {
+        case e: Exception =>
+          logger.error(s"Failed to upload image attachment ${attachment.getName} to Feishu", e)
+          throw new EmailSendFailedException(80007, s"Failed to upload Feishu image attachment ${attachment.getName}: ${e.getMessage}")
+      }
+    }
   }
 
   /**
@@ -99,25 +97,38 @@ object FeishuMessageSender extends Logging {
   private def uploadAttachment(attachment: Attachment): String = {
     val fileName = attachment.getName
 
-    // Prefer using File directly if available
     val file = attachment.getFile
     if (file != null && file.exists()) {
-      return FeishuClient.uploadFile(file, fileName)
+      return FeishuClient.uploadFile(file, fileName, "message")
     }
 
-    // Fallback: write base64 content to a temp file and upload
     logger.info(s"Attachment ${fileName} has no File reference, writing base64 to temp file for upload.")
     val tempFile = java.io.File.createTempFile("feishu_upload_", s"_${fileName}")
     try {
       import java.util.Base64
       val bytes = Base64.getDecoder.decode(attachment.getBase64Str)
       java.nio.file.Files.write(tempFile.toPath, bytes)
-      FeishuClient.uploadFile(tempFile, fileName)
+      FeishuClient.uploadFile(tempFile, fileName, "message")
     } finally {
       if (tempFile.exists()) {
         tempFile.delete()
       }
     }
+  }
+
+  private def isImageAttachment(attachment: Attachment): Boolean = {
+    attachment.isInstanceOf[PngAttachment] ||
+      Option(attachment.getMediaType).exists(_.toLowerCase.startsWith("image/")) ||
+      Option(attachment.getName).exists(_.toLowerCase.endsWith(".png"))
+  }
+
+  private def buildParamsJson(subject: String, imageKeys: Array[String]): String = {
+    val content = FeishuClient.escapeJson(s"[DSS Email Notification] ${subject}")
+    val imageKeyItems = imageKeys.map(key => s"""{"img_key":"${FeishuClient.escapeJson(key)}"}""").mkString("[", ",", "]")
+    val firstImageKey = imageKeys.headOption.map { key =>
+      s""","imgKey":{"img_key":"${FeishuClient.escapeJson(key)}"}"""
+    }.getOrElse("")
+    s"""{"content":"${content}","subject":"${FeishuClient.escapeJson(subject)}","imgKeys":${imageKeyItems}${firstImageKey}}"""
   }
 
 }
