@@ -20,15 +20,6 @@ import com.webank.wedatasphere.dss.scriptis.config.WebankDSSScriptisConfiguratio
 import com.webank.wedatasphere.dss.scriptis.pojo.entity.ScriptisProxyUser;
 import com.webank.wedatasphere.dss.scriptis.service.ScriptisProxyUserService;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.apache.linkis.server.Message;
 import org.apache.linkis.server.security.SecurityFilter;
 import org.slf4j.Logger;
@@ -37,7 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -53,9 +43,6 @@ import java.util.stream.Collectors;
 public class ScriptisRestful {
 
     private final Logger LOGGER = LoggerFactory.getLogger(ScriptisRestful.class);
-
-    private static final String LINKIS_SSO_LOGIN_PATH = "/api/rest_j/v1/user/sso/login";
-    private static final CloseableHttpClient HTTP_CLIENT = HttpClients.custom().disableRedirectHandling().build();
 
     private final String SERVER_NAME="Scriptis";
     @Autowired
@@ -99,66 +86,6 @@ public class ScriptisRestful {
         }
         return Message.ok().data("stage",stage);
     }
-
-    @RequestMapping(value = "/user/sso/login", method = RequestMethod.GET)
-    public void ssoLogin(@RequestParam("ssoToken") String ssoToken,
-                         HttpServletRequest request,
-                         HttpServletResponse response) {
-        HttpGet httpGet = null;
-        try {
-            LOGGER.info("Start Scriptis SSO login, remoteAddr: {}, serverName: {}, serverPort: {}.",
-                    request.getRemoteAddr(), request.getServerName(), request.getServerPort());
-            // DSS 固定跳转工作空间首页，地址使用当前请求的协议、IP/域名和端口。
-            String redirectUrl = getWorkspaceHomeUrl(request);
-            LOGGER.info("Scriptis SSO login redirectUrl is {}.", redirectUrl);
-            // 透传 ssoToken 和固定 redirectUrl 调用 Linkis SSO 登录接口。
-            String url = WebankDSSScriptisConfiguration.LINKIS_URL + LINKIS_SSO_LOGIN_PATH;
-            LOGGER.info("Linkis SSO login request url is {}, params: ssoToken={}, redirectUrl={}." , url, maskToken(ssoToken), redirectUrl);
-            URI uri = new URIBuilder(url)
-                    .addParameter("ssoToken", ssoToken)
-                    .addParameter("redirectUrl", redirectUrl)
-                    .build();
-            httpGet = new HttpGet(uri);
-            RequestConfig requestConfig = RequestConfig.custom()
-                    .setSocketTimeout(10000)
-                    .setConnectTimeout(10000)
-                    .setConnectionRequestTimeout(10000)
-                    .setExpectContinueEnabled(false)
-                    .build();
-            httpGet.setConfig(requestConfig);
-            LOGGER.info("Start to request Linkis SSO login, linkisUrl: {}.", url);
-            long startTime = System.currentTimeMillis();
-            try (CloseableHttpResponse linkisResponse = HTTP_CLIENT.execute(httpGet)) {
-                long costTime = System.currentTimeMillis() - startTime;
-                int statusCode = linkisResponse.getStatusLine().getStatusCode();
-                Header[] cookieHeaders = linkisResponse.getHeaders("Set-Cookie");
-                LOGGER.info("Linkis SSO login response status code is {}, set-cookie count is {}, cost time is {} ms.", statusCode, cookieHeaders.length, costTime);
-                // 将 Linkis 登录态写回浏览器，保证重定向后的页面已登录。
-                for (Header header : cookieHeaders) {
-                    response.addHeader("Set-Cookie", header.getValue());
-                }
-                HttpEntity entity = linkisResponse.getEntity();
-                String responseBody = entity == null ? "" : EntityUtils.toString(entity, "UTF-8");
-
-                if (statusCode != HttpServletResponse.SC_OK) {
-                    LOGGER.error("Failed to login Linkis by ssoToken, status code is {}, response body is {}.", statusCode, responseBody);
-                    response.setStatus(statusCode);
-                    return;
-                }
-            }
-            // Linkis 登录成功后跳转到业务页面。
-            LOGGER.info("Scriptis SSO login succeeded, redirect to {}.", redirectUrl);
-            response.sendRedirect(redirectUrl);
-        } catch (Exception e) {
-            LOGGER.error("Failed to login Linkis by ssoToken, remoteAddr: {}.", request.getRemoteAddr(), e);
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        } finally {
-            if (httpGet != null) {
-                httpGet.releaseConnection();
-            }
-        }
-    }
-
     @GetMapping("getReleaseNote")
     public Message getReleaseNote(){
         List<ReleaseNoteContent> contents=releaseNoteService.getReleaseNoteContent(ReleaseTypeEnum.SCRIPTIS);
@@ -288,26 +215,6 @@ public class ScriptisRestful {
         }
         LOGGER.info("success to add proxy user, itsm id:{}.", userRep.getExternalId());
         return ItsmResponse.ok().retDetail("Success to add proxy user.");
-    }
-
-    private String getWorkspaceHomeUrl(HttpServletRequest request) {
-        StringBuilder url = new StringBuilder(request.getScheme())
-                .append("://")
-                .append(request.getServerName());
-        if (request.getServerPort() > 0) {
-            url.append(":").append(request.getServerPort());
-        }
-        return url.append("/#/workspaceHome?workspaceId=224").toString();
-    }
-
-    private String maskToken(String token) {
-        if (StringUtils.isBlank(token)) {
-            return "";
-        }
-        if (token.length() <= 8) {
-            return "****";
-        }
-        return token.substring(0, 4) + "****" + token.substring(token.length() - 4);
     }
 
     // 鉴权方法
