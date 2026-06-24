@@ -159,5 +159,12 @@ public class DssFrameworkAdminUserController extends BaseController {
         return Message.ok();
     }
 
+
+    @RequestMapping(path = "/getLoginUser", method = RequestMethod.GET)
+    public Message getLoginUser(HttpServletRequest request){
+        String username = SecurityFilter.getLoginUsername(request);
+        return Message.ok().data("username", username);
+    }
+
 }
 
