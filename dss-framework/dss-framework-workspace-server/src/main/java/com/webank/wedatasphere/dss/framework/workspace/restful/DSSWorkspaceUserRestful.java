@@ -21,6 +21,7 @@ import com.webank.wedatasphere.dss.common.auditlog.OperateTypeEnum;
 import com.webank.wedatasphere.dss.common.auditlog.TargetTypeEnum;
 import com.webank.wedatasphere.dss.common.exception.DSSErrorException;
 import com.webank.wedatasphere.dss.common.utils.AuditLogUtils;
+import com.webank.wedatasphere.dss.framework.admin.common.constant.UserConstants;
 import com.webank.wedatasphere.dss.framework.admin.service.DssAdminUserService;
 import com.webank.wedatasphere.dss.common.StaffInfo;
 import com.webank.wedatasphere.dss.framework.workspace.bean.DSSUserDefaultWorkspace;
@@ -137,6 +138,13 @@ public class DSSWorkspaceUserRestful {
         List<String> users = dssWorkspaceUserService.getAllWorkspaceUsers(workspaceId);
         boolean existFlag = users.stream().anyMatch(user -> user.equalsIgnoreCase(queryUserName));
         LOGGER.info("Check exist user result:" + existFlag + ", query user  is " + queryUserName + ",workSpace id is " + workspaceId);
+        return Message.ok().data("existFlag", existFlag);
+    }
+
+    @RequestMapping(path = "existDSSUser", method = RequestMethod.GET)
+    public Message existDSSUser(@RequestParam("userName") String userName) {
+        boolean existFlag = UserConstants.NOT_UNIQUE.equals(dssUserService.checkUserNameUnique(userName));
+        LOGGER.info("Check exist dss user result:{}, query user is {}", existFlag, userName);
         return Message.ok().data("existFlag", existFlag);
     }
 
