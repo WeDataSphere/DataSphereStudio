@@ -1,5 +1,5 @@
 export default {
   name: 'scriptisHeader',
   component: () => import('./index.vue'),
-  dispatchs: [],
+  dispatchs: ['Workbench:switchAwayFromAiTab'],
 };

@@ -51,7 +51,7 @@
           "title": "生成的Datachecker结果，请核对",
           "columns": {
             "db": "库名",
-            "table": "表名", 
+            "table": "表名",
             "partition": "分区名",
             "view": "是否视图",
             "action": "操作"
@@ -169,6 +169,7 @@
       "deleteSuccess": "删除成功",
       "redoSuccess": "恢复成功",
       "updataSuccess": "更新成功",
+      "nodeUpdateFailed":"更新失败",
       "editorSuccessName": "修改分类{name}成功",
       "comment": "注释",
       "copy": "复制",
@@ -376,6 +377,7 @@
         "notice": "提示",
         "spark2Notice": "注意，如坚持使用spark2，后续切换spark3出现的不兼容性问题，需要自行承担。且后续spark2下线会导致任务无法正常运行。",
         "sparkVersionReset": "sparkVersion 值已自动重置为 3",
+        "copyNotInWhiteList": "当前项目或工作流不在白名单中，不允许复制",
         "dragNode": "请拖拽节点生成流程",
         "readonly": "节点只读状态，基础信息保存失败！",
         "readonlyNoAssociated": "节点只读状态，节点不支持导入脚本！",

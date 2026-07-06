@@ -5,6 +5,9 @@
   >
     <slot/>
     <div
+      v-if="moveIndex"
+      :class="['we-panel-drag-mask', `we-panel-drag-mask-${diretion}`]"/>
+    <div
       v-for="i in itemLength"
       :key="i">
       <div
@@ -280,3 +283,19 @@ export default {
   },
 };
 </script>
+<style lang="scss">
+.we-panel-drag-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  &.we-panel-drag-mask-horizontal {
+    cursor: col-resize;
+  }
+  &.we-panel-drag-mask-vertical {
+    cursor: row-resize;
+  }
+}
+</style>

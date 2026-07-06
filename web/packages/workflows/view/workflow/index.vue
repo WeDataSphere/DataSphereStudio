@@ -1737,9 +1737,24 @@ export default {
           this.exportWorkflow(node);
           break;
         case "copy_flow":
+          this.checkWorkflowWhiteList(node);
+          break;
+      }
+    },
+    async checkWorkflowWhiteList(node) {
+      try {
+        const res = await api.fetch('/dss/framework/orchestrator/checkWhiteList', {
+          projectId: node.projectId,
+          orchestratorId: node.orchestratorId
+        }, 'get');
+        if (res && res.isWhite) {
           this.showCopyForm = true
           this.$refs.copyForm.init(node, this.rawUserProjects)
-          break;
+        } else {
+          this.$Message.warning(this.$t('message.workflow.process.copyNotInWhiteList'));
+        }
+      } catch (e) {
+        this.$Message.warning(this.$t('message.workflow.process.copyNotInWhiteList'));
       }
     },
     resize: debounce(function() {

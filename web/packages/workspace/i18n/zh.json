@@ -100,6 +100,7 @@
       "CopySucc": "复制请求发送成功",
       "isWhiteProjectInfo": "请注意，源项目在允许Spark版本选择的白名单中，复制后的项目默认会加入白名单。",
       "isWhiteWorkflowInfo": "请注意，源工作流在允许Spark版本选择的白名单中，复制后的工作流默认会加入白名单。",
+      "copyNotInWhiteList": "当前项目或工作流不在白名单中，不允许复制",
       "Prompt": "提示",
       "Copying": "复制中{data}，请稍候...",
       "CopyDone": "复制完成",

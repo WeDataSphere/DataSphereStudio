@@ -27,7 +27,7 @@
                 <ul class="menu-list">
                   <li class="list-item" v-if="subitem.canDelete()" @click.stop="deleteProject(subitem)">{{ $t('message.workspace.Delete') }}</li>
                   <li class="list-item" v-if="subitem.canWrite()" @click.stop="modify(currentData.id, subitem)">{{ $t('message.workspace.Configuration') }}</li>
-                  <li class="list-item" v-if="$APP_CONF.copy_project_enable && checkCopyable(subitem, getUserName())"  @click.stop="copy(currentData.id, subitem)">{{ $t('message.workspace.Copy') }}</li>
+                  <li class="list-item" v-if="checkCopyable(subitem, getUserName())" @click.stop="handleCopyProject(currentData.id, subitem)">{{ $t('message.workspace.Copy') }}</li>
                   <li class="list-item" v-if="subitem.associateGit" @click.stop="gotoGit(subitem)">{{ $t('message.workflow.viewgit') }}</li>
                   <!-- <li class="list-item" @click.stop="publish(currentData.id, subitem)">发布</li> -->
                 </ul>
@@ -79,6 +79,7 @@ import mixin from '@dataspherestudio/shared/common/service/mixin';
 import storage from '@dataspherestudio/shared/common/helper/storage';
 import {canCreate} from '@dataspherestudio/shared/common/config/permissions.js';
 import eventbus from '@dataspherestudio/shared/common/helper/eventbus';
+import api from '@dataspherestudio/shared/common/service/api';
 export default {
   name: "WorkflowContentItem",
   props: {
@@ -200,6 +201,20 @@ export default {
     },
     copy(classifyId, project) {
       this.$emit("copy", classifyId, project);
+    },
+    async handleCopyProject(classifyId, project) {
+      try {
+        const res = await api.fetch('/dss/framework/orchestrator/checkWhiteList', {
+          projectId: project.id
+        }, 'get');
+        if (res && res.isWhite) {
+          this.copy(classifyId, project);
+        } else {
+          this.$Message.warning(this.$t('message.workspace.copyNotInWhiteList'));
+        }
+      } catch (e) {
+        this.$Message.warning(this.$t('message.workspace.copyNotInWhiteList'));
+      }
     },
     isPercent(id) {
       let flag = false;

@@ -155,7 +155,7 @@
       <li
         class="menu-item"
         @click="openAiTab"
-        :class="isDataAgentPage ? 'header-actived' : '' "
+        :class="isDataGoPage ? 'header-actived' : '' "
       >
         DataGo
       </li>
@@ -217,7 +217,7 @@ export default {
       isHomePage: false,
       isConsolePage: false,
       isAccountPage: false,
-      isDataAgentPage: false,
+      isDataGoPage: false,
     };
   },
   mixins: [mixin],
@@ -298,7 +298,7 @@ export default {
         this.isHomePage = false
         this.isConsolePage = false
         this.isAccountPage = false
-        this.isDataAgentPage = false
+        this.isDataGoPage = false
         this.currentId = +v.query.menuApplicationId
       }
       if (this.$refs.userMenu) {
@@ -372,12 +372,12 @@ export default {
       this.isHomePage = false;
       this.isConsolePage = false;
       this.isAccountPage = false;
-      this.isDataAgentPage = true;
+      this.isDataGoPage = true;
       this.currentId = -1;
 
       // 检查是否在 scriptis 模块下
       const isInScriptis = this.$route.path.includes('/home');
-      
+
       const addAiTab = () => {
         this.dispatch('Workbench:add', {
           id: tabId,
@@ -385,16 +385,15 @@ export default {
           url: aiServiceUrl,
           type: 'iframe',
         }, (success) => {
-          // Only increment counter if tab was successfully created (not duplicated)
           if (success) {
             this.saveAiTabCounter(nextTabNumber + 1);
           } else {
-            // Tab already exists, show a message
-            console.log(`AI tab ${tabName} already exists`);
+            // 新增失败（tab已存在或iframe已满），跳转到第一个已有的aitab
+            this.dispatch('Workbench:switchToFirstAiTab');
           }
         });
       };
-      
+
       if (isInScriptis) {
         // 已经在 scriptis 模块，直接触发
         addAiTab();
@@ -578,6 +577,22 @@ export default {
       }
     },
     handleMenuClick(item, index = 0) {
+      // 判断目标应用是否是Scriptis（内部路由 /home），尝试从aitab切走
+      let targetUrl = item.homepageUri || '';
+      // 获取实际的目标URL（可能来自appInstances）
+      if (!targetUrl && item.appconns && item.appconns[index]) {
+        targetUrl = item.appconns[index].homepageUri || '';
+      }
+      const isScriptis = targetUrl === '/home' || targetUrl === 'home';
+      if (isScriptis) {
+        if (this.$route.path === '/home') {
+          this.dispatch('Workbench:switchAwayFromAiTab');
+        } else {
+          setTimeout(() => {
+            this.dispatch('Workbench:switchAwayFromAiTab');
+          }, 800);
+        }
+      }
       this.gotoCommonFunc({app: item, index}, {
         workspaceId: this.$route.query.workspaceId,
       });
@@ -713,7 +728,7 @@ export default {
       this.isHomePage = true;
       this.isConsolePage = false;
       this.isAccountPage = false;
-      this.isDataAgentPage = false;
+      this.isDataGoPage = false;
       let workspaceId = this.$route.query.workspaceId;
       this.currentId = -1;
       if (!workspaceId) {
@@ -729,7 +744,7 @@ export default {
       this.isHomePage = false;
       this.isAccountPage = false;
       this.isConsolePage = true;
-      this.isDataAgentPage = false;
+      this.isDataGoPage = false;
       this.currentId = -1;
       const url =
         `${location.origin}/dss/linkis/?noHeader=1&noFooter=1&t=${Date.now()}#/console`;
@@ -745,7 +760,7 @@ export default {
       this.isHomePage = false;
       this.isConsolePage = false;
       this.isAccountPage = true;
-      this.isDataAgentPage = false;
+      this.isDataGoPage = false;
       this.currentId = -1;
       let workspaceId = this.$route.query.workspaceId;
       const url =
@@ -765,8 +780,25 @@ export default {
       this.isHomePage = false;
       this.isConsolePage = false;
       this.isAccountPage = false;
-      this.isDataAgentPage = false;
+      this.isDataGoPage = false;
       this.currentId = app.menuApplicationId || -1;
+      // 判断目标应用是否是Scriptis（内部路由 /home），尝试从aitab切走
+      // homepageUri 可能在顶层，也可能在 appInstances[0] 中
+      const targetUrl = app.homepageUri ||
+                       (app.appInstances && app.appInstances[0] && app.appInstances[0].homepageUri) ||
+                       '';
+      const isScriptis = targetUrl === '/home' || targetUrl === 'home';
+      if (isScriptis) {
+        if (this.$route.path === '/home') {
+          // 当前已在Scriptis页面，直接dispatch
+          this.dispatch('Workbench:switchAwayFromAiTab');
+        } else {
+          // 跨路由切换，延迟dispatch等待workbench组件挂载初始化完成
+          setTimeout(() => {
+            this.dispatch('Workbench:switchAwayFromAiTab');
+          }, 800);
+        }
+      }
       this.gotoCommonFunc({app, index: 0}, {
         workspaceId: this.$route.query.workspaceId,
       });

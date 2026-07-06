@@ -117,5 +117,5 @@
     "api_err_contact": "请求异常，稍后可刷新重试，若重试失败请联系大数据生产助手(BDP_PRD)处理。",
     "open_source": false
   },
-  "version": "1.19.8"
+  "version": "1.22.0"
 }

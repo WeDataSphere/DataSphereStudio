@@ -1,45 +1,104 @@
-Scriptis
-============
+# DataSphereStudio Web
 
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
-English | [Chinese](docs/zh_CN/README.md)
+English | [中文](docs/zh_CN/README.md)
 
-## Introduction
+## 简介
 
-Scriptis is for interactive data analysis with script development(SQL, Pyspark, HiveQL), task submission(Spark, Hive), UDF, function, resource management and intelligent diagnosis.
+DataSphereStudio Web 是一个基于 Vue 2 的数据开发工作台前端项目，采用 Monorepo 架构，包含脚本开发（Scriptis）和工作流编排（Workflow）两大核心模块。
 
-![running](docs/en_US/images/readme/running.gif)
+## 快速开始
 
-## Features
+### 环境要求
 
-* Script editor: Support multi-language, auto-completion, syntax highlighting and SQL syntax error-correction.
+- Node.js 14.x - 16.x
+- npm 6.x+
 
-* Computation engines: Based on Linkis, Scriptis connects with multiple computation engines such as Spark, Hive, Python, etc.
+### 安装依赖
 
-* Runtime functionality: Complete job life cycle display and intelligent diagnosis.
+```bash
+npm install
+```
 
-* Result set: Multiple result sets support, customized result set alias and one-click visualization. 
+### 开发环境启动
 
-* Database Services: Functionalities for database management and files(CVS, Excel) import/export to/from tables.
+```bash
+# 主应用
+npm run serve
 
-* Context: UDFs, custom variables and functions management and sharing.
+# Scriptis 子应用
+npm run serve-scriptis
 
-* Console: Customized settings for engine parameters, task/engine management and resource isolation/display.
+# 调度中心
+npm run serve-scheduleCenter
+```
 
+### 构建
 
-## QuickStart
+```bash
+# 生产环境
+npm run build
 
-Read the Quick Start [Quick Start](/docs/en_US/ch3/Scriptis_Quick_Start.md)
+# SIT 环境
+npm run build-sit
 
-## Comparison with similar scheduler systems
-![Comparison](/docs/en_US/images/readme/Comparison.png)
+# UAT 环境
+npm run build-uat
+```
 
-## Community
-If you desire immediate response, please kindly raise issues to us or scan the below QR code by WeChat and QQ to join our group:
+### 代码检查
 
-![WeChatQQ](/docs/en_US/images/wechatQQ.png)
+```bash
+npm run lint    # 检查
+npm run fix     # 自动修复
+```
 
-## License
+## 项目结构
 
-Scriptis is under the Apache 2.0 license. See the [LICENSE]((http://www.apache.org/licenses/LICENSE-2.0)) file for details
+本项目采用 npm workspaces 管理 Monorepo 结构：
+
+| 子包 | 说明 |
+|------|------|
+| packages/dss | 主应用入口框架 |
+| packages/scriptis | 脚本开发与数据分析 |
+| packages/workflows | 工作流编排与管理 |
+| packages/shared | 公共组件与服务 |
+
+## 核心功能
+
+### Scriptis（脚本开发）
+
+- 多语言脚本编辑（SQL、PySpark、HiveQL）
+- 任务提交与执行（Spark、Hive、Python）
+- 结果集展示与可视化
+- 数据库管理
+- UDF 与函数管理
+
+### Workflow（工作流）
+
+- DAG 工作流可视化编排
+- 版本管理与回滚
+- 流程实例监控
+- 调度配置与发布
+
+## 技术栈
+
+| 技术 | 版本 |
+|------|------|
+| Vue | 2.6.12 |
+| Vue Router | 3.4.8 |
+| iView | 3.5.4 |
+| Vue CLI | 3.12.1 |
+| Monaco Editor | 0.30.1 |
+| Butterfly DAG | 4.1.23 |
+
+## 文档
+
+- [技术文档](docs/tech-wiki/index.md) - 技术栈、架构设计、编码规范
+- [业务文档](docs/biz-wiki/index.md) - 业务领域知识、流程说明
+- [API 规范](docs/tech-wiki/api.md) - 接口调用规范
+
+## 许可证
+
+[Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0)

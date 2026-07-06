@@ -39,6 +39,11 @@
       <we-menu-item @select="copyPathAction">
         <span>{{ $t('message.scripts.contextMenu.copyPath') }}</span><span>Alt+Shift+C</span>
       </we-menu-item>
+      <we-menu-item
+        v-if="currentNode.isLeaf && hasAiTab"
+        @select="addToDatagoAction">
+        <span>{{ $t('message.scripts.contextMenu.addToDatago') }}</span>
+      </we-menu-item>
       <we-menu-item class="ctx-divider"/>
       <we-menu-item
         v-if="!currentNode.isLeaf"
@@ -204,6 +209,7 @@ export default {
       currentNode: {
         // isEditState: false
       },
+      hasAiTab: false,
       searchText: '',
       nodeProps: {
         children: 'children',
@@ -385,12 +391,18 @@ export default {
     },
     beforeRemove() {},
     benchClick(...args) {
-      this.currentNode = args[0].node;
+      const { node, ev } = args[0];
+      this.currentNode = node;
+      // 左键点击不应该打开右键菜单，只更新当前节点
+      this.hasAiTab = false;
       this.$refs.treeContextMenu.close();
     },
     benchContextMenu({ node, ev }) {
       this.currentNode = node;
-      this.$refs.treeContextMenu.open(ev);
+      this.dispatch('Workbench:hasAiTab', {}, (hasAiTab) => {
+        this.hasAiTab = !!hasAiTab;
+        this.$refs.treeContextMenu.open(ev);
+      });
     },
     benchdbClick({ node }) {
       if (node.isLeaf) {
@@ -425,6 +437,26 @@ export default {
     },
     copyPathAction() {
       util.executeCopy(this.currentNode.data.path);
+    },
+    formatDatagoPath(originalPath) {
+      return `@${String(originalPath || '').replace(/^file:\/\//, '')}`;
+    },
+    addToDatagoAction() {
+      if (!(this.currentNode && this.currentNode.data && this.currentNode.data.path)) return;
+      const originalPath = this.currentNode.data.path;
+      const payload = {
+        eventType: 'addToDatago',
+        source: 'DSS',
+        params: {
+          path: this.formatDatagoPath(originalPath),
+          originalPath,
+        },
+      };
+      this.dispatch('Workbench:postToAiTab', payload, (result) => {
+        if (!result || !result.success) {
+          this.$Message.warning(this.$t('message.scripts.contextMenu.addToDatagoFailed'));
+        }
+      });
     },
     copyName() {
       let nodeName = this.currentNode.data.name;

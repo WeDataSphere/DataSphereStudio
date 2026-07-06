@@ -31,7 +31,8 @@
     </tagEdgeInfo>
     <iframeView
       v-if="work.type == 'iframe'"
-      :url="work.url">
+      :url="work.url"
+      :work-id="work.id">
     </iframeView>
   </div>
 </template>

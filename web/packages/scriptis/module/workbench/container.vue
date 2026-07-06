@@ -262,8 +262,14 @@ export default {
       this.toggleCtrlBtn(this)
       this.changeOrder()
     },
-    $route: function() {
+    $route(to) {
       this.openQueryTab()
+      // 当导航到Scriptis首页时，如果当前激活的tab是aitab，则切换到非aitab的tab
+      if (to.name === 'Home' && this.worklist.length > 0) {
+        this.$nextTick(() => {
+          this.switchAwayFromAiTabIfNeeded()
+        })
+      }
     },
   },
   mounted() {
@@ -349,6 +355,13 @@ export default {
           } else {
             work = last(this.worklist)
           }
+          // 如果恢复的激活tab是aitab，且存在非aitab的tab，则切换到非aitab
+          if (this.isAiTabWork(work)) {
+            const nonAiTabWork = this.worklist.find((item) => !this.isAiTabWork(item))
+            if (nonAiTabWork) {
+              work = nonAiTabWork
+            }
+          }
           if (work) {
             this.chooseWork(work)
           }
@@ -357,6 +370,10 @@ export default {
             this.loading = false
             this.scrollIntoView()
           })
+          // 延迟二次确认：确保aitab切换生效，防止异步时序问题
+          setTimeout(() => {
+            this.switchAwayFromAiTabIfNeeded()
+          }, 300)
         })
         storage.remove(this.getUserName() + "tabs", "local")
         return
@@ -367,6 +384,13 @@ export default {
         if(lastActivedWork) {
           work = lastActivedWork
         }
+        // 如果恢复的激活tab是aitab，且存在非aitab的tab，则切换到非aitab
+        if (this.isAiTabWork(work)) {
+          const nonAiTabWork = this.worklist.find((item) => !this.isAiTabWork(item))
+          if (nonAiTabWork) {
+            work = nonAiTabWork
+          }
+        }
         if (work) {
           this.chooseWork(work)
         }
@@ -375,6 +399,10 @@ export default {
           this.loading = false;
           this.scrollIntoView();
         });
+        // 延迟二次确认：确保aitab切换生效，防止异步时序问题
+        setTimeout(() => {
+          this.switchAwayFromAiTabIfNeeded()
+        }, 300)
       });
     },
     updateCache(cache) {
@@ -463,6 +491,9 @@ export default {
         }
         let asyncList = worklist.map((work) => {
           if (work.type !== "node" && work.owner === this.getUserName()) {
+            const nodeKey = this.node ? this.node.key : ''
+            const contextID = this.node ? (this.node.contextID || '') : ''
+            const currentNodeKey = contextID ? `${encodeURIComponent(contextID)}_${nodeKey}` : nodeKey
             // iframe类型的tab（如aitab）直接添加，不需要从文件系统读取
             if (work.type === 'iframe') {
               const methodName = "Workbench:add"
@@ -472,7 +503,7 @@ export default {
                 url: work.url,
                 type: work.type,
                 saveAs: work.saveAs,
-                currentNodeKey: this.node ? this.node.key : "",
+                currentNodeKey,
               }
               this[methodName](addParams, () => {}, false)
               return Promise.resolve()
@@ -487,6 +518,9 @@ export default {
     },
     openFileAction(work) {
       const methodName = "Workbench:add"
+      const nodeKey = this.node ? this.node.key : ''
+      const contextID = this.node ? (this.node.contextID || '') : ''
+      const currentNodeKey = contextID ? `${encodeURIComponent(contextID)}_${nodeKey}` : nodeKey
       let addParams = {
         id: work.data.id,
         filename: work.filename,
@@ -494,7 +528,7 @@ export default {
         code: work.data.data,
         type: work.type,
         saveAs: work.saveAs,
-        currentNodeKey: this.node ? this.node.key : "",
+        currentNodeKey,
       }
       if (work.filepath) {
         return api
@@ -577,8 +611,10 @@ export default {
                 (s) => (s.flowType || s.scriptType || '').toLowerCase() == model
               ) || {}
               const name = `${this.node.name || this.node.key}${match.ext || ''}`
+              const contextID = this.node.contextID || ''
+              const nodeId = contextID ? `${encodeURIComponent(contextID)}_${this.node.key}` : this.node.key
               this[methodName]({
-                id: this.node.key,
+                id: nodeId,
                 filename:
                   this.node.jobContent && this.node.jobContent.script
                     ? this.node.jobContent.script
@@ -588,7 +624,7 @@ export default {
                 code: this.parameters.content,
                 params: this.parameters.params,
                 saveAs: false,
-                currentNodeKey: this.node ? this.node.key : "",
+                currentNodeKey: nodeId,
               })
               resolve()
             })
@@ -604,11 +640,13 @@ export default {
      */
     "Workbench:add"(option, cb, choose) {
       option.owner = this.getUserName()
-      // 先判断当前是否是节点的组件，再来判断那个节点, 由于ide使用keep-alive所以页面关闭并未注销所以还得判断没有节点时阻止
+      const nodeKey = this.node ? this.node.key : ''
+      const contextID = this.node ? (this.node.contextID || '') : ''
+      const currentNodeKey = contextID ? `${encodeURIComponent(contextID)}_${nodeKey}` : nodeKey
       if (
         (this.node &&
           option.currentNodeKey !== "undefined" &&
-          option.currentNodeKey !== this.node.key) ||
+          option.currentNodeKey !== currentNodeKey) ||
         (!this.node && option.currentNodeKey)
       )
         return
@@ -643,12 +681,12 @@ export default {
       if (option.type === 'iframe') {
         const iframeCount = this.worklist.filter(w => w.type === 'iframe').length
         if (iframeCount >= maxIframeTabLen) {
-          this.$Notice.close("iframeLimit")
+          this.$Notice.close("dataGoLimit")
           cb && cb(false)
           return this.$Notice.warning({
-            title: this.$t("message.scripts.container.notice.iframeLimit.title"),
-            desc: this.$t("message.scripts.container.notice.iframeLimit.desc", {maxIframeTabLen: maxIframeTabLen}),
-            name: "iframeLimit",
+            title: this.$t("message.scripts.container.notice.dataGoLimit.title"),
+            desc: this.$t("message.scripts.container.notice.dataGoLimit.desc", {maxIframeTabLen: maxIframeTabLen}),
+            name: "dataGoLimit",
             duration: 5,
           })
         }
@@ -714,7 +752,7 @@ export default {
           // follow表示紧跟上一个脚本
           if (option.addWay === "follow") {
             const index = this.worklist.findIndex(
-              (item) => work.id === this.current
+              (item) => item.id === this.current
             )
             this.worklist.splice(index === -1 ? 0 : index + 1, 0, work)
           } else {
@@ -768,6 +806,63 @@ export default {
         cb(false)
       }
     },
+    "Workbench:switchAwayFromAiTab"(payload, cb) {
+      const currentWork = this.worklist.find((item) => item.id === this.current)
+      if (this.isAiTabWork(currentWork)) {
+        // 当前激活的tab是aitab，查找第一个非aitab的tab
+        const nonAiTabWork = this.worklist.find((item) => !this.isAiTabWork(item))
+        if (nonAiTabWork) {
+          this.chooseWork(nonAiTabWork)
+          cb && cb(true)
+          return true
+        }
+      }
+      // 当前不是aitab，或没有非aitab的tab，不做切换
+      cb && cb(false)
+      return false
+    },
+    "Workbench:switchToFirstAiTab"(payload, cb) {
+      // 查找第一个aitab并切换过去，用于DataGo新增满时跳转
+      const firstAiTab = this.worklist.find((item) => this.isAiTabWork(item))
+      if (firstAiTab) {
+        this.chooseWork(firstAiTab)
+        cb && cb(true)
+        return true
+      }
+      cb && cb(false)
+      return false
+    },
+    "Workbench:hasAiTab"(payload, cb) {
+      const currentWork = this.worklist.find((item) => item.id === this.current)
+      const hasAiTab = this.isAiTabWork(currentWork)
+      cb && cb(hasAiTab)
+      return hasAiTab
+    },
+    "Workbench:postToAiTab"(payload, cb) {
+      const targetWork = this.getTargetAiTabWork()
+      if (!targetWork) {
+        const result = { success: false, reason: 'NO_AITAB' }
+        cb && cb(result)
+        return result
+      }
+      const iframeId = this.getAiTabIframeId(targetWork.id)
+      const iframe = document.getElementById(iframeId)
+      if (!iframe || !iframe.contentWindow) {
+        const result = { success: false, reason: 'NO_TARGET_IFRAME' }
+        cb && cb(result)
+        return result
+      }
+      try {
+        iframe.contentWindow.postMessage(JSON.stringify(payload), window.location.origin)
+        const result = { success: true }
+        cb && cb(result)
+        return result
+      } catch (e) {
+        const result = { success: false, reason: 'POST_FAILED' }
+        cb && cb(result)
+        return result
+      }
+    },
     "Workbench:openFile"(option, cb) {
       const filename = option.filename.slice(
         option.filename.indexOf("/") + 1,
@@ -807,6 +902,9 @@ export default {
           const params = ismodifyByOldTab
             ? option.params
             : this.convertSettingParams(rst.metadata)
+          const nodeKey = this.node ? this.node.key : ''
+          const contextID = this.node ? (this.node.contextID || '') : ''
+          const currentNodeKey = contextID ? `${encodeURIComponent(contextID)}_${nodeKey}` : nodeKey
           this[methodName](
             {
               id: md5Path,
@@ -818,7 +916,7 @@ export default {
               saveAs: option.saveAs || false,
               unsave: ismodifyByOldTab,
               ismodifyByOldTab,
-              currentNodeKey: this.node ? this.node.key : "",
+              currentNodeKey,
             },
             (isOpen) => {
               this.loading = false
@@ -951,23 +1049,26 @@ export default {
       }
     },
     "Workbench:updateFlowsTab"(node, data) {
+      const contextID = node.contextID || ''
+      const nodeId = contextID ? `${encodeURIComponent(contextID)}_${node.key}` : node.key
       const work = find(this.worklist, (work) => {
-        return work.id === node.key
+        return work.id === nodeId
       })
       this.$set(work.data, "data", data.content)
       this.$set(work.data, "params", this.convertSettingParams(data.params))
       this.dispatch("Workbench:resetScriptData", work.data.id)
     },
     "Workbench:updateFlowsNodeName"(node) {
+      const contextID = node.contextID || ''
+      const nodeId = contextID ? `${encodeURIComponent(contextID)}_${node.key}` : node.key
       this.worklist = this.worklist.map((work) => {
-        if (work.id === node.key) {
+        if (work.id === nodeId) {
           work.nodeName = node.title
         }
         return work
       })
     },
     "Workbench:pasteInEditor"(value, node = {}) {
-      // node页面和scriptis页面操作不同，由于scriptis页面有缓存，所以关闭页面并不会注销组件，所以先判断是node页面触发的还是scriptis页面触发的，然后再判断是有那个编辑器触发的
       if (!this.node && Object.keys(node).length <= 0) {
         const work = find(this.worklist, (work) => work.id === this.current)
         if (!work) {
@@ -980,10 +1081,12 @@ export default {
           value,
         })
       } else {
-        const work = find(this.worklist, (work) => work.id === node.key)
-        if (work && node.key === this.current) {
+        const contextID = node.contextID || ''
+        const nodeId = contextID ? `${encodeURIComponent(contextID)}_${node.key}` : node.key
+        const work = find(this.worklist, (work) => work.id === nodeId)
+        if (work && nodeId === this.current) {
           this.dispatch("Workbench:insertValue", {
-            id: node.key,
+            id: nodeId,
             value,
           })
         }
@@ -1036,6 +1139,34 @@ export default {
       if (intoview) {
         this.scrollIntoView()
       }
+    },
+    isAiTabWork(work) {
+      return !!(work && work.type === 'iframe' && /^aitab\d+$/.test(work.filename || ''))
+    },
+    /**
+     * 检查当前激活的tab是否是aitab，如果是则切换到非aitab的tab
+     * 用于确保进入Scriptis时不会停留在DataGo页面
+     */
+    switchAwayFromAiTabIfNeeded() {
+      const currentWork = this.worklist.find((item) => item.id === this.current)
+      if (this.isAiTabWork(currentWork)) {
+        const nonAiTabWork = this.worklist.find((item) => !this.isAiTabWork(item))
+        if (nonAiTabWork) {
+          this.chooseWork(nonAiTabWork)
+        }
+      }
+    },
+    getAiTabIframeId(workId) {
+      const normalizedWorkId = String(workId || '').replace(/[^a-zA-Z0-9_-]/g, '-')
+      return `scriptis-ai-iframe-${normalizedWorkId}`
+    },
+    getTargetAiTabWork() {
+      const currentWork = this.worklist.find((item) => item.id === this.current)
+      if (this.isAiTabWork(currentWork)) {
+        return currentWork
+      }
+      const aiTabWorkList = this.worklist.filter((item) => this.isAiTabWork(item))
+      return last(aiTabWorkList)
     },
     findAndStoreNextAiTabNumber(workList) {
       // 存储所有找到的aiTab数字
@@ -1249,6 +1380,9 @@ export default {
         const taskID = this.$route.query.taskID
         const filename = this.$route.query.filename
         const md5Id = util.md5(filename)
+        const nodeKey = this.node ? this.node.key : ''
+        const contextID = this.node ? (this.node.contextID || '') : ''
+        const currentNodeKey = contextID ? `${encodeURIComponent(contextID)}_${nodeKey}` : nodeKey
         const params = {
           id: md5Id,
           taskID,
@@ -1256,7 +1390,7 @@ export default {
           filepath: "",
           saveAs: true,
           type: "historyScript",
-          currentNodeKey: this.node ? this.node.key : "", //避免广播事件和ide做区分
+          currentNodeKey,
         }
         const methodName = "Workbench:add"
         this[methodName](params)

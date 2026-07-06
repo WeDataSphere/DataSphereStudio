@@ -26,7 +26,7 @@ export default {
      */
   events: ['WorkSidebar:setHighLight', 'WorkSidebar:revealInSideBar'],
   dispatchs: {
-    Workbench: ['add', 'run', 'openFile', 'remove', 'updateTab', 'checkExist', 'deleteDirOrFile', 'isOpenTab'],
+    Workbench: ['add', 'run', 'openFile', 'remove', 'updateTab', 'checkExist', 'deleteDirOrFile', 'isOpenTab', 'hasAiTab', 'postToAiTab'],
     HdfsSidebar: ['showTree'],
     HiveSidebar: ['showHive'],
     IndexedDB: ['getTabs', 'appendTree', 'getTree'],

@@ -20,6 +20,8 @@
       "contextMenu": {
         "openToTab": "打开到侧边",
         "copyPath": "复制路径",
+        "addToDatago": "添加到DataGo",
+        "addToDatagoFailed": "发送到DataGo失败",
         "addCatalog": "新建目录",
         "addScript": "新建脚本",
         "importToHive": "导入至Hive",
@@ -688,8 +690,12 @@
             "desc": "很抱歉，系统暂不支持打开该格式文件！"
           },
           "iframeLimit": {
-             "title": "Iframe标签页数量限制",
+            "title": "Iframe标签页数量限制",
             "desc": "最多只能打开{maxIframeTabLen}个iframe类型标签页，请关闭一些后再试"
+          },
+          "dataGoLimit": {
+            "title": "DataGo会话数量限制",
+            "desc": "DataGo最多同时保留{maxIframeTabLen}个会话，请关闭多余会话后再开启新会话"
           }
         },
         "removeWork": {

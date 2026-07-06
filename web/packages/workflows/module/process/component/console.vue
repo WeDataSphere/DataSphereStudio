@@ -102,7 +102,11 @@ export default {
     stop: {
       type: Boolean,
     },
-    height: Number
+    height: Number,
+    flowId: {
+      type: [String, Number],
+      default: ''
+    }
   },
   data() {
     return {
@@ -136,6 +140,10 @@ export default {
     }
   },
   computed: {
+    cacheNodeId() {
+      const nodeKey = (this.node && this.node.key) || '';
+      return this.flowId ? `${this.flowId}_${nodeKey}` : nodeKey;
+    },
     scriptResult() {
       let res = {
         headRows: [],
@@ -175,13 +183,13 @@ export default {
     createScript() {
       const node = this.node;
       this.script = new Script({
-        nodeId: node.key,
+        nodeId: this.cacheNodeId,
         runType: this.node.runType,
         title: node.title,
         scriptViewState: this.scriptViewState,
       });
       this.dispatch('workflowIndexedDB:addNodeCache', {
-        nodeId: node.key,
+        nodeId: this.cacheNodeId,
         value: this.script,
       });
     },
@@ -212,7 +220,7 @@ export default {
           taskID: this.node.runState.taskID,
           execID: this.node.runState.execID,
           isRestore: true,
-          nodeId: this.node.key,
+          nodeId: this.cacheNodeId,
           openLog: true
         }
         if (monitor) {
@@ -455,7 +463,7 @@ export default {
         this.execute = null;
       }
       this.resetQuery();
-      const nodeId = this.node.key;
+      const nodeId = this.cacheNodeId;
       this.dispatch('workflowIndexedDB:getNodeCache', {
         nodeId,
         cb: (cache) => {

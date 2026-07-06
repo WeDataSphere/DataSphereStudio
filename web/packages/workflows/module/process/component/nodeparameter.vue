@@ -86,7 +86,7 @@
             </FormItem>
             <FormItem v-if="item.uiType === 'Select' || item.uiType === 'MultiSelect'" :rules="paramsValid(item)" :key="poinToLink(item.key)" :label="item.lableName" :prop="'jobParams.'+ poinToLink(item.key)">
               <Select
-                :disabled="nodeEditDisable || handleSparkVersionDisable(item)"
+                :disabled="nodeEditDisable"
                 v-model="currentNode.jobParams[poinToLink(item.key)]"
                 :placeholder="item.desc"
                 clearable
@@ -97,7 +97,7 @@
                   <Option v-for="subItem in dynamicData[item.key]" :value="subItem.name" :key="subItem.name">{{ subItem.name }}</Option>
                 </template>
                 <template v-else>
-                  <Option v-for="subItem in JSON.parse(item.value)" :value="subItem" :key="subItem">{{ subItem }}</Option>
+                  <Option v-for="subItem in JSON.parse(item.value)" :value="subItem" :key="subItem" :disabled="item.key === 'sparkVersion' && subItem === '2' && nodeData.isWhite !== true">{{ subItem }}</Option>
                 </template>
               </Select>
             </FormItem>
@@ -234,6 +234,15 @@ export default {
         this.isRefTemplate = '0'
       }
       jobParams['ec-conf-templateId'] = this.currentNode.ecConfTemplateId
+      // 回显 viewId 和 datasourceId（从 jobContent 读取到根层级）
+      if (this.currentNode.jobContent) {
+        if (this.currentNode.jobContent.viewId) {
+          this.$set(this.currentNode, 'viewId', this.currentNode.jobContent.viewId);
+        }
+        if (this.currentNode.jobContent.datasourceId) {
+          this.$set(this.currentNode, 'datasourceId', this.currentNode.jobContent.datasourceId);
+        }
+      }
       this.$set(this.currentNode, 'jobParams', jobParams);
     }
   },
@@ -250,15 +259,12 @@ export default {
     },
     curNodeBaseParamsList() {
       return this.currentNode.nodeUiVOS ? this.currentNode.nodeUiVOS.filter((item) => {
-        const fields = ['appTag','businessTag','title','desc'].indexOf(item.key) > -1
+        const fields = ['appTag','businessTag','title','desc','viewId','datasourceId'].indexOf(item.key) > -1
         return item.baseInfo && fields// && !item.hidden
       }) : [];
     }
   },
   methods: {
-    handleSparkVersionDisable(item) {
-        return item.key === 'sparkVersion' && this.nodeData.isWhite !== true
-    },
     async getOpions(item) {
       const res = await api.fetch(item.value, {}, {
         method: 'get',
@@ -287,7 +293,7 @@ export default {
           this.save()
         }
       }
-      
+
     },
     handleSelectChange(item) {
       if (item.key === 'executeCluster') {
@@ -302,18 +308,6 @@ export default {
           this.currentNode.jobParams["linkis-datasource-params-port"] = data.tcpPort + ''
         }
       }
-      // sparkVersion 警告提示
-      // if (item.key === 'sparkVersion') {
-      //   const currentValue = this.currentNode.jobParams[this.poinToLink(item.key)];
-      //   if (currentValue === '2') {
-      //     this.$Modal.warning({
-      //       title: this.$t('message.workflow.process.notice'),
-      //       content: this.$t('message.workflow.process.spark2Notice'),
-      //       closable: true,
-      //       width: 500
-      //     });
-      //   }
-      // }
     },
     // 是否选择模板从false切到true时，查询是否有默认模板，有则填入默认值
     async handleRefTemplateChange(v) {
@@ -625,7 +619,7 @@ export default {
                 if (item.key === 'job.desc') {
                   const { divide } = this.getJobDescDivide(value);
                   value = value.split(/[\n;]+\s*/).map(item => item.trim()).join(divide);
-                }  
+                }
               }
               this.currentNode.params.configuration[item.position][item.key] = value;
             }
@@ -656,11 +650,25 @@ export default {
                   param.params.configuration[item.position][item.key] = value.split(/[\n;]+\s*/).map(item => item.trim()).join(divide);
                 } else {
                   param.params.configuration[item.position][item.key] = value;
-                } 
+                }
               }
           }
         })
       }
+
+      if(param.type && ['linkis.appconn.newVisualis.tableauDataRefre','linkis.appconn.newVisualis.tableau'].includes(param.type)){
+            // 同步 viewId 和 datasourceId 到 jobContent
+            if (!param.jobContent) {
+              param.jobContent = {};
+            }
+            if (param.viewId) {
+              param.jobContent.viewId = param.viewId;
+            }
+            if (param.datasourceId) {
+              param.jobContent.datasourceId = param.datasourceId;
+            }
+      }
+
       return param;
     },
     async validFrom(cb) {

@@ -253,7 +253,11 @@ export default {
         code: params.row.data,
         type: 'historyScript',
         addWay: 'follow',
-        currentNodeKey: this.node ? this.node.key : '',
+        currentNodeKey: (() => {
+          const nodeKey = this.node ? this.node.key : ''
+          const contextID = this.node ? (this.node.contextID || '') : ''
+          return contextID ? `${encodeURIComponent(contextID)}_${nodeKey}` : nodeKey
+        })(),
         defaultActiveTab: this.defaultActiveTab, // 使用props传入的默认tab页
         // status:params.row.status,
       }, (f) => {

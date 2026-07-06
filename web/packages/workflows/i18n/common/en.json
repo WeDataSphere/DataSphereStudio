@@ -13,7 +13,7 @@
         },
         "flowDiffSubmit": {
           "drawerTitle": "Submit Workflow",
-          "viewDiffBtn": "View Version Comparison", 
+          "viewDiffBtn": "View Version Comparison",
           "tabs": {
             "code": "Code",
             "meta": "Metadata"
@@ -169,6 +169,7 @@
       "deleteSuccess": "Delete Success",
       "redoSuccess": "Redo Success",
       "updataSuccess": "Updata Success",
+      "nodeUpdateFailed":"Updata Failed",
       "editorSuccessName": "Editor success classify {name}",
       "comment": "Comment",
       "copy": "Copy",
@@ -376,6 +377,7 @@
         "notice": "Notice",
         "spark2Notice": "Note: If you insist on using Spark2, you will be responsible for any incompatibility issues that may arise when switching to Spark3 later. Additionally, the subsequent decommissioning of Spark2 will cause tasks to fail to run normally.",
         "sparkVersionReset": "sparkVersion value has been automatically reset to 3",
+        "copyNotInWhiteList": "The current project or workflow is not in the whitelist, copying is not allowed",
         "dragNode": "Please drag nodes to construct a flow",
         "readonly": "This node is on read-only status, failed to save basic information!",
         "readonlyNoAssociated": "This node is on read-only status, import script not allowed!",
@@ -491,7 +493,7 @@
           "yes": "Yes",
           "no": "No",
           "selectParameterTemplate": "Please select parameter template",
-          "resourceTemplateName": "Resource parameter template name", 
+          "resourceTemplateName": "Resource parameter template name",
           "selectResourceTemplateName": "Please select resource parameter template name",
           "referenceResourceTemplate": "Reference resource parameter template"
         },

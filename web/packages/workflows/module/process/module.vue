@@ -356,6 +356,7 @@
       ref="currentConsole"
       :node="openningNode"
       :stop="workflowIsExecutor"
+      :flowId="flowId"
       class="process-console"
       :height="consoleHeight"
       :style="getConsoleStyle"
@@ -1311,6 +1312,7 @@ export default {
       } else {
         this.lastSaveTime = new Date().getTime();
       }
+      arg.contextID = this.contextID;
       this.$emit('saveBaseInfo', arg);
       // 如果是可编辑脚本得改变打开的脚本得名称
       this.dispatch('Workbench:updateFlowsNodeName', arg);
@@ -1364,7 +1366,13 @@ export default {
         }
       } else {
         // iframe节点
-        await this.saveCommonIframe(node);
+        try {
+          await this.saveCommonIframe(node);
+        } catch (e) {
+          this.loading = false;
+          this.$Message.error(e && e.message ? e.message : this.$t('message.workflow.process.nodeUpdateFailed'));
+          return;
+        }
       }
 
       // 为了表单校验，基础信息弹窗保存的节点已不再是响应式，需重新赋值给json
@@ -2063,6 +2071,7 @@ export default {
       this.$refs.associateScript.open(node);
     },
     associateScript(node, path, cb) {
+      node.contextID = this.contextID;
       api.fetch('/filesystem/openFile', {
         path,
       }, 'get').then((rst) => {
@@ -2401,6 +2410,16 @@ export default {
       this.cacheNode.selected = true;
       this.cacheNode.title = tmpTitle
       this.cacheNode.createTime = Date.now()
+      const sparkTypes = ['linkis.spark.py', 'linkis.spark.scala', 'linkis.spark.sql'];
+      if (sparkTypes.includes(this.cacheNode.type)) {
+        if (!this.cacheNode.params || !this.cacheNode.params.configuration) {
+          this.cacheNode.params = { configuration: {} };
+        }
+        if (!this.cacheNode.params.configuration.runtime) {
+          this.cacheNode.params.configuration.runtime = {};
+        }
+        this.cacheNode.params.configuration.runtime['sparkVersion'] = '3';
+      }
       let nodeX = (e.offsetX / pageSize) + batchOffsetX
       if (this.viewMode === 'vueprocess' && nodeX<0) {
         nodeX = 0;
@@ -2650,7 +2669,10 @@ export default {
         this.loading = true;
         return api.fetch(`${this.$API_PATH.WORKFLOW_PATH}updateAppConnNode`, params, 'post').then(() => {
           this.$Message.success(this.$t('message.workflow.updataSuccess'))
-        }).catch(() => {})
+        }).catch((err) => {
+          this.loading = false;
+          return Promise.reject(err);
+        })
       }
     },
     // 获取需要在创建的时候填写的参数

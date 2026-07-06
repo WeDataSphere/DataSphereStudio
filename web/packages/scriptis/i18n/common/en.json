@@ -20,6 +20,8 @@
       "contextMenu": {
         "openToTab": "Open as a tab",
         "copyPath": "Copy path",
+        "addToDatago": "Add to DataGo",
+        "addToDatagoFailed": "Failed to send to DataGo",
         "addCatalog": "New directory",
         "addScript": "New script",
         "importToHive": "Import to Hive",
@@ -691,6 +693,10 @@
           "iframeLimit": {
              "title": "Iframe Tab Limit",
             "desc": "A maximum of ${maxIframeTabLen} iframe tabs can be opened. Please close some tabs and try again"
+          },
+          "dataGoLimit": {
+            "title": "DataGo Session Limit",
+            "desc": "Maximum {maxIframeTabLen} sessions allowed. Please close some sessions to continue."
           }
         },
         "removeWork": {

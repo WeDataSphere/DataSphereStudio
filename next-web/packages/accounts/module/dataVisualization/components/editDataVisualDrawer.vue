@@ -228,9 +228,6 @@
                 <FCheckbox
                   :key="item.key"
                   :value="true"
-                  :disabled="
-                    item.key === 'sparkVersion' && isSparkVersionDisabled
-                  "
                   @change="handleBatchShowFormItemDataChange($event, item.key)"
                 >
                   {{ $t('_.批量编辑') }}{{ item.lableName }}
@@ -272,9 +269,6 @@
                     :placeholder="item.desc"
                     clearable
                     :multiple="item.uiType === 'MultiSelect'"
-                    :disabled="
-                      item.key === 'sparkVersion' && isSparkVersionDisabled
-                    "
                     @change="handleSelectChange(item)"
                   >
                     <template v-if="item.value.indexOf('/api/rest_j/') >= 0">
@@ -291,6 +285,11 @@
                         v-for="subItem in JSON.parse(item.value)"
                         :key="subItem"
                         :value="subItem"
+                        :disabled="
+                          item.key === 'sparkVersion' &&
+                          subItem === '2' &&
+                          isWhite === false
+                        "
                       >
                         {{ subItem }}
                       </FOption>
@@ -605,12 +604,6 @@ const curNodeTypeDetail = ref({});
 const curNodeParamsList = ref([]);
 const curNodeBaseParamsList = ref([]);
 
-// 判断 sparkVersion 是否应该被禁用
-const isSparkVersionDisabled = computed(() => {
-  console.log('isWhite.value', isWhite.value);
-  return isWhite.value === false;
-});
-
 const getOpions = async (item) => {
   const res = await request.fetch(
     item.value,
@@ -711,7 +704,14 @@ const getCurNodeParamsList = () => {
 const getCurNodeBaseParamsList = () => {
   if (curNodeTypeDetail.value && curNodeTypeDetail.value.nodeUiVOS) {
     const arr = curNodeTypeDetail.value.nodeUiVOS.filter((item) => {
-      const fields = ['appTag', 'businessTag', 'title', 'desc'];
+      const fields = [
+        'appTag',
+        'businessTag',
+        'title',
+        'desc',
+        'viewId',
+        'datasourceId',
+      ];
       return item.baseInfo && fields.includes(item.key);
     });
     return arr;
@@ -1439,6 +1439,12 @@ const handleOk = async () => {
           businessTag: currentNode.value.businessTag?.join(',') || '',
           params: JSON.stringify(currentNode.value.params),
         };
+        // 根据节点类型添加对应ID字段
+        if (props.config.nodeTypeName === 'tableau') {
+          nodeParams.viewId = currentNode.value.viewId;
+        } else if (props.config.nodeTypeName === 'tableauDataRefre') {
+          nodeParams.datasourceId = currentNode.value.datasourceId;
+        }
         if (isRefTemplate.value === '1') {
           nodeParams.ecConfTemplateName = currentNode.value.ecConfTemplateName;
           nodeParams.ecConfTemplateId = currentNode.value.ecConfTemplateId;
@@ -1472,17 +1478,23 @@ const handleOk = async () => {
             orchestratorId: item.orchestratorId,
             title: item.nodeName,
           };
-          ['desc', 'appTag', 'businessTag'].forEach((key) => {
-            if (batchShowFormItemData.value[key]) {
-              if (key === 'desc') {
-                nodeParams[key] = currentNode.value[key] || '';
+          ['desc', 'appTag', 'businessTag', 'viewId', 'datasourceId'].forEach(
+            (key) => {
+              if (batchShowFormItemData.value[key]) {
+                if (key === 'desc') {
+                  nodeParams[key] = currentNode.value[key] || '';
+                } else if (key === 'appTag' || key === 'businessTag') {
+                  nodeParams[key] = currentNode.value[key]?.join(',') || '';
+                } else {
+                  // viewId 或 datasourceId
+                  nodeParams[key] = currentNode.value[key];
+                }
               } else {
-                nodeParams[key] = currentNode.value[key]?.join(',') || '';
+                // 保留原有值
+                nodeParams[key] = item.nodeContent[key];
               }
-            } else {
-              nodeParams[key] = item.nodeContent[key];
             }
-          });
+          );
           if (batchShowFormItemData.value['ecConfTemplateName']) {
             // 批量删除模板，不用赋值即可
             // 批量添加模板

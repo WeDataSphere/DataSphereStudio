@@ -10,7 +10,7 @@
       :title="work.filepath || work.filename"
       class="workbench-title-text">{{ work.filename }}</span>
     <span
-      v-if="(node && index === 0)"
+       v-if="(node && index === 0)"
       :title="work.filepath || work.filename"
       class="workbench-title-text">{{$t('message.scripts.container.title.editorName')}}</span>
     <span
@@ -106,4 +106,3 @@ export default {
     }
   }
 </style>
-

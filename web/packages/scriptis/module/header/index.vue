@@ -116,6 +116,10 @@ export default {
     goHome() {
       this.isHomePage = true;
       this.isConsolePage = false;
+      // 仅在当前已在/home页面时dispatch，跨路由切换时由init()恢复逻辑处理
+      if (this.$route.path === '/home') {
+        this.dispatch('Workbench:switchAwayFromAiTab');
+      }
       this.$router.push({
         path: '/home',
         query: { workspaceId: this.$route.query.workspaceId }

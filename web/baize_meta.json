@@ -1,0 +1,33 @@
+{
+  "repoType": "frontend",
+  "framework": "vue2",
+  "monorepo": {
+    "isMonorepo": true,
+    "tool": "npm-workspaces",
+    "focusPackages": [
+      "packages/dss",
+      "packages/scriptis",
+      "packages/workflows",
+      "packages/shared"
+    ],
+    "otherPackages": [
+      "packages/apiServices",
+      "packages/cyeditor",
+      "packages/editor",
+      "packages/editorLsp",
+      "packages/exts",
+      "packages/scheduleCenter",
+      "packages/workspace",
+      "packages/dataGovernance",
+      "packages/dataService",
+      "packages/dolphinScheduler"
+    ]
+  },
+  "lastDocCommitId": "2d46e34caf186eddb1cca791e4f19ef2a9eb7c82",
+  "latestAdgCommitId": "",
+  "modules": [
+    "scriptis",
+    "workflow"
+  ],
+  "updatedAt": "2026-06-09"
+}
