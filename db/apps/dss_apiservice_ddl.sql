@@ -56,6 +56,9 @@ CREATE TABLE `dss_apiservice_api_version` (
    `auth_id` varchar(200) NOT NULL COMMENT '用于与datamap交互的UUID',
    `datamap_order_no` varchar(200) DEFAULT NULL COMMENT 'datamap审批单号码',
    `datasource`  varchar(255) DEFAULT NULL COMMENT '数据源名称',
+   `execute_user` varchar(255) NOT NULL COMMENT '代理执行用户',
+   `description` text NOT NULL COMMENT '描述',
+   `comment` text NOT NULL COMMENT '备注',
    PRIMARY KEY(`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin COMMENT='服务api版本表';
 
@@ -81,11 +84,15 @@ CREATE TABLE `dss_apiservice_approval` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
   `api_id` bigint(20) NOT NULL COMMENT '服务api id',
   `api_version_id` bigint(20) NOT NULL COMMENT '版本id',
-  `approval_name` varchar(50) NOT NULL COMMENT '审批单名称',
+  `approval_name` varchar(200) NOT NULL COMMENT '审批单名称',
   `apply_user` varchar(1024) NOT NULL COMMENT '申请用户',
   `execute_user` varchar(50) DEFAULT NULL COMMENT '代理执行用户，用,分割',
   `creator` varchar(50) NOT NULL COMMENT '创建者',
   `status` int(10) DEFAULT '0' COMMENT '申请状态，提单成功1，审批中2，成功3，失败4',
+  `duration` bigint(20) NOT NULL COMMENT '授权时间，单位天',
+  `background_desc` text NOT NULL COMMENT '背景描述',
+  `importance` int(11) NOT NULL COMMENT '业务重要度',
+  `attention_user` varchar(255) NOT NULL COMMENT '关注人',
   `create_time` timestamp NOT null DEFAULT CURRENT_TIMESTAMP COMMENT '审批单创建时间',
   `update_time` timestamp NOT null DEFAULT CURRENT_TIMESTAMP COMMENT '审批单状态更新时间',
   `approval_no` varchar(500) NOT NULL COMMENT '审批单号',
@@ -110,6 +117,18 @@ CREATE TABLE `dss_apiservice_access_info` (
   `query_params` mediumtext COLLATE utf8_bin COMMENT '查询条件',
   PRIMARY KEY(`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin COMMENT='apiservice 访问信息表';
+
+-- 数据服务发布表
+CREATE TABLE `dss_apiservice_job` (
+    `id`          bigint(11) NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `submit_user`   varchar(64) DEFAULT NULL COMMENT '提交用户',
+    `proxy_user`   varchar(64) DEFAULT NULL COMMENT '代理用户',
+    `task_id`   varchar(256) DEFAULT NULL COMMENT '任务id',
+    `exec_id`   varchar(256) DEFAULT NULL COMMENT '执行job id',
+    `user`   varchar(64) DEFAULT NULL COMMENT '用户',
+    `create_time`  datetime  DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE=utf8mb4_bin COMMENT ='数据服务发布表';
 
 
 COMMIT;

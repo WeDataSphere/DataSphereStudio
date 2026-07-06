@@ -45,7 +45,7 @@ insert into `dss_workspace_dictionary`(`workspace_id`, `parent_key`, `dic_name`,
 
 DELETE FROM dss_sidebar;
 insert  into `dss_sidebar`(`id`,`workspace_id`,`name`,`name_en`,`title`,`title_en`,`type`,`order_num`,`remark`,`create_user`,`create_time`,`update_user`,`update_time`) values (2,0,'菜单','Menu','菜单','Menu',1,1,NULL,'SYSTEM','2020-12-15 13:21:06',NULL,'2021-02-23 09:45:50');
--- insert  into `dss_sidebar`(`id`,`workspace_id`,`name`,`name_en`,`title`,`title_en`,`type`,`order_num`,`remark`,`create_user`,`create_time`,`update_user`,`update_time`) values (3,0,'常见问题','Common problem','常见问题','Common problem',1,1,NULL,'SYSTEM','2020-12-15 13:21:06',NULL,'2021-02-23 09:46:18');
+insert  into `dss_sidebar`(`id`,`workspace_id`,`name`,`name_en`,`title`,`title_en`,`type`,`order_num`,`remark`,`create_user`,`create_time`,`update_user`,`update_time`) values (3,0,'常见问题','Common problem','常见问题','Common problem',1,1,NULL,'SYSTEM','2020-12-15 13:21:06',NULL,'2021-02-23 09:46:18');
 
 DELETE FROM dss_sidebar_content;
 insert  into `dss_sidebar_content`(`id`,`workspace_id`,`sidebar_id`,`name`,`name_en`,`title`,`title_en`,`url`,`url_type`,`icon`,`order_num`,`remark`,`create_user`,`create_time`,`update_user`,`update_time`) values (3,0,2,NULL,NULL,'工作空间管理','Workspace management','/workspaceManagement/productsettings',0,'menuIcon',1,NULL,'SYSTEM','2020-12-15 13:21:07',NULL,'2021-02-23 09:47:49');
@@ -62,8 +62,6 @@ INSERT INTO `dss_workspace_menu` (`id`, `name`, `title_en`, `title_cn`, `descrip
 INSERT INTO `dss_workspace_menu` (`id`, `name`, `title_en`, `title_cn`, `description`, `is_active`, `icon`, `order`, `create_by`, `create_time`, `last_update_time`, `last_update_user`) VALUES('3','生产运维','production operation','生产运维','生产运维描述','1',NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `dss_workspace_menu` (`id`, `name`, `title_en`, `title_cn`, `description`, `is_active`, `icon`, `order`, `create_by`, `create_time`, `last_update_time`, `last_update_user`) VALUES('4','数据质量','data quality','数据质量','数据质量描述','1',NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `dss_workspace_menu` (`id`, `name`, `title_en`, `title_cn`, `description`, `is_active`, `icon`, `order`, `create_by`, `create_time`, `last_update_time`, `last_update_user`) VALUES('5','管理员功能','administrator function','管理员功能','管理员功能描述','0',NULL,NULL,NULL,NULL,NULL,NULL);
-insert into `dss_workspace_menu` (`id`, `name`, `title_en`, `title_cn`, `description`, `is_active`, `icon`, `order`, `create_by`, `create_time`, `last_update_time`, `last_update_user`) values('6','数据应用','data application','数据应用','数据应用描述','1',NULL,NULL,NULL,NULL,NULL,NULL);
-insert into `dss_workspace_menu` (`id`, `name`, `title_en`, `title_cn`, `description`, `is_active`, `icon`, `order`, `create_by`, `create_time`, `last_update_time`, `last_update_user`) values('7','应用开发','application development','应用开发','应用开发描述','1',NULL,NULL,NULL,NULL,NULL,NULL);
 
 DELETE FROM dss_workspace_menu_appconn;
 INSERT INTO dss_workspace_menu_appconn (appconn_id, menu_id, title_en, title_cn, desc_en, desc_cn, labels_en, labels_cn, is_active, access_button_en, access_button_cn, manual_button_en, manual_button_cn, manual_button_url, icon, `order`, create_by, create_time, last_update_time, last_update_user, image)
@@ -99,7 +97,7 @@ insert into `dss_workflow_node` (`id`, `name`, `appconn_name`, `node_type`, `jum
 insert into `dss_workflow_node` (`id`, `name`, `appconn_name`, `node_type`, `jump_type`, `support_jump`, `submit_to_scheduler`, `enable_copy`, `should_creation_before_node`, `icon_path`) values('5','hql','scriptis','linkis.hive.hql','2','1','1','1','0','svgs/hql-node.svg');
 insert into `dss_workflow_node` (`id`, `name`, `appconn_name`, `node_type`, `jump_type`, `support_jump`, `submit_to_scheduler`, `enable_copy`, `should_creation_before_node`, `icon_path`) values('6','jdbc','scriptis','linkis.jdbc.jdbc','2','1','1','1','0','icons/jdbc.icon');
 insert into `dss_workflow_node` (`id`, `name`, `appconn_name`, `node_type`, `jump_type`, `support_jump`, `submit_to_scheduler`, `enable_copy`, `should_creation_before_node`, `icon_path`) values('7','shell','scriptis','linkis.shell.sh','2','1','1','1','0','svgs/shell-node.svg');
-insert into `dss_workflow_node` (`id`, `name`, `appconn_name`, `node_type`, `jump_type`, `support_jump`, `submit_to_scheduler`, `enable_copy`, `should_creation_before_node`, `icon_path`) values('10','connector','scriptis','linkis.control.empty','2','0','1','1','0','icons/connector.icon');
+insert into `dss_workflow_node` (`id`, `name`, `appconn_name`, `node_type`, `jump_type`, `support_jump`, `submit_to_scheduler`, `enable_copy`, `should_creation_before_node`, `icon_path`) values('10','connector','scriptis','linkis.control.empty','2','0','1','1','0','svgs/connector-node.svg');
 insert into `dss_workflow_node` (`id`, `name`, `appconn_name`, `node_type`, `jump_type`, `support_jump`, `submit_to_scheduler`, `enable_copy`, `should_creation_before_node`, `icon_path`) values('12','subFlow','scriptis','workflow.subflow','2','1','1','0','1','svgs/subflow-node.svg');
 
 DELETE FROM dss_workflow_node_group;
@@ -131,10 +129,10 @@ insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`l
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (3,'desc','请填写节点描述','Please enter the node description','节点描述','Node description','Text',0,NULL,NULL,0,NULL,0,4,1,1,'node');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (5,'businessTag',NULL,NULL,'业务标签','businessTag','Tag',0,NULL,NULL,0,NULL,0,2,1,1,'node');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (6,'appTag',NULL,NULL,'应用标签','appTag','Tag',0,NULL,NULL,0,NULL,0,3,1,1,'node');
-insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (7,'spark.driver.memory','驱动器内存大小，默认值：2','Driver memory, default value: 2','spark-driver-memory','spark-driver-memory','Input',0,NULL,'2',0,NULL,0,1,1,0,'startup');
-insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (8,'spark.executor.memory','执行器内存大小，默认值：3','Executor memory, default value: 3','spark-executor-memory','spark-executor-memory','Input',0,NULL,'3',0,NULL,0,1,1,0,'startup');
-insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (9,'spark.executor.cores','执行器核心个数，默认值：2','Number of cores per executor, default value: 2','spark-executor-cores','spark-executor-cores','Input',0,NULL,'2',0,NULL,0,1,1,0,'startup');
-insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (10,'spark.executor.instances','执行器个数，默认值：2','Number of executors, default value: 2','spark-executor-instances','spark-executor-instances','Input',0,NULL,'2',0,NULL,0,1,1,0,'startup');
+insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (7,'spark.driver.memory','驱动器内存大小，默认值：2','Driver memory, default value: 2','spark-driver-memory','spark-driver-memory','Input',0,NULL,'2',0,"!${params.configuration.startup['ec.conf.templateId']}",0,1,1,0,'startup');
+insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (8,'spark.executor.memory','执行器内存大小，默认值：3','Executor memory, default value: 3','spark-executor-memory','spark-executor-memory','Input',0,NULL,'3',0,"!${params.configuration.startup['ec.conf.templateId']}",0,1,1,0,'startup');
+insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (9,'spark.executor.cores','执行器核心个数，默认值：2','Number of cores per executor, default value: 2','spark-executor-cores','spark-executor-cores','Input',0,NULL,'2',0,"!${params.configuration.startup['ec.conf.templateId']}",0,1,1,0,'startup');
+insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (10,'spark.executor.instances','执行器个数，默认值：2','Number of executors, default value: 2','spark-executor-instances','spark-executor-instances','Input',0,NULL,'2',0,"!${params.configuration.startup['ec.conf.templateId']}",0,1,1,0,'startup');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (11,'wds.linkis.rm.yarnqueue','执行队列','Execution queue','wds-linkis-yarnqueue','wds-linkis-yarnqueue','Input',0,NULL,NULL,0,NULL,0,1,1,0,'startup');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (12,'resources',NULL,NULL,'资源信息','Resource information','Upload',0,'[]',NULL,0,NULL,0,1,1,0,'node');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (13,'category','请选择类型','Please choose the type','类型','Type','Select',1,'[\"node\"]','node',0,NULL,0,1,1,0,'runtime');
@@ -143,8 +141,6 @@ insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`l
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (16,'to','请填写收件人','Please enter recipients','收件人','To','Input',1,NULL,NULL,0,NULL,0,1,1,0,'runtime');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (17,'cc','请填写抄送人','Please enter carbon copy recipients','抄送','Cc','Input',0,NULL,NULL,0,NULL,0,1,1,0,'runtime');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (18,'bcc','请填写秘密发送人','Please enter blind carbon copy recipients','秘密抄送','Bcc','Input',0,NULL,NULL,0,NULL,0,1,1,0,'runtime');
-insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (48,'sendFeishu','请选择是否发送飞书','Please choose whether to send Feishu message','是否发送飞书','Send Feishu','Select',0,'["true","false"]','false',0,NULL,0,1,1,0,'runtime');
-insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (49,'feishuTo','请填写飞书接收人英文名，多个用英文分号分隔','Please enter Feishu receiver name, separated by semicolons','飞书接收人','Feishu To','Input',0,NULL,NULL,0,NULL,0,1,1,0,'runtime');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (19,'itsm','请填写关联审批单','Please enter ITSM','关联审批单','ITSM','Input',1,NULL,NULL,0,NULL,0,1,1,0,'runtime');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (20,'msg.type','请正确填写消息类型','Please enter message type correctly','msg.type','msg.type','Disable',1,NULL,'SEND',0,NULL,0,1,1,0,'runtime');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (21,'msg.topic','消息主题，必须与eventreceiver完全一致','Message subject must be exactly the same as eventreceiver','msg.topic','msg.topic','Input',1,NULL,NULL,0,NULL,0,1,1,0,'runtime');
@@ -157,7 +153,7 @@ insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`l
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (28,'max.receive.hours','请填写等待时间，默认1小时','Please enter waiting time, 1 hour by default','max.receive.hours','max.receive.hours','Input',0,NULL,'12',0,NULL,0,1,1,0,'runtime');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (29,'msg.savekey','消息共享key值，默认msg.body','The ky of message content, msg.body by default','msg.savekey','msg.savekey','Input',0,NULL,'msg.body',0,NULL,0,1,1,0,'runtime');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (30,'only.receive.today',NULL,NULL,'only.receive.today','only.receive.today','Input',0,NULL,'true',0,NULL,0,1,1,0,'runtime');
-insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (31,'source.type','请选择数据来源','Please choose the data source','source.type','source.type','Select',1,'[\"hivedb\",\"maskdb\"]',NULL,0,NULL,0,1,1,0,'runtime');
+insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (31,'source.type','请选择数据来源','Please choose the data source','source.type','source.type','Select',1,'[\"hivedb\"]',NULL,0,NULL,0,1,1,0,'runtime');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (32,'check.object','比如：db.tb{ds=${run_date}}','Please enter the name of data dependency','check.object','check.object','Input',1,NULL,NULL,0,NULL,0,1,1,0,'runtime');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (33,'max.check.hours',NULL,NULL,'max.check.hours','max.check.hours','Input',0,NULL,'1',0,NULL,0,1,1,0,'runtime');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (34,'job.desc','请正确填写多源配置','Please enter multi-source configuration correctly','job.desc','job.desc','Text',0,NULL,NULL,0,NULL,0,1,1,0,'runtime');
@@ -168,8 +164,15 @@ insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`l
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (41,'executeUser','请填写执行用户','Please enter execute user','执行用户','executeUser','Input',1,NULL,NULL,0,NULL,0,1,1,0,'runtime');
 insert  into `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (42,'Filter','请填写过滤条件','Please enter filter','过滤条件','Filter','Input',1,NULL,NULL,0,NULL,0,1,1,0,'runtime');
 INSERT  INTO `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (45,'ReuseEngine','请选择是否复用引擎','Please choose to reuse engin or not','是否复用引擎','reuse-engine-or-not','Select',1,'[\"true\",\"false\"]','true',0,NULL,0,1,1,0,'startup');
-INSERT  INTO `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (46,'wds.linkis.engineconn.java.driver.memory','请填写引擎内存','please input driver memory','wds.linkis.engineconn.java.driver.memory','wds-linkis-engineconn.java.driver.memory','Input',0,NULL,'1G',0,NULL,0,1,1,0,'runtime');
-INSERT  INTO `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (47,'auto.disabled','默认为false，若禁用，工作流执行和调度会跳过该节点','default false','是否禁用节点','auto.disabled','Select',1,'["true","false"]',NULL,0,NULL,0,1,1,0,'special');
+INSERT  INTO `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (46,'wds.linkis.engineconn.java.driver.memory','请填写引擎内存','please input driver memory','wds.linkis.engineconn.java.driver.memory','wds-linkis-engineconn.java.driver.memory','Input',0,NULL,'1G',0,"!${params.configuration.startup['ec.conf.templateId']}",0,1,1,0,'runtime');
+INSERT  INTO  dss_workflow_node_ui (`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (47,'spark.conf', 'spark自定义参数配置输入，例如spark.sql.shuffle.partitions=10。多个参数使用分号分隔。', 'input spark params config, eg: spark.sql.shuffle.partitions=10. Use semi-colon to split multi-params', 'spark.conf', 'spark.conf', 'Text', 0, NULL, "", 0, "!${params.configuration.startup['ec.conf.templateId']}", 0, 1, 1, 0, 'startup');
+INSERT  INTO `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (48,'auto.disabled','默认为false，若禁用，工作流执行和调度会跳过该节点','default false','是否禁用节点','auto.disabled','Select',1,'["true","false"]',NULL,0,NULL,0,1,1,0,'special');
+INSERT  INTO `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (49, 'wds.linkis.engine.runtime.priority', '执行优先级，最高是1000，其次是100(默认)，最低是10', 'execute priority', '执行优先级', 'wds.linkis.engine.runtime.priority', 'Select', 1, '["1000","100","10"]', NULL, 0, NULL, 0, 1, 1, 0, 'runtime');
+INSERT  INTO `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (50,'mapreduce.job.running.map.limit','请填写map任务数限制','please map task limit','mapreduce.job.running.map.limit','mapreduce.job.running.map.limit','Input',0,NULL,'200000',0,"!${params.configuration.startup['ec.conf.templateId']}",0,1,1,0,'startup');
+INSERT  INTO `dss_workflow_node_ui`(`id`,`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`) values (51,'mapreduce.job.running.reduce.limit','请填写reduce任务数限制','please reduce task limit','mapreduce.job.running.reduce.limit','mapreduce.job.running.reduce.limit','Input',0,NULL,'999',0,"!${params.configuration.startup['ec.conf.templateId']}",0,1,1,0,'startup');
+
+
+
 
 DELETE FROM dss_workflow_node_to_ui;
 select @workflow_node_sql:=id from dss_workflow_node where name='sql';
@@ -199,8 +202,6 @@ select @node_ui_content:=id from dss_workflow_node_ui where `key`='content';
 select @node_ui_to:=id from dss_workflow_node_ui where `key`='to';
 select @node_ui_cc:=id from dss_workflow_node_ui where `key`='cc';
 select @node_ui_bcc:=id from dss_workflow_node_ui where `key`='bcc';
-select @node_ui_sendFeishu:=id from dss_workflow_node_ui where `key`='sendFeishu';
-select @node_ui_feishuTo:=id from dss_workflow_node_ui where `key`='feishuTo';
 select @node_ui_itsm:=id from dss_workflow_node_ui where `key`='itsm';
 select @node_ui_msg_sender:=id from dss_workflow_node_ui where `key`='msg.sender';
 select @node_ui_msg_body:=id from dss_workflow_node_ui where `key`='msg.body';
@@ -217,6 +218,10 @@ select @node_ui_upStreams:=id from dss_workflow_node_ui where `key`='upStreams';
 select @node_ui_executeUser:=id from dss_workflow_node_ui where `key`='executeUser';
 select @node_ui_ReuseEngine:=id from dss_workflow_node_ui where `key`='ReuseEngine';
 select @node_ui_DriverMemory:=id from dss_workflow_node_ui where `key`='wds.linkis.engineconn.java.driver.memory';
+select @node_ui_spark_conf:=id from  dss_workflow_node_ui where `key`='spark.conf';
+select @node_ui_runtime_priority:=id from dss_workflow_node_ui where `key` = 'wds.linkis.engine.runtime.priority';
+SELECT @node_ui_hive_map_limit:=id FROM `dss_workflow_node_ui` WHERE `key` = 'mapreduce.job.running.map.limit';
+SELECT @node_ui_hive_reduce_limit:=id FROM `dss_workflow_node_ui` WHERE `key` = 'mapreduce.job.running.reduce.limit';
 
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_sql,@node_ui_title);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_sql,@node_ui_desc);
@@ -230,6 +235,8 @@ insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@work
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_sql,@node_ui_wds_linkis_rm_yarnqueue);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_sql,@node_ui_resources);
 INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (@workflow_node_sql,@node_ui_ReuseEngine);
+insert into   dss_workflow_node_to_ui (`workflow_node_id`,`ui_id`) VALUES (@workflow_node_sql, @node_ui_spark_conf);
+insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_sql,@node_ui_runtime_priority);
 
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_python,@node_ui_title);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_python,@node_ui_desc);
@@ -237,6 +244,7 @@ insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@work
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_python,@node_ui_appTag);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_python,@node_ui_auto_disabled);
 INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (@workflow_node_python,@node_ui_ReuseEngine);
+insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_python,@node_ui_runtime_priority);
 
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_pyspark,@node_ui_title);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_pyspark,@node_ui_desc);
@@ -250,6 +258,8 @@ insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@work
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_pyspark,@node_ui_wds_linkis_rm_yarnqueue);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_pyspark,@node_ui_resources);
 INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (@workflow_node_pyspark,@node_ui_ReuseEngine);
+insert into   dss_workflow_node_to_ui (`workflow_node_id`,`ui_id`) values (@workflow_node_pyspark, @node_ui_spark_conf);
+insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_pyspark,@node_ui_runtime_priority);
 
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_scala,@node_ui_title);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_scala,@node_ui_desc);
@@ -262,6 +272,8 @@ insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@work
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_scala,@node_ui_spark_executor_instances);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_scala,@node_ui_wds_linkis_rm_yarnqueue);
 INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (@workflow_node_scala,@node_ui_ReuseEngine);
+insert into   dss_workflow_node_to_ui (`workflow_node_id`,`ui_id`) values (@workflow_node_scala, @node_ui_spark_conf);
+insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_scala,@node_ui_runtime_priority);
 
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_hql,@node_ui_title);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_hql,@node_ui_desc);
@@ -270,6 +282,9 @@ insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@work
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_hql,@node_ui_auto_disabled);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_hql,@node_ui_wds_linkis_rm_yarnqueue);
 INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (@workflow_node_hql,@node_ui_ReuseEngine);
+insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_hql,@node_ui_runtime_priority);
+INSERT INTO   dss_workflow_node_to_ui (workflow_node_id, ui_id) VALUES(@workflow_node_hql, @node_ui_hive_map_limit);
+INSERT INTO   dss_workflow_node_to_ui (workflow_node_id, ui_id) VALUES(@workflow_node_hql, @node_ui_hive_reduce_limit);
 
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_shell,@node_ui_title);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_shell,@node_ui_desc);
@@ -277,6 +292,7 @@ insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@work
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_shell,@node_ui_appTag);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_shell,@node_ui_auto_disabled);
 INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (@workflow_node_shell,@node_ui_ReuseEngine);
+insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_shell,@node_ui_runtime_priority);
 
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_jdbc,@node_ui_title);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_jdbc,@node_ui_desc);
@@ -284,6 +300,7 @@ insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@work
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_jdbc,@node_ui_appTag);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_jdbc,@node_ui_auto_disabled);
 INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (@workflow_node_jdbc,@node_ui_ReuseEngine);
+insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_jdbc,@node_ui_runtime_priority);
 
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_connector,@node_ui_title);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_connector,@node_ui_desc);
@@ -291,6 +308,7 @@ insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@work
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_connector,@node_ui_appTag);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_connector,@node_ui_auto_disabled);
 INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (@workflow_node_connector,@node_ui_ReuseEngine);
+insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_connector,@node_ui_runtime_priority);
 
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_subFlow,@node_ui_title);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_subFlow,@node_ui_desc);
@@ -299,6 +317,9 @@ insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@work
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_subFlow,@node_ui_auto_disabled);
 INSERT  INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) VALUES (@workflow_node_subFlow,@node_ui_ReuseEngine);
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_hql,@node_ui_DriverMemory);
+insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@workflow_node_subFlow,@node_ui_runtime_priority);
+
+
 
 DELETE FROM dss_workflow_node_ui_validate;
 insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('7','Regex','^([1-9]|1[0-5])(g|G){0,1}$','设置范围为[1,15],设置超出限制','must be between 1 and 15 ','blur');
@@ -309,7 +330,7 @@ insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_ra
 insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('25','OFT','[\"RECEIVE\"]','','Please select ','change');
 insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('27','NumInterval','[1,1000]','请填写查询频率，默认10次，范围：1-1000','Please fill in the inquiry frequency, default : 10, range is 1 to 1000','blur');
 insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('28','NumInterval','[1,1000]','请填写等待时间，默认1小时，范围：1-1000','Please enter waiting time, 1 hour by default, range is 1 to 1000','blur');
-insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('31','OFT','[\"hivedb\",\"maskdb\"]','','Invalid format,example:ProjectName@WFName@jobName','blur');
+insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('31','OFT','[\"hivedb\"]','','Invalid format,example:ProjectName@WFName@jobName','blur');
 insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('32','Regex','^[^\\u4e00-\\u9fa5]+$','此值不能输入中文','Chinese characters are not allowed','blur');
 insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('40','Regex','^[a-zA-Z]([^.]*\\.[^.]*){1,}$','需要检查的数据源dbname.tablename{partition}','Checked data source dbname.tablename{partition}','blur');
 insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('41','Regex','^[\\S\\n\\s]{0,500}$','长度在1到500个字符','The length is between 1 and 500 characters','blur');
@@ -330,14 +351,15 @@ insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_ra
 insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('58','Regex','(.+)@(.+)@(.+)','此格式错误，例如：ProjectName@WFName@jobName','Invalid format,example:ProjectName@WFName@jobName','blur');
 INSERT INTO `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('59','OFT','["true","false"]','请填写是否复用引擎，false：不复用，true：复用','Please fill in whether or not to reuse engine, true: reuse, false: not reuse','blur');
 insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('60', 'Regex', '^[0-9.]*g{0,1}$', 'Spark内存设置如2g', 'Drive memory size, default value: 2', 'blur');
-insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('61','Regex','^(.|\s){1,500}$','长度在1到5000个字符','The length is between 1 and 5000 characters','blur');
+insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('61','Regex','^(.|\\s){1,5000}$','长度在1到5000个字符','The length is between 1 and 5000 characters','blur');
 insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('62','Regex','^.{1,150}$','长度在1到150个字符','The length is between 1 and 150 characters','blur');
 insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('63', 'Regex', '^([1-9]|10|[1-9])(g|G){0,1}$', '设置范围为[1,10],设置超出限制', 'hive memory limit 1,10', 'blur');
 -- insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('64', 'Regex', '^(((check.object).\\w+=[^.\\s;]+(\\.[^.\\s;]+)+[;\\s]*)|((source.type).\\w+=\\w+[;\\s]*))\\+$', '请正确填写多源配置', 'params config error, please make sure!', 'blur');
 insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('64', 'Function', 'validateJobDesc', '请正确填写多源配置', 'params config error, please make sure!', 'blur');
 -- insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('65', 'Function', 'validateJobDesc', 'check.object.xx重复,请检查', 'exist check.object.xx please check!', 'blur');
 insert into `dss_workflow_node_ui_validate` (`id`, `validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('65', 'Function', 'validateJobDescDuplication', 'check.object.xx或source.type.xx重复,请检查', 'exist check.object.xx please check!', 'blur');
-
+insert into `dss_workflow_node_ui_validate` (id,`validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('66','Regex', '^(1[0-9]{1,5}|200000|[1-9][0-9]{1,4})$', '设置范围为[10,200000],设置超出限制', 'map task limit 10,200000', 'blur');
+insert into `dss_workflow_node_ui_validate` (id,`validate_type`, `validate_range`, `error_msg`, `error_msg_en`, `trigger`) values('67','Regex', '^([1-9][0-9]{1,2}|999|)$', '设置范围为[10,999],设置超出限制', 'reduce task limit 10,999', 'blur');
 
 
 DELETE FROM dss_workflow_node_ui_to_validate;
@@ -373,6 +395,7 @@ insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@
 insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@node_ui_spark_driver_memory,7);
 insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@node_ui_spark_executor_memory,8);
 insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@node_ui_spark_executor_cores,9);
+insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@node_ui_spark_executor_instances,10);
 insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@node_ui_wds_linkis_rm_yarnqueue,41);
 insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@node_ui_wds_linkis_rm_yarnqueue,57);
 insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@node_ui_title,48);
@@ -420,6 +443,10 @@ insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@
 insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@node_ui_spark_executor_memory,60);
 insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@node_ui_job_desc,61);
 insert  into `dss_workflow_node_ui_to_validate`(`ui_id`,`validate_id`) values (@node_ui_DriverMemory,63);
+insert  into  dss_workflow_node_ui_to_validate (`ui_id`,`validate_id`) values (@node_ui_spark_conf, 41);
+insert  into  dss_workflow_node_ui_to_validate (`ui_id`,`validate_id`) values (@node_ui_runtime_priority, 52);
+insert  into  dss_workflow_node_ui_to_validate (`ui_id`,`validate_id`) values (@node_ui_hive_map_limit, 66);
+insert  into  dss_workflow_node_ui_to_validate (`ui_id`,`validate_id`) values (@node_ui_hive_reduce_limit, 67);
 
 
 DELETE FROM dss_workspace_appconn_role;
@@ -443,7 +470,7 @@ INSERT INTO `dss_workspace_appconn_role` (`workspace_id`, `appconn_id`, `role_id
 INSERT INTO `dss_workspace_appconn_role` (`workspace_id`, `appconn_id`, `role_id`, `priv`, `update_time`, `updateby`) VALUES('224',@workflow_appconn_id,'1','1',now(),'system');
 INSERT INTO `dss_workspace_appconn_role` (`workspace_id`, `appconn_id`, `role_id`, `priv`, `update_time`, `updateby`) VALUES('224',@apiservice_appconn_id,'1','1',now(),'system');
 
-
+DELETE FROM `dss_workspace_admin_dept` where id = '100';
 INSERT INTO `dss_workspace_admin_dept` (`id`, `parent_id`, `ancestors`, `dept_name`, `order_num`, `leader`, `phone`, `email`, `status`, `del_flag`, `create_by`, `create_time`, `update_by`, `update_time`) VALUES('100','0','0','基础科技','0','leader01','1888888888','123@qq.com','0','0','admin',now(),'admin',now());
 
 insert into `dss_workflow_node` (`name`, `appconn_name`, `node_type`, `jump_type`, `support_jump`, `submit_to_scheduler`, `enable_copy`, `should_creation_before_node`, `icon_path`) values('nebula','scriptis','linkis.nebula.nebula','2','1','1','1','0','svgs/nebula-graph.svg');

@@ -25,7 +25,7 @@ VALUES(@orchestrator_appconnId, 'PROD', '/orchestratorFramework', '', '');
 select @workflow_appconnId:=id from `dss_appconn` where `appconn_name` = 'workflow';
 INSERT INTO dss_appconn_instance
 (appconn_id, label, url, enhance_json, homepage_uri)
-VALUES(@workflow_appconnId, 'PROD', '/workspaceHome', '', '');
+VALUES(@workflow_appconnId, 'PROD', '/scheduleCenter', '', '');
 
 
 

@@ -373,6 +373,40 @@ CREATE TABLE `dss_ec_config_template_apply_rule_department` (
   KEY `idx_template_uuid` (`department_name`)
 ) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='模板应用规则覆盖部门表';
 
+-- 发送ims任务信息表
+CREATE TABLE `dss_send_ims_task` (
+   `id` bigint(20) NOT NULL AUTO_INCREMENT,
+   `job_id` varchar(64) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '任务ID',
+   `alter_title` text COLLATE utf8mb4_bin COMMENT 'ims标题信息',
+   `alter_info` longtext COLLATE utf8mb4_bin COMMENT 'ims内容信息',
+   `create_time` timestamp DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+   `update_time` timestamp DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
+   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='发送ims任务信息';
+
+-- azkaban调取系统消息队列表
+CREATE TABLE `event_queue` (
+  `msg_id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '消息ID号',
+  `sender` varchar(45) NOT NULL COMMENT '消息发送者',
+  `send_time` datetime NOT NULL COMMENT '消息发送时间',
+  `topic` varchar(45) NOT NULL COMMENT '消息主题',
+  `msg_name` varchar(45) NOT NULL COMMENT '消息名称',
+  `msg` varchar(250) DEFAULT NULL COMMENT '消息内容',
+  `send_ip` varchar(45) NOT NULL,
+  `run_date` VARCHAR(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '信号的run_date',
+  PRIMARY KEY (`msg_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=21068 DEFAULT CHARSET=utf8mb4 COMMENT='azkaban调取系统消息队列表';
+
+
+CREATE TABLE `event_status` (
+  `receiver` varchar(45) NOT NULL COMMENT '消息接收者',
+  `receive_time` datetime NOT NULL COMMENT '消息接收时间',
+  `topic` varchar(45) NOT NULL COMMENT '消息主题',
+  `msg_name` varchar(45) NOT NULL COMMENT '消息名称',
+  `msg_id` int(11) NOT NULL COMMENT '消息的最大消费id',
+  PRIMARY KEY (`receiver`,`topic`,`msg_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='消息消费状态表';
+
 
 COMMIT;
 SET @@autocommit=1;

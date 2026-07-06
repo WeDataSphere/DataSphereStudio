@@ -28,7 +28,7 @@ INSERT INTO dss_workflow_node_to_ui (workflow_node_id,ui_id) values (
 
 
 INSERT  INTO `dss_workflow_node_ui`(`key`,`description`,`description_en`,`lable_name`,`lable_name_en`,`ui_type`,`required`,`value`,`default_value`,`is_hidden`,`condition`,`is_advanced`,`order`,`node_menu_type`,`is_base_info`,`position`)
-values ('branch.rules','请填写分支规则，格式如condition.1=amount>100;on.success.1=节点A;on.failure.1=节点B','Please enter branch rules, such as condition.1=amount>100;on.success.1=NodeA;on.failure.1=NodeB','分支规则','Branch rules','Text',1,NULL,NULL,0,NULL,0,2,1,0,'special');
+values ('branch.rules','请正确填写分支规则，规则编号从1开始，目标节点可为空，按行分割，如：\ncondition.1=amount>100\non.success.1=节点A\non.failure.1=节点B\ncondition.2=count>10\non.success.2=节点C\non.failure.2=节点D','Please enter branch rules, such as\ncondition.1=amount>100\non.success.1=NodeA\non.failure.1=NodeB\ncondition.2=count>10\non.success.2=NodeC\non.failure.2=NodeD','分支规则','Branch rules','Text',1,NULL,NULL,0,NULL,0,2,1,0,'special');
 
 insert  into `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (
 (select id from dss_workflow_node where node_type = 'workflow.branch' limit 1),

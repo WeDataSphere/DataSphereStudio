@@ -717,7 +717,7 @@ CREATE TABLE `dss_workflow_node_content_to_ui` (
   `content_id` bigint(20) NOT NULL COMMENT '编排Id',
   `node_ui_key` varchar(64) NOT NULL COMMENT '节点Key',
   `node_ui_value` text NOT NULL COMMENT '属性值',
-  `node_type` VARCHAR(255)  COMMENT '节点类型，用于分区',
+  `node_type` VARCHAR(64)  COMMENT '节点类型，用于分区',
   `node_content_type` VARCHAR(32)  COMMENT '内容类型，整数-NumInterval, 内存-Memory, 字符串-String',
   PRIMARY KEY (`content_id`, `node_ui_key`, `node_type`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='工作流节点属性表'
@@ -751,7 +751,12 @@ PARTITION BY LIST COLUMNS(`node_type`) (
     PARTITION `sqoop` VALUES IN ('linkis.appconn.exchangis.sqoop'),
     PARTITION `datax` VALUES IN ('linkis.appconn.exchangis.datax'),
     PARTITION `nebula` VALUES IN ('linkis.nebula.nebula'),
-	PARTITION `metabase` VALUES IN ('linkis.appconn.metabase')
+	PARTITION `metabase` VALUES IN ('linkis.appconn.metabase'),
+	PARTITION `starrocks` VALUES IN ('linkis.jdbc.starrocks'),
+	PARTITION `eventsenderWTSS` VALUES IN ('wtss.eventchecker.sender'),
+	PARTITION `eventreceiverWTSS` VALUES IN ('wtss.eventchecker.receiver'),
+	PARTITION `aisql` VALUES IN ('linkis.ai.sql'),
+	PARTITION `branch` VALUES IN ('workflow.branch')
 );
 
 
