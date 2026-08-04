@@ -21,6 +21,8 @@ import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,12 +42,29 @@ public class AppStandardClassUtils extends ClassHelper {
         if(CLASS_LOADER_MAP.containsKey(appConnName)) {
             synchronized (AppStandardClassUtils.class) {
                 if(CLASS_LOADER_MAP.containsKey(appConnName)) {
-                    CLASS_LOADER_MAP.remove(appConnName);
+                    // 关键修复：关闭旧 ClassLoader，释放其持有的 jar 文件句柄（URLJarFile），
+                    // 否则 URLClassLoader 加载的 jar 句柄会随 AppConn 热部署/重复加载持续累积。
+                    ClassLoader oldClassLoader = CLASS_LOADER_MAP.remove(appConnName);
                     INSTANCES.remove(appConnName);
+                    closeClassLoader(oldClassLoader);
                 }
             }
         }
         return getClassLoader(appConnName, createClassLoader);
+    }
+
+    /**
+     * 关闭 ClassLoader 以释放其持有的 jar 文件句柄。仅对 URLClassLoader 生效；close 异常降级为 warn，不阻断主流程。
+     */
+    private static void closeClassLoader(ClassLoader classLoader) {
+        if (classLoader instanceof URLClassLoader) {
+            try {
+                ((URLClassLoader) classLoader).close();
+                LOGGER.info("Closed old URLClassLoader for appConn: {}", classLoader);
+            } catch (IOException e) {
+                LOGGER.warn("Failed to close old URLClassLoader for appConn", e);
+            }
+        }
     }
 
     public static ClassLoader getClassLoader(String appConnName, Supplier<ClassLoader> createClassLoader) {
