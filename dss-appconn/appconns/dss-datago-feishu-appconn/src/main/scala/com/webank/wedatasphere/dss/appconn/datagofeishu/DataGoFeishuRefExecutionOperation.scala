@@ -4,6 +4,8 @@
  */
 package com.webank.wedatasphere.dss.appconn.datagofeishu
 
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.{Properties, UUID}
 
 import com.webank.wedatasphere.dss.appconn.datagofeishu.client.DataGoFeishuClient
@@ -34,6 +36,10 @@ import scala.collection.JavaConversions._
 class DataGoFeishuRefExecutionOperation
   extends LongTermRefExecutionOperation[RefExecutionRequestRef.RefExecutionRequestRefImpl]
     with Killable with Procedure {
+
+  /** 不可变、线程安全，节点日志时间戳格式 */
+  private val logTimestampFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
   /**
    * 提交节点执行：解析参数 → ① 表单获取 → DM 单一致性比对 → 进入 DETECTING 阶段。
@@ -337,8 +343,12 @@ class DataGoFeishuRefExecutionOperation
 
   private def appendLog(action: DataGoFeishuExecutionAction, message: String): Unit = {
     if (action.getExecutionRequestRefContext != null) {
-      action.getExecutionRequestRefContext.appendLog(message)
+      action.getExecutionRequestRefContext.appendLog(timestamp() + " " + message)
     }
+  }
+
+  private def timestamp(): String = {
+    logTimestampFormatter.format(LocalDateTime.now())
   }
 
   private def sheetSummary(sheets: Seq[SheetResult]): String = {
