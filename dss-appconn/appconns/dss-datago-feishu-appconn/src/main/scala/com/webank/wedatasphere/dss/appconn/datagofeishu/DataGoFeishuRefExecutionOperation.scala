@@ -142,7 +142,6 @@ class DataGoFeishuRefExecutionOperation
     action.lastRemoteStatus = safe(response.getStatus)
     action.lastSummary = safe(response.getResultSummary)
     logger.info(s"DataGo Feishu detect polled, dmId=${action.nodeParams.getDmId}, taskId=${action.taskId}, status=${action.lastRemoteStatus}, summary=${action.lastSummary}")
-    appendLog(action, s"DataGo Feishu detect polled, dmId=${action.nodeParams.getDmId}, taskId=${action.taskId}")
     normalize(response.getStatus) match {
       case "inited" | "detecting" =>
         action.nextPollAt = System.currentTimeMillis() + action.detectPollInterval
@@ -150,7 +149,7 @@ class DataGoFeishuRefExecutionOperation
       case "detected_pass" =>
         action.stage = DataGoFeishuStage.Exporting
         action.nextPollAt = 0L
-        appendLog(action, s"敏感数据检测通过，开始执行外发到飞书多维表格,taskId=" + action.taskId)
+        appendLog(action, s"敏感数据检测通过，开始执行外发到飞书多维表格,dmId=${action.nodeParams.getDmId},taskId=${action.taskId}")
         logger.info(s"DataGo Feishu detect passed, dmId=${action.nodeParams.getDmId}, taskId=${action.taskId}, enter EXPORTING")
       case "detected_fail" =>
         throw new DataGoFeishuException(82005, "DataGo检测不通过: " + safe(response.getResultSummary))
