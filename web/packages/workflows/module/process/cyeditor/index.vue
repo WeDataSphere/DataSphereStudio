@@ -418,6 +418,24 @@ export default {
         'background-color': nodeThemeColor.nodeDisabledBg,
         'color': nodeThemeColor.nodeDisabledColor
       })
+      // DAG 结构校验高亮样式（error 标红 / warn 标黄）
+      // background-color/border-color 作用于节点，line-color/arrow-color 作用于边
+      cy.style().selector('.dag-error').style({
+        'background-color': '#ff4d4f',
+        'border-color': '#ff4d4f',
+        'border-width': '2px',
+        'line-color': '#ff4d4f',
+        'target-arrow-color': '#ff4d4f',
+        'source-arrow-color': '#ff4d4f',
+      })
+      cy.style().selector('.dag-warn').style({
+        'background-color': '#faad14',
+        'border-color': '#faad14',
+        'border-width': '2px',
+        'line-color': '#faad14',
+        'target-arrow-color': '#faad14',
+        'source-arrow-color': '#faad14',
+      })
       data.nodes.forEach(function(nodeItem) {
         var node = cy.getElementById(nodeItem.data.id);
         if (nodeItem.disabled) {
@@ -586,6 +604,62 @@ export default {
         cy.$(':selected').unselect();
         new_node.select();
       });
+    },
+    /**
+     * 高亮节点（DAG 结构校验）
+     * @param {Array} nodeIdentities - 节点标识数组（key/id）
+     * @param {String} level - 'error' | 'warn'
+     */
+    highlightNodes(nodeIdentities, level) {
+      if (!this.instance || !this.instance.cy) return;
+      const cy = this.instance.cy;
+      const className = level === 'error' ? 'dag-error' : 'dag-warn';
+      (nodeIdentities || []).forEach((id) => {
+        if (!id) return;
+        const ele = cy.getElementById(id);
+        if (ele && ele.length > 0) {
+          ele.addClass(className);
+        }
+      });
+    },
+    /**
+     * 高亮边（DAG 结构校验，按 source->target 定位）
+     * @param {Array} edgeRefs - 边引用数组，格式 "source->target"
+     * @param {String} level - 'error' | 'warn'
+     */
+    highlightEdges(edgeRefs, level) {
+      if (!this.instance || !this.instance.cy) return;
+      const cy = this.instance.cy;
+      const className = level === 'error' ? 'dag-error' : 'dag-warn';
+      (edgeRefs || []).forEach((ref) => {
+        if (!ref || ref.indexOf('->') < 0) return;
+        const parts = ref.split('->');
+        const source = parts[0];
+        const target = parts[1];
+        if (!source || !target) return;
+        // 按 source/target 匹配边
+        cy.edges().forEach((edge) => {
+          if (edge.data('source') === source && edge.data('target') === target) {
+            edge.addClass(className);
+          }
+        });
+      });
+    },
+    /**
+     * 清除所有 DAG 结构校验高亮
+     */
+    clearHighlight() {
+      if (!this.instance || !this.instance.cy) return;
+      const cy = this.instance.cy;
+      cy.$('.dag-error, .dag-warn').removeClass('dag-error dag-warn');
+    },
+    /**
+     * 定位到指定节点（居中 + 选中），供校验列表点击调用
+     * @param {String} nodeId - 节点标识
+     */
+    locateNode(nodeId) {
+      if (!this.instance || !this.instance.cy || !nodeId) return;
+      this.nodeScroolIntoView(nodeId);
     },
     onKeyUp(e) {
       if (e.key === 'Control') {

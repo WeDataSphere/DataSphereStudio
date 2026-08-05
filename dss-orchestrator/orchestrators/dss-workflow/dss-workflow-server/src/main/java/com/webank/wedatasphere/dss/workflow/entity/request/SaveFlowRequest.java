@@ -11,6 +11,13 @@ public class SaveFlowRequest {
     private String flowEditLock;
     private Boolean isNotHaveLock;
     private LabelRouteVO labels;
+    /**
+     * DAG 结构校验 warn 确认继续标记（design-doc §6.2）。
+     *
+     * <p>默认 null/false。仅 warn（开始结束结构）时，前端二次确认后带 forceSave=true 重新请求以放行；
+     * error（边引用/环路/重名）永远阻断，forceSave 不能绕过 error。</p>
+     */
+    private Boolean forceSave;
 
     public Long getId() {
         return id;
@@ -66,5 +73,13 @@ public class SaveFlowRequest {
 
     public void setNotHaveLock(Boolean notHaveLock) {
         isNotHaveLock = notHaveLock;
+    }
+
+    public Boolean getForceSave() {
+        return forceSave;
+    }
+
+    public void setForceSave(Boolean forceSave) {
+        this.forceSave = forceSave;
     }
 }

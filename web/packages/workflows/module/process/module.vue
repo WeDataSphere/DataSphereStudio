@@ -372,6 +372,15 @@
       @release="release"
     />
     <NodePath :data="json" :show="showNodePathPanel" @close="showNodePathPanel = false" @open-params="click" @open-node="dblclick" />
+    <!-- DAG 结构校验结果弹窗（error 列表） -->
+    <ValidationResultDialog
+      :visible="validationDialogVisible"
+      :issues="validationDialogIssues"
+      :level="validationDialogLevel"
+      @update:visible="validationDialogVisible = $event"
+      @on-close="handleValidationDialogClose"
+      @on-locate="handleValidationLocate"
+    />
   </div>
 </template>
 <script>
@@ -398,6 +407,7 @@ import NodePath from './component/nodePath.vue';
 import FlowDiffSubmit from './component/flowDiffSubmit.vue';
 import FlowDiffPublish from './component/flowDiffPublish.vue';
 import cyeditor from './cyeditor/index.vue'
+import ValidationResultDialog from './component/ValidationResultDialog.vue';
 import DesignToolbar from './component/designtoolbar.vue';
 import { hasCycle } from './utils';
 import { useData } from './component/useData.js';
@@ -418,6 +428,7 @@ export default {
     BottomTab,
     NodePath,
     cyeditor,
+    ValidationResultDialog,
     DesignToolbar,
     FlowDiffSubmit,
     FlowDiffPublish
@@ -535,6 +546,10 @@ export default {
       loading: false,
       repetitionNameShow: false,
       repeatTitles: [],
+      // DAG 结构校验弹窗状态
+      validationDialogVisible: false,
+      validationDialogIssues: [],
+      validationDialogLevel: 'error',
       nodebaseinfoShow: false, // 自定义节点信息弹窗展示
       clickCurrentNode: {}, // 当前点击的节点
       clickCurrentNodeDisable: false, // 当前点击的节点是否可编辑
@@ -1530,8 +1545,8 @@ export default {
       if (isFiveNode.length > 0) return this.$Message.warning(this.$t('message.workflow.process.deleteNodeSave'));
       return this.saveRequest(json, comment, f);
     },
-    // 保存请求
-    saveRequest(json, comment, f) {
+    // 保存请求（forceSave=true 表示 warn 确认继续保存，或自动保存遇 warn 放行）
+    saveRequest(json, comment, f, forceSave) {
       const updateTime = Date.now();
       const paramsJson = JSON.parse(JSON.stringify(Object.assign(json, {
         comment: comment,
@@ -1547,7 +1562,7 @@ export default {
       if (this.schedulerAppConnName !== undefined) {
         paramsJson.schedulerAppConnName = this.schedulerAppConnName
       }
-      return api.fetch(`${this.$API_PATH.WORKFLOW_PATH}saveFlow`, {
+      const requestBody = {
         id: Number(this.flowId),
         json: JSON.stringify(paramsJson),
         projectName: this.$route.query.projectName,
@@ -1556,8 +1571,74 @@ export default {
           route: this.getCurrentDsslabels()
         },
         flowEditLock: this.getFlowEditLock()
-      }).then((res) => {
+      };
+      // forceSave=true：warn 确认继续 / 自动保存遇 warn 放行（design-doc §6.2/§6.4）
+      if (forceSave) {
+        requestBody.forceSave = true;
+      }
+      return api.fetch(`${this.$API_PATH.WORKFLOW_PATH}saveFlow`, requestBody).then((res) => {
         this.loading = false;
+
+        // ====== DAG 结构校验分支（design-doc §6.3/§7.1）======
+
+        // PENDING_CONFIRM：仅 warn 且未确认
+        if (res && res.status === 'PENDING_CONFIRM') {
+          const warnIssues = res.validationIssues || [];
+          this.highlightValidationIssues(warnIssues, 'warn');
+          if (f) {
+            // 自动保存遇 warn：不弹框，直接 forceSave 放行（design-doc §6.4）
+            this.clearValidationHighlight();
+            return this.saveRequest(json, comment, f, true);
+          }
+          // 手动保存遇 warn：弹 $Modal.confirm 确认（design-doc §7.1）
+          this.$Modal.confirm({
+            title: this.$t('message.workflow.process.validation.warnTitle'),
+            render: (h) => {
+              return h('div', {
+                style: { maxHeight: '320px', overflowY: 'auto', paddingTop: '4px' }
+              }, warnIssues.map((issue) => {
+                return h('div', {
+                  style: {
+                    padding: '8px 10px',
+                    marginBottom: '6px',
+                    border: '1px solid #ffe58f',
+                    borderRadius: '4px',
+                    backgroundColor: '#fffbe6'
+                  }
+                }, [
+                  h('div', {
+                    style: { fontWeight: '600', color: '#d48806', fontSize: '13px', marginBottom: '4px' }
+                  }, (issue.checkName || '') + this.formatIssueLocation(issue)),
+                  issue.message ? h('div', {
+                    style: { fontSize: '12px', color: '#515a6e', lineHeight: '1.5', marginBottom: '2px' }
+                  }, issue.message) : null,
+                  issue.suggestion ? h('div', {
+                    style: { fontSize: '12px', color: '#808695', lineHeight: '1.5' }
+                  }, issue.suggestion) : null,
+                ].filter(Boolean));
+              }));
+            },
+            okText: this.$t('message.workflow.process.validation.confirmContinueSave'),
+            cancelText: this.$t('message.workflow.process.validation.cancelSave'),
+            onOk: () => {
+              this.clearValidationHighlight();
+              this.saveRequest(json, comment, f, true);
+            },
+            onCancel: () => {
+              this.clearValidationHighlight();
+            },
+          });
+          return res;
+        }
+
+        // VALIDATION_FAILED：error 阻断（兼容后端 Message.ok 返回的场景）
+        if (res && res.status === 'VALIDATION_FAILED') {
+          const errorIssues = res.validationIssues || [];
+          this.handleValidationFailed(errorIssues, f);
+          return res;
+        }
+
+        // ====== 正常保存成功（既有逻辑，不动）======
         // 将更新的互斥锁的res.flowEditLock字段存储到本地
         let flowEditLock = res.flowEditLock;
         if (flowEditLock) {
@@ -1574,7 +1655,7 @@ export default {
             desc: this.$t('message.workflow.process.autoSaveWorkflow'),
           });
         }
-        this.jsonChange = false; 
+        this.jsonChange = false;
         if(this.props && this.props.length > 0) {
           this.flowProxyUser = this.props[0]['user.to.proxy'];
         }
@@ -1585,9 +1666,111 @@ export default {
         }
         return res;
       }).catch((e) => {
+        // ====== DAG 结构校验：error 阻断（兼容后端 Message.error 返回的场景）======
+        // 后端 Message.error 响应会被 api.fetch 转为 Error，校验数据在 e.response.data.data 中
+        const validationData = this.extractValidationFromError(e);
+        if (validationData && validationData.status === 'VALIDATION_FAILED') {
+          this.loading = false;
+          const errorIssues = validationData.validationIssues || [];
+          this.handleValidationFailed(errorIssues, f);
+          return; // 已处理校验错误，不再走既有错误流程
+        }
+        // ====== 既有错误处理（不动）======
         window.console.error('saveRequest',e)
         this.loading = false;
       });
+    },
+    /**
+     * 从 api.fetch 错误对象中提取 DAG 校验数据。
+     * 后端 Message.error 响应会被 api.fetch 转为 throw Error，
+     * 校验数据保存在 e.response.data.data 中（design-doc §6.2/§6.3）。
+     */
+    extractValidationFromError(e) {
+      try {
+        if (e && e.response && e.response.data && e.response.data.data) {
+          const data = e.response.data.data;
+          if (data.status === 'VALIDATION_FAILED' || data.status === 'PENDING_CONFIRM') {
+            return data;
+          }
+        }
+      } catch (_) {
+        // ignore parse error
+      }
+      return null;
+    },
+    /**
+     * 处理 VALIDATION_FAILED（error 阻断）：高亮 error 节点/边 + 弹错误列表。
+     * 自动保存遇 error 不弹对话框（design-doc §6.4：静默/日志）。
+     */
+    handleValidationFailed(issues, f) {
+      this.highlightValidationIssues(issues, 'error');
+      if (!f) {
+        // 手动保存：弹错误列表对话框
+        this.validationDialogIssues = issues;
+        this.validationDialogLevel = 'error';
+        this.validationDialogVisible = true;
+      }
+    },
+    /**
+     * 格式化校验问题的定位信息（用于 $Modal.confirm render）
+     */
+    formatIssueLocation(issue) {
+      if (issue.nodeId) return ' (' + issue.nodeId + ')';
+      if (issue.edgeRef) return ' (' + issue.edgeRef + ')';
+      return '';
+    },
+    /**
+     * 高亮画布上的校验问题节点/边（调用 cyeditor 组件方法）
+     */
+    highlightValidationIssues(issues, level) {
+      if (this.viewMode !== 'cyeditor' || !this.$refs.process) return;
+      const nodeIds = [];
+      const edgeRefs = [];
+      (issues || []).forEach((issue) => {
+        if (issue.nodeId) {
+          nodeIds.push(issue.nodeId);
+        }
+        if (issue.edgeRef) {
+          edgeRefs.push(issue.edgeRef);
+          // 边引用异常时，也尝试高亮 source/target 端点节点（若存在）
+          if (issue.edgeRef.indexOf('->') >= 0) {
+            issue.edgeRef.split('->').forEach((id) => {
+              if (id) nodeIds.push(id);
+            });
+          }
+        }
+      });
+      if (this.$refs.process.highlightNodes) {
+        this.$refs.process.highlightNodes(nodeIds, level);
+      }
+      if (this.$refs.process.highlightEdges) {
+        this.$refs.process.highlightEdges(edgeRefs, level);
+      }
+    },
+    /**
+     * 清除画布上的 DAG 校验高亮
+     */
+    clearValidationHighlight() {
+      if (this.viewMode !== 'cyeditor' || !this.$refs.process) return;
+      if (this.$refs.process.clearHighlight) {
+        this.$refs.process.clearHighlight();
+      }
+    },
+    /**
+     * 校验错误列表弹窗关闭回调
+     */
+    handleValidationDialogClose() {
+      this.validationDialogVisible = false;
+      this.clearValidationHighlight();
+    },
+    /**
+     * 校验列表点击定位：居中并选中节点
+     */
+    handleValidationLocate(issue) {
+      if (this.viewMode !== 'cyeditor' || !this.$refs.process) return;
+      if (issue.nodeId && this.$refs.process.locateNode) {
+        this.$refs.process.locateNode(issue.nodeId);
+      }
     },
     /**
      * 显示工作流参数配置页面
