@@ -26,7 +26,7 @@ select @datago_feishu_node_group_id:=id from `dss_workflow_node_group` where `na
 INSERT INTO `dss_workflow_node_to_group`(`node_id`,`group_id`) values (@datago_feishu_node_id, @datago_feishu_node_group_id);
 
 -- 删除并新增节点专属属性UI（按 key 清除，保证重复执行幂等）
-delete from `dss_workflow_node_ui` where `key` in ('dmId','notifyUsers','dataTargets','detectPollInterval','executeRetryMax','maxWaitTime') and node_menu_type = 1;
+delete from `dss_workflow_node_ui` where `key` in ('dmId','notifyUsers','dataTargets','maxWaitTime') and node_menu_type = 1;
 
 INSERT INTO `dss_workflow_node_ui`
 (`key`, description, description_en, lable_name, lable_name_en, ui_type, required, value, default_value, is_hidden, `condition`, is_advanced, `order`, node_menu_type, is_base_info, `position`)
@@ -42,15 +42,7 @@ VALUES ('dataTargets', '每行一个外发目标，行间用分号(;)或换行�
 
 INSERT INTO `dss_workflow_node_ui`
 (`key`, description, description_en, lable_name, lable_name_en, ui_type, required, value, default_value, is_hidden, `condition`, is_advanced, `order`, node_menu_type, is_base_info, `position`)
-VALUES ('detectPollInterval', '检测轮询间隔，单位秒（建议10~30）', 'Detect polling interval in seconds', '检测轮询间隔', 'Detect Poll Interval', 'Input', 0, NULL, '30', 0, NULL, 1, 7, 1, 0, 'runtime');
-
-INSERT INTO `dss_workflow_node_ui`
-(`key`, description, description_en, lable_name, lable_name_en, ui_type, required, value, default_value, is_hidden, `condition`, is_advanced, `order`, node_menu_type, is_base_info, `position`)
-VALUES ('executeRetryMax', '外发失败最大重试次数', 'Max retry count for export', '外发重试次数', 'Export Retry Max', 'Input', 0, NULL, '3', 0, NULL, 1, 8, 1, 0, 'runtime');
-
-INSERT INTO `dss_workflow_node_ui`
-(`key`, description, description_en, lable_name, lable_name_en, ui_type, required, value, default_value, is_hidden, `condition`, is_advanced, `order`, node_menu_type, is_base_info, `position`)
-VALUES ('maxWaitTime', '节点最大等待时间，单位秒（默认7200即2小时）', 'Maximum wait time in seconds', '最大等待时间', 'Maximum Wait Time', 'Input', 0, NULL, '7200', 0, NULL, 1, 9, 1, 0, 'runtime');
+VALUES ('maxWaitTime', '节点最大等待时间，单位秒（默认7200即2小时）', 'Maximum wait time in seconds', '最大等待时间(单位：秒)', 'Maximum Wait Time', 'Input', 0, NULL, '7200', 0, NULL, 1, 4, 1, 0, 'runtime');
 
 -- 外发目标 dataTargets 的前端校验规则（参考 job.desc 的 Function 校验范式）
 DELETE FROM dss_workflow_node_ui_validate WHERE validate_range = 'validateDataTargets';
@@ -69,8 +61,6 @@ select @ui_node_reuse_engine:=id from `dss_workflow_node_ui` where `key` = 'Reus
 select @ui_dm_id:=id from `dss_workflow_node_ui` where `key` = 'dmId' and node_menu_type = 1 limit 1;
 select @ui_notify_users:=id from `dss_workflow_node_ui` where `key` = 'notifyUsers' and node_menu_type = 1 limit 1;
 select @ui_data_targets:=id from `dss_workflow_node_ui` where `key` = 'dataTargets' and node_menu_type = 1 limit 1;
-select @ui_detect_poll_interval:=id from `dss_workflow_node_ui` where `key` = 'detectPollInterval' and node_menu_type = 1 limit 1;
-select @ui_execute_retry_max:=id from `dss_workflow_node_ui` where `key` = 'executeRetryMax' and node_menu_type = 1 limit 1;
 select @ui_max_wait_time:=id from `dss_workflow_node_ui` where `key` = 'maxWaitTime' and node_menu_type = 1 limit 1;
 
 DELETE FROM dss_workflow_node_ui_to_validate WHERE ui_id = @ui_data_targets;
@@ -85,6 +75,12 @@ INSERT INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@datag
 INSERT INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@datago_feishu_node_id, @ui_dm_id);
 INSERT INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@datago_feishu_node_id, @ui_notify_users);
 INSERT INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@datago_feishu_node_id, @ui_data_targets);
-INSERT INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@datago_feishu_node_id, @ui_detect_poll_interval);
-INSERT INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@datago_feishu_node_id, @ui_execute_retry_max);
 INSERT INTO `dss_workflow_node_to_ui`(`workflow_node_id`,`ui_id`) values (@datago_feishu_node_id, @ui_max_wait_time);
+
+
+INSERT INTO dss_workflow_node_ui_validate (validate_type, validate_range, error_msg, error_msg_en, `trigger`) VALUES ('NumInterval', '[600,7200]', '设置范围为[600,7200],设置时长超出限制', 'must be between 600 and 7200', 'blur');
+
+select @validate_max_wait_time:=id from  dss_workflow_node_ui_validate where error_msg_en  = 'must be between 600 and 7200' limit 1;
+
+INSERT INTO dss_workflow_node_ui_to_validate (ui_id,validate_id) values (@ui_max_wait_time,@validate_max_wait_time);
+
