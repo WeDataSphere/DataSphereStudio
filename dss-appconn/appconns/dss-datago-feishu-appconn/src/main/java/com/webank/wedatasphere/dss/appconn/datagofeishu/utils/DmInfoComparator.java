@@ -18,8 +18,9 @@ import java.util.List;
 /**
  * DM单表单（① 返回）与节点参数一致性比对。
  * <p>
- * 比对项：DM单存在性、optype、状态、逐外发目标库表命中、字段一致、分区范围、通知人授权。
- * notifyUsers 的子集校验在①返回了审批允许通知人集合时执行，否则交由③（403）兜底。
+ * 比对项：DM单存在性、optype、状态、逐外发目标库表命中、字段子集、分区范围、通知人授权。
+ * 字段校验为「子集」语义：节点填写字段必须是 DM 单审批字段的子集（允许只外发部分审批字段），
+ * 不要求完全一致。notifyUsers 的子集校验在①返回了审批允许通知人集合时执行，否则交由③（403）兜底。
  */
 public final class DmInfoComparator {
     private DmInfoComparator() { }
@@ -41,7 +42,6 @@ public final class DmInfoComparator {
             idx++;
             ExportTable table = matchTable(form, target, idx);
             validateFields(target, table, idx);
-            validatePartition(target, table, idx);
         }
         validateNotifyUsers(params, form);
     }
@@ -78,15 +78,22 @@ public final class DmInfoComparator {
         return null;
     }
 
+    /**
+     * 字段子集校验：节点填写字段必须是 DM 单审批字段的子集（允许只外发部分审批字段），
+     * 不要求完全一致；节点字段超出审批范围则视为越权。
+     */
     private static void validateFields(DataTarget target, ExportTable table, int idx) {
         List<String> approved = normalize(table.getColumns());
         List<String> node = normalize(target.getFields());
         if (approved.isEmpty()) {
             mismatch("第" + idx + "个外发目标 " + target.tableKey() + " DM单未返回审批字段，无法校验");
         }
-        if (!approved.equals(node)) {
-            mismatch("第" + idx + "个外发目标 " + target.tableKey() + " 字段与DM单审批字段不一致，审批字段: "
-                    + approved + "，节点字段: " + node);
+        // 节点字段须为审批字段的子集：找出节点填写但审批未授权的字段
+        List<String> overflow = new ArrayList<>(node);
+        overflow.removeAll(approved);
+        if (!overflow.isEmpty()) {
+            mismatch("第" + idx + "个外发目标 " + target.tableKey() + " 字段超出DM单审批范围，越权字段: "
+                    + overflow + "，审批字段: " + approved);
         }
     }
 
