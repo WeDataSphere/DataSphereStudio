@@ -115,7 +115,7 @@ public class NodeParams {
             DataTarget target = new DataTarget(dbName, tableName, fields, partition);
             if (!tableKeys.add(target.tableKey())) {
                 throw new DataGoFeishuException(82001,
-                        "外发目标 " + head + " 库表 " + target.tableKey() + " 重复，请检查");
+                        "外发目标 " + head + " " + target.tableKey() + " 重复，请检查");
             }
             targets.add(target);
         }

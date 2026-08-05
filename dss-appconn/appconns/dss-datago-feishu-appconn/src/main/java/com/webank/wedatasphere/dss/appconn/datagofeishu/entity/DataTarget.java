@@ -4,6 +4,8 @@
  */
 package com.webank.wedatasphere.dss.appconn.datagofeishu.entity;
 
+import org.apache.commons.lang.StringUtils;
+
 import java.util.List;
 
 /**
@@ -38,8 +40,11 @@ public class DataTarget {
         return partition != null && !partition.trim().isEmpty();
     }
 
-    /** 同一 (db, table) 唯一性判定与去重依据 */
+    /** 同一 (db, table, partition) 唯一性判定与去重依据。
+     *  <p>用 '#' 分隔表名与分区，避免无分隔拼接导致的 key 碰撞
+     *  （如 db=a,table=tx,partition=null 与 db=a,table=t,partition=x 否则会拼出同样的 "a.tx"）。 */
     public String tableKey() {
-        return (dbName == null ? "" : dbName.trim()) + "." + (tableName == null ? "" : tableName.trim());
+        return (dbName == null ? "" : dbName.trim()) + "." + (tableName == null ? "" : tableName.trim())
+                + (StringUtils.isEmpty(partition) ? "" : "#" + partition.trim());
     }
 }
