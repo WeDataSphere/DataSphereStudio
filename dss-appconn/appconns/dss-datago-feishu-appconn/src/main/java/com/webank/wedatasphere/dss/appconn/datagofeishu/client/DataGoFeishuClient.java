@@ -145,32 +145,36 @@ public class DataGoFeishuClient {
     }
 
     /**
-     * ③ 执行外发（optype=table，同步一次性）。
+     * ③ 执行外发（optype=table，**异步接口**，对齐接口文档 v2.0）。
      * <p>
-     * DataGo 一次性完成：创建飞书多维表格 + 写 sheet + 向 notifyUsers 发送飞书消息。
-     * 502/504（飞书不可达）由上层重试；413/409（超限/状态冲突）不可重试。
+     * 首次调用触发后台外发并立即返回 {@code status=exporting}；外发完成后任务置 {@code exported}
+     * 并写入多维表格 URL，再次调用③即返回 {@code status=exported} 与 {@code bitableUrl}。
+     * 调用方据此轮询 {@code status} 由 {@code exporting} → {@code exported}。
+     * <p>
+     * v2.0③**不入参 notifyUsers**（通知用户在②创建任务时按表提供并校验，③仅在响应返回供调用方调④）；
+     * 新增可选 {@code department}（决定多维表格所在云盘目录与命名，缺省 common）。
+     * 502/504（飞书不可达）由上层重试；409（状态冲突/optype不支持）不可重试；413 已下线。
      *
-     * @param dmId        DM审批单号
-     * @param notifyUsers 飞书通知人（须为 dm 单检测用户子集）
-     * @param taskId      检测通过的任务ID
-     * @return 外发响应（bitableName/bitableUrl/sheets/notifyUsers/exportedAt）
+     * @param dmId       DM审批单号
+     * @param taskId     检测通过的任务ID
+     * @param department 部门（可选，空则不传，服务端缺省 common）
+     * @return 外发响应（status=exporting/exported；exported 时带 bitableUrl）
      * @throws DataGoFeishuException 外发失败，httpCode 决定可否重试
      */
-    public ExecuteResponse executeExport(String dmId, java.util.List<String> notifyUsers, Long taskId) {
+    public ExecuteResponse executeExport(String dmId, Long taskId, String department) {
         String url = endpoint(executePath);
-        logger.info("③ executeExport start, dmId={}, taskId={}, notifyUsers={}", dmId, taskId, notifyUsers);
+        logger.info("③ executeExport start, dmId={}, taskId={}, department={}", dmId, taskId, department);
         DataGoFeishuResponse resp;
         try {
-            resp = http.post(url, executeBody(dmId, notifyUsers, taskId));
+            resp = http.post(url, executeBody(dmId, taskId, department));
         } catch (DataGoFeishuException e) {
             logger.error("③ executeExport http call failed, url={}, dmId={}, taskId={}, error={}", url, dmId, taskId, e.getMessage());
             throw new DataGoFeishuException(82007, "DataGo执行外发接口调用失败: url=" + url + ", " + e.getMessage(), e);
         }
         if (resp.isBusinessOk()) {
             ExecuteResponse export = gson.fromJson(resp.getData(), ExecuteResponse.class);
-            int sheetCount = export.getSheets() == null ? 0 : export.getSheets().size();
-            logger.info("③ executeExport success, dmId={}, taskId={}, bitableName={}, bitableUrl={}, sheetCount={}, exportedAt={}",
-                    dmId, taskId, export.getBitableName(), export.getBitableUrl(), sheetCount, export.getExportedAt());
+            logger.info("③ executeExport response, dmId={}, taskId={}, status={}, bitableName={}, bitableUrl={}, exportedAt={}",
+                    dmId, taskId, export.getStatus(), export.getBitableName(), export.getBitableUrl(), export.getExportedAt());
             return export;
         }
         int errorCode = mapExecuteErrorCode(resp.getHttpCode());
@@ -181,12 +185,12 @@ public class DataGoFeishuClient {
     }
 
     /**
-     * ③ 执行外发 HTTP 错误码 → DSS 异常码映射。
+     * ③ 执行外发 HTTP 错误码 → DSS 异常码映射（v2.0：413 已下线）。
      * <ul>
      *   <li>400 → 82001（参数错误）</li>
-     *   <li>403 → 82003（notifyUsers 越权）</li>
-     *   <li>409/413 → 82009（状态冲突/超限，不可重试）</li>
-     *   <li>500/502/504 → 82007（内部错误/飞书不可达，可重试）</li>
+     *   <li>403 → 82003（越权，防御性保留；v2.0③不再有403）</li>
+     *   <li>409 → 82009（状态冲突/optype不支持，不可重试）</li>
+     *   <li>500/502/504 → 82007（内部错误/飞书不可达，502/504可重试）</li>
      * </ul>
      */
     private int mapExecuteErrorCode(int httpCode) {
@@ -196,7 +200,6 @@ public class DataGoFeishuClient {
             case 403:
                 return 82003;
             case 409:
-            case 413:
                 return 82009;
             case 502:
             case 504:
@@ -252,14 +255,18 @@ public class DataGoFeishuClient {
     }
 
     /**
-     * 构造 ③ 执行外发请求体：dmId / optype=table / notifyUsers / taskIds。
+     * 构造 ③ 执行外发请求体（v2.0）：dmId / optype=table / taskIds / department(可选)。
+     * <p>
+     * v2.0③**不入参 notifyUsers**（通知用户在②按表提供并校验）。
      */
-    private Map<String, Object> executeBody(String dmId, java.util.List<String> notifyUsers, Long taskId) {
+    private Map<String, Object> executeBody(String dmId, Long taskId, String department) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("dmId", dmId);
         body.put("optype", "table");
-        body.put("notifyUsers", notifyUsers);
         body.put("taskIds", Collections.singletonList(taskId));
+        if (department != null && !department.trim().isEmpty()) {
+            body.put("department", department.trim());
+        }
         return body;
     }
 

@@ -74,6 +74,8 @@ class DataGoFeishuRefExecutionOperation
         DataGoFeishuConfiguration.EXECUTE_RETRY_INTERVAL, 30L) * 1000L
       action.maxWaitTime = positiveLong(properties, "maxWaitTime",
         DataGoFeishuConfiguration.MAX_WAIT_TIME, 7200L) * 1000L
+      // ③ department 为可选字符串配置（v2.0），空则不传
+      action.department = properties.getProperty(DataGoFeishuConfiguration.EXPORT_DEPARTMENT, "")
       action.startedAt = System.currentTimeMillis()
       action.stage = DataGoFeishuStage.Detecting
       action.setState(RefExecutionState.Running)
@@ -163,39 +165,43 @@ class DataGoFeishuRefExecutionOperation
   }
 
   /**
-   * ③ 执行外发（同步一次性：建表+写sheet+飞书消息），含重试策略。
+   * ③ 执行外发（**异步接口**，对齐接口文档 v2.0）。
    * <p>
-   * 502/504（飞书不可达）→ 可重试（executeRetryMax 次）；413/409（超限/状态冲突）→ 不可重试；
-   * 部分表 failed → 重试失败表（已写入不回滚），耗尽抛 82008。
+   * 首次调用触发后台外发返回 {@code status=exporting}；之后按 {@code executeRetryInterval} 节流
+   * 再次调用③查询，直到 {@code status=exported}（带 bitableUrl）即成功。
+   * 全局 {@code maxWaitTime} 超时由 {@code state()} 顶部判定（EXPORTING→82007）兜底，
+   * 故 exporting 长期不终态最终由超时失败。
+   * <p>
+   * 重试语义：仅 HTTP 502/504（飞书不可达）按 {@code executeRetryMax} 重试；
+   * 409（状态冲突/optype不支持）→82009、400→82001、500等→82007 不可重试，直接抛出。
+   * v2.0③响应不再返回 sheets，故无部分失败(82008)判定；部分表失败由服务端记审计、整体仍 exported。
    */
   private def handleExport(action: DataGoFeishuExecutionAction): Unit = {
     try {
       val response = action.client.executeExport(
-        action.nodeParams.getDmId, action.nodeParams.getNotifyUsers, action.taskId)
-      action.bitableUrl = safe(response.getBitableUrl)
-      val failedSheets: Seq[SheetResult] = Option(response.getSheets) match {
-        case None => Seq.empty
-        case Some(list) => list.filter(s =>
-          s != null && !"success".equalsIgnoreCase(normalize(s.getStatus)))
-      }
-      if (failedSheets.isEmpty) {
-        action.stage = DataGoFeishuStage.Success
-        action.setState(RefExecutionState.Success)
-        appendLog(action, "数据已外发到飞书多维表格: " + action.bitableUrl)
-        logger.info("DataGo Feishu export succeeded, dmId={}, taskId={}, bitableUrl={}",
-          action.nodeParams.getDmId, action.taskId, action.bitableUrl)
-      } else {
-        // 部分表失败：重试，已写入不回滚
-        if (action.executeRetryCount < action.executeRetryMax) {
-          action.executeRetryCount += 1
+        action.nodeParams.getDmId, action.taskId, action.department)
+      action.lastRemoteStatus = safe(response.getStatus)
+      normalize(response.getStatus) match {
+        case "exported" =>
+          action.bitableUrl = safe(response.getBitableUrl)
+          action.stage = DataGoFeishuStage.Success
+          action.setState(RefExecutionState.Success)
+          appendLog(action, "数据已外发到飞书多维表格: " + action.bitableUrl)
+          logger.info("DataGo Feishu export succeeded, dmId={}, taskId={}, bitableUrl={}",
+            action.nodeParams.getDmId, action.taskId, action.bitableUrl)
+        case "exporting" =>
+          // 后台外发进行中：节流后下次 state() 再调③查询，受 maxWaitTime 全局超时兜底
+          action.exportTriggered = true
+          action.exportPollCount += 1
           action.nextPollAt = System.currentTimeMillis() + action.executeRetryInterval
-          logger.warn("DataGo Feishu export partial failure, dmId={}, taskId={}, retry={}/{}, failedSheets={}",
-            action.nodeParams.getDmId, action.taskId, Int.box(action.executeRetryCount), Int.box(action.executeRetryMax), sheetSummary(failedSheets))
-          appendLog(action, "外发部分表失败，第" + action.executeRetryCount + "次重试: " + sheetSummary(failedSheets))
-        } else {
-          throw new DataGoFeishuException(82008,
-            "DataGo外发部分表失败且重试耗尽（已写入不回滚）: " + sheetSummary(failedSheets))
-        }
+          logger.info("DataGo Feishu export in progress, dmId={}, taskId={}, poll={}",
+            action.nodeParams.getDmId, action.taskId, Int.box(action.exportPollCount))
+          appendLog(action, "外发进行中（exporting），第" + action.exportPollCount + "次查询，下次轮询: "
+            + action.executeRetryInterval + "ms 后")
+        case status =>
+          // exported/exporting 之外的 status 视为异常
+          throw new DataGoFeishuException(82007,
+            "DataGo执行外发返回未知状态: " + status + "（预期 exporting/exported）")
       }
     } catch {
       case e: DataGoFeishuException if e.getHttpCode == 502 || e.getHttpCode == 504 =>
@@ -209,7 +215,7 @@ class DataGoFeishuRefExecutionOperation
         } else {
           throw new DataGoFeishuException(82007, "DataGo外发重试次数耗尽: " + e.getMessage, e)
         }
-      // 413/409(82009) / 403(82003) / 400(82001) / 500等(82007) 不可重试，直接抛出由外层失败处理
+      // 409(82009) / 403(82003) / 400(82001) / 500等(82007) 不可重试，直接抛出由外层失败处理
       case e: DataGoFeishuException => throw e
     }
   }

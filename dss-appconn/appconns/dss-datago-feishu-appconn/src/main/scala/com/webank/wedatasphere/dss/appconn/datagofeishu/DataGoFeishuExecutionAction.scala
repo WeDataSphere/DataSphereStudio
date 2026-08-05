@@ -54,14 +54,20 @@ class DataGoFeishuExecutionAction extends AbstractRefExecutionAction {
   /** 下次允许轮询的时间戳，未到则 state() 直接返回当前状态 */
   var nextPollAt: Long = 0L
 
-  /** ③ 外发已重试次数 */
+  /** ③ 外发已重试次数（仅 502/504 飞书不可达重试计数） */
   var executeRetryCount: Int = 0
-  /** 最近一次远端状态（② status） */
+  /** ③ 异步轮询次数（v2.0：exporting → exported 期间每次调③计数，受 maxWaitTime 全局超时兜底） */
+  var exportPollCount: Int = 0
+  /** ③ 外发是否已首次触发（区分首次 exporting 与后续轮询查询） */
+  var exportTriggered: Boolean = false
+  /** 最近一次远端状态（② status / ③ status） */
   var lastRemoteStatus: String = ""
   /** 最近一次远端摘要（② resultSummary） */
   var lastSummary: String = ""
   /** ③ 外发返回的多维表格 URL */
   var bitableUrl: String = ""
+  /** ③ 执行外发部门（可选，v2.0；空则不传，服务端缺省 common） */
+  var department: String = _
 
   def setExecutionResponseRef(value: ExecutionResponseRef): Unit = response = value
   def getExecutionResponseRef: ExecutionResponseRef = response

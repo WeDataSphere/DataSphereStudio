@@ -27,6 +27,9 @@ public final class DataGoFeishuConfiguration {
     /** 本期仅处理 optype=table，datago 走现有报告外发 */
     public static final String SUPPORTED_OPTYPE = "wds.dss.appconn.datago.feishu.optype.supported";
 
+    /** ③ 执行外发部门（决定多维表格所在云盘目录 folderToken 与命名，缺省 common；v2.0 可选） */
+    public static final String EXPORT_DEPARTMENT = "wds.dss.appconn.datago.feishu.export.department";
+
     /** ② 检测状态轮询间隔（秒，建议 10~30；key 名保留 .ms 后缀以向后兼容，值为秒） */
     public static final String DETECT_INTERVAL = "wds.dss.appconn.datago.feishu.detect.poll.interval.ms";
     /** ③ 外发失败最大重试次数（502/504 可重试，413/409 不可重试） */
