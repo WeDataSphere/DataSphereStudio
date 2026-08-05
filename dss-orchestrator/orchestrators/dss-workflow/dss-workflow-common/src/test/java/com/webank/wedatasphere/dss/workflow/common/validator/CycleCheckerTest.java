@@ -25,10 +25,14 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
  * 检查项 ② 环路测试（Kahn 拓扑排序，ERROR）。AC2.1（A->B->C->A）/ AC2.2（自环 A->A）。
+ *
+ * <p>v2.4：修复 nodeId 高亮 bug 后，按环上节点各出一条 issue，nodeId 为单个节点身份（key 优先/id fallback），
+ * 非逗号拼接串。前端 cy.getElementById(nodeId) 可逐个高亮。</p>
  */
 public class CycleCheckerTest {
 
@@ -51,15 +55,21 @@ public class CycleCheckerTest {
                 .edge("A", "B").edge("B", "C").edge("C", "A")
                 .build();
         List<ValidationIssue> issues = checker.check(ctx);
-        assertEquals("应检出 1 条环路", 1, issues.size());
-        ValidationIssue issue = issues.get(0);
-        assertEquals(IssueLevel.ERROR, issue.getLevel());
-        assertEquals(ValidationIssue.RULE_CYCLE, issue.getRuleId());
-        // 环上节点应包含 A,B,C
-        Set<String> cycleNodes = new HashSet<>(Arrays.asList(issue.getNodeId().split(",")));
-        assertTrue("环上应含 A", cycleNodes.contains("A"));
-        assertTrue("环上应含 B", cycleNodes.contains("B"));
-        assertTrue("环上应含 C", cycleNodes.contains("C"));
+        // 3 个环上节点 → 按节点各出 1 条 issue，共 3 条（v2.4 修复高亮 bug）
+        assertEquals("应按环上节点数出 issue（3 个环上节点 → 3 条）", 3, issues.size());
+        Set<String> reportedIds = new HashSet<>();
+        for (ValidationIssue issue : issues) {
+            assertEquals(IssueLevel.ERROR, issue.getLevel());
+            assertEquals(ValidationIssue.RULE_CYCLE, issue.getRuleId());
+            String nodeId = issue.getNodeId();
+            // 每条 issue 的 nodeId 必须是单个节点身份（非逗号拼接串）
+            assertNotNull("nodeId 不应为 null", nodeId);
+            assertFalse("nodeId 不应为逗号拼接串: " + nodeId, nodeId.contains(","));
+            reportedIds.add(nodeId);
+        }
+        // 三个环上节点应各被报告一次
+        Set<String> expected = new HashSet<>(Arrays.asList("A", "B", "C"));
+        assertEquals("应覆盖全部环上节点 A,B,C", expected, reportedIds);
     }
 
     @Test
@@ -70,9 +80,14 @@ public class CycleCheckerTest {
                 .edge("A", "A")
                 .build();
         List<ValidationIssue> issues = checker.check(ctx);
-        assertEquals("自环应被检出为环路", 1, issues.size());
-        assertEquals(IssueLevel.ERROR, issues.get(0).getLevel());
-        assertTrue("环上应含 A", issues.get(0).getNodeId().contains("A"));
+        // 自环：仅 A 在环上 → 1 条 issue
+        assertEquals("自环应按节点出 1 条 issue", 1, issues.size());
+        ValidationIssue issue = issues.get(0);
+        assertEquals(IssueLevel.ERROR, issue.getLevel());
+        assertEquals(ValidationIssue.RULE_CYCLE, issue.getRuleId());
+        // nodeId 应为单个节点身份 "A"（非逗号串）
+        assertEquals("A", issue.getNodeId());
+        assertFalse("nodeId 不应含逗号", issue.getNodeId().contains(","));
     }
 
     @Test
@@ -83,8 +98,16 @@ public class CycleCheckerTest {
                 .edge("A", "B").edge("B", "C").edge("C", "B")
                 .build();
         List<ValidationIssue> issues = checker.check(ctx);
-        assertEquals("应检出 1 条环路", 1, issues.size());
-        Set<String> cycleNodes = new HashSet<>(Arrays.asList(issues.get(0).getNodeId().split(",")));
+        // B,C 成环 → 按节点各出 1 条 issue，共 2 条；A 不在环上
+        assertEquals("应按环上节点数出 issue（B,C → 2 条）", 2, issues.size());
+        Set<String> cycleNodes = new HashSet<>();
+        for (ValidationIssue issue : issues) {
+            assertEquals(IssueLevel.ERROR, issue.getLevel());
+            assertEquals(ValidationIssue.RULE_CYCLE, issue.getRuleId());
+            assertFalse("nodeId 不应为逗号拼接串: " + issue.getNodeId(),
+                    issue.getNodeId().contains(","));
+            cycleNodes.add(issue.getNodeId());
+        }
         assertTrue("环上应含 B", cycleNodes.contains("B"));
         assertTrue("环上应含 C", cycleNodes.contains("C"));
         assertFalse("A 不在环上", cycleNodes.contains("A"));

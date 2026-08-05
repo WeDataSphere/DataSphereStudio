@@ -34,6 +34,13 @@ import java.util.Map;
  *
  * <p>注：仅对存在于 {@code nodeIdentities} 集合中的节点做环检测（边引用异常导致的悬空 source/target
  * 由 {@link EdgeReferenceChecker} 检出，不在此重复处理，避免悬空端干扰环判定）。</p>
+ *
+ * <p><b>issue 定位（v2.4 修复）</b>：检测到环路后，对<b>每个环上节点各出一条 issue</b>，
+ * {@code nodeId} 取单个节点身份标识（D-1：key 优先/id fallback，即 {@code nodeIdentities} 中的值，
+ * 等价于 {@link DAGIdentityUtils#identityOf}），<b>非逗号拼接串</b>。
+ * 前端 {@code cy.getElementById(nodeId)} 期望逐个 id 高亮；旧实现把多个 id 拼成 {@code "id1,id2,id3"}
+ * 作为单条 issue 的 nodeId，导致 {@code getElementById} 匹配不到、环路节点高亮失效。
+ * 与 {@link DuplicateNameChecker} 保持一致的「按节点出 issue」契约。</p>
  */
 public class CycleChecker implements StructureChecker {
 
@@ -98,6 +105,7 @@ public class CycleChecker implements StructureChecker {
                     cycleNodes.add(e.getKey());
                 }
             }
+            // 统一描述环路（含所有环上节点名），便于用户理解
             StringBuilder msg = new StringBuilder("存在环路，包含节点: ");
             for (int i = 0; i < cycleNodes.size(); i++) {
                 if (i > 0) {
@@ -105,24 +113,18 @@ public class CycleChecker implements StructureChecker {
                 }
                 msg.append(ctx.nameOf(cycleNodes.get(i)));
             }
-            ValidationIssue issue = new ValidationIssue(
-                    ValidationIssue.RULE_CYCLE, "环路", IssueLevel.ERROR, msg.toString());
-            // 将环上节点列表拼接到 nodeId 字段，前端据此批量高亮
-            issue.setNodeId(join(cycleNodes));
-            issue.setSuggestion("移除构成环的连线");
-            issues.add(issue);
+            String message = msg.toString();
+            // 按环上节点各出一条 issue：nodeId 取单个节点身份标识（D-1：key 优先/id fallback，
+            // 即 nodeIdentities 中的值，等价于 DAGIdentityUtils.identityOf(node)），非逗号拼接串。
+            // 前端 cy.getElementById(nodeId) 期望逐个 id 高亮（与 DuplicateNameChecker 一致）
+            for (String identity : cycleNodes) {
+                ValidationIssue issue = new ValidationIssue(
+                        ValidationIssue.RULE_CYCLE, "环路", IssueLevel.ERROR, message);
+                issue.setNodeId(identity);
+                issue.setSuggestion("移除构成环的连线");
+                issues.add(issue);
+            }
         }
         return issues;
-    }
-
-    private String join(List<String> ids) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < ids.size(); i++) {
-            if (i > 0) {
-                sb.append(",");
-            }
-            sb.append(ids.get(i));
-        }
-        return sb.toString();
     }
 }
