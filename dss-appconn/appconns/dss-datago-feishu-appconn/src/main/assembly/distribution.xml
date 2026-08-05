@@ -1,0 +1,50 @@
+<!--
+  Copyright 2019 WeBank
+  Licensed under the Apache License, Version 2.0 (the "License");
+-->
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/2.3"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/2.3 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
+    <id>dss-datagofeishu-appconn</id>
+    <formats><format>dir</format></formats>
+    <includeBaseDirectory>true</includeBaseDirectory>
+    <baseDirectory>datagofeishu</baseDirectory>
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>lib</outputDirectory>
+            <useProjectArtifact>true</useProjectArtifact>
+            <useTransitiveDependencies>true</useTransitiveDependencies>
+            <unpack>false</unpack>
+            <useStrictFiltering>true</useStrictFiltering>
+            <useTransitiveFiltering>true</useTransitiveFiltering>
+        </dependencySet>
+    </dependencySets>
+    <fileSets>
+        <fileSet>
+            <directory>${basedir}/src/main/resources</directory>
+            <includes><include>appconn.properties</include></includes>
+            <fileMode>0777</fileMode>
+            <outputDirectory>/</outputDirectory>
+            <lineEnding>unix</lineEnding>
+        </fileSet>
+        <fileSet>
+            <directory>${basedir}/src/main/resources</directory>
+            <includes><include>log4j2.xml</include></includes>
+            <fileMode>0777</fileMode>
+            <outputDirectory>conf</outputDirectory>
+            <lineEnding>unix</lineEnding>
+        </fileSet>
+        <fileSet>
+            <directory>${basedir}/src/main/icons</directory>
+            <includes><include>*</include></includes>
+            <fileMode>0777</fileMode>
+            <outputDirectory>icons</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${basedir}/src/main/resources</directory>
+            <includes><include>init.sql</include></includes>
+            <fileMode>0777</fileMode>
+            <outputDirectory>db</outputDirectory>
+        </fileSet>
+    </fileSets>
+</assembly>
