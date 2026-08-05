@@ -475,6 +475,7 @@ handleDetect(action):
 handleExport(action):
     try:
         response = client.executeExport(dmId, notifyUsers, taskId)   // isBusinessOk 否则抛 mapped code
+        if response.status in ("export_failed","failed"): throw 82007("DataGo外发失败: status="+status)  // 外发失败终态,不重试
         failedSheets = response.sheets.filter(status != "success")
         if failedSheets.empty:
             stage = Success; Success
@@ -617,7 +618,7 @@ handleExport(action):
 | 82004 | DataGo任务接口(②)调用失败 | ② task 创建/查询调用异常、未返回taskId、未返回有效状态、未知status |
 | 82005 | DataGo检测不通过 | ② status=detected_fail（DataGo已通知） |
 | 82006 | DataGo检测异常或检测轮询超时 | ② status=detect_error 或 DETECTING 阶段超过 maxWaitTime |
-| 82007 | DataGo执行外发接口(③)调用失败 | ③ execute 502/504 重试耗尽、500、网络异常、EXPORTING 阶段超时 |
+| 82007 | DataGo执行外发接口(③)调用失败 | ③ execute 502/504 重试耗尽、500、网络异常、EXPORTING 阶段超时、③ status=export_failed/failed（外发失败终态） |
 | 82008 | DataGo外发部分表失败 | ③ sheets存在failed且重试耗尽（已写入不回滚） |
 | 82009 | DataGo外发超限或状态冲突 | ③ 413(超50MB) / 409(未通过/optype不支持) |
 | 82011 | DataGo接口通信/解析异常或未知阶段 | 响应空/非JSON/IOException、未知执行阶段 |
