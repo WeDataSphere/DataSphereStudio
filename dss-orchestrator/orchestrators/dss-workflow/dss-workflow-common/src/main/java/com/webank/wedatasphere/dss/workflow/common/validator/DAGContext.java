@@ -31,18 +31,19 @@ import java.util.Set;
 /**
  * DAG 校验上下文。设计依据：design-doc §4.3 / §5.1。
  *
- * <p>一次解析 jsonFlow 构建，四项 Checker 共享，避免重复解析。包含：
+ * <p>一次解析 jsonFlow 构建，三项 Checker（边引用/环路/重名）共享，避免重复解析。包含：
  * <ul>
  *   <li>{@code nodes} / {@code edges} —— 原始节点/边（来自 WorkFlowParser，只读使用）。</li>
  *   <li>{@code nodeIdentities} —— 节点标识集合（D-1：key 优先、id fallback）。</li>
  *   <li>{@code identityToName} —— 标识 → 显示名(name/title)，供定位输出。</li>
  *   <li>{@code adjacency} —— 正向邻接表 source → [target]（含分支网关多 branchLabel 出边）。</li>
- *   <li>{@code reverseAdjacency} —— 逆向邻接表 target → [source]，供结构检查逆向 BFS。</li>
- *   <li>{@code inDeg} / {@code outDeg} —— 入度/出度（基于 edges 的 source/target 统计）。</li>
  * </ul>
  * </p>
  *
  * <p>纯数据载体，无可变行为。所有 Checker 只读访问本上下文，不修改。</p>
+ *
+ * <p><b>v2.3</b>：移除④「开始结束结构」后，{@code reverseAdjacency} / {@code inDeg} / {@code outDeg}
+ * 已无 Checker 使用（环路检查自建入度表），故清理。</p>
  */
 public class DAGContext {
 
@@ -54,10 +55,6 @@ public class DAGContext {
     private final Map<String, String> identityToName;
     /** source -> [target]（含分支多出边，不去重） */
     private final Map<String, List<String>> adjacency;
-    /** target -> [source] */
-    private final Map<String, List<String>> reverseAdjacency;
-    private final Map<String, Integer> inDeg;
-    private final Map<String, Integer> outDeg;
 
     public DAGContext() {
         this.nodes = new ArrayList<>();
@@ -65,9 +62,6 @@ public class DAGContext {
         this.nodeIdentities = new LinkedHashSet<>();
         this.identityToName = new LinkedHashMap<>();
         this.adjacency = new HashMap<>();
-        this.reverseAdjacency = new HashMap<>();
-        this.inDeg = new HashMap<>();
-        this.outDeg = new HashMap<>();
     }
 
     /**
@@ -79,22 +73,15 @@ public class DAGContext {
     public void registerNode(String identity, String name) {
         nodeIdentities.add(identity);
         adjacency.put(identity, new ArrayList<String>());
-        reverseAdjacency.put(identity, new ArrayList<String>());
-        if (!inDeg.containsKey(identity)) {
-            inDeg.put(identity, 0);
-        }
-        if (!outDeg.containsKey(identity)) {
-            outDeg.put(identity, 0);
-        }
         if (name != null) {
             identityToName.putIfAbsent(identity, name);
         }
     }
 
     /**
-     * 登记一条有向边 source -> target（含自环、分支多出边），更新邻接表与度数。
+     * 登记一条有向边 source -> target（含自环、分支多出边），更新正向邻接表。
      *
-     * <p>注意：source/target 不一定在 nodeIdentities 中（边引用异常时），仍登记以便度数统计；
+     * <p>注意：source/target 不一定在 nodeIdentities 中（边引用异常时），仍登记以便邻接统计；
      * 边引用异常由 {@code EdgeReferenceChecker} 独立检出。</p>
      */
     public void registerEdge(String source, String target) {
@@ -105,16 +92,6 @@ public class DAGContext {
             adjacency.put(source, out);
         }
         out.add(target);
-        // 逆向邻接
-        List<String> in = reverseAdjacency.get(target);
-        if (in == null) {
-            in = new ArrayList<>();
-            reverseAdjacency.put(target, in);
-        }
-        in.add(source);
-        // 度数
-        outDeg.put(source, outDeg.getOrDefault(source, 0) + 1);
-        inDeg.put(target, inDeg.getOrDefault(target, 0) + 1);
     }
 
     public List<DSSNode> getNodes() {
@@ -137,33 +114,9 @@ public class DAGContext {
         return adjacency;
     }
 
-    public Map<String, List<String>> getReverseAdjacency() {
-        return reverseAdjacency;
-    }
-
-    public Map<String, Integer> getInDeg() {
-        return inDeg;
-    }
-
-    public Map<String, Integer> getOutDeg() {
-        return outDeg;
-    }
-
     /** 便捷：取节点标识对应显示名，缺失回退为标识本身 */
     public String nameOf(String identity) {
         String name = identityToName.get(identity);
         return (name == null || name.isEmpty()) ? identity : name;
-    }
-
-    /** 便捷：取某节点入度（不存在视为 0） */
-    public int inDegree(String identity) {
-        Integer v = inDeg.get(identity);
-        return v == null ? 0 : v;
-    }
-
-    /** 便捷：取某节点出度（不存在视为 0） */
-    public int outDegree(String identity) {
-        Integer v = outDeg.get(identity);
-        return v == null ? 0 : v;
     }
 }

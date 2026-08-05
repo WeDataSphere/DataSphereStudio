@@ -358,20 +358,15 @@ public class FlowRestfulApi {
             return Message.error("当前工作流被用户" + flowEditLock.getUsername() + "已锁定编辑，您编辑的内容不能再被保存。如有疑问，请与" + flowEditLock.getUsername() + "确认");
         }
         // DAG 结构只读校验（design-doc §6.2）：在 flowService.saveFlow() 调用前前置，纯函数只读、不改 jsonFlow、不写库。
-        // error（边引用/环路/重名）阻断保存；warn（开始结束结构）允许 forceSave 确认继续。service 层既有逻辑零改动。
+        // v2.3：移除④「开始结束结构」后已无 warn，仅 error（边引用/环路/重名）阻断保存；service 层既有逻辑零改动。
+        // forceSave 字段保留（前端可能仍传），后端忽略即可，零风险。
         ValidationResult dagValidation = dagStructureValidator.validate(jsonFlow);
         if (dagValidation.hasErrors()) {
             LOGGER.warn("工作流保存结构校验失败 flowID={}, issues={}", flowID, dagValidation.getErrors());
-            // 用 Message.ok()+status 字段返回（与 PENDING_CONFIRM 一致），避免 api.fetch 对 Message.error 自动弹 Notice 造成双提示
+            // 用 Message.ok()+status 字段返回，避免 api.fetch 对 Message.error 自动弹 Notice 造成双提示
             return Message.ok()
                     .data("status", "VALIDATION_FAILED")
                     .data("validationIssues", dagValidation.getErrors());
-        }
-        if (dagValidation.hasWarnings() && !Boolean.TRUE.equals(saveFlowRequest.getForceSave())) {
-            // 仅 warn 且未确认 → 返回待确认，不保存（forceSave=true 时跳过 warn 直接保存，error 仍阻断）
-            return Message.ok()
-                    .data("status", "PENDING_CONFIRM")
-                    .data("validationIssues", dagValidation.getWarnings());
         }
         try {
             version = flowService.saveFlow(flowID, jsonFlow, null, userName, workspaceName, projectName, labels);

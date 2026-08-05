@@ -23,8 +23,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * {@link DAGStructureValidatorImpl} 集成测试：error+warn 批量返回、isPassed 判定、
+ * {@link DAGStructureValidatorImpl} 集成测试：error 批量返回、isPassed 判定、
  * jsonFlow 解析异常→PARSE_FAILED error 不抛异常，以及 D-1 节点标识取值规则。
+ *
+ * <p>v2.3：移除④「开始结束结构」后不再产生 warn，相关断言已移除。</p>
  */
 public class DAGStructureValidatorImplTest {
 
@@ -90,34 +92,28 @@ public class DAGStructureValidatorImplTest {
         assertTrue("id fallback：边引用 id 应合法", r.getErrors().isEmpty());
     }
 
-    // ========== error + warn 批量返回 ==========
+    // ========== error 批量返回（v2.3：移除④后不再有 warn） ==========
 
     @Test
-    public void shouldBatchReturnErrorsAndWarnings() {
-        // 环路(error) + 孤岛(warn) 同时存在，批量返回
-        // A->B->C->A 环 + 孤岛 D
+    public void shouldBatchReturnErrors() {
+        // 环路(error) 存在；移除④后孤岛 D 不再产生 warn
+        // A->B->C->A 环 + 孤岛 D（不再告警）
         String nodes = node("A", "A", "a") + "," + node("B", "B", "b") + ","
                 + node("C", "C", "c") + "," + node("D", "D", "d");
         String edges = edge("A", "B") + "," + edge("B", "C") + "," + edge("C", "A");
         ValidationResult r = validator.validate(flow(nodes, edges));
         assertTrue("应检出 error（环路）", r.hasErrors());
-        assertTrue("应检出 warn（孤岛 D）", r.hasWarnings());
+        assertFalse("移除④后不应再产生 warn", r.hasWarnings());
         assertFalse("有 error 时 isPassed=false", r.isPassed());
         // 环路 issue 应为 ERROR
         boolean hasCycle = false;
-        boolean hasIsolated = false;
         for (ValidationIssue i : r.getIssues()) {
             if (ValidationIssue.RULE_CYCLE.equals(i.getRuleId())) {
                 hasCycle = true;
                 assertEquals(IssueLevel.ERROR, i.getLevel());
             }
-            if (ValidationIssue.SUB_ISOLATED.equals(i.getSubType()) && "D".equals(i.getNodeId())) {
-                hasIsolated = true;
-                assertEquals(IssueLevel.WARN, i.getLevel());
-            }
         }
         assertTrue("批量结果应含环路 error", hasCycle);
-        assertTrue("批量结果应含孤岛 warn", hasIsolated);
     }
 
     @Test

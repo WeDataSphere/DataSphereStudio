@@ -14,8 +14,8 @@ public class SaveFlowRequest {
     /**
      * DAG 结构校验 warn 确认继续标记（design-doc §6.2）。
      *
-     * <p>默认 null/false。仅 warn（开始结束结构）时，前端二次确认后带 forceSave=true 重新请求以放行；
-     * error（边引用/环路/重名）永远阻断，forceSave 不能绕过 error。</p>
+     * <p><b>v2.3</b>：移除④「开始结束结构」后后端不再产生 warn，该字段已无实际用途。
+     * 为前端兼容（前端可能仍传 forceSave，删除字段会导致 400 反序列化失败）予以保留，后端忽略即可，零风险。</p>
      */
     private Boolean forceSave;
 

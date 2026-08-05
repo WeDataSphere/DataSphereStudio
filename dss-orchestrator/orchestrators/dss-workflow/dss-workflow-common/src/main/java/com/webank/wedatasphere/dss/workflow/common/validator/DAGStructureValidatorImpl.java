@@ -32,7 +32,7 @@ import java.util.List;
  * {@link DAGStructureValidator} 默认实现。设计依据：design-doc §5（算法伪码）/ §10（零侵入只读）。
  *
  * <p>纯函数式只读：无任何 Mapper/Repository 注入，无持久化能力；不修改 jsonFlow（原样透传）。
- * 解析复用 common 既有的 {@link WorkFlowParser}（与运行时解析一致），构建 DAGContext 后依次执行 4 项 Checker，
+ * 解析复用 common 既有的 {@link WorkFlowParser}（与运行时解析一致），构建 DAGContext 后依次执行 3 项 Checker，
  * 批量汇总返回。</p>
  *
  * <p>异常兜底（design §8.3）：jsonFlow 为 null 或解析异常时，包成 1 条 PARSE_FAILED error 返回，
@@ -74,12 +74,12 @@ public class DAGStructureValidatorImpl implements DAGStructureValidator {
             return result;
         }
 
-        // 依次执行 4 项检查，批量汇总（非遇错即停，design §5.6）
+        // 依次执行 3 项检查（v2.3：移除④「开始结束结构」，其在合法 DAG 正常编辑时误报；
+        // 边引用/环路/重名在合法 DAG 不可能），批量汇总（非遇错即停，design §5.6）
         List<StructureChecker> checkers = new ArrayList<>();
         checkers.add(new EdgeReferenceChecker());
         checkers.add(new CycleChecker());
         checkers.add(new DuplicateNameChecker());
-        checkers.add(new StartEndStructureChecker());
         for (StructureChecker checker : checkers) {
             try {
                 List<ValidationIssue> issues = checker.check(ctx);

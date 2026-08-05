@@ -19,7 +19,7 @@ package com.webank.wedatasphere.dss.workflow.common.validator;
 import com.webank.wedatasphere.dss.common.entity.node.DSSNode;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +32,11 @@ import java.util.Map;
  *
  * <p>本检查仅针对 name，不涉及 id/key 唯一性（id/key 取值规则见 D-1）。</p>
  *
+ * <p><b>issue 定位（v2.3 修复）</b>：按 name 分组后，对 {@code count>1} 的组里<b>每个节点各出一条 issue</b>，
+ * {@code nodeId = DAGIdentityUtils.identityOf(node)}（key 优先/id fallback）。这样符合 ValidationIssue 契约
+ * （nodeId 为节点身份标识，非 name 字符串），前端 {@code cy.getElementById(nodeId)} 能正确逐个高亮所有重名节点。
+ * 旧实现把 nodeId 设成重复的 name 字符串，导致前端查不到元素、高亮失效。</p>
+ *
  * <p><b>与 service 层的关系</b>：service 层 {@code DSSFlowServiceImpl.checkIsExistSameFlow}(:1416-1420)
  * 已用 {@code workFlowNodes.stream().map(Node::getName).distinct().count() < size} 做了相同检查，
  * 抛 DSSErrorException(80001)。本 Checker 与之目标一致但体验更优（返回具体重复 name + 前端高亮）。
@@ -42,8 +47,8 @@ public class DuplicateNameChecker implements StructureChecker {
     @Override
     public List<ValidationIssue> check(DAGContext ctx) {
         List<ValidationIssue> issues = new ArrayList<>();
-        // name -> 出现次数（仅统计非空 name）
-        Map<String, Integer> nameCount = new HashMap<>();
+        // name -> 命中该 name 的节点列表（仅统计非空 name；保留插入顺序便于稳定输出）
+        Map<String, List<DSSNode>> nameToNodes = new LinkedHashMap<>();
         for (DSSNode node : ctx.getNodes()) {
             if (node == null) {
                 continue;
@@ -52,17 +57,26 @@ public class DuplicateNameChecker implements StructureChecker {
             if (name == null || name.isEmpty()) {
                 continue;
             }
-            Integer c = nameCount.get(name);
-            nameCount.put(name, c == null ? 1 : c + 1);
+            List<DSSNode> bucket = nameToNodes.get(name);
+            if (bucket == null) {
+                bucket = new ArrayList<>();
+                nameToNodes.put(name, bucket);
+            }
+            bucket.add(node);
         }
-        for (Map.Entry<String, Integer> e : nameCount.entrySet()) {
-            if (e.getValue() > 1) {
-                ValidationIssue issue = new ValidationIssue(
-                        ValidationIssue.RULE_DUPLICATE_NAME, "重名", IssueLevel.ERROR,
-                        "节点名重复: " + e.getKey() + " (共 " + e.getValue() + " 个)");
-                issue.setNodeId(e.getKey());
-                issue.setSuggestion("节点名需唯一（影响依赖解析与定位），请重命名重复节点");
-                issues.add(issue);
+        for (Map.Entry<String, List<DSSNode>> e : nameToNodes.entrySet()) {
+            List<DSSNode> dupNodes = e.getValue();
+            if (dupNodes.size() > 1) {
+                String name = e.getKey();
+                String message = "节点名重复: " + name + " (共 " + dupNodes.size() + " 个)";
+                // 按节点出 issue：nodeId 取节点身份（key 优先/id fallback），前端据此逐个高亮
+                for (DSSNode node : dupNodes) {
+                    ValidationIssue issue = new ValidationIssue(
+                            ValidationIssue.RULE_DUPLICATE_NAME, "重名", IssueLevel.ERROR, message);
+                    issue.setNodeId(DAGIdentityUtils.identityOf(node));
+                    issue.setSuggestion("节点名需唯一（影响依赖解析与定位），请重命名重复节点");
+                    issues.add(issue);
+                }
             }
         }
         return issues;
