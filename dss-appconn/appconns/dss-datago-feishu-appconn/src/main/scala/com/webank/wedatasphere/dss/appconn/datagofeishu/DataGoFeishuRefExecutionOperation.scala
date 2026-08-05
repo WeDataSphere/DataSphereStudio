@@ -62,10 +62,12 @@ class DataGoFeishuRefExecutionOperation
 
       action.client = client
       action.nodeParams = params
+      // 轮询/重试/超时参数：节点级 UI 值 > 实例级配置 > 硬编码默认（见 positiveLong/positiveInt）
       action.detectPollInterval = positiveLong(properties, "detectPollInterval",
         DataGoFeishuConfiguration.DETECT_INTERVAL, 30000L)
       action.executeRetryMax = positiveInt(properties, "executeRetryMax",
         DataGoFeishuConfiguration.EXECUTE_RETRY_MAX, 3)
+      // executeRetryInterval 不暴露为节点 UI，nodeKey 传空串，仅走实例级配置
       action.executeRetryInterval = positiveLong(properties, "",
         DataGoFeishuConfiguration.EXECUTE_RETRY_INTERVAL, 30000L)
       action.maxWaitTime = positiveLong(properties, "maxWaitTime",
@@ -303,6 +305,13 @@ class DataGoFeishuRefExecutionOperation
     try VariableUtils.replace(value) catch { case _: Throwable => value }
   }
 
+  /**
+   * 解析正整数长整型参数，按三级优先级回退：
+   * ① 节点级 UI 值（nodeKey，用户在节点参数面板填写，非空则用）
+   * ② 实例级 enhance_json 配置（configKey，写入 dss_appconn_instance.enhance_json）
+   * ③ 硬编码默认值（defaultValue）
+   * nodeKey 传空串表示该参数不暴露为节点 UI 属性，仅走实例配置（如 executeRetryInterval）。
+   */
   private def positiveLong(properties: Properties, nodeKey: String, configKey: String, defaultValue: Long): Long = {
     val raw = Option(properties.getProperty(nodeKey)).filter(_.trim.nonEmpty)
       .getOrElse(properties.getProperty(configKey, defaultValue.toString))
@@ -316,6 +325,10 @@ class DataGoFeishuRefExecutionOperation
     }
   }
 
+  /**
+   * 解析非负整数参数，优先级同 [[positiveLong]]：节点级 UI 值 > 实例级配置 > 硬编码默认。
+   * nodeKey 传空串表示该参数不暴露为节点 UI 属性，仅走实例配置。
+   */
   private def positiveInt(properties: Properties, nodeKey: String, configKey: String, defaultValue: Int): Int = {
     val raw = Option(properties.getProperty(nodeKey)).filter(_.trim.nonEmpty)
       .getOrElse(properties.getProperty(configKey, defaultValue.toString))
