@@ -20,7 +20,7 @@ import java.util.List;
 public class ExecuteResponse {
     private String dmId;
     private String optype;
-    /** 外发状态：exporting（进行中）/ exported（完成） */
+    /** 外发状态：exporting（进行中）/ exported（完成）/ export_failed|failed（外发失败终态） */
     private String status;
     /** 本次外发涉及的任务 id */
     private List<Long> taskIds;

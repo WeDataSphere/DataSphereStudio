@@ -169,6 +169,9 @@ class DataGoFeishuRefExecutionOperation
    * <p>
    * 首次调用触发后台外发返回 {@code status=exporting}；之后按 {@code executeRetryInterval} 节流
    * 再次调用③查询，直到 {@code status=exported}（带 bitableUrl）即成功。
+   * {@code status=export_failed}/{@code failed} 为外发失败终态（DataGo 后台外发失败，如建多维表格/写 sheet
+   * 失败），直接抛 82007 不重试；其失败明细写入服务端审计 export_result，不随异步响应返回。
+   * 注：③ 响应 envelope.message 可能为通用"外发进行中"，判定以 {@code status} 为准。
    * 全局 {@code maxWaitTime} 超时由 {@code state()} 顶部判定（EXPORTING→82007）兜底，
    * 故 exporting 长期不终态最终由超时失败。
    * <p>
@@ -197,10 +200,15 @@ class DataGoFeishuRefExecutionOperation
           logger.info("DataGo Feishu export in progress, dmId={}, taskId={}, poll={}",
             action.nodeParams.getDmId, action.taskId, Int.box(action.exportPollCount))
           appendLog(action,s"外发进行中（exporting）,第${action.exportPollCount} 次 下次轮询: ${action.executeRetryInterval} ms 后")
-        case status =>
-          // exported/exporting 之外的 status 视为异常
+        case "export_failed" | "failed" =>
+          // 外发失败终态：DataGo 后台外发失败（如建多维表格/写 sheet 失败），不重试，节点失败
           throw new DataGoFeishuException(82007,
-            "DataGo执行外发返回未知状态: " + status + "（预期 exporting/exported）")
+            "DataGo外发失败: status=" + action.lastRemoteStatus + "，taskIds=" + response.getTaskIds +
+              "，详见DataGo审计export_result")
+        case status =>
+          // exported/exporting/export_failed 之外的 status 视为异常
+          throw new DataGoFeishuException(82007,
+            "DataGo执行外发返回未知状态: " + status + "（预期 exporting/exported/export_failed）")
       }
     } catch {
       case e: DataGoFeishuException if e.getHttpCode == 502 || e.getHttpCode == 504 =>
