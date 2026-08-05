@@ -560,9 +560,7 @@ public class DSSFrameworkProjectRestfulApi {
 
     @RequestMapping(path = "queryAllProjects", method = RequestMethod.POST)
     public Message queryAllProject(HttpServletRequest request, @RequestBody ProjectQueryRequest projectRequest){
-        LOGGER.info("[T2-DEBUG] queryAllProject ENTRY: updateStartTime=[{}], updateEndTime=[{}], healthStatus={}, workspaceId={}, projectNames={}",
-                projectRequest.getUpdateStartTime(), projectRequest.getUpdateEndTime(),
-                projectRequest.getHealthStatus(), projectRequest.getWorkspaceId(), projectRequest.getProjectNames());
+
         String username = SecurityFilter.getLoginUsername(request);
         projectRequest.setUsername(username);
         Message message = executePreHook(projectHttpRequestHook -> projectHttpRequestHook.beforeGetAllProjects(request, projectRequest));
