@@ -10,7 +10,7 @@ import java.util.{Properties, UUID}
 
 import com.webank.wedatasphere.dss.appconn.datagofeishu.client.DataGoFeishuClient
 import com.webank.wedatasphere.dss.appconn.datagofeishu.conf.DataGoFeishuConfiguration
-import com.webank.wedatasphere.dss.appconn.datagofeishu.entity.{NodeParams, SheetResult, TaskResponse}
+import com.webank.wedatasphere.dss.appconn.datagofeishu.entity.{NodeParams, TaskResponse}
 import com.webank.wedatasphere.dss.appconn.datagofeishu.exception.DataGoFeishuException
 import com.webank.wedatasphere.dss.appconn.datagofeishu.utils.DmInfoComparator
 import com.google.gson.GsonBuilder
@@ -365,11 +365,6 @@ class DataGoFeishuRefExecutionOperation
 
   private def timestamp(): String = {
     logTimestampFormatter.format(LocalDateTime.now())
-  }
-
-  private def sheetSummary(sheets: Seq[SheetResult]): String = {
-    if (sheets == null || sheets.isEmpty) "无"
-    else sheets.map(s => s.getTableName + "(" + safe(s.getStatus) + ")").mkString(",")
   }
 
   private def normalize(value: String): String = if (value == null) "" else value.trim.toLowerCase
