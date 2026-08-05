@@ -145,7 +145,7 @@ class DataGoFeishuRefExecutionOperation
     normalize(response.getStatus) match {
       case "inited" | "detecting" =>
         action.nextPollAt = System.currentTimeMillis() + action.detectPollInterval
-        appendLog(action, "检测中,下次轮询: " + action.detectPollInterval + "ms 后,状态: " + action.lastRemoteStatus)
+        appendLog(action, "开始检测，下次轮询: " + action.detectPollInterval + "ms 后,状态: " + action.lastRemoteStatus)
       case "detected_pass" =>
         action.stage = DataGoFeishuStage.Exporting
         action.nextPollAt = 0L
@@ -196,7 +196,7 @@ class DataGoFeishuRefExecutionOperation
           action.nextPollAt = System.currentTimeMillis() + action.executeRetryInterval
           logger.info("DataGo Feishu export in progress, dmId={}, taskId={}, poll={}",
             action.nodeParams.getDmId, action.taskId, Int.box(action.exportPollCount))
-          appendLog(action, "外发进行中（exporting），第" + action.exportPollCount + "次查询，下次轮询: "
+          appendLog(action, "外发进行中（exporting），第 " + action.exportPollCount + " 次轮询，下次轮询: "
             + action.executeRetryInterval + "ms 后")
         case status =>
           // exported/exporting 之外的 status 视为异常
