@@ -247,10 +247,12 @@ public class DataGoFeishuClient {
         for (DataTarget target : params.getDataTargets()) {
             String key = tableKeyOf(target.getDbName(), target.getTableName());
             firstByTable.putIfAbsent(key, target);
+            // 无条件初始化字段桶，保证 firstByTable 的 key 在 fieldsByTable 必然存在，避免下游 NPE
+            java.util.LinkedHashSet<String> fieldSet = fieldsByTable.computeIfAbsent(key, k -> new java.util.LinkedHashSet<>());
             if (target.getFields() != null) {
                 for (String field : target.getFields()) {
                     if (field != null && !field.trim().isEmpty()) {
-                        fieldsByTable.computeIfAbsent(key, k -> new java.util.LinkedHashSet<>()).add(field.trim());
+                        fieldSet.add(field.trim());
                     }
                 }
             }
