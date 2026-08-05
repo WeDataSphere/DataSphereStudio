@@ -376,7 +376,6 @@
     <ValidationResultDialog
       :visible="validationDialogVisible"
       :issues="validationDialogIssues"
-      :level="validationDialogLevel"
       @update:visible="validationDialogVisible = $event"
       @on-close="handleValidationDialogClose"
       @on-locate="handleValidationLocate"
@@ -549,7 +548,6 @@ export default {
       // DAG 结构校验弹窗状态
       validationDialogVisible: false,
       validationDialogIssues: [],
-      validationDialogLevel: 'error',
       nodebaseinfoShow: false, // 自定义节点信息弹窗展示
       clickCurrentNode: {}, // 当前点击的节点
       clickCurrentNodeDisable: false, // 当前点击的节点是否可编辑
@@ -1545,8 +1543,9 @@ export default {
       if (isFiveNode.length > 0) return this.$Message.warning(this.$t('message.workflow.process.deleteNodeSave'));
       return this.saveRequest(json, comment, f);
     },
-    // 保存请求（forceSave=true 表示 warn 确认继续保存，或自动保存遇 warn 放行）
-    saveRequest(json, comment, f, forceSave) {
+    // 保存请求
+    // 后端 v2.3 契约：saveFlow 只返回 VALIDATION_FAILED(error) 或正常保存，不再返回 PENDING_CONFIRM(warn)
+    saveRequest(json, comment, f) {
       const updateTime = Date.now();
       const paramsJson = JSON.parse(JSON.stringify(Object.assign(json, {
         comment: comment,
@@ -1572,66 +1571,10 @@ export default {
         },
         flowEditLock: this.getFlowEditLock()
       };
-      // forceSave=true：warn 确认继续 / 自动保存遇 warn 放行（design-doc §6.2/§6.4）
-      if (forceSave) {
-        requestBody.forceSave = true;
-      }
       return api.fetch(`${this.$API_PATH.WORKFLOW_PATH}saveFlow`, requestBody).then((res) => {
         this.loading = false;
 
-        // ====== DAG 结构校验分支（design-doc §6.3/§7.1）======
-
-        // PENDING_CONFIRM：仅 warn 且未确认
-        if (res && res.status === 'PENDING_CONFIRM') {
-          const warnIssues = res.validationIssues || [];
-          this.highlightValidationIssues(warnIssues, 'warn');
-          if (f) {
-            // 自动保存遇 warn：不弹框，直接 forceSave 放行（design-doc §6.4）
-            this.clearValidationHighlight();
-            return this.saveRequest(json, comment, f, true);
-          }
-          // 手动保存遇 warn：弹 $Modal.confirm 确认（design-doc §7.1）
-          this.$Modal.confirm({
-            title: this.$t('message.workflow.process.validation.warnTitle'),
-            render: (h) => {
-              return h('div', {
-                style: { maxHeight: '320px', overflowY: 'auto', paddingTop: '4px' }
-              }, warnIssues.map((issue) => {
-                return h('div', {
-                  style: {
-                    padding: '8px 10px',
-                    marginBottom: '6px',
-                    border: '1px solid #ffe58f',
-                    borderRadius: '4px',
-                    backgroundColor: '#fffbe6'
-                  }
-                }, [
-                  h('div', {
-                    style: { fontWeight: '600', color: '#d48806', fontSize: '13px', marginBottom: '4px' }
-                  }, (issue.checkName || '') + this.formatIssueLocation(issue)),
-                  issue.message ? h('div', {
-                    style: { fontSize: '12px', color: '#515a6e', lineHeight: '1.5', marginBottom: '2px' }
-                  }, issue.message) : null,
-                  issue.suggestion ? h('div', {
-                    style: { fontSize: '12px', color: '#808695', lineHeight: '1.5' }
-                  }, issue.suggestion) : null,
-                ].filter(Boolean));
-              }));
-            },
-            okText: this.$t('message.workflow.process.validation.confirmContinueSave'),
-            cancelText: this.$t('message.workflow.process.validation.cancelSave'),
-            onOk: () => {
-              this.clearValidationHighlight();
-              this.saveRequest(json, comment, f, true);
-            },
-            onCancel: () => {
-              this.clearValidationHighlight();
-            },
-          });
-          return res;
-        }
-
-        // VALIDATION_FAILED：error 阻断（兼容后端 Message.ok 返回的场景）
+        // ====== DAG 结构校验：error 阻断（兼容后端 Message.ok 返回的场景）======
         if (res && res.status === 'VALIDATION_FAILED') {
           const errorIssues = res.validationIssues || [];
           this.handleValidationFailed(errorIssues, f);
@@ -1689,7 +1632,7 @@ export default {
       try {
         if (e && e.response && e.response.data && e.response.data.data) {
           const data = e.response.data.data;
-          if (data.status === 'VALIDATION_FAILED' || data.status === 'PENDING_CONFIRM') {
+          if (data.status === 'VALIDATION_FAILED') {
             return data;
           }
         }
@@ -1703,26 +1646,17 @@ export default {
      * 自动保存遇 error 不弹对话框（design-doc §6.4：静默/日志）。
      */
     handleValidationFailed(issues, f) {
-      this.highlightValidationIssues(issues, 'error');
+      this.highlightValidationIssues(issues);
       if (!f) {
         // 手动保存：弹错误列表对话框
         this.validationDialogIssues = issues;
-        this.validationDialogLevel = 'error';
         this.validationDialogVisible = true;
       }
     },
     /**
-     * 格式化校验问题的定位信息（用于 $Modal.confirm render）
+     * 高亮画布上的校验问题节点/边（调用 cyeditor 组件方法，error 标红）
      */
-    formatIssueLocation(issue) {
-      if (issue.nodeId) return ' (' + issue.nodeId + ')';
-      if (issue.edgeRef) return ' (' + issue.edgeRef + ')';
-      return '';
-    },
-    /**
-     * 高亮画布上的校验问题节点/边（调用 cyeditor 组件方法）
-     */
-    highlightValidationIssues(issues, level) {
+    highlightValidationIssues(issues) {
       if (this.viewMode !== 'cyeditor' || !this.$refs.process) return;
       const nodeIds = [];
       const edgeRefs = [];
@@ -1741,10 +1675,10 @@ export default {
         }
       });
       if (this.$refs.process.highlightNodes) {
-        this.$refs.process.highlightNodes(nodeIds, level);
+        this.$refs.process.highlightNodes(nodeIds);
       }
       if (this.$refs.process.highlightEdges) {
-        this.$refs.process.highlightEdges(edgeRefs, level);
+        this.$refs.process.highlightEdges(edgeRefs);
       }
     },
     /**

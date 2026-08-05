@@ -377,10 +377,7 @@
         "validation": {
           "errorTitle": "工作流结构校验未通过",
           "errorDesc": "存在严重结构错误，保存已被阻断，请修复后重试",
-          "warnTitle": "工作流结构校验提醒",
           "known": "知道了",
-          "confirmContinueSave": "确认继续保存",
-          "cancelSave": "取消",
           "locateIssue": "点击定位",
           "checkName": "检查项",
           "location": "定位",

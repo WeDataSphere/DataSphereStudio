@@ -418,7 +418,7 @@ export default {
         'background-color': nodeThemeColor.nodeDisabledBg,
         'color': nodeThemeColor.nodeDisabledColor
       })
-      // DAG 结构校验高亮样式（error 标红 / warn 标黄）
+      // DAG 结构校验高亮样式（error 标红）
       // background-color/border-color 作用于节点，line-color/arrow-color 作用于边
       cy.style().selector('.dag-error').style({
         'background-color': '#ff4d4f',
@@ -427,14 +427,6 @@ export default {
         'line-color': '#ff4d4f',
         'target-arrow-color': '#ff4d4f',
         'source-arrow-color': '#ff4d4f',
-      })
-      cy.style().selector('.dag-warn').style({
-        'background-color': '#faad14',
-        'border-color': '#faad14',
-        'border-width': '2px',
-        'line-color': '#faad14',
-        'target-arrow-color': '#faad14',
-        'source-arrow-color': '#faad14',
       })
       data.nodes.forEach(function(nodeItem) {
         var node = cy.getElementById(nodeItem.data.id);
@@ -606,31 +598,27 @@ export default {
       });
     },
     /**
-     * 高亮节点（DAG 结构校验）
+     * 高亮节点（DAG 结构校验，error 标红）
      * @param {Array} nodeIdentities - 节点标识数组（key/id）
-     * @param {String} level - 'error' | 'warn'
      */
-    highlightNodes(nodeIdentities, level) {
+    highlightNodes(nodeIdentities) {
       if (!this.instance || !this.instance.cy) return;
       const cy = this.instance.cy;
-      const className = level === 'error' ? 'dag-error' : 'dag-warn';
       (nodeIdentities || []).forEach((id) => {
         if (!id) return;
         const ele = cy.getElementById(id);
         if (ele && ele.length > 0) {
-          ele.addClass(className);
+          ele.addClass('dag-error');
         }
       });
     },
     /**
-     * 高亮边（DAG 结构校验，按 source->target 定位）
+     * 高亮边（DAG 结构校验，按 source->target 定位，error 标红）
      * @param {Array} edgeRefs - 边引用数组，格式 "source->target"
-     * @param {String} level - 'error' | 'warn'
      */
-    highlightEdges(edgeRefs, level) {
+    highlightEdges(edgeRefs) {
       if (!this.instance || !this.instance.cy) return;
       const cy = this.instance.cy;
-      const className = level === 'error' ? 'dag-error' : 'dag-warn';
       (edgeRefs || []).forEach((ref) => {
         if (!ref || ref.indexOf('->') < 0) return;
         const parts = ref.split('->');
@@ -640,7 +628,7 @@ export default {
         // 按 source/target 匹配边
         cy.edges().forEach((edge) => {
           if (edge.data('source') === source && edge.data('target') === target) {
-            edge.addClass(className);
+            edge.addClass('dag-error');
           }
         });
       });
@@ -651,7 +639,7 @@ export default {
     clearHighlight() {
       if (!this.instance || !this.instance.cy) return;
       const cy = this.instance.cy;
-      cy.$('.dag-error, .dag-warn').removeClass('dag-error dag-warn');
+      cy.$('.dag-error').removeClass('dag-error');
     },
     /**
      * 定位到指定节点（居中 + 选中），供校验列表点击调用

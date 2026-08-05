@@ -377,10 +377,7 @@
         "validation": {
           "errorTitle": "Workflow structure validation failed",
           "errorDesc": "Severe structure errors detected. Save is blocked. Please fix and retry.",
-          "warnTitle": "Workflow structure validation warning",
           "known": "Got it",
-          "confirmContinueSave": "Confirm to continue saving",
-          "cancelSave": "Cancel",
           "locateIssue": "Click to locate",
           "checkName": "Check",
           "location": "Location",

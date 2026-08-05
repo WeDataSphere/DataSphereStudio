@@ -8,7 +8,7 @@
     class-name="validation-result-modal"
     @on-cancel="handleCancel"
   >
-    <div class="validation-desc" v-if="level === 'error'">
+    <div class="validation-desc">
       {{ $t('message.workflow.process.validation.errorDesc') }}
     </div>
     <div class="validation-issue-list">
@@ -17,9 +17,9 @@
         :key="(issue.nodeId || issue.edgeRef || '') + index"
         class="validation-issue-item"
       >
-        <span class="issue-level-icon" :class="levelClass">
+        <span class="issue-level-icon level-error">
           <Icon
-            :type="level === 'error' ? 'md-close-circle' : 'md-warning'"
+            type="md-close-circle"
             :size="18"
           />
         </span>
@@ -48,14 +48,8 @@
       </div>
     </div>
     <div slot="footer">
-      <Button
-        v-if="level === 'warn'"
-        @click="handleCancel"
-      >
-        {{ $t('message.workflow.process.validation.cancelSave') }}
-      </Button>
       <Button type="primary" @click="handleConfirm">
-        {{ confirmButtonText }}
+        {{ $t('message.workflow.process.validation.known') }}
       </Button>
     </div>
   </Modal>
@@ -73,10 +67,6 @@ export default {
       type: Array,
       default: () => [],
     },
-    level: {
-      type: String,
-      default: 'error', // 'error' | 'warn'
-    },
   },
   computed: {
     innerVisible: {
@@ -91,17 +81,7 @@ export default {
       },
     },
     modalTitle() {
-      return this.level === 'error'
-        ? this.$t('message.workflow.process.validation.errorTitle')
-        : this.$t('message.workflow.process.validation.warnTitle');
-    },
-    levelClass() {
-      return this.level === 'error' ? 'level-error' : 'level-warn';
-    },
-    confirmButtonText() {
-      return this.level === 'error'
-        ? this.$t('message.workflow.process.validation.known')
-        : this.$t('message.workflow.process.validation.confirmContinueSave');
+      return this.$t('message.workflow.process.validation.errorTitle');
     },
   },
   methods: {
@@ -115,9 +95,6 @@ export default {
     },
     handleConfirm() {
       this.innerVisible = false;
-      if (this.level === 'warn') {
-        this.$emit('on-confirm');
-      }
     },
     handleCancel() {
       this.innerVisible = false;
@@ -159,9 +136,6 @@ export default {
         margin-top: 1px;
         &.level-error {
           color: #ff4d4f;
-        }
-        &.level-warn {
-          color: #faad14;
         }
       }
       .issue-detail {
