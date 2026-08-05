@@ -67,6 +67,21 @@ public interface ProjectAssetService {
     List<Integer> preFilterByHealth(ProjectQueryRequest request);
 
     /**
+     * 最近更新时间预过滤（按 latestWorkflowUpdateTime 过滤）。
+     *
+     * <p>语义对齐：统计列"最近更新时间"取自 orchestrator 的 latestWorkflowUpdateTime（工作流最近更新），
+     * 而非 dss_project.update_time（项目元数据更新时间）。故 updateStartTime/updateEndTime 筛选需基于
+     * latestWorkflowUpdateTime 在内存中预过滤，避免筛选项与展示列语义不一致。
+     *
+     * <p>核心逻辑：查全量项目 → 取每项目 latestWorkflowUpdateTime → 按 [start, end] 范围过滤。
+     * latestWorkflowUpdateTime 为 null（无工作流 / orchestrator 降级）的项目排除。
+     *
+     * @param request 查询请求（含 updateStartTime / updateEndTime，均为 Date 类型）
+     * @return 过滤后 projectIdList（null 表示无需预过滤，即两个时间参数均未传）
+     */
+    List<Integer> preFilterByUpdateTime(ProjectQueryRequest request);
+
+    /**
      * 获取项目详情（基础信息 + 工作流列表 + 数据源摘要 + 节点类型分布）。
      *
      * @param projectId   项目 ID

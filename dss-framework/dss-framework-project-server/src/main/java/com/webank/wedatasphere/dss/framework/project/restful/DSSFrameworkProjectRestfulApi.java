@@ -606,8 +606,12 @@ public class DSSFrameworkProjectRestfulApi {
 
         // [台账增强] 健康状态预过滤：预计算全量 projectId 健康标签 → 过滤 → 复用现有 projectIdList 字段分页
         List<Integer> healthFilteredIds = projectAssetService.preFilterByHealth(projectRequest);
-        if (healthFilteredIds != null) {
-            projectRequest.setProjectIdList(healthFilteredIds);
+        // [台账增强] 最近更新时间预过滤：按 latestWorkflowUpdateTime（工作流最近更新）过滤，语义与统计列一致
+        List<Integer> updateTimeFilteredIds = projectAssetService.preFilterByUpdateTime(projectRequest);
+        // 合并两个预过滤结果（都非 null 取交集；仅一个非 null 用之；都 null 不预过滤）
+        List<Integer> mergedFilteredIds = mergeFilteredIds(healthFilteredIds, updateTimeFilteredIds);
+        if (mergedFilteredIds != null) {
+            projectRequest.setProjectIdList(mergedFilteredIds);
         }
 
         List<Long> totals = new ArrayList<>();
@@ -618,6 +622,40 @@ public class DSSFrameworkProjectRestfulApi {
 
         return Message.ok("获取工作空间的工程成功").data("projects", dssProjectVos).data("total",totals.get(0));
 
+    }
+
+    /**
+     * 合并两个预过滤 projectId 列表。
+     *
+     * <p>合并策略：
+     * <ul>
+     *     <li>两者都非 null → 取交集（保留 a 的顺序）</li>
+     *     <li>仅一个非 null → 返回该列表</li>
+     *     <li>两者都 null → 返回 null（表示均无需预过滤）</li>
+     * </ul>
+     *
+     * @param a 第一个预过滤结果（可为 null，null 表示该维度不过滤）
+     * @param b 第二个预过滤结果（可为 null，null 表示该维度不过滤）
+     * @return 合并后的 projectIdList（null 表示无需预过滤）
+     */
+    private List<Integer> mergeFilteredIds(List<Integer> a, List<Integer> b) {
+        if (a == null && b == null) {
+            return null;
+        }
+        if (a == null) {
+            return b;
+        }
+        if (b == null) {
+            return a;
+        }
+        Set<Integer> bSet = new HashSet<>(b);
+        List<Integer> result = new ArrayList<>(a.size());
+        for (Integer id : a) {
+            if (bSet.contains(id)) {
+                result.add(id);
+            }
+        }
+        return result;
     }
 
     /**

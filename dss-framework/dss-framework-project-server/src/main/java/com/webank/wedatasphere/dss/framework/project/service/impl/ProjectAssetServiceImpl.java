@@ -207,6 +207,70 @@ public class ProjectAssetServiceImpl implements ProjectAssetService {
         }
     }
 
+    // ============================== 最近更新时间预过滤 ==============================
+
+    @Override
+    public List<Integer> preFilterByUpdateTime(ProjectQueryRequest request) {
+        if (request == null
+                || (request.getUpdateStartTime() == null && request.getUpdateEndTime() == null)) {
+            return null;
+        }
+        try {
+            List<QueryProjectVo> allProjects = projectMapper.queryProjectList(
+                    request.getWorkspaceId(), null);
+            if (allProjects == null || allProjects.isEmpty()) {
+                return Collections.emptyList();
+            }
+            Map<Long, AssetStats> statsMap = getOrLoadStats(request.getWorkspaceId());
+            Date start = request.getUpdateStartTime();
+            Date end = request.getUpdateEndTime();
+            List<Integer> filtered = new ArrayList<>();
+            for (QueryProjectVo pvo : allProjects) {
+                AssetStats stats = statsMap.get(pvo.getId());
+                Date latestTime = (stats != null && stats.isOrchestratorAvailable())
+                        ? stats.getLatestWorkflowUpdateTime() : null;
+                // latestWorkflowUpdateTime 为 null（无工作流 / orchestrator 降级）的项目排除
+                if (latestTime == null) {
+                    continue;
+                }
+                if (inRange(latestTime, start, end)) {
+                    filtered.add(pvo.getId() == null ? null : pvo.getId().intValue());
+                }
+            }
+            filtered.removeIf(Objects::isNull);
+            return filtered;
+        } catch (Exception e) {
+            LOGGER.error("preFilterByUpdateTime failed, workspaceId={}, fallback to no update-time filter",
+                    request.getWorkspaceId(), e);
+            return null;
+        }
+    }
+
+    /**
+     * 判断时间 t 是否落在 [start, end] 范围内（含边界）。
+     *
+     * <p>边界语义（与前端 yyyy-MM-dd 日期选择器对齐，Date 经 Jackson 解析为当天 00:00:00）：
+     * <ul>
+     *     <li>start 非 null：t.before(start) 即排除（start 当天 00:00:00 含）</li>
+     *     <li>end 非 null：t.after(end) 即排除（end 当天 00:00:00 含，其后时刻排除）</li>
+     * </ul>
+     *
+     * <p>注：updateStartTime/updateEndTime 字段类型为 Date（非 String），故无需 parseDate 解析，
+     * 直接使用 Jackson 按 yyyy-MM-dd 解析后的 Date 对象。
+     */
+    private boolean inRange(Date t, Date start, Date end) {
+        if (t == null) {
+            return false;
+        }
+        if (start != null && t.before(start)) {
+            return false;
+        }
+        if (end != null && t.after(end)) {
+            return false;
+        }
+        return true;
+    }
+
     // ============================== 项目详情 ==============================
 
     @Override
