@@ -13,6 +13,7 @@ import com.webank.wedatasphere.dss.appconn.datagofeishu.conf.DataGoFeishuConfigu
 import com.webank.wedatasphere.dss.appconn.datagofeishu.entity.{NodeParams, SheetResult, TaskResponse}
 import com.webank.wedatasphere.dss.appconn.datagofeishu.exception.DataGoFeishuException
 import com.webank.wedatasphere.dss.appconn.datagofeishu.utils.DmInfoComparator
+import com.google.gson.GsonBuilder
 import com.webank.wedatasphere.dss.standard.app.development.listener.common._
 import com.webank.wedatasphere.dss.standard.app.development.listener.core.{Killable, LongTermRefExecutionOperation, Procedure}
 import com.webank.wedatasphere.dss.standard.app.development.listener.ref.ExecutionResponseRef.ExecutionResponseRefBuilder
@@ -277,9 +278,10 @@ class DataGoFeishuRefExecutionOperation
       case _ =>
     }
     requestRef.getExecutionRequestRefContext.getRuntimeMap.foreach {
-      case ("job.desc", value) if value != null => parseJobDesc(value.toString, properties)
       case (key, value) if key != null && value != null =>
-        properties.setProperty(key, replaceVariables(value.toString))
+        val replaced = replaceVariables(value.toString)
+        logger.info(s"DataGo Feishu runtimeMap after variable replace: key=$key, value=$replaced")
+        properties.setProperty(key, replaced)
       case _ =>
     }
     val variable = requestRef.getRefJobContent.get("variable")
@@ -290,16 +292,10 @@ class DataGoFeishuRefExecutionOperation
         case _ =>
       }
     }
+    // 输出最终 properties 的 JSON 形式，便于整体核对变量替换后的参数全貌
+    logger.info("DataGo Feishu properties after variable replace: {}",
+      new GsonBuilder().serializeNulls().create().toJson(properties))
     properties
-  }
-
-  private def parseJobDesc(value: String, properties: Properties): Unit = {
-    value.split("[;\\r\\n]+").map(_.trim).filter(_.contains("=")).foreach { row =>
-      val index = row.indexOf('=')
-      if (index > 0) {
-        properties.setProperty(row.substring(0, index).trim, replaceVariables(row.substring(index + 1).trim))
-      }
-    }
   }
 
   private def replaceVariables(value: String): String = {
