@@ -721,6 +721,12 @@ public class DSSProjectServiceImpl extends ServiceImpl<DSSProjectMapper, DSSProj
     public List<Integer> getProjectId(ProjectQueryRequest projectRequest){
         List<Integer> projectId = new ArrayList<>();
 
+        // [台账增强] 健康状态预过滤：若上层已预置 projectIdList（健康筛选结果），则以其为种子，
+        // 后续用户权限筛选会与之取交集。现有调用方不预置该字段，行为保持不变（向后兼容）。
+        if (projectRequest.getProjectIdList() != null && !projectRequest.getProjectIdList().isEmpty()) {
+            projectId = new ArrayList<>(projectRequest.getProjectIdList());
+        }
+
         Map<Integer,List> map = new HashMap();
         map.put(ProjectUserPrivEnum.PRIV_ACCESS.getRank(), projectRequest.getAccessUsers());
         map.put(ProjectUserPrivEnum.PRIV_EDIT.getRank(), projectRequest.getEditUsers());

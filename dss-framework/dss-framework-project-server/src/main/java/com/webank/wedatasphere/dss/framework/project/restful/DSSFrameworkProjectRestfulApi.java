@@ -28,8 +28,10 @@ import com.webank.wedatasphere.dss.framework.project.entity.DSSProjectDO;
 import com.webank.wedatasphere.dss.framework.project.entity.request.*;
 import com.webank.wedatasphere.dss.framework.project.entity.response.ProjectResponse;
 import com.webank.wedatasphere.dss.framework.project.entity.vo.DSSProjectVo;
+import com.webank.wedatasphere.dss.framework.project.entity.vo.ProjectDetailVO;
 import com.webank.wedatasphere.dss.framework.project.service.DSSFrameworkProjectService;
 import com.webank.wedatasphere.dss.framework.project.service.DSSProjectService;
+import com.webank.wedatasphere.dss.framework.project.service.ProjectAssetService;
 import com.webank.wedatasphere.dss.framework.project.service.ProjectHttpRequestHook;
 import com.webank.wedatasphere.dss.framework.project.utils.ApplicationArea;
 import com.webank.wedatasphere.dss.framework.proxy.conf.ProxyUserConfiguration;
@@ -57,6 +59,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.*;
 import java.util.function.Consumer;
@@ -91,6 +94,9 @@ public class DSSFrameworkProjectRestfulApi {
 
     @Autowired
     private DSSWorkspaceService dssWorkspaceService;
+
+    @Autowired
+    private ProjectAssetService projectAssetService;
 
     private Message executePreHook(Function<ProjectHttpRequestHook, Message> function) {
         String errorMsg = projectHttpRequestHooks.stream().map(function).filter(Objects::nonNull).map(Message::getMessage)
@@ -598,11 +604,69 @@ public class DSSFrameworkProjectRestfulApi {
             projectRequest.setPageSize(10);
         }
 
+        // [台账增强] 健康状态预过滤：预计算全量 projectId 健康标签 → 过滤 → 复用现有 projectIdList 字段分页
+        List<Integer> healthFilteredIds = projectAssetService.preFilterByHealth(projectRequest);
+        if (healthFilteredIds != null) {
+            projectRequest.setProjectIdList(healthFilteredIds);
+        }
+
         List<Long> totals = new ArrayList<>();
         List<ProjectResponse> dssProjectVos = projectService.queryListByParam(projectRequest,totals);
 
+        // [台账增强] 统计字段二次填充（工作流数/节点数/数据源数/成员数/最近更新时间）+ 健康标签，不侵入主查询
+        projectAssetService.enrichProjectResponses(projectRequest.getWorkspaceId(), dssProjectVos);
+
         return Message.ok("获取工作空间的工程成功").data("projects", dssProjectVos).data("total",totals.get(0));
 
+    }
+
+    /**
+     * [台账增强] 项目详情（基础信息 + 工作流列表 + 数据源摘要 + 节点类型分布）。
+     *
+     * <p>各区块独立降级，失败区块置空并标记 degraded，不影响其他区块。
+     */
+    @RequestMapping(path = "asset/detail", method = RequestMethod.GET)
+    public Message getProjectDetail(HttpServletRequest request,
+                                    @RequestParam Long projectId,
+                                    @RequestParam Long workspaceId) {
+        String username = SecurityFilter.getLoginUsername(request);
+        LOGGER.info("user {} getProjectDetail projectId={}, workspaceId={}", username, projectId, workspaceId);
+        try {
+            // 越权校验：projectId 必须属于当前 workspace（防跨工作空间访问）
+            dssWorkspaceService.getWorkspacesById(workspaceId, username);
+        } catch (DSSErrorException e) {
+            LOGGER.error("User {} get workspace {} failed.", username, workspaceId, e);
+            return Message.error(e);
+        }
+        ProjectDetailVO detail = projectAssetService.getProjectDetail(projectId, workspaceId);
+        return Message.ok().data("detail", detail);
+    }
+
+    /**
+     * [台账增强] CSV 导出（流式，≤ 上限行数，异步审计日志）。
+     *
+     * <p>超限返回 JSON 提示，正常返回 CSV 文件流。
+     */
+    @RequestMapping(path = "asset/export", method = RequestMethod.POST)
+    public void exportProjects(HttpServletRequest request,
+                               HttpServletResponse response,
+                               @RequestBody ProjectQueryRequest projectRequest) throws java.io.IOException {
+        String username = SecurityFilter.getLoginUsername(request);
+        if (projectRequest.getWorkspaceId() == null) {
+            Workspace workspace = SSOHelper.getWorkspace(request);
+            projectRequest.setWorkspaceId(workspace.getWorkspaceId());
+        }
+        LOGGER.info("user {} exportProjects, workspaceId={}", username, projectRequest.getWorkspaceId());
+        int rows = projectAssetService.exportCsv(projectRequest, response);
+        if (rows < 0) {
+            // 超限：重置响应，返回 JSON 提示
+            response.reset();
+            response.setContentType("application/json; charset=UTF-8");
+            response.getWriter().write("{\"code\":1,\"message\":\"导出行数超过上限 5000，请缩小筛选范围\"}");
+            return;
+        }
+        // 异步审计日志（失败仅记本地日志，不影响导出）
+        projectAssetService.auditExportAsync(username, projectRequest, rows);
     }
 
 }

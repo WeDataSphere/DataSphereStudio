@@ -54,6 +54,44 @@ public class ProjectResponse implements Serializable {
     private Date updateTime;
     private List<DSSProjectDataSource> dataSourceList;
 
+    // ==================== 台账资产治理增强（新增可选字段，默认 null，向后兼容） ====================
+
+    /**
+     * [新增] 工作流数（validFlag=1 去重 orchestrator 数，降级 null）
+     */
+    private Integer workflowCount;
+
+    /**
+     * [新增] 数据源数（降级 null）
+     */
+    private Integer dataSourceCount;
+
+    /**
+     * [新增] 成员数（发布+编辑+查看去重，降级 null）
+     */
+    private Integer memberCount;
+
+    /**
+     * [新增] 最近工作流更新时间（max(DSSOrchestratorVersion.updateTime)，降级 null）
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date latestWorkflowUpdateTime;
+
+    /**
+     * [新增] 节点数（项目下所有工作流节点总数，dss_workflow_node_content 计数，降级 null）
+     */
+    private Integer nodeCount;
+
+    /**
+     * [新增] 健康标签列表（独立标签，可多命中：EMPTY_PROJECT / STALE / NO_DESCRIPTION / UNAVAILABLE）
+     */
+    private List<String> healthLabels;
+
+    /**
+     * [新增] 统计降级标记（true=统计失败，前端显示"--"/"无法评估"）
+     */
+    private Boolean statsDegraded;
+
     public Boolean getEditable() {
         return editable;
     }
@@ -303,5 +341,61 @@ public class ProjectResponse implements Serializable {
 
     public void setDevProcessPermission(List<String> devProcessPermission) {
         this.devProcessPermission = devProcessPermission;
+    }
+
+    public Integer getWorkflowCount() {
+        return workflowCount;
+    }
+
+    public void setWorkflowCount(Integer workflowCount) {
+        this.workflowCount = workflowCount;
+    }
+
+    public Integer getDataSourceCount() {
+        return dataSourceCount;
+    }
+
+    public void setDataSourceCount(Integer dataSourceCount) {
+        this.dataSourceCount = dataSourceCount;
+    }
+
+    public Integer getMemberCount() {
+        return memberCount;
+    }
+
+    public void setMemberCount(Integer memberCount) {
+        this.memberCount = memberCount;
+    }
+
+    public Date getLatestWorkflowUpdateTime() {
+        return latestWorkflowUpdateTime;
+    }
+
+    public void setLatestWorkflowUpdateTime(Date latestWorkflowUpdateTime) {
+        this.latestWorkflowUpdateTime = latestWorkflowUpdateTime;
+    }
+
+    public Integer getNodeCount() {
+        return nodeCount;
+    }
+
+    public void setNodeCount(Integer nodeCount) {
+        this.nodeCount = nodeCount;
+    }
+
+    public List<String> getHealthLabels() {
+        return healthLabels;
+    }
+
+    public void setHealthLabels(List<String> healthLabels) {
+        this.healthLabels = healthLabels;
+    }
+
+    public Boolean getStatsDegraded() {
+        return statsDegraded;
+    }
+
+    public void setStatsDegraded(Boolean statsDegraded) {
+        this.statsDegraded = statsDegraded;
     }
 }

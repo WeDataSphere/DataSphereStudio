@@ -551,4 +551,73 @@
     </select>
 
 
+    <!-- ==================== 项目台账资产治理增强（只读统计查询） ==================== -->
+
+    <!-- 按 projectId 批量统计有效工作流数（validFlag=1 去重 orchestrator 数） -->
+    <select id="countOrcByProjectIds"
+            resultType="com.webank.wedatasphere.dss.orchestrator.common.entity.ProjectOrcStatVO">
+        SELECT project_id AS projectId, COUNT(DISTINCT orchestrator_id) AS count
+        FROM dss_orchestrator_version_info
+        WHERE valid_flag = 1
+          AND project_id IN
+          <foreach collection="projectIds" item="pid" open="(" separator="," close=")">
+              #{pid}
+          </foreach>
+        GROUP BY project_id
+    </select>
+
+    <!-- 按 projectId 批量取最近工作流更新时间（max update_time） -->
+    <select id="maxUpdateTimeByProjectIds"
+            resultType="com.webank.wedatasphere.dss.orchestrator.common.entity.ProjectOrcStatVO">
+        SELECT project_id AS projectId, MAX(update_time) AS updateTime
+        FROM dss_orchestrator_version_info
+        WHERE valid_flag = 1
+          AND project_id IN
+          <foreach collection="projectIds" item="pid" open="(" separator="," close=")">
+              #{pid}
+          </foreach>
+        GROUP BY project_id
+    </select>
+
+    <!-- 单项目工作流摘要（名称 + 最近更新时间 + 发布状态，详情抽屉用） -->
+    <!-- 每个工作流一行；updateTime 取该工作流有效版本的最大更新时间（子查询，避免多版本重复行） -->
+    <select id="listOrcSummaryByProjectId"
+            resultType="com.webank.wedatasphere.dss.orchestrator.common.entity.WorkflowSummaryVO">
+        SELECT o.id     AS orchestratorId,
+               o.name   AS name,
+               o.status AS status,
+               (SELECT MAX(v.update_time)
+                  FROM dss_orchestrator_version_info v
+                 WHERE v.orchestrator_id = o.id AND v.valid_flag = 1) AS updateTime
+        FROM dss_orchestrator_info o
+        WHERE o.project_id = #{projectId}
+    </select>
+
+    <!-- [节点统计] 按 projectId 批量统计节点数（LEFT JOIN 保证无节点项目为 0） -->
+    <select id="countNodesByProjectIds"
+            resultType="com.webank.wedatasphere.dss.orchestrator.common.entity.ProjectNodeStatVO">
+        SELECT oi.project_id AS projectId, COUNT(nc.id) AS nodeCount
+        FROM dss_orchestrator_info oi
+        LEFT JOIN dss_workflow_node_content nc ON oi.id = nc.orchestrator_id
+        WHERE oi.project_id IN
+        <foreach collection="projectIds" item="pid" open="(" separator="," close=")">
+            #{pid}
+        </foreach>
+        GROUP BY oi.project_id
+    </select>
+
+    <!-- [节点统计] 单项目节点类型分布（job_type 分组计数 + 节点显示名，按 count 降序） -->
+    <select id="listNodeTypeDistributionByProjectId"
+            resultType="com.webank.wedatasphere.dss.orchestrator.common.entity.NodeTypeDistributionVO">
+        SELECT nc.job_type AS jobType,
+               wn.name     AS nodeTypeName,
+               COUNT(*)    AS count
+        FROM dss_workflow_node_content nc
+        JOIN dss_orchestrator_info oi ON nc.orchestrator_id = oi.id
+        LEFT JOIN dss_workflow_node wn ON nc.job_type = wn.node_type
+        WHERE oi.project_id = #{projectId}
+        GROUP BY nc.job_type, wn.name
+        ORDER BY count DESC
+    </select>
+
 </mapper>

@@ -178,4 +178,47 @@ public interface OrchestratorMapper {
     List<DSSOrchestratorInfo> getOrchestratorListById(@Param("orchestratorIdList") List<Long> orchestratorIdList);
 
 
+    // ==================== 项目台账资产治理增强（只读统计方法） ====================
+
+    /**
+     * 按 projectId 批量统计有效工作流数（validFlag=1 去重 orchestrator 数）。
+     *
+     * @param projectIds 项目 ID 列表
+     * @return 每个项目的 projectId + count，仅返回有匹配的行
+     */
+    List<ProjectOrcStatVO> countOrcByProjectIds(@Param("projectIds") List<Long> projectIds);
+
+    /**
+     * 按 projectId 批量取最近工作流更新时间（max update_time）。
+     *
+     * @param projectIds 项目 ID 列表
+     * @return 每个项目的 projectId + updateTime，仅返回有匹配的行
+     */
+    List<ProjectOrcStatVO> maxUpdateTimeByProjectIds(@Param("projectIds") List<Long> projectIds);
+
+    /**
+     * 单项目工作流摘要（名称 + 更新时间 + 发布状态），用于详情抽屉。
+     *
+     * @param projectId 项目 ID
+     * @return 工作流摘要列表
+     */
+    List<WorkflowSummaryVO> listOrcSummaryByProjectId(@Param("projectId") Long projectId);
+
+    /**
+     * [节点统计] 按 projectId 批量统计节点数（dss_workflow_node_content 计数）。
+     * LEFT JOIN 保证无节点的项目返回 nodeCount=0。
+     *
+     * @param projectIds 项目 ID 列表
+     * @return 每个项目的 projectId + nodeCount，仅返回有 orchestrator 的行
+     */
+    List<ProjectNodeStatVO> countNodesByProjectIds(@Param("projectIds") List<Long> projectIds);
+
+    /**
+     * [节点统计] 单项目节点类型分布（job_type 分组计数 + 节点显示名），按 count 降序。
+     *
+     * @param projectId 项目 ID
+     * @return 节点类型分布列表（jobType + nodeTypeName + count）
+     */
+    List<NodeTypeDistributionVO> listNodeTypeDistributionByProjectId(@Param("projectId") Long projectId);
+
 }

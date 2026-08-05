@@ -16,9 +16,12 @@
 
 package com.webank.wedatasphere.dss.framework.project.entity.request;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 
 
@@ -81,6 +84,23 @@ public class ProjectQueryRequest implements Serializable {
     private List<Integer> projectIdList;
 
     private String proxyUser;
+
+    /**
+     * [台账增强] 更新时间范围 - 开始（F3），默认 null 跳过
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
+    private Date updateStartTime;
+
+    /**
+     * [台账增强] 更新时间范围 - 结束（F3），默认 null 跳过
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
+    private Date updateEndTime;
+
+    /**
+     * [台账增强] 健康状态多选（F3）：EMPTY_PROJECT / STALE / NO_DESCRIPTION，默认 null 跳过
+     */
+    private List<String> healthStatus;
 
     public List<Integer> getProjectIdList() {
         return projectIdList;
@@ -228,5 +248,29 @@ public class ProjectQueryRequest implements Serializable {
 
     public void setProxyUser(String proxyUser) {
         this.proxyUser = proxyUser;
+    }
+
+    public Date getUpdateStartTime() {
+        return updateStartTime;
+    }
+
+    public void setUpdateStartTime(Date updateStartTime) {
+        this.updateStartTime = updateStartTime;
+    }
+
+    public Date getUpdateEndTime() {
+        return updateEndTime;
+    }
+
+    public void setUpdateEndTime(Date updateEndTime) {
+        this.updateEndTime = updateEndTime;
+    }
+
+    public List<String> getHealthStatus() {
+        return healthStatus;
+    }
+
+    public void setHealthStatus(List<String> healthStatus) {
+        this.healthStatus = healthStatus;
     }
 }

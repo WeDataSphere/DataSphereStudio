@@ -78,10 +78,53 @@
               multiple
             />
           </div>
+          <!-- [新增] 更新时间范围-开始 -->
+          <div class="tag-select">
+            <span class="condition-label">{{
+              $t('common.updateTimeRange')
+            }}</span>
+            <FDatePicker
+              v-model="searchForm.updateStartTime"
+              type="date"
+              :placeholder="$t('common.updateTimeRange')"
+              :max-date="updateMaxDate"
+            />
+          </div>
+          <!-- [新增] 更新时间范围-结束 -->
+          <div class="tag-select">
+            <span class="condition-label">~</span>
+            <FDatePicker
+              v-model="searchForm.updateEndTime"
+              type="date"
+              :placeholder="$t('common.updateTimeRange')"
+              :min-date="updateMinDate"
+            />
+          </div>
+          <!-- [新增] 健康状态多选 -->
+          <div class="tag-select-long">
+            <span class="condition-label">{{ $t('common.healthStatus') }}</span>
+            <FSelect
+              v-model="searchForm.healthStatus"
+              :options="healthStatusOptions"
+              :placeholder="$t('common.pleaseSelect')"
+              clearable
+              collapse-tags
+              :collapse-tags-limit="1"
+              multiple
+            />
+          </div>
         </template>
         <template #exButton>
           <FButton class="reset" @click="handleReset">
             {{ $t('common.reset') }}
+          </FButton>
+          <!-- [新增] 导出按钮 -->
+          <FButton
+            type="primary"
+            :loading="exportLoading"
+            @click="handleExport"
+          >
+            {{ exportLoading ? $t('common.exporting') : $t('common.export') }}
           </FButton>
         </template>
       </BSearch>
@@ -100,8 +143,18 @@
           prop="name"
           :label="$t('common.projectName')"
           :width="174"
+          fixed="left"
           ellipsis
-        />
+        >
+          <template #default="{ row }">
+            <span
+              class="project-name-link"
+              :title="row.name"
+              @click="handleOpenDetail(row)"
+              >{{ row.name }}</span
+            >
+          </template>
+        </f-table-column>
         <f-table-column
           prop="description"
           :label="$t('common.projectDesc')"
@@ -139,7 +192,7 @@
           ellipsis
         >
           <template #default="{ row }">
-            <FEllipsis v-if="row.releaseUsers.length > 0">
+            <FEllipsis v-if="row.releaseUsers && row.releaseUsers.length > 0">
               {{ row.releaseUsers.join(',') }}
               <template #tooltip>
                 <div style="max-width: 500px; word-wrap: break-word">
@@ -159,7 +212,7 @@
           ellipsis
         >
           <template #default="{ row }">
-            <FEllipsis v-if="row.editUsers.length > 0">
+            <FEllipsis v-if="row.editUsers && row.editUsers.length > 0">
               {{ row.editUsers.join(',') }}
               <template #tooltip>
                 <div style="max-width: 500px; word-wrap: break-word">
@@ -179,7 +232,7 @@
           ellipsis
         >
           <template #default="{ row }">
-            <FEllipsis v-if="row.accessUsers.length > 0">
+            <FEllipsis v-if="row.accessUsers && row.accessUsers.length > 0">
               {{ row.accessUsers.join(',') }}
               <template #tooltip>
                 <div style="max-width: 500px; word-wrap: break-word">
@@ -206,6 +259,66 @@
           ellipsis
           sortable
         />
+        <!-- ===== [新增] 资产统计列（位置：更新时间后、操作前） ===== -->
+        <f-table-column
+          prop="workflowCount"
+          :label="$t('common.workflowCount')"
+          :width="100"
+          align="center"
+        >
+          <template #default="{ row }">
+            {{ formatStatCell(row, 'workflowCount') }}
+          </template>
+        </f-table-column>
+        <f-table-column
+          prop="nodeCount"
+          :label="$t('common.nodeCount')"
+          :width="90"
+          align="center"
+        >
+          <template #default="{ row }">
+            {{ formatStatCell(row, 'nodeCount') }}
+          </template>
+        </f-table-column>
+        <f-table-column
+          prop="dataSourceCount"
+          :label="$t('common.dataSourceCount')"
+          :width="100"
+          align="center"
+        >
+          <template #default="{ row }">
+            {{ formatStatCell(row, 'dataSourceCount') }}
+          </template>
+        </f-table-column>
+        <f-table-column
+          prop="memberCount"
+          :label="$t('common.memberCount')"
+          :width="90"
+          align="center"
+        >
+          <template #default="{ row }">
+            {{ formatStatCell(row, 'memberCount') }}
+          </template>
+        </f-table-column>
+        <f-table-column
+          prop="latestWorkflowUpdateTime"
+          :label="$t('common.latestWorkflowUpdateTime')"
+          :width="180"
+          ellipsis
+        >
+          <template #default="{ row }">
+            {{ formatTimeCell(row) }}
+          </template>
+        </f-table-column>
+        <f-table-column
+          prop="healthLabels"
+          :label="$t('common.healthStatus')"
+          :width="200"
+        >
+          <template #default="{ row }">
+            <HealthBadge :labels="row.healthLabels" />
+          </template>
+        </f-table-column>
         <f-table-column
           v-slot="{ row }"
           :label="$t('_.操作')"
@@ -244,20 +357,29 @@
     :form="currentForm"
     @success="fetchTableDataMain"
   />
+  <!-- [新增] 项目详情抽屉 -->
+  <ProjectDetailDrawer
+    v-model:show="detailVisible"
+    :project-id="detailProjectId"
+    :workspace-id="query.workspaceId"
+  />
 </template>
 <script lang="ts" setup>
-import { onMounted, ref, nextTick, reactive } from 'vue';
+import { onMounted, ref, computed, reactive } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { FTable } from '@fesjs/fes-design';
+import { FTable, FMessage } from '@fesjs/fes-design';
 import { getUrlParams } from '@fesjs/traction-widget';
 import { useDataList } from './hooks/useDataList';
 import type {
   DataType,
+  ProjectRowType,
   SearchFormType,
   WorkspaceInfoType,
 } from './types/index';
 import api from './api';
 import EditProject from './components/editProject.vue';
+import HealthBadge from './components/HealthBadge.vue';
+import ProjectDetailDrawer from './components/ProjectDetailDrawer.vue';
 
 const { t } = useI18n();
 const language = localStorage.getItem('locale');
@@ -286,6 +408,9 @@ const init = (): SearchFormType => ({
   releaseUsers: [],
   editUsers: [],
   accessUsers: [],
+  updateStartTime: '',
+  updateEndTime: '',
+  healthStatus: [],
   sortBy: 'createTime',
   orderBy: 'descend',
 });
@@ -299,12 +424,69 @@ const isLoading = ref(false);
 const actionType = ref<string>('loading');
 const tableRef = ref<typeof FTable | null>(null);
 
+/**
+ * [新增] 健康状态多选可选项
+ */
+const healthStatusOptions = computed(() => [
+  { label: t('common.healthEmptyProject'), value: 'EMPTY_PROJECT' },
+  { label: t('common.healthStale'), value: 'STALE' },
+  { label: t('common.healthNoDescription'), value: 'NO_DESCRIPTION' },
+]);
+
+/**
+ * [新增] 日期联动约束：开始≤结束
+ */
+const updateMinDate = computed(() => searchForm.value.updateStartTime || undefined);
+const updateMaxDate = computed(() => searchForm.value.updateEndTime || undefined);
+
+/**
+ * [新增] 将 FDatePicker 的绑定值（Date/string/number）格式化为 yyyy-MM-dd
+ */
+const toDateString = (val: unknown): string => {
+  if (!val) return '';
+  if (typeof val === 'string') {
+    return val.length >= 10 ? val.slice(0, 10) : val;
+  }
+  if (val instanceof Date) {
+    const y = val.getFullYear();
+    const m = String(val.getMonth() + 1).padStart(2, '0');
+    const d = String(val.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  if (typeof val === 'number') return toDateString(new Date(val));
+  return '';
+};
+
+/**
+ * [新增] 统计列单元格显示
+ * - statsDegraded=true → 无法评估
+ * - value null/undefined → --
+ * - 否则原值
+ */
+const formatStatCell = (row: ProjectRowType, key: string): string => {
+  if (row.statsDegraded) return t('common.unavailable');
+  const v = (row as any)[key];
+  if (v === null || v === undefined) return '--';
+  return String(v);
+};
+
+/**
+ * [新增] 最近工作流更新时间单元格显示
+ */
+const formatTimeCell = (row: ProjectRowType): string => {
+  if (row.statsDegraded) return t('common.unavailable');
+  if (!row.latestWorkflowUpdateTime) return '--';
+  return row.latestWorkflowUpdateTime;
+};
+
 // 获取表格数据
 const fetchTableData = async () => {
   const params = {
     pageNow: pagination.current,
     pageSize: pagination.size,
     ...searchForm.value,
+    updateStartTime: toDateString(searchForm.value.updateStartTime),
+    updateEndTime: toDateString(searchForm.value.updateEndTime),
   };
   actionType.value = 'loading';
   tableList.value = [];
@@ -345,6 +527,9 @@ const handleReset = () => {
   searchForm.value.releaseUsers = [];
   searchForm.value.editUsers = [];
   searchForm.value.accessUsers = [];
+  searchForm.value.updateStartTime = '';
+  searchForm.value.updateEndTime = '';
+  searchForm.value.healthStatus = [];
   fetchTableDataMain();
 };
 
@@ -374,6 +559,69 @@ const handleEdit = (type: string, row: DataType) => {
   currentForm.value = { ...row };
   currentShow.value = true;
   currentConfig.value = { type, workspaceId: query.value.workspaceId };
+};
+
+/**
+ * [新增] 项目详情抽屉
+ */
+const detailVisible = ref(false);
+const detailProjectId = ref<number | null>(null);
+const handleOpenDetail = (row: DataType) => {
+  detailProjectId.value = row.id ?? null;
+  detailVisible.value = true;
+};
+
+/**
+ * [新增] CSV 导出（blob 下载）
+ */
+const exportLoading = ref(false);
+const parseExportFileName = (disposition: string): string => {
+  // content-disposition: attachment; filename="project_ledger_xxx.csv"
+  const match = /filename="?([^";]+)"?/i.exec(disposition);
+  return match ? match[1] : `project_ledger_${Date.now()}.csv`;
+};
+const handleExport = async () => {
+  if (exportLoading.value) return;
+  exportLoading.value = true;
+  try {
+    const params = {
+      ...searchForm.value,
+      updateStartTime: toDateString(searchForm.value.updateStartTime),
+      updateEndTime: toDateString(searchForm.value.updateEndTime),
+    };
+    const res = await api.exportProjectsApi(params);
+    const blob: Blob = res.data;
+    const contentType = res.headers['content-type'] || blob.type || '';
+    // 后端超限时返回 application/json 错误体，需解析提示
+    if (contentType.includes('application/json')) {
+      const text = await blob.text();
+      let msg = t('common.fetchFailed');
+      try {
+        msg = JSON.parse(text)?.message || msg;
+      } catch (e) {
+        // ignore parse error
+      }
+      FMessage.error(msg);
+      return;
+    }
+    // 正常 CSV 文件流，触发下载
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = parseExportFileName(
+      res.headers['content-disposition'] || ''
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    FMessage.success(t('common.exportSuccess'));
+  } catch (err) {
+    console.error('export failed', err);
+    FMessage.error(t('common.fetchFailed'));
+  } finally {
+    exportLoading.value = false;
+  }
 };
 
 onMounted(async () => {
@@ -410,6 +658,9 @@ onMounted(async () => {
   :deep(.fes-tag) {
     max-width: 110px;
   }
+  :deep(.fes-date-picker) {
+    width: 215px;
+  }
 }
 .res-tooltip-style {
   color: #0f1222;
@@ -419,6 +670,13 @@ onMounted(async () => {
   min-width: 541px;
   :deep(.fes-card__header) {
     padding: 0;
+  }
+}
+.project-name-link {
+  color: #5384ff;
+  cursor: pointer;
+  &:hover {
+    text-decoration: underline;
   }
 }
 </style>
