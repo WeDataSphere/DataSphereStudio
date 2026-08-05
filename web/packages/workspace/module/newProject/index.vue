@@ -113,9 +113,32 @@
     <Modal
       v-model="deleteProjectShow"
       :title="$t('message.common.projectDetail.deleteProject')"
-      @on-ok="deleteProjectConfirm"
+      :mask-closable="false"
+      @on-visible-change="onDeleteModalVisibleChange"
     >
-      <div style="word-wrap: break-word;">{{$t('message.common.projectDetail.confirmDeleteProject')}}{{ deleteProjectItem.name }}?</div>
+      <!-- E1: 项目概况块（6 字段） -->
+      <div class="delete-summary-block">
+        <div class="block-title">项目概况</div>
+        <div class="summary-row"><span class="summary-label">项目名称</span><span class="summary-value">{{ deleteProjectItem.name }}</span></div>
+        <div class="summary-row"><span class="summary-label">创建人</span><span class="summary-value">{{ projectCreator }}</span></div>
+        <div class="summary-row"><span class="summary-label">项目描述</span><span class="summary-value">{{ projectDescription }}</span></div>
+        <div class="summary-row"><span class="summary-label">工作流/编排</span><span class="summary-value">{{ orchCountDisplay }}</span></div>
+        <div class="summary-row"><span class="summary-label">项目成员</span><span class="summary-value">{{ memberCount }} 人</span></div>
+        <div class="summary-row"><span class="summary-label">创建时间</span><span class="summary-value">{{ projectCreateTime }}</span></div>
+      </div>
+      <!-- E2: 风险提示 -->
+      <Alert type="warning" show-icon class="delete-risk-alert">此操作需谨慎，确认后项目将被删除</Alert>
+      <!-- E3: 输入确认区 -->
+      <div class="delete-confirm-input">
+        <div class="input-guide">请输入完整项目名称以确认删除操作</div>
+        <Input v-model="deleteConfirmInput" :placeholder="deleteProjectItem.name" />
+        <div v-if="!isDeleteConfirmed" class="input-hint">请输入完整项目名称「{{ deleteProjectItem.name }}」以确认删除</div>
+      </div>
+      <!-- 自定义 footer（替代默认 on-ok） -->
+      <div slot="footer">
+        <Button @click="cancelDeleteProject">取消</Button>
+        <Button type="error" :disabled="!isDeleteConfirmed" @click="confirmDeleteProject">确认删除</Button>
+      </div>
     </Modal>
     <Modal
       v-model="redoProjectShow"
@@ -153,6 +176,9 @@ export default {
       redoProjectItem: {},
       deleteProjectShow: false, // 删除工程弹窗展示
       deleteProjectItem: '', // 删除的工程项
+      deleteConfirmInput: '', // 删除确认输入框（输入项目名以确认）
+      orchCount: 0, // 编排数（null 表示加载失败，展示占位"—"）
+      orchLoading: false, // 编排数加载中标志
       actionType: '', // add || modify
       loading: false,
       projectModelShow: false, // 发布,复制，版本的弹窗
@@ -214,6 +240,42 @@ export default {
     },
     tips() {
       return this.$t('message.common.projectDetail.tips', {app_name: this.$APP_CONF.app_name})
+    },
+    // 创建人：createByStr → createBy → "未知"（R1.3）
+    projectCreator() {
+      const p = this.deleteProjectItem
+      if (!p) return '未知'
+      return p.createByStr || p.createBy || '未知'
+    },
+    // 项目描述：空值→"暂无描述"（R1.4）
+    projectDescription() {
+      const desc = this.deleteProjectItem && this.deleteProjectItem.description
+      return (desc && desc.trim()) ? desc : '暂无描述'
+    },
+    // 编排数展示：加载中/失败→"—"，否则数值（R1.6）
+    orchCountDisplay() {
+      if (this.orchLoading || this.orchCount === null) return '——'
+      return this.orchCount + ' 个'
+    },
+    // 成员总数：三列去重（R1.7）
+    memberCount() {
+      const p = this.deleteProjectItem
+      if (!p) return 0
+      const access = p.accessUsers || []
+      const edit = p.editUsers || []
+      const release = p.releaseUsers || []
+      return new Set([...access, ...edit, ...release]).size
+    },
+    // 创建时间格式化（R1.8）
+    projectCreateTime() {
+      const t = this.deleteProjectItem && this.deleteProjectItem.createTime
+      if (!t) return '——'
+      return this.formatDate(t)
+    },
+    // E3 输入校验：trim + 完全匹配 + 大小写敏感（R3.1-R3.4）
+    isDeleteConfirmed() {
+      if (!this.deleteProjectItem) return false
+      return this.deleteConfirmInput.trim() === this.deleteProjectItem.name
     }
   },
   watch: {
@@ -437,8 +499,12 @@ export default {
     },
     // 删除单项工程
     deleteProject(params) {
-      this.deleteProjectShow = true
       this.deleteProjectItem = params
+      this.deleteConfirmInput = '' // R3.7 每次打开清空，不残留上次输入
+      this.orchCount = 0
+      this.orchLoading = false
+      this.deleteProjectShow = true
+      this.fetchOrchCount() // 异步获取编排数
     },
     // 确认删除单项工程
     deleteProjectConfirm() {
@@ -493,6 +559,51 @@ export default {
         .catch(() => {
           this.loading = false
         })
+    },
+    // 新增：获取编排数量（复用 workflows 模块 getAllOrchestrator 模式）
+    fetchOrchCount() {
+      this.orchLoading = true
+      api.fetch(`${this.$API_PATH.ORCHESTRATOR_PATH}getAllOrchestrator`, {
+        workspaceId: +this.$route.query.workspaceId,
+        projectId: this.deleteProjectItem.id,
+      }, 'post').then(res => {
+        // res.page 是 OrchestratorBaseInfo 数组
+        this.orchCount = (res.page || []).length
+      }).catch(() => {
+        // 失败保持占位，不阻断删除（R1.6）
+        this.orchCount = null // null 表示加载失败，展示占位"—"
+      }).finally(() => {
+        this.orchLoading = false
+      })
+    },
+    // 新增：闸门一通过后的入口（替代原 @on-ok 直连）
+    confirmDeleteProject() {
+      // 双重保险：即使按钮 disabled 被绕过，也再校验一次（R3.8 仅前端校验）
+      if (!this.isDeleteConfirmed) return
+      // 关闭弹窗（与原 @on-ok 行为一致：点确认→关闭弹窗→执行删除）
+      this.deleteProjectShow = false
+      // 调用原删除逻辑（闸门二 warmMsg 在此内部，原样保留不动）
+      this.deleteProjectConfirm()
+    },
+    // 新增：取消按钮
+    cancelDeleteProject() {
+      this.deleteProjectShow = false
+    },
+    // 新增：弹窗可见性变化（打开后聚焦输入框，可用性优化）
+    onDeleteModalVisibleChange(visible) {
+      if (visible) {
+        this.$nextTick(() => {
+          const input = this.$el.querySelector('.delete-confirm-input input')
+          if (input) input.focus()
+        })
+      }
+    },
+    // 新增：格式化时间
+    formatDate(t) {
+      if (!t) return '——'
+      const d = new Date(t)
+      if (isNaN(d.getTime())) return '——'
+      return d.toLocaleString()
     },
     init() {
       this.currentProjectData = {
@@ -862,5 +973,44 @@ export default {
 .delete-card-item .project-card-item {
   pointer-events: none;
   opacity: .65
+}
+/* 删除确认弹窗 - 项目概况块 */
+.delete-summary-block {
+  background: #f8f8f9;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.delete-summary-block .block-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #515a6e;
+}
+.delete-summary-block .summary-row {
+  display: flex;
+  line-height: 28px;
+}
+.delete-summary-block .summary-label {
+  width: 90px;
+  color: #808695;
+  flex-shrink: 0;
+}
+.delete-summary-block .summary-value {
+  color: #17233d;
+  word-break: break-all;
+}
+/* 删除确认弹窗 - 风险提示 */
+.delete-risk-alert {
+  margin-bottom: 12px;
+}
+/* 删除确认弹窗 - 输入确认区 */
+.delete-confirm-input .input-guide {
+  margin-bottom: 8px;
+  color: #515a6e;
+}
+.delete-confirm-input .input-hint {
+  margin-top: 6px;
+  color: #ed4014;
+  font-size: 12px;
 }
 </style>
