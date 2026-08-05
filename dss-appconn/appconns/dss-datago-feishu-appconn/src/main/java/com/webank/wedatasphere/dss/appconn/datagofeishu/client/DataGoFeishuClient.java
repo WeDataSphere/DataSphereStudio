@@ -223,6 +223,7 @@ public class DataGoFeishuClient {
                 if (target.getPartition() != null && !target.getPartition().isEmpty()) {
                     table.put("partition", target.getPartition());
                 }
+                table.put("notifyUsers",params.getNotifyUsers());
                 tables.add(table);
             }
         }
