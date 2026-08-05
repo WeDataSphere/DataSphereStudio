@@ -9,7 +9,7 @@ VALUES ('datagofeishu', 0, 1, 1, 1, NULL, 'com.webank.wedatasphere.dss.appconn.d
 select @datago_feishu_appconn_id:=id from `dss_appconn` where `appconn_name` = 'datagofeishu';
 
 INSERT INTO `dss_appconn_instance` (`appconn_id`, `label`, `url`, `enhance_json`, `homepage_uri`)
-VALUES (@datago_feishu_appconn_id, 'DEV', 'datagofeishu', '{"wds.dss.appconn.datago.feishu.api.base.url":"http://DATAGO_HOST:3003","wds.dss.appconn.datago.feishu.api.form.path":"/api/export/form","wds.dss.appconn.datago.feishu.api.task.path":"/api/export/task","wds.dss.appconn.datago.feishu.api.execute.path":"/api/export/execute","wds.dss.appconn.datago.feishu.api.token.header":"Authorization","wds.dss.appconn.datago.feishu.api.token":"","wds.dss.appconn.datago.feishu.optype.supported":"table","wds.dss.appconn.datago.feishu.detect.poll.interval.ms":"30000","wds.dss.appconn.datago.feishu.execute.retry.max":"3","wds.dss.appconn.datago.feishu.execute.retry.interval.ms":"30000","wds.dss.appconn.datago.feishu.max.wait.time.ms":"7200000","wds.dss.appconn.datago.feishu.http.connect.timeout.ms":"10000","wds.dss.appconn.datago.feishu.http.read.timeout.ms":"60000"}', '');
+VALUES (@datago_feishu_appconn_id, 'DEV', 'datagofeishu', '{"wds.dss.appconn.datago.feishu.api.base.url":"http://DATAGO_HOST:3003","wds.dss.appconn.datago.feishu.api.form.path":"/api/export/form","wds.dss.appconn.datago.feishu.api.task.path":"/api/export/task","wds.dss.appconn.datago.feishu.api.execute.path":"/api/export/execute","wds.dss.appconn.datago.feishu.api.token.header":"Authorization","wds.dss.appconn.datago.feishu.api.token":"","wds.dss.appconn.datago.feishu.optype.supported":"table","wds.dss.appconn.datago.feishu.detect.poll.interval.ms":"30","wds.dss.appconn.datago.feishu.execute.retry.max":"3","wds.dss.appconn.datago.feishu.execute.retry.interval.ms":"30","wds.dss.appconn.datago.feishu.max.wait.time.ms":"7200","wds.dss.appconn.datago.feishu.http.connect.timeout.ms":"10000","wds.dss.appconn.datago.feishu.http.read.timeout.ms":"60000"}', '');
 
 delete from dss_workflow_node where appconn_name = "datagofeishu";
 insert into `dss_workflow_node` (`name`, `appconn_name`, `node_type`, `jump_type`, `support_jump`, `submit_to_scheduler`, `enable_copy`, `should_creation_before_node`, `icon_path`)
@@ -42,7 +42,7 @@ VALUES ('dataTargets', '每行一个外发目标，行间用分号(;)或换行�
 
 INSERT INTO `dss_workflow_node_ui`
 (`key`, description, description_en, lable_name, lable_name_en, ui_type, required, value, default_value, is_hidden, `condition`, is_advanced, `order`, node_menu_type, is_base_info, `position`)
-VALUES ('detectPollInterval', '检测轮询间隔，单位毫秒（建议10~30秒）', 'Detect polling interval in milliseconds', '检测轮询间隔', 'Detect Poll Interval', 'Input', 0, NULL, '30000', 0, NULL, 1, 7, 1, 0, 'runtime');
+VALUES ('detectPollInterval', '检测轮询间隔，单位秒（建议10~30）', 'Detect polling interval in seconds', '检测轮询间隔', 'Detect Poll Interval', 'Input', 0, NULL, '30', 0, NULL, 1, 7, 1, 0, 'runtime');
 
 INSERT INTO `dss_workflow_node_ui`
 (`key`, description, description_en, lable_name, lable_name_en, ui_type, required, value, default_value, is_hidden, `condition`, is_advanced, `order`, node_menu_type, is_base_info, `position`)
@@ -50,7 +50,7 @@ VALUES ('executeRetryMax', '外发失败最大重试次数', 'Max retry count fo
 
 INSERT INTO `dss_workflow_node_ui`
 (`key`, description, description_en, lable_name, lable_name_en, ui_type, required, value, default_value, is_hidden, `condition`, is_advanced, `order`, node_menu_type, is_base_info, `position`)
-VALUES ('maxWaitTime', '节点最大等待时间，单位毫秒', 'Maximum wait time in milliseconds', '最大等待时间', 'Maximum Wait Time', 'Input', 0, NULL, '7200000', 0, NULL, 1, 9, 1, 0, 'runtime');
+VALUES ('maxWaitTime', '节点最大等待时间，单位秒（默认7200即2小时）', 'Maximum wait time in seconds', '最大等待时间', 'Maximum Wait Time', 'Input', 0, NULL, '7200', 0, NULL, 1, 9, 1, 0, 'runtime');
 
 -- 外发目标 dataTargets 的前端校验规则（参考 job.desc 的 Function 校验范式）
 DELETE FROM dss_workflow_node_ui_validate WHERE validate_range = 'validateDataTargets';

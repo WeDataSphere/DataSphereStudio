@@ -63,15 +63,16 @@ class DataGoFeishuRefExecutionOperation
       action.client = client
       action.nodeParams = params
       // 轮询/重试/超时参数：节点级 UI 值 > 实例级配置 > 硬编码默认（见 positiveLong/positiveInt）
+      // detectPollInterval/executeRetryInterval/maxWaitTime 配置单位为秒，×1000 转毫秒后存入 action
       action.detectPollInterval = positiveLong(properties, "detectPollInterval",
-        DataGoFeishuConfiguration.DETECT_INTERVAL, 30000L)
+        DataGoFeishuConfiguration.DETECT_INTERVAL, 30L) * 1000L
       action.executeRetryMax = positiveInt(properties, "executeRetryMax",
         DataGoFeishuConfiguration.EXECUTE_RETRY_MAX, 3)
-      // executeRetryInterval 不暴露为节点 UI，nodeKey 传空串，仅走实例级配置
+      // executeRetryInterval 不暴露为节点 UI，nodeKey 传空串，仅走实例级配置（秒，×1000）
       action.executeRetryInterval = positiveLong(properties, "",
-        DataGoFeishuConfiguration.EXECUTE_RETRY_INTERVAL, 30000L)
+        DataGoFeishuConfiguration.EXECUTE_RETRY_INTERVAL, 30L) * 1000L
       action.maxWaitTime = positiveLong(properties, "maxWaitTime",
-        DataGoFeishuConfiguration.MAX_WAIT_TIME, 7200000L)
+        DataGoFeishuConfiguration.MAX_WAIT_TIME, 7200L) * 1000L
       action.startedAt = System.currentTimeMillis()
       action.stage = DataGoFeishuStage.Detecting
       action.setState(RefExecutionState.Running)

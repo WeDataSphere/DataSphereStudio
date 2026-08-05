@@ -27,13 +27,13 @@ public final class DataGoFeishuConfiguration {
     /** 本期仅处理 optype=table，datago 走现有报告外发 */
     public static final String SUPPORTED_OPTYPE = "wds.dss.appconn.datago.feishu.optype.supported";
 
-    /** ② 检测状态轮询间隔（毫秒，建议 10000~30000） */
+    /** ② 检测状态轮询间隔（秒，建议 10~30；key 名保留 .ms 后缀以向后兼容，值为秒） */
     public static final String DETECT_INTERVAL = "wds.dss.appconn.datago.feishu.detect.poll.interval.ms";
     /** ③ 外发失败最大重试次数（502/504 可重试，413/409 不可重试） */
     public static final String EXECUTE_RETRY_MAX = "wds.dss.appconn.datago.feishu.execute.retry.max";
-    /** ③ 外发重试间隔（毫秒） */
+    /** ③ 外发重试间隔（秒；key 名保留 .ms 后缀以向后兼容，值为秒） */
     public static final String EXECUTE_RETRY_INTERVAL = "wds.dss.appconn.datago.feishu.execute.retry.interval.ms";
-    /** 节点最大等待时间（毫秒），超过则判定超时失败 */
+    /** 节点最大等待时间（秒，超过则判定超时失败；key 名保留 .ms 后缀以向后兼容，值为秒） */
     public static final String MAX_WAIT_TIME = "wds.dss.appconn.datago.feishu.max.wait.time.ms";
     /** HTTP 连接超时（毫秒） */
     public static final String CONNECT_TIMEOUT = "wds.dss.appconn.datago.feishu.http.connect.timeout.ms";
