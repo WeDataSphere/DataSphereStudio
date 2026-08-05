@@ -33,7 +33,20 @@
             <groupId>org.apache.linkis</groupId>
             <artifactId>linkis-jobhistory</artifactId>
             <version>${linkis.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>mchange-commons-java</artifactId>
+                    <groupId>com.mchange</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
+
+        <dependency>
+            <artifactId>mchange-commons-java</artifactId>
+            <groupId>com.mchange</groupId>
+            <version>0.4.0</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.linkis</groupId>
             <artifactId>linkis-entrance</artifactId>
