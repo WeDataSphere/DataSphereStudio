@@ -202,9 +202,13 @@ class DataGoFeishuRefExecutionOperation
           appendLog(action,s"外发进行中（exporting）,第${action.exportPollCount} 次 下次轮询: ${action.executeRetryInterval} ms 后")
         case "export_failed" | "failed" =>
           // 外发失败终态：DataGo 后台外发失败（如建多维表格/写 sheet 失败），不重试，节点失败
+          // 打印接口返回的 message（注：envelope.message 可能为通用"外发进行中"，失败明细以服务端审计 export_result 为准）
+          val remoteMessage = safe(response.getMessage)
+          logger.error("DataGo Feishu export failed, dmId={}, taskId={}, status={}, taskIds={}, message={}",
+            action.nodeParams.getDmId, action.taskId, action.lastRemoteStatus, response.getTaskIds, remoteMessage)
           throw new DataGoFeishuException(82007,
             "DataGo外发失败: status=" + action.lastRemoteStatus + "，taskIds=" + response.getTaskIds +
-              "，详见DataGo审计export_result")
+              "，message=" + remoteMessage)
         case status =>
           // exported/exporting/export_failed 之外的 status 视为异常
           throw new DataGoFeishuException(82007,

@@ -30,6 +30,14 @@ public class ExecuteResponse {
     private List<SheetResult> sheets;
     private List<String> notifyUsers;
     private String exportedAt;
+    /**
+     * 接口 envelope 顶层 message（即响应体 {@code {success,code,message,data}} 的 message）。
+     * <p>
+     * 非 {@code data} 字段，Gson 反序列化 {@code data} 时不会填充，由 {@code DataGoFeishuClient} 在
+     * ③ executeExport 返回前手动透传；{@code status=export_failed} 时用于打印接口返回的 message 供定位失败原因。
+     * 注：该 message 可能为通用文案（如"外发进行中"），失败明细以服务端审计 export_result 为准。
+     */
+    private String message;
 
     public String getDmId() { return dmId; }
     public String getOptype() { return optype; }
@@ -40,4 +48,6 @@ public class ExecuteResponse {
     public List<SheetResult> getSheets() { return sheets; }
     public List<String> getNotifyUsers() { return notifyUsers; }
     public String getExportedAt() { return exportedAt; }
+    public String getMessage() { return message; }
+    public void setMessage(String message) { this.message = message; }
 }

@@ -173,8 +173,10 @@ public class DataGoFeishuClient {
         }
         if (resp.isBusinessOk()) {
             ExecuteResponse export = gson.fromJson(resp.getData(), ExecuteResponse.class);
-            logger.info("③ executeExport response, dmId={}, taskId={}, status={}, bitableName={}, bitableUrl={}, exportedAt={}",
-                    dmId, taskId, export.getStatus(), export.getBitableName(), export.getBitableUrl(), export.getExportedAt());
+            // 透传 envelope 顶层 message（非 data 字段），供 export_failed 时打印接口返回的失败提示
+            export.setMessage(resp.getMessage());
+            logger.info("③ executeExport response, dmId={}, taskId={}, status={}, bitableName={}, bitableUrl={}, exportedAt={}, message={}",
+                    dmId, taskId, export.getStatus(), export.getBitableName(), export.getBitableUrl(), export.getExportedAt(), export.getMessage());
             return export;
         }
         int errorCode = mapExecuteErrorCode(resp.getHttpCode());
