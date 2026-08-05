@@ -9,7 +9,11 @@ VALUES ('datagofeishu', 0, 1, 1, 1, NULL, 'com.webank.wedatasphere.dss.appconn.d
 select @datago_feishu_appconn_id:=id from `dss_appconn` where `appconn_name` = 'datagofeishu';
 
 INSERT INTO `dss_appconn_instance` (`appconn_id`, `label`, `url`, `enhance_json`, `homepage_uri`)
-VALUES (@datago_feishu_appconn_id, 'DEV', 'datagofeishu', '{"wds.dss.appconn.datago.feishu.api.base.url":"http://DATAGO_HOST:3003","wds.dss.appconn.datago.feishu.api.form.path":"/api/export/form","wds.dss.appconn.datago.feishu.api.task.path":"/api/export/task","wds.dss.appconn.datago.feishu.api.execute.path":"/api/export/execute","wds.dss.appconn.datago.feishu.api.token.header":"Authorization","wds.dss.appconn.datago.feishu.api.token":"API_TOKEN","wds.dss.appconn.datago.feishu.optype.supported":"table","wds.dss.appconn.datago.feishu.detect.poll.interval.ms":"30","wds.dss.appconn.datago.feishu.execute.retry.max":"3","wds.dss.appconn.datago.feishu.execute.retry.interval.ms":"30","wds.dss.appconn.datago.feishu.max.wait.time.ms":"7200","wds.dss.appconn.datago.feishu.http.connect.timeout.ms":"10000","wds.dss.appconn.datago.feishu.http.read.timeout.ms":"60000"}', '');
+VALUES (@datago_feishu_appconn_id, 'DEV', 'datagofeishu', '{"wds.dss.appconn.datago.feishu.api.base.url":"http://DATAGO_HOST:3003/cui","wds.dss.appconn.datago.feishu.api.form.path":"/api/export/form","wds.dss.appconn.datago.feishu.api.task.path":"/api/export/task","wds.dss.appconn.datago.feishu.api.execute.path":"/api/export/execute","wds.dss.appconn.datago.feishu.api.token.header":"Authorization","wds.dss.appconn.datago.feishu.api.token":"API_TOKEN","wds.dss.appconn.datago.feishu.optype.supported":"table","wds.dss.appconn.datago.feishu.detect.poll.interval.ms":"30","wds.dss.appconn.datago.feishu.execute.retry.max":"3","wds.dss.appconn.datago.feishu.execute.retry.interval.ms":"30","wds.dss.appconn.datago.feishu.max.wait.time.ms":"7200","wds.dss.appconn.datago.feishu.http.connect.timeout.ms":"10000","wds.dss.appconn.datago.feishu.http.read.timeout.ms":"60000"}', '');
+
+INSERT INTO `dss_appconn_instance` (`appconn_id`, `label`, `url`, `enhance_json`, `homepage_uri`)
+VALUES (@datago_feishu_appconn_id, 'PROD', 'datagofeishu', '{"wds.dss.appconn.datago.feishu.api.base.url":"http://DATAGO_HOST:3003/cui","wds.dss.appconn.datago.feishu.api.form.path":"/api/export/form","wds.dss.appconn.datago.feishu.api.task.path":"/api/export/task","wds.dss.appconn.datago.feishu.api.execute.path":"/api/export/execute","wds.dss.appconn.datago.feishu.api.token.header":"Authorization","wds.dss.appconn.datago.feishu.api.token":"API_TOKEN","wds.dss.appconn.datago.feishu.optype.supported":"table","wds.dss.appconn.datago.feishu.detect.poll.interval.ms":"30","wds.dss.appconn.datago.feishu.execute.retry.max":"3","wds.dss.appconn.datago.feishu.execute.retry.interval.ms":"30","wds.dss.appconn.datago.feishu.max.wait.time.ms":"7200","wds.dss.appconn.datago.feishu.http.connect.timeout.ms":"10000","wds.dss.appconn.datago.feishu.http.read.timeout.ms":"60000"}', '');
+
 
 delete from dss_workflow_node where appconn_name = "datagofeishu";
 insert into `dss_workflow_node` (`name`, `appconn_name`, `node_type`, `jump_type`, `support_jump`, `submit_to_scheduler`, `enable_copy`, `should_creation_before_node`, `icon_path`)
@@ -84,9 +88,4 @@ INSERT INTO dss_workflow_node_ui_to_validate (ui_id, validate_id) VALUES (@ui_dm
 INSERT INTO dss_workflow_node_ui_to_validate (ui_id, validate_id) VALUES (@ui_notify_users, @validate_required_id);
 
 INSERT INTO dss_workflow_node_ui_to_validate (ui_id, validate_id) VALUES (@ui_data_targets, @validate_required_id);
-
-
-
-
-
 
