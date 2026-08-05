@@ -1,0 +1,253 @@
+{
+  "schemaVersion": "1.0",
+  "updatedAt": "2026-07-07",
+  "updatedBy": "burdezhang",
+  "versions": [
+    {
+      "id": "v1.24.0",
+      "versionLabel": "1.24.0",
+      "status": "development",
+      "semantic": "A_new_version",
+      "branch": "dev-1.24.0",
+      "baseBranch": "master",
+      "baseCommit": "3a26a2f7ae8b366a32f9f031cb94ee9d25d00700",
+      "forkedFrom": "dev-1.23.0",
+      "forkedAtCommit": "3a26a2f7ae8b366a32f9f031cb94ee9d25d00700",
+      "uniqueCommitsVsForkSource": 0,
+      "startDate": "2026-07-07",
+      "endDate": null,
+      "productName": "BDP_DSS",
+      "productNameCn": "DataSphereStudio",
+      "productId": 100199,
+      "dpmsReleasePlanId": 177587,
+      "dpmsReleasePlanName": "DSS1.24.0",
+      "dpmsReleasePlanUrl": "http://dpms.weoa.com/index.html#/product/100199/release/detail/177587",
+      "dpmsReleasePlanType": 1,
+      "optUserName": "burdezhang",
+      "opsUserName": "falinhe",
+      "testUserName": "stacyyan",
+      "releasePlanDates": {
+        "startTestDate": "2026-07-21",
+        "startUatTestDate": "2026-08-04",
+        "startReleaseDate": "2026-08-25",
+        "endDate": "2026-08-29"
+      },
+      "subsystemVersions": [
+        {
+          "subSystemId": 5425,
+          "subSystemName": "DSS-IDE",
+          "fullCnName": "意书",
+          "version": "1.24.0",
+          "versionRecordId": 263559,
+          "url": "http://scm.et.weoa.com/#/subsystem-version/detail/5425/263559",
+          "associatedReleasePlanId": 177587,
+          "withCreateBranch": false
+        },
+        {
+          "subSystemId": 5433,
+          "subSystemName": "DSS-WFS",
+          "fullCnName": "工作流前端服务",
+          "version": "1.24.0",
+          "versionRecordId": 263560,
+          "url": "http://scm.et.weoa.com/#/subsystem-version/detail/5433/263560",
+          "associatedReleasePlanId": 177587,
+          "withCreateBranch": false
+        }
+      ],
+      "testSetId": null,
+      "regressionTestSetId": null,
+      "pomVersion": "1.24.0-SNAPSHOT",
+      "pomVersionTarget": "1.24.0-SNAPSHOT",
+      "pomBumpDone": true,
+      "pomBumpDate": "2026-07-07",
+      "pomBumpFilesChanged": 105,
+      "started": false,
+      "createdAt": "2026-07-07",
+      "createdBy": "burdezhang",
+      "requirements": [
+        {
+          "taskId": "sendemail-feishu-option",
+          "name": "sendemail节点新增是否发送飞书选项",
+          "type": "feature",
+          "origin": "carried",
+          "originVersion": "v1.23.0",
+          "keyCommits": ["1e471b7f2", "91d88ef92", "3725f5f1c", "0b14e72e9", "686d6bf20", "7a4f953f5", "211c1799e", "0f602e773", "3a26a2f7a"],
+          "dpmsStoryId": null,
+          "status": "merged",
+          "progress": 100,
+          "note": "1.23.0 已合入，随基线带入 1.24.0；DPMS story 归属待确认（属 1.23.0 还是 1.24.0 重新登记）"
+        },
+        {
+          "taskId": "user-exists-check-api",
+          "name": "新增接口：判断用户是否在DSS中存在",
+          "type": "feature",
+          "origin": "carried",
+          "originVersion": "v1.23.0",
+          "keyCommits": ["873af6b83"],
+          "dpmsStoryId": null,
+          "status": "merged",
+          "progress": 100
+        },
+        {
+          "taskId": "log4j-upgrade-2.25.4",
+          "name": "log4j版本升级到2.25.4",
+          "type": "dependency_governance",
+          "origin": "carried",
+          "originVersion": "v1.23.0",
+          "keyCommits": ["7d49a2feb"],
+          "dpmsStoryId": null,
+          "status": "merged",
+          "progress": 100,
+          "note": "依赖治理项，提交备注含 #ignore#；是否登记为 story 由团队口径决定"
+        },
+        {
+          "taskId": "project-workflow-whitelist-api",
+          "name": "新增接口：判断项目/工作流是否在白名单",
+          "type": "feature",
+          "origin": "carried",
+          "originVersion": "v1.23.0",
+          "keyCommits": ["63f2c4cb2", "2c9f3ef09"],
+          "dpmsStoryId": null,
+          "status": "merged",
+          "progress": 100
+        },
+        {
+          "taskId": "fix-branch-node-skip-downstream",
+          "name": "修复：分支节点造成的bug（上游节点都被跳过后下游节点不执行）",
+          "type": "bugfix",
+          "origin": "carried",
+          "originVersion": "v1.23.0",
+          "keyCommits": ["54f8c3353"],
+          "dpmsStoryId": null,
+          "status": "merged",
+          "progress": 100
+        },
+        {
+          "taskId": "fix-batch-edit-unlock-workflow",
+          "name": "修复：批量编辑抛异常后解锁工作流",
+          "type": "bugfix",
+          "origin": "carried",
+          "originVersion": "v1.23.0",
+          "keyCommits": ["eb8ceba75"],
+          "dpmsStoryId": null,
+          "status": "merged",
+          "progress": 100
+        },
+        {
+          "taskId": "optimize-email-pdf-attachment-name",
+          "name": "优化：邮件pdf附件名称",
+          "type": "optimization",
+          "origin": "carried",
+          "originVersion": "v1.23.0",
+          "keyCommits": ["72cfd66bf"],
+          "dpmsStoryId": null,
+          "status": "merged",
+          "progress": 100
+        },
+        {
+          "taskId": "fix-itsm-field-adaptation",
+          "name": "修复：ITSM接口字段适配",
+          "type": "bugfix",
+          "origin": "carried",
+          "originVersion": "v1.23.0",
+          "keyCommits": ["153408e03"],
+          "dpmsStoryId": null,
+          "status": "merged",
+          "progress": 100
+        },
+        {
+          "taskId": "batch-edit-tableau-viewid",
+          "name": "批量编辑tableau节点视图ID属性",
+          "type": "feature",
+          "origin": "carried",
+          "originVersion": "v1.23.0",
+          "keyCommits": ["76bc582d9", "f72300c82"],
+          "dpmsStoryId": null,
+          "status": "merged",
+          "progress": 100
+        }
+      ],
+      "carryover": [
+        {
+          "taskId": "fix-empty-workflow-npe",
+          "name": "修复空工作流NP异常",
+          "type": "bugfix",
+          "originVersion": "v1.23.0",
+          "originalCommit": "8d46547ee",
+          "revertCommit": "9e77c8b3a",
+          "dpmsStoryId": null,
+          "status": "carryover_todo",
+          "progress": 0,
+          "note": "1.23.0 被 9e77c8b3a 显式 Revert，修复未生效；需在 1.24.0 重新拉起需求/设计/实现"
+        }
+      ],
+      "revertThemesExcluded": [
+        {
+          "name": "新增接口用于修改工作流全局变量(updateGlobalVariables)",
+          "revertCommits": ["05eddc79a", "ec3045c87", "f81bc852e"],
+          "note": "多轮回退，未进入纳入项；需确认 1.24.0 是否计划重做"
+        },
+        {
+          "name": "工作流修改tenant变量",
+          "revertCommits": ["c7674b9a5", "611a3977c", "71f46f775", "932b8b38a"],
+          "note": "含 Merge Revert，多轮回退；需确认 1.24.0 是否计划重做"
+        }
+      ],
+      "newRequirements": [],
+      "dpmsAlignment": {
+        "alignedAt": "2026-07-07",
+        "productId": 100199,
+        "releasePlanCreated": true,
+        "subsystemVersionsCreated": ["DSS-IDE", "DSS-WFS"],
+        "v1230ReleasePlanId": 175845,
+        "v1230ReleasePlanStatus": 3,
+        "v1230StoriesCount": 7,
+        "carriedFunctionsRegisteredInV1230": 1,
+        "carriedFunctionsUnregistered": 8,
+        "carryoverNpeRegistered": false,
+        "notes": "1.24.0 发布计划+2子系统版本已创建；1.23.0 有 7 story 但仅 1 项(id=513702)与 git 已合入功能对应，8 项已合入功能未登记"
+      },
+      "pendingDpmsBlockers": [],
+      "pendingLocalTodos": [
+        {
+          "id": "T3",
+          "action": "pom 版本 bump 1.23.0-SNAPSHOT → 1.24.0-SNAPSHOT",
+          "status": "done",
+          "blocked": false,
+          "doneDate": "2026-07-07",
+          "filesChanged": 105,
+          "note": "含 8 个孤儿模块手动同步 parent version；未 git commit，等用户决定"
+        },
+        {
+          "id": "T5",
+          "action": "创建 1.24.0 发布计划 + 子系统版本",
+          "status": "done",
+          "blocked": false,
+          "doneDate": "2026-07-07",
+          "details": {
+            "releasePlanId": 177587,
+            "subsystemVersions": [
+              {"subSystemName": "DSS-IDE", "subSystemId": 5425, "versionRecordId": 263559},
+              {"subSystemName": "DSS-WFS", "subSystemId": 5433, "versionRecordId": 263560}
+            ]
+          }
+        },
+        {
+          "id": "T1",
+          "action": "DPMS 只读对齐",
+          "status": "done",
+          "blocked": false,
+          "doneDate": "2026-07-07",
+          "note": "productId=100199 确认；1.23.0 releasePlanId=175845；9 项已合入功能仅 1 项登记"
+        },
+        {
+          "id": "T7",
+          "action": "提交 sendemail 飞书测试源 (FeishuClientTest.java / FeishuConfigTest.java / pom junit 依赖)",
+          "status": "user_deferred",
+          "blocked": false,
+          "note": "用户明确选择暂不提交，遵从"
+        }
+      ]
+    }
+  ]
+}
