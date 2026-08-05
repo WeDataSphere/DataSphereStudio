@@ -211,20 +211,27 @@ public class ProjectAssetServiceImpl implements ProjectAssetService {
 
     @Override
     public List<Integer> preFilterByUpdateTime(ProjectQueryRequest request) {
+        LOGGER.info("[T2-DEBUG] preFilterByUpdateTime ENTER: updateStartTime={}, updateEndTime={}, workspaceId={}",
+                request == null ? "req=null" : request.getUpdateStartTime(),
+                request == null ? "req=null" : request.getUpdateEndTime(),
+                request == null ? null : request.getWorkspaceId());
         if (request == null) {
             return null;
         }
         // String 入参解析为 Date（解析失败/为空返回 null）
         Date start = parseDate(request.getUpdateStartTime());
         Date end = parseDate(request.getUpdateEndTime());
+        LOGGER.info("[T2-DEBUG] parsed: start={}, end={}", start, end);
         // 两个参数均未提供（或均解析失败）→ 不过滤，向后兼容
         if (start == null && end == null) {
+            LOGGER.info("[T2-DEBUG] both null -> return null (no filter)");
             return null;
         }
         try {
             List<QueryProjectVo> allProjects = projectMapper.queryProjectList(
                     request.getWorkspaceId(), null);
             if (allProjects == null || allProjects.isEmpty()) {
+                LOGGER.info("[T2-DEBUG] allProjects empty -> return emptyList");
                 return Collections.emptyList();
             }
             Map<Long, AssetStats> statsMap = getOrLoadStats(request.getWorkspaceId());
@@ -242,10 +249,10 @@ public class ProjectAssetServiceImpl implements ProjectAssetService {
                 }
             }
             filtered.removeIf(Objects::isNull);
+            LOGGER.info("[T2-DEBUG] allProjects={}, filtered={}", allProjects.size(), filtered.size());
             return filtered;
         } catch (Exception e) {
-            LOGGER.error("preFilterByUpdateTime failed, workspaceId={}, fallback to no update-time filter",
-                    request.getWorkspaceId(), e);
+            LOGGER.error("[T2-DEBUG] preFilterByUpdateTime EXCEPTION, workspaceId={}", request.getWorkspaceId(), e);
             return null;
         }
     }
