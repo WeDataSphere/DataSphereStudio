@@ -16,12 +16,9 @@
 
 package com.webank.wedatasphere.dss.framework.project.entity.request;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
-import java.util.Date;
 import java.util.List;
 
 
@@ -86,16 +83,20 @@ public class ProjectQueryRequest implements Serializable {
     private String proxyUser;
 
     /**
-     * [台账增强] 更新时间范围 - 开始（F3），默认 null 跳过
+     * [台账增强] 更新时间范围 - 开始（F3），格式 yyyy-MM-dd，默认 null 跳过。
+     *
+     * <p>字段类型为 String 而非 Date：DSS 全局 Jackson 配置对 Date 字段反序列化时会
+     * 将其置为 null（联调实测传字符串与 timestamp 均失效），改用 String 接收后由
+     * service 层显式 parseDate 解析，规避该反序列化问题。
      */
-    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
-    private Date updateStartTime;
+    private String updateStartTime;
 
     /**
-     * [台账增强] 更新时间范围 - 结束（F3），默认 null 跳过
+     * [台账增强] 更新时间范围 - 结束（F3），格式 yyyy-MM-dd，默认 null 跳过。
+     *
+     * <p>字段类型为 String，原因同 {@link #updateStartTime}。
      */
-    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
-    private Date updateEndTime;
+    private String updateEndTime;
 
     /**
      * [台账增强] 健康状态多选（F3）：EMPTY_PROJECT / STALE / NO_DESCRIPTION，默认 null 跳过
@@ -250,19 +251,19 @@ public class ProjectQueryRequest implements Serializable {
         this.proxyUser = proxyUser;
     }
 
-    public Date getUpdateStartTime() {
+    public String getUpdateStartTime() {
         return updateStartTime;
     }
 
-    public void setUpdateStartTime(Date updateStartTime) {
+    public void setUpdateStartTime(String updateStartTime) {
         this.updateStartTime = updateStartTime;
     }
 
-    public Date getUpdateEndTime() {
+    public String getUpdateEndTime() {
         return updateEndTime;
     }
 
-    public void setUpdateEndTime(Date updateEndTime) {
+    public void setUpdateEndTime(String updateEndTime) {
         this.updateEndTime = updateEndTime;
     }
 

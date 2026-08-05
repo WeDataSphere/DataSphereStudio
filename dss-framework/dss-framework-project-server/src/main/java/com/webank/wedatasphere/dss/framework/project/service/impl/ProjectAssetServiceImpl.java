@@ -211,8 +211,14 @@ public class ProjectAssetServiceImpl implements ProjectAssetService {
 
     @Override
     public List<Integer> preFilterByUpdateTime(ProjectQueryRequest request) {
-        if (request == null
-                || (request.getUpdateStartTime() == null && request.getUpdateEndTime() == null)) {
+        if (request == null) {
+            return null;
+        }
+        // String 入参解析为 Date（解析失败/为空返回 null）
+        Date start = parseDate(request.getUpdateStartTime());
+        Date end = parseDate(request.getUpdateEndTime());
+        // 两个参数均未提供（或均解析失败）→ 不过滤，向后兼容
+        if (start == null && end == null) {
             return null;
         }
         try {
@@ -222,8 +228,6 @@ public class ProjectAssetServiceImpl implements ProjectAssetService {
                 return Collections.emptyList();
             }
             Map<Long, AssetStats> statsMap = getOrLoadStats(request.getWorkspaceId());
-            Date start = request.getUpdateStartTime();
-            Date end = request.getUpdateEndTime();
             List<Integer> filtered = new ArrayList<>();
             for (QueryProjectVo pvo : allProjects) {
                 AssetStats stats = statsMap.get(pvo.getId());
@@ -247,16 +251,47 @@ public class ProjectAssetServiceImpl implements ProjectAssetService {
     }
 
     /**
+     * 将 yyyy-MM-dd 格式的字符串解析为 Date。
+     *
+     * <p>用于把 {@link ProjectQueryRequest#getUpdateStartTime()} /
+     * {@link ProjectQueryRequest#getUpdateEndTime()}（String 类型）转换为 Date。
+     *
+     * <p>处理规则：
+     * <ul>
+     *     <li>null 或空白串 → 返回 null</li>
+     *     <li>格式不匹配 / 解析异常 → 记 warn 日志并返回 null（不抛出，由调用方按 null 处理）</li>
+     * </ul>
+     *
+     * <p>线程安全：SimpleDateFormat 非线程安全，故每次调用均新建局部实例。
+     *
+     * @param s 日期字符串（yyyy-MM-dd），可为 null
+     * @return 解析后的 Date，或 null
+     */
+    private Date parseDate(String s) {
+        if (StringUtils.isBlank(s)) {
+            return null;
+        }
+        try {
+            return new java.text.SimpleDateFormat("yyyy-MM-dd").parse(s);
+        } catch (Exception e) {
+            LOGGER.warn("parseDate failed, value={}, expected yyyy-MM-dd, treat as null", s, e);
+            return null;
+        }
+    }
+
+    /**
      * 判断时间 t 是否落在 [start, end] 范围内（含边界）。
      *
-     * <p>边界语义（与前端 yyyy-MM-dd 日期选择器对齐，Date 经 Jackson 解析为当天 00:00:00）：
+     * <p>边界语义（与前端 yyyy-MM-dd 日期选择器对齐；start/end 由
+     * {@link #parseDate(String)} 按 yyyy-MM-dd 解析为当天 00:00:00）：
      * <ul>
      *     <li>start 非 null：t.before(start) 即排除（start 当天 00:00:00 含）</li>
      *     <li>end 非 null：t.after(end) 即排除（end 当天 00:00:00 含，其后时刻排除）</li>
      * </ul>
      *
-     * <p>注：updateStartTime/updateEndTime 字段类型为 Date（非 String），故无需 parseDate 解析，
-     * 直接使用 Jackson 按 yyyy-MM-dd 解析后的 Date 对象。
+     * <p>注：updateStartTime/updateEndTime 在请求体中为 String 类型（规避 DSS Jackson
+     * 对 Date 字段反序列化为 null 的问题），由 {@link #preFilterByUpdateTime} 调用
+     * {@link #parseDate(String)} 转换为 Date 后再传入本方法。
      */
     private boolean inRange(Date t, Date start, Date end) {
         if (t == null) {

@@ -76,8 +76,8 @@ public interface ProjectAssetService {
      * <p>核心逻辑：查全量项目 → 取每项目 latestWorkflowUpdateTime → 按 [start, end] 范围过滤。
      * latestWorkflowUpdateTime 为 null（无工作流 / orchestrator 降级）的项目排除。
      *
-     * @param request 查询请求（含 updateStartTime / updateEndTime，均为 Date 类型）
-     * @return 过滤后 projectIdList（null 表示无需预过滤，即两个时间参数均未传）
+     * @param request 查询请求（含 updateStartTime / updateEndTime，均为 String 类型，格式 yyyy-MM-dd）
+     * @return 过滤后 projectIdList（null 表示无需预过滤，即两个时间参数均未传或均解析失败）
      */
     List<Integer> preFilterByUpdateTime(ProjectQueryRequest request);
 
