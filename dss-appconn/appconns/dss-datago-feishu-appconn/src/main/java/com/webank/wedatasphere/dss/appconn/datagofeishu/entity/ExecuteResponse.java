@@ -31,11 +31,12 @@ public class ExecuteResponse {
     private List<String> notifyUsers;
     private String exportedAt;
     /**
-     * 接口 envelope 顶层 message（即响应体 {@code {success,code,message,data}} 的 message）。
+     * 接口 {@code data} 内的 message 字段（失败明细）。
      * <p>
-     * 非 {@code data} 字段，Gson 反序列化 {@code data} 时不会填充，由 {@code DataGoFeishuClient} 在
-     * ③ executeExport 返回前手动透传；{@code status=export_failed} 时用于打印接口返回的 message 供定位失败原因。
-     * 注：该 message 可能为通用文案（如"外发进行中"），失败明细以服务端审计 export_result 为准。
+     * {@code status=export_failed}/{@code failed} 时，DataGo 在 {@code data.message} 返回具体失败原因
+     * （如"全部表外发失败(1): ... createSheet failed: ..."），由 Gson 反序列化 {@code data} 时自动填充。
+     * 注意区分 envelope 顶层 message（响应体 {@code {success,code,message,data}} 的 message，常为通用
+     * "外发进行中"文案），失败定位以本字段（{@code data.message}）为准。
      */
     private String message;
 
@@ -49,5 +50,4 @@ public class ExecuteResponse {
     public List<String> getNotifyUsers() { return notifyUsers; }
     public String getExportedAt() { return exportedAt; }
     public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
 }

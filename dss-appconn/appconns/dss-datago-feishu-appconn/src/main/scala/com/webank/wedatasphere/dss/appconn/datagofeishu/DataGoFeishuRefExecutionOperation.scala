@@ -170,8 +170,9 @@ class DataGoFeishuRefExecutionOperation
    * 首次调用触发后台外发返回 {@code status=exporting}；之后按 {@code executeRetryInterval} 节流
    * 再次调用③查询，直到 {@code status=exported}（带 bitableUrl）即成功。
    * {@code status=export_failed}/{@code failed} 为外发失败终态（DataGo 后台外发失败，如建多维表格/写 sheet
-   * 失败），直接抛 82007 不重试；其失败明细写入服务端审计 export_result，不随异步响应返回。
-   * 注：③ 响应 envelope.message 可能为通用"外发进行中"，判定以 {@code status} 为准。
+   * 失败），直接抛 82007 不重试；其失败原因随 {@code data.message} 返回（如"全部表外发失败(1): ... createSheet failed: ..."），
+   * 各表写入明细仍记服务端审计 export_result。
+   * 注：envelope 顶层 message 可能为通用"外发进行中"文案，失败定位以 {@code data.message} 为准，状态判定以 {@code status} 为准。
    * 全局 {@code maxWaitTime} 超时由 {@code state()} 顶部判定（EXPORTING→82007）兜底，
    * 故 exporting 长期不终态最终由超时失败。
    * <p>
@@ -202,7 +203,7 @@ class DataGoFeishuRefExecutionOperation
           appendLog(action,s"外发进行中（exporting）,第${action.exportPollCount} 次 下次轮询: ${action.executeRetryInterval} ms 后")
         case "export_failed" | "failed" =>
           // 外发失败终态：DataGo 后台外发失败（如建多维表格/写 sheet 失败），不重试，节点失败
-          // 打印接口返回的 message（注：envelope.message 可能为通用"外发进行中"，失败明细以服务端审计 export_result 为准）
+          // 打印 data.message（DataGo 返回的具体失败原因，如"全部表外发失败(1): ... createSheet failed: ..."）
           val remoteMessage = safe(response.getMessage)
           logger.error("DataGo Feishu export failed, dmId={}, taskId={}, status={}, taskIds={}, message={}",
             action.nodeParams.getDmId, action.taskId, action.lastRemoteStatus, response.getTaskIds, remoteMessage)
