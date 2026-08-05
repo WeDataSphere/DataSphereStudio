@@ -25,11 +25,11 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * DataGo 接口客户端，封装 ①②③ 三个通用外发接口（对齐接口文档 v1.1）。
+ * DataGo 接口客户端，封装 ①②③ 三个通用外发接口（对齐接口文档 v2.0）。
  * <ul>
  *   <li>① {@code POST /api/export/form}    外发表单获取（按 dmId 查库表/字段/分区/用户/optype/状态）</li>
- *   <li>② {@code POST /api/export/task}    外发任务生成（taskId 空）或状态查询（taskId 非空）</li>
- *   <li>③ {@code POST /api/export/execute} 执行外发（optype=table：建多维表格+写sheet+飞书消息，同步一次性）</li>
+ *   <li>② {@code POST /api/export/task}    外发任务生成（taskId 空）或状态查询（taskId 非空）；fields/partitions/notifyUsers 内嵌于每个 tables[]</li>
+ *   <li>③ {@code POST /api/export/execute} 执行外发（optype=table，异步：触发后台外发并轮询 exported；③ 不代发通知，由调用方调④）</li>
  * </ul>
  * <p>
  * Base URL：{@code http://{DataGoHost}:{DataGoPort}}（默认端口 3003）；{@code Content-Type: application/json; charset=utf-8}。
@@ -111,7 +111,7 @@ public class DataGoFeishuClient {
      *   <li>taskId 非空 → 查询该任务当前状态</li>
      * </ul>
      *
-     * @param params 节点参数（dmId / tables / fields / partitions）
+     * @param params 节点参数（dmId / notifyUsers / dataTargets；每表 fields/partitions/notifyUsers 内嵌于 tables[]）
      * @param taskId 任务ID；null 表示创建，非空表示查询
      * @return 任务响应（taskId / optype / status / resultSummary）
      * @throws DataGoFeishuException 接口调用失败(82004)或 dm 单无效/optype 非法(82003)
@@ -210,48 +210,74 @@ public class DataGoFeishuClient {
     }
 
     /**
-     * 构造 ② 任务接口请求体：dmId / tables / fields / partitions / taskId。
+     * 构造 ② 任务接口请求体（对齐接口文档 v1.7/v1.8/v2.0）：dmId / tables[] / taskId。
+     * <p>
+     * v1.7 起 {@code fields}/{@code partitions}/{@code notifyUsers} 全部内嵌于每个 {@code tables[]} 元素，
+     * 外层不再有这些参数；{@code partitions} 由单值改为每表 {@code string[]}。
+     * 同一 (db, table) 的多个外发目标按表合并为单一元素（同表多分区写入同一 sheet）：
+     * {@code fields} 取该表所有目标字段并集（去重保序）、{@code partitions} 取该表所有非空分区并集（去重保序）、
+     * {@code notifyUsers} 为节点通知人（每表一致）。
      * taskId 为 null 时表示创建（Gson serializeNulls 保证 "taskId": null）。
      */
     private Map<String, Object> taskBody(NodeParams params, Long taskId) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("dmId", params.getDmId());
-        // dataTargets 模型下每条目标一个 table 项
-        java.util.List<Map<String, Object>> tables = new java.util.ArrayList<>();
-        if (params.getDataTargets() != null) {
-            for (DataTarget target : params.getDataTargets()) {
-                Map<String, Object> table = new LinkedHashMap<>();
-                table.put("dbName", target.getDbName());
-                table.put("tableName", target.getTableName());
-                if (target.getPartition() != null && !target.getPartition().isEmpty()) {
-                    table.put("partition", target.getPartition());
-                }
-                table.put("notifyUsers",params.getNotifyUsers());
-                tables.add(table);
-            }
-        }
-        body.put("tables", tables);
-        // fields 取所有目标的字段合集（与接口 fields 契约对齐）
-        java.util.List<String> fields = new java.util.ArrayList<>();
-        if (params.getDataTargets() != null) {
-            for (DataTarget target : params.getDataTargets()) {
-                if (target.getFields() != null) {
-                    fields.addAll(target.getFields());
-                }
-            }
-        }
-        body.put("fields", fields);
-        java.util.List<String> partitions = new java.util.ArrayList<>();
-        if (params.getDataTargets() != null) {
-            for (DataTarget target : params.getDataTargets()) {
-                if (target.getPartition() != null && !target.getPartition().isEmpty()) {
-                    partitions.add(target.getPartition());
-                }
-            }
-        }
-        body.put("partitions", partitions);
+        body.put("tables", buildTables(params));
         body.put("taskId", taskId);
         return body;
+    }
+
+    /**
+     * 由 dataTargets 构造 ② 的 tables[]：按归一化 (db, table) 合并，每表一个元素。
+     * <p>
+     * 同表多目标并入同一元素：{@code fields} 取该表所有目标字段并集（trim、去重、保序），
+     * {@code partitions} 取该表所有非空分区并集（trim、去重、保序，无分区则不输出该字段），
+     * {@code notifyUsers} 取节点通知人（每表一致）。合并键仅 (db, table)，与 {@link DataTarget#tableKey()}
+     * （含 partition）的去重语义互不影响——后者管解析期同 (db,table,partition) 去重，前者管请求体同表合并。
+     */
+    private java.util.List<Map<String, Object>> buildTables(NodeParams params) {
+        java.util.List<Map<String, Object>> tables = new java.util.ArrayList<>();
+        if (params.getDataTargets() == null) {
+            return tables;
+        }
+        // 同表合并：首次出现的目标提供 dbName/tableName，后续目标仅并入 fields/partitions
+        Map<String, DataTarget> firstByTable = new LinkedHashMap<>();
+        Map<String, java.util.LinkedHashSet<String>> fieldsByTable = new LinkedHashMap<>();
+        Map<String, java.util.LinkedHashSet<String>> partitionsByTable = new LinkedHashMap<>();
+        for (DataTarget target : params.getDataTargets()) {
+            String key = tableKeyOf(target.getDbName(), target.getTableName());
+            firstByTable.putIfAbsent(key, target);
+            if (target.getFields() != null) {
+                for (String field : target.getFields()) {
+                    if (field != null && !field.trim().isEmpty()) {
+                        fieldsByTable.computeIfAbsent(key, k -> new java.util.LinkedHashSet<>()).add(field.trim());
+                    }
+                }
+            }
+            if (target.hasPartition()) {
+                partitionsByTable.computeIfAbsent(key, k -> new java.util.LinkedHashSet<>()).add(target.getPartition().trim());
+            }
+        }
+        for (Map.Entry<String, DataTarget> entry : firstByTable.entrySet()) {
+            String key = entry.getKey();
+            DataTarget first = entry.getValue();
+            Map<String, Object> table = new LinkedHashMap<>();
+            table.put("dbName", first.getDbName());
+            table.put("tableName", first.getTableName());
+            table.put("fields", new java.util.ArrayList<>(fieldsByTable.get(key)));
+            java.util.LinkedHashSet<String> partitions = partitionsByTable.get(key);
+            if (partitions != null && !partitions.isEmpty()) {
+                table.put("partitions", new java.util.ArrayList<>(partitions));
+            }
+            table.put("notifyUsers", params.getNotifyUsers());
+            tables.add(table);
+        }
+        return tables;
+    }
+
+    /** 归一化 (db, table) 合并键：trim 后以 '.' 拼接，仅用于 ② tables[] 同表合并，不含分区。 */
+    private static String tableKeyOf(String dbName, String tableName) {
+        return (dbName == null ? "" : dbName.trim()) + "." + (tableName == null ? "" : tableName.trim());
     }
 
     /**
