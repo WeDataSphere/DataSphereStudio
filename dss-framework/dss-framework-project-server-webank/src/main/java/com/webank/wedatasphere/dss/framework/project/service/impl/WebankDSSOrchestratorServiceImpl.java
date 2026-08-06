@@ -36,14 +36,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.rpc.Sender;
@@ -77,29 +70,6 @@ public class WebankDSSOrchestratorServiceImpl implements WebankDSSOrchestratorSe
     private final Sender orcSender = DSSSenderServiceFactory.getOrCreateServiceInstance().getScheduleOrcSender();
     ThreadLocal<SimpleDateFormat> simpleDateFormat = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
 
-    /**
-     * 生产中心编排/调度信息并发拉取线程池。
-     * <p>
-     * 用于并发执行 {@link #getAllOrchestratorDetailsOfWorkspace} 的按项目遍历，以及
-     * {@link #getOrchestratorsByLabel} 内逐编排的 Schedulis HTTP 调用，消除原有 N×M 次顺序远程调用的耗时。
-     * <p>
-     * 设计要点：
-     * <ul>
-     *   <li>有界线程池（核心 8 / 最大 16），并发度上限按 Schedulis 承压能力设定，避免瞬时打爆下游；</li>
-     *   <li>有界队列 + CallerRunsPolicy 背压：队列满时回退到调用线程同步执行，既不丢任务又对下游形成天然限流；</li>
-     *   <li>daemon 线程，不阻塞 JVM 退出；进程级单例，随 {@code @Service} 生命周期共享。</li>
-     * </ul>
-     */
-    private final ThreadFactory orcScheduleThreadFactory = new ThreadFactoryBuilder()
-            .setNameFormat("dss-prod-orchestrator-fetch-thread-%d")
-            .setDaemon(true)
-            .build();
-    private final ExecutorService orcScheduleExecutor = new ThreadPoolExecutor(
-            8, 16, 60L, TimeUnit.SECONDS,
-            new LinkedBlockingQueue<Runnable>(512),
-            orcScheduleThreadFactory,
-            new ThreadPoolExecutor.CallerRunsPolicy());
-
     @Override
     public List<OrchestratorDetail> getOrchestratorsByLabel(String username, String dssLabel, Long projectId,Workspace workspace,boolean withScheduleInfo) throws DSSErrorException {
         if (LOGGER.isDebugEnabled()) {
@@ -114,28 +84,15 @@ public class WebankDSSOrchestratorServiceImpl implements WebankDSSOrchestratorSe
             List<OrchestratorDetail> orchestratorDetails = responseOrcDetail.getOrchestratorDetails() != null ? responseOrcDetail.getOrchestratorDetails() : new ArrayList<>();
 
             if (CollectionUtils.isNotEmpty(orchestratorDetails)) {
-                if (withScheduleInfo) {
-                    // 将状态、调度信息等内容查出：逐编排 Schedulis HTTP 改为并发拉取，消除 N×M 顺序远程调用耗时。
-                    // 单个编排调度信息拉取失败时仅 warn 并留空状态字段，不阻断其它编排（容错增强）。
-                    List<CompletableFuture<Void>> schedulisFutures = orchestratorDetails.stream()
-                            .map(orchestratorDetail -> CompletableFuture.runAsync(() -> {
-                                orchestratorDetail.setProjectName(projectName);
-                                try {
-                                    String orcName = orchestratorDetail.getOrchestratorName();
-                                    // 获取编排模式详情
-                                    List<RefOrchestrationExecutionInfoResponseRef.Execution> executionList =
-                                            webankScheduleService.getSchedulerInfoContent(username, projectName, orcName, workspace);
-                                    setSchedulisInfo(orchestratorDetail, executionList);
-                                } catch (final Throwable t) {
-                                    LOGGER.warn("getSchedulerInfoContent failed, orcName={}", orchestratorDetail.getOrchestratorName(), t);
-                                }
-                            }, orcScheduleExecutor))
-                            .collect(Collectors.toList());
-                    CompletableFuture.allOf(schedulisFutures.toArray(new CompletableFuture[0])).join();
-                } else {
-                    // withScheduleInfo=false 分支（如项目复制）不拉取调度信息，仅回填工程名称，行为与原顺序逻辑一致。
-                    for (OrchestratorDetail orchestratorDetail : orchestratorDetails) {
-                        orchestratorDetail.setProjectName(projectName);
+                for (OrchestratorDetail orchestratorDetail : orchestratorDetails) {
+                    //返回工程名称
+                    orchestratorDetail.setProjectName(projectName);
+                    if(withScheduleInfo) {
+                        //将状态,调度信息等内容查出
+                        String orcName = orchestratorDetail.getOrchestratorName();
+                        //获取编排模式详情
+                        List<RefOrchestrationExecutionInfoResponseRef.Execution> executionList = webankScheduleService.getSchedulerInfoContent(username, projectName, orcName, workspace);
+                        setSchedulisInfo(orchestratorDetail, executionList);
                     }
                 }
             } else {
@@ -268,28 +225,20 @@ public class WebankDSSOrchestratorServiceImpl implements WebankDSSOrchestratorSe
     public List<OrchestratorDetail> getAllOrchestratorDetailsOfWorkspace(String username, Long workspaceId, String dssLabel,Workspace workspace) throws DSSErrorException {
         //1：显示；0：隐藏
         int visible = 1;
-        List<Long> projectIds = dssProjectMapper.getProjectIdsByWorkspaceId(workspaceId, visible);
-        if (CollectionUtils.isEmpty(projectIds)) {
-            return new ArrayList<>();
-        }
-        // 按项目并发拉取编排详情，消除原顺序 stream().map 的耗时；单个项目失败返回 null 被 filter 过滤，隔离语义不变。
-        // 最终排序由外层 OrchestratorDetailsUtils.sortOrchestratorDetailList 统一完成，并发收集顺序不影响结果。
-        List<CompletableFuture<List<OrchestratorDetail>>> futures = projectIds.stream()
-                .map(tmpProjectId -> CompletableFuture.supplyAsync(() -> {
-                    try {
-                        return getOrchestratorsByLabel(username, dssLabel, tmpProjectId, workspace, true);
-                    } catch (Exception e) {
-                        LOGGER.error("getAllOrchestratorDetailsOfWorkspace failed, projectId={}", tmpProjectId, e);
-                        return null;
-                    }
-                }, orcScheduleExecutor))
+        List<OrchestratorDetail> orchestratorDetails = dssProjectMapper.getProjectIdsByWorkspaceId(workspaceId, visible).stream()
+                .map(tmpProjectId -> {
+                try {
+                    List<OrchestratorDetail> orchestratorDetail = getOrchestratorsByLabel(username, dssLabel, tmpProjectId,workspace,true);
+                    return orchestratorDetail;
+                } catch (Exception e) {
+                    LOGGER.error("getAllOrchestratorDetailsOfWorkspace failed",e);
+                    return null;
+                }
+            })
+                .filter(Objects::nonNull).
+                flatMap(tempOrcList -> tempOrcList.stream())
                 .collect(Collectors.toList());
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        return futures.stream()
-                .map(CompletableFuture::join)
-                .filter(Objects::nonNull)
-                .flatMap(List::stream)
-                .collect(Collectors.toList());
+        return orchestratorDetails;
     }
 
     @Override
