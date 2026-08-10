@@ -256,44 +256,40 @@ public class WebankDSSOrchestratorServiceImpl implements WebankDSSOrchestratorSe
         }
         // 仅对项目级做并发：每个项目任务内部调用 getOrchestratorsByLabel（编排级 Schedulis HTTP 仍顺序执行），
         // 项目任务不再向 projectFetchExecutor 提交子任务，无嵌套并发依赖，结构上不会发生线程池自死锁。
-        // 任一项目获取编排报错即抛异常（不再吞掉跳过），让整个 getProdOrchestrators 接口失败，问题立即暴露。
+        // 单个项目获取编排报错时吞掉异常、返回 null 被 filter 跳过，隔离语义与原顺序实现一致（接口仍返回其它项目）。
         // 最终排序由外层 OrchestratorDetailsUtils.sortOrchestratorDetailList 统一完成，并发收集顺序不影响结果。
         List<CompletableFuture<List<OrchestratorDetail>>> futures = projectIds.stream()
                 .map(tmpProjectId -> CompletableFuture.supplyAsync(() -> {
                     try {
                         return getOrchestratorsByLabel(username, dssLabel, tmpProjectId, workspace, true);
                     } catch (DSSErrorException e) {
-                        // 获取编排报错：不吞异常，直接抛出，使该 future 异常完成，进而让整个请求失败
+                        // 吞异常：该项目失败不影响其它项目，返回 null 交由 filter 跳过
                         LOGGER.error("getAllOrchestratorDetailsOfWorkspace failed, projectId={}", tmpProjectId, e);
-                        throw new RuntimeException(e);
+                        return null;
                     }
                 }, projectFetchExecutor))
                 .collect(Collectors.toList());
         CompletableFuture<Void> all = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         try {
-            // 带超时 get 兜底：任一项目报错 -> allOf 异常完成 -> get 抛 ExecutionException（首个异常立即抛出，不等其它项目）；
-            // 若个别项目因 Schedulis HTTP hang 卡住，超时后抛异常，保证接口不会一直 pending。
+            // 带超时 get 兜底：若个别项目因 Schedulis HTTP hang 卡住，超时后取消未完成任务，
+            // 已完成的结果正常收集，未完成的按 null 过滤跳过，保证接口必定返回、不会一直 pending。
             all.get(WORKSPACE_FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        } catch (java.util.concurrent.TimeoutException e) {
+        } catch (Exception e) {
+            // 超时或中断：遍历取消尚未完成的子任务，尽量释放线程池线程，避免僵尸任务占线程导致后续请求雪崩。
+            // 注：CompletableFuture.cancel 对已开始执行的任务不保证中断底层线程，真正释放仍依赖 Schedulis HTTP 自身超时。
+            LOGGER.warn("getAllOrchestratorDetailsOfWorkspace timed out or interrupted after {}s, workspaceId={}, will skip unfinished projects",
+                    WORKSPACE_FETCH_TIMEOUT_SECONDS, workspaceId, e);
             all.cancel(true);
-            throw new DSSErrorException(63321, "获取工作空间编排详情超时（" + WORKSPACE_FETCH_TIMEOUT_SECONDS + "s），workspaceId=" + workspaceId);
-        } catch (java.util.concurrent.ExecutionException e) {
-            // 解包首个项目报错的原始异常并抛出
-            Throwable cause = e.getCause() != null ? e.getCause() : e;
-            if (cause.getCause() instanceof DSSErrorException) {
-                throw (DSSErrorException) cause.getCause();
+            for (CompletableFuture<List<OrchestratorDetail>> f : futures) {
+                f.cancel(true);
             }
-            throw new DSSErrorException(63321, "获取工作空间编排详情失败: " + cause.getMessage());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new DSSErrorException(63321, "获取工作空间编排详情被中断，workspaceId=" + workspaceId);
         }
         return futures.stream()
                 .map(f -> {
                     try {
-                        return f.get();
+                        return f.isDone() && !f.isCompletedExceptionally() ? f.get() : null;
                     } catch (Exception e) {
-                        // 走到这里说明 allOf 已正常完成，理论上不会有异常；防御性返回 null 交由 filter 跳过
+                        LOGGER.error("getAllOrchestratorDetailsOfWorkspace collect result failed: {}", e.getMessage(),e);
                         return null;
                     }
                 })
