@@ -79,6 +79,10 @@
                     <artifactId>json4s-jackson_2.11</artifactId>
                     <groupId>org.json4s</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>commons-lang3</artifactId>
+                    <groupId>org.apache.commons</groupId>
+                </exclusion>
             </exclusions>
             <groupId>org.apache.linkis</groupId>
             <version>${linkis.version}</version>
@@ -171,6 +175,18 @@
             <artifactId>linkis-storage</artifactId>
             <version>${linkis.version}</version>
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-lang3</artifactId>
+                    <groupId>org.apache.commons</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <artifactId>commons-lang3</artifactId>
+            <groupId>org.apache.commons</groupId>
+            <version>${commons.lang3.version}</version>
         </dependency>
 
     </dependencies>

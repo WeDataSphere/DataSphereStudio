@@ -86,6 +86,8 @@ public class HttpStaffInfoGetter implements StaffInfoGetter {
 
         @Override
         public void run() {
+            // 关键修复：先写入临时 Map，再原子替换，避免旧数据残留导致 STAFF_INFO_MAP 无限增长
+            Map<String, StaffInfo> tempMap = new ConcurrentHashMap<>();
             try {
                 HttpClient httpClient = HttpClients.custom().build();
                 String esbUrl = generateEsbUrl();
@@ -110,12 +112,20 @@ public class HttpStaffInfoGetter implements StaffInfoGetter {
                                 staffInfo.setBgName(split[0]);
                             }
 
-                            STAFF_INFO_MAP.put(staffInfo.getEnglishName(), staffInfo);
+                            tempMap.put(staffInfo.getEnglishName(), staffInfo);
                         } catch (Exception e) {
                             LOGGER.error("failed to serialize a json {} ", nodeStr, e);
                         }
                     });
                 }
+
+                // 原子替换：clear + putAll，保证 Map 大小始终等于当前 ESB 全量返回条数。
+                // 复用已声明的 LOCK 字段；若本次刷新异常则不执行替换，STAFF_INFO_MAP 保留上次成功刷新的数据。
+                synchronized (LOCK) {
+                    STAFF_INFO_MAP.clear();
+                    STAFF_INFO_MAP.putAll(tempMap);
+                }
+                LOGGER.info("Staff info refreshed, current size: {}", STAFF_INFO_MAP.size());
             } catch (Exception e) {
                 LOGGER.error("fail to get esb response, reason is ", e);
             }

@@ -12,7 +12,7 @@ import java.util.Date;
  * @date 2022-09-06
  * @since 0.5.0
  */
-@TableName(value = "dss_scriptis_proxy_user")
+@TableName(value = "dss_proxy_user")
 public class ScriptisProxyUser extends DssProxyUserImpl {
 
     private static final long serialVersionUID = 1L;

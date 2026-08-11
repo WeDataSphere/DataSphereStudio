@@ -5,6 +5,7 @@ import com.webank.wedatasphere.dss.common.auditlog.TargetTypeEnum;
 import com.webank.wedatasphere.dss.common.conf.DSSCommonConf;
 import com.webank.wedatasphere.dss.common.utils.AuditLogUtils;
 import com.webank.wedatasphere.dss.framework.proxy.restful.DssProxyUserController;
+import com.webank.wedatasphere.dss.scriptis.dao.ScriptisProxyUserMapper;
 import com.webank.wedatasphere.dss.scriptis.pojo.entity.ProxyUserRevokeRequest;
 import com.webank.wedatasphere.dss.scriptis.pojo.entity.ScriptisProxyUser;
 import com.webank.wedatasphere.dss.scriptis.service.ScriptisProxyUserService;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 
@@ -30,6 +32,9 @@ public class ScriptisProxyUserController extends DssProxyUserController {
     @Autowired
     private ScriptisProxyUserService scriptisProxyUserService;
 
+    @Resource
+    private ScriptisProxyUserMapper scriptisProxyUserMapper;
+
     @RequestMapping(path = "add", method = RequestMethod.POST)
     public Message add(@RequestBody ScriptisProxyUser userRep, HttpServletRequest req) {
         String username = SecurityFilter.getLoginUsername(req);
@@ -40,15 +45,27 @@ public class ScriptisProxyUserController extends DssProxyUserController {
             return Message.error("userName is null.");
         } else if(StringUtils.isEmpty(userRep.getProxyUserName())){
             return Message.error("proxyUser is null.");
-        } else if (dssProxyUserService.isExists(userRep.getUserName(), userRep.getProxyUserName(), null)) {
-            return Message.ok("Failed to add proxy user，'userName：" + userRep.getUserName() + ", proxyName："+userRep.getProxyUserName()+" already exists.");
         }
+        // 修复(REQ-DSS-1.23.0-FIX-002)：移除 isExists 短路，委托 Service 层 upsert，
+        // 续期单（已存在记录）由 Service 层 updateByUser 更新 expire_time，新建单由 insertUser 新增。
+        // 旧短路文案保留为注释一个版本，便于调用方协调过渡（见1.23.0/转协查代理用户续期单失效修复_设计 文档 4.4）：
+        // return Message.ok("Failed to add proxy user，'userName：" + userRep.getUserName() + ", proxyName："+userRep.getProxyUserName()+" already exists.");
+        ScriptisProxyUser existing = scriptisProxyUserMapper.selectProxyUserByUser(
+                userRep.getUserName(), userRep.getProxyUserName());
+        String originalExpireTime = existing == null ? null : existing.getExpireTime();
         try {
             scriptisProxyUserService.insertProxyUser(userRep);
         } catch (Exception exception) {
             LOGGER.error("Failed to add proxy user.", exception);
             return Message.error(ExceptionUtils.getRootCauseMessage(exception));
         }
+        AuditLogUtils.printLog(username, null, null, TargetTypeEnum.WORKSPACE_ROLE, null,
+                originalExpireTime == null ? "createProxyUser" : "renewProxyUser",
+                originalExpireTime == null ? OperateTypeEnum.CREATE : OperateTypeEnum.UPDATE,
+                "userName:" + userRep.getUserName()
+                        + ", proxyUserName:" + userRep.getProxyUserName()
+                        + ", originalExpireTime:" + originalExpireTime
+                        + ", newExpireTime:" + userRep.getExpireTime());
         return Message.ok("Success to add proxy user.");
     }
     @PostMapping("/revokeProxyUser")

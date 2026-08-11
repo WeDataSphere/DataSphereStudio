@@ -36,7 +36,13 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.rpc.Sender;
@@ -69,6 +75,25 @@ public class WebankDSSOrchestratorServiceImpl implements WebankDSSOrchestratorSe
 
     private final Sender orcSender = DSSSenderServiceFactory.getOrCreateServiceInstance().getScheduleOrcSender();
     ThreadLocal<SimpleDateFormat> simpleDateFormat = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
+
+    /**
+     * 生产中心编排详情并发拉取线程池（仅项目级）。
+     * <p>
+     * 用于 {@link #getAllOrchestratorDetailsOfWorkspace} 按项目并发拉取编排详情。每个项目任务内部对编排的
+     * Schedulis HTTP 调用保持顺序执行（不再向本池提交子任务），因此不存在"外层任务占线程等待内层任务、
+     * 内层任务又排队等线程"的嵌套依赖，结构上不会发生线程池自死锁。
+     * <p>
+     * 有界线程池 + 有界队列 + CallerRunsPolicy 背压（队列满时回退调用线程同步执行，天然限流，不丢任务）；
+     * daemon 线程，不阻塞 JVM 退出。
+     */
+    private final ExecutorService projectFetchExecutor = new ThreadPoolExecutor(
+            4, 8, 60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<Runnable>(256),
+            new ThreadFactoryBuilder().setNameFormat("dss-prod-project-fetch-thread-%d").setDaemon(true).build(),
+            new ThreadPoolExecutor.CallerRunsPolicy());
+
+    /** 全量拉取的总超时（秒）：防止个别项目因 Schedulis HTTP hang 导致 get 无限等待、接口一直 pending；超时后抛异常让接口失败。 */
+    private static final long WORKSPACE_FETCH_TIMEOUT_SECONDS = 120L;
 
     @Override
     public List<OrchestratorDetail> getOrchestratorsByLabel(String username, String dssLabel, Long projectId,Workspace workspace,boolean withScheduleInfo) throws DSSErrorException {
@@ -225,20 +250,52 @@ public class WebankDSSOrchestratorServiceImpl implements WebankDSSOrchestratorSe
     public List<OrchestratorDetail> getAllOrchestratorDetailsOfWorkspace(String username, Long workspaceId, String dssLabel,Workspace workspace) throws DSSErrorException {
         //1：显示；0：隐藏
         int visible = 1;
-        List<OrchestratorDetail> orchestratorDetails = dssProjectMapper.getProjectIdsByWorkspaceId(workspaceId, visible).stream()
-                .map(tmpProjectId -> {
-                try {
-                    List<OrchestratorDetail> orchestratorDetail = getOrchestratorsByLabel(username, dssLabel, tmpProjectId,workspace,true);
-                    return orchestratorDetail;
-                } catch (Exception e) {
-                    LOGGER.error("getAllOrchestratorDetailsOfWorkspace failed",e);
-                    return null;
-                }
-            })
-                .filter(Objects::nonNull).
-                flatMap(tempOrcList -> tempOrcList.stream())
+        List<Long> projectIds = dssProjectMapper.getProjectIdsByWorkspaceId(workspaceId, visible);
+        if (CollectionUtils.isEmpty(projectIds)) {
+            return new ArrayList<>();
+        }
+        // 仅对项目级做并发：每个项目任务内部调用 getOrchestratorsByLabel（编排级 Schedulis HTTP 仍顺序执行），
+        // 项目任务不再向 projectFetchExecutor 提交子任务，无嵌套并发依赖，结构上不会发生线程池自死锁。
+        // 单个项目获取编排报错时吞掉异常、返回 null 被 filter 跳过，隔离语义与原顺序实现一致（接口仍返回其它项目）。
+        // 最终排序由外层 OrchestratorDetailsUtils.sortOrchestratorDetailList 统一完成，并发收集顺序不影响结果。
+        List<CompletableFuture<List<OrchestratorDetail>>> futures = projectIds.stream()
+                .map(tmpProjectId -> CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return getOrchestratorsByLabel(username, dssLabel, tmpProjectId, workspace, true);
+                    } catch (DSSErrorException e) {
+                        // 吞异常：该项目失败不影响其它项目，返回 null 交由 filter 跳过
+                        LOGGER.error("getAllOrchestratorDetailsOfWorkspace failed, projectId={}", tmpProjectId, e);
+                        return null;
+                    }
+                }, projectFetchExecutor))
                 .collect(Collectors.toList());
-        return orchestratorDetails;
+        CompletableFuture<Void> all = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        try {
+            // 带超时 get 兜底：若个别项目因 Schedulis HTTP hang 卡住，超时后取消未完成任务，
+            // 已完成的结果正常收集，未完成的按 null 过滤跳过，保证接口必定返回、不会一直 pending。
+            all.get(WORKSPACE_FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            // 超时或中断：遍历取消尚未完成的子任务，尽量释放线程池线程，避免僵尸任务占线程导致后续请求雪崩。
+            // 注：CompletableFuture.cancel 对已开始执行的任务不保证中断底层线程，真正释放仍依赖 Schedulis HTTP 自身超时。
+            LOGGER.warn("getAllOrchestratorDetailsOfWorkspace timed out or interrupted after {}s, workspaceId={}, will skip unfinished projects",
+                    WORKSPACE_FETCH_TIMEOUT_SECONDS, workspaceId, e);
+            all.cancel(true);
+            for (CompletableFuture<List<OrchestratorDetail>> f : futures) {
+                f.cancel(true);
+            }
+        }
+        return futures.stream()
+                .map(f -> {
+                    try {
+                        return f.isDone() && !f.isCompletedExceptionally() ? f.get() : null;
+                    } catch (Exception e) {
+                        LOGGER.error("getAllOrchestratorDetailsOfWorkspace collect result failed: {}", e.getMessage(),e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
     }
 
     @Override

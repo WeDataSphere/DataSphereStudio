@@ -1,0 +1,1452 @@
+{
+  "root": {
+    "data": {
+      "text": "DSS"
+    },
+    "children": [
+      {
+        "data": {
+          "text": "/所有目录/SIT/V1.22.4/DataGo飞书多维表格外发AppConn测试"
+        },
+        "children": [
+          {
+            "data": {
+              "text": "需求：DataGo飞书多维表格外发AppConn功能"
+            },
+            "children": [
+              {
+                "data": {
+                  "text": "命名说明：appconn_name=datagofeishu，node_type=linkis.appconn.datagofeishu，节点显示名(dss_workflow_node.name)=sendfeishu，节点分组=数据输出，图标=svgs/sendfeishu-node.svg，配置键前缀=wds.dss.appconn.datago.feishu.*，模块=dss-datago-feishu-appconn，入口类=com.webank.wedatasphere.dss.appconn.datagofeishu.DataGoFeishuAppConn。sendfeishu仅作节点显示名与图标名，非整体重命名。"
+                },
+                "children": []
+              },
+              {
+                "data": {
+                  "text": "节点创建与属性配置测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】正常外发流程-多目标端到端"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DataGo 服务可达，端口 3003\n2. DM 单 DM202607150001 存在，optype=table，status=detected_pass\n3. DM 单含表 db_audit.t_event_log(fields=user_id,event,ts,partition=ds=2026-07-14) 与 db_audit.t_dim_code(fields=code_id,code_name)\n4. dmUser=alexyang,ryanchen\n5. ② 任务接口返回 inited→detecting→detected_pass\n6. ③ 执行外发返回 200，sheets 全部 success"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 在 DSS 工作流“数据输出”分组拖拽 sendfeishu（DataGo飞书多维表格外发）节点\n2. 配置 dmId=DM202607150001, notifyUsers=alexyang;ryanchen\n3. 配置 dataTargets=dt.01=db=db_audit|table=t_event_log|fields=user_id,event,ts|partition={ds=2026-07-14};dt.02=db=db_audit|table=t_dim_code|fields=code_id,code_name\n4. 保存节点，提交工作流执行\n5. 观察节点状态变化与日志"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点先调 ① POST /api/export/form 获取 DM 单信息，optype=table 校验通过\n2. 逐目标比对 dt.01/dt.02 库表命中、字段为审批列子集、notifyUsers⊆dmUser（分区范围客户端不校验，交②③）\n3. 进入 DETECTING 阶段，首次调 ②(taskId=null)创建任务，请求体含顶层 fields(两目标字段合集)、partitions([ds=2026-07-14])、tables[](每表内嵌 partition 与 notifyUsers)，DataGo 返回 taskId(数值型)\n4. 后续周期调 ② 携带 taskId 轮询，状态最终变为 detected_pass\n5. 进入 EXPORTING 阶段，调 ③(optype=table,notifyUsers=[alexyang,ryanchen],taskIds=[taskId])\n6. ③ 返回 200，sheets 全部 success，节点状态 Success\n7. 日志记录 bitableUrl、各 sheet 表名/行数/状态、实际通知用户、外发完成时间\n8. 飞书通知人收到飞书消息(含多维表格 URL)"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】节点参数 dmId 缺失"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DataGo 服务可达\n2. sendfeishu 节点已部署"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 sendfeishu 节点，dmId 留空\n2. notifyUsers 与 dataTargets 填写合法值\n3. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点在 INIT 阶段(参数解析)即失败\n2. 异常码 82001\n3. 错误消息含\"节点参数 dmId 不能为空\"\n4. 不调用任何 DataGo 接口"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】节点参数 notifyUsers 缺失"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DataGo 服务可达\n2. sendfeishu 节点已部署"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 sendfeishu 节点，notifyUsers 留空\n2. dmId 与 dataTargets 填写合法值\n3. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点 INIT 阶段失败，异常码 82001\n2. 错误消息含\"节点参数 notifyUsers 不能为空\"或\"飞书通知人不能为空\"\n3. 不调用任何 DataGo 接口"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】节点参数 dataTargets 缺失"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DataGo 服务可达\n2. sendfeishu 节点已部署"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 sendfeishu 节点，dataTargets 留空，且未填写旧单值字段(dbName/tableName/fields)\n2. dmId 与 notifyUsers 填写合法值\n3. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点 INIT 阶段失败，异常码 82001\n2. 错误消息含\"外发目标不能为空\"或\"节点参数 ... 不能为空\"\n3. 不调用任何 DataGo 接口"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】实例级时间参数非正整数"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DataGo 服务可达\n2. sendfeishu 节点已部署\n3. 节点 UI 不暴露节奏参数(maxWaitTime/detectPollInterval/executeRetryMax/executeRetryInterval)，通过实例级 enhance_json 构造非法值"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 将实例级配置之一设为非正整数，例如 wds.dss.appconn.datago.feishu.max.wait.time.ms=0(或 detect.poll.interval.ms=-1、execute.retry.interval.ms=abc)\n2. 其余节点参数合法\n3. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点 INIT 阶段失败，异常码 82001\n2. 错误消息含\"参数 ... 必须为正整数\"(或非负整数，按代码实现)\n3. 不进入 DETECTING 阶段"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】maxWaitTime 不暴露节点 UI 仅实例级生效"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 实例级配置 wds.dss.appconn.datago.feishu.max.wait.time.ms=600(秒)\n2. DataGo 服务可达，DM 单合法\n3. ② 检测长期不返回终态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 打开 sendfeishu 节点参数面板，确认仅展示 dmId/notifyUsers/dataTargets 三个专属属性，无 maxWaitTime 输入框\n2. 查询 dss_workflow_node_ui，确认未绑定 maxWaitTime key\n3. 实例级 max.wait.time.ms=600，提交执行，观察节点是否在约 600 秒后超时失败"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点 UI 不展示 maxWaitTime(节奏参数统一走实例级配置)\n2. dss_workflow_node_ui 中 sendfeishu 绑定的 key 不含 maxWaitTime/detectPollInterval/executeRetryMax/executeRetryInterval\n3. 节点使用实例级 maxWaitTime=600 秒\n4. 约 600 秒后节点超时失败，异常码 82006(检测阶段超时)\n5. 日志含\"任务超过最大等待时间\"，maxWaitTime=600000ms"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】节点 UI 面板仅展示三个专属属性"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. datagofeishu AppConn 已部署，init.sql 已执行\n2. 节点属性 UI 定义已注册\n3. 已登录 DSS 系统"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 进入 DSS 工作流编辑页面\n2. 从“数据输出”分组拖拽 sendfeishu 节点到画布\n3. 点击节点查看参数面板\n4. 检查面板展示的属性项\n5. 查询 dss_workflow_node_ui 表中 sendfeishu 节点绑定的 UI 属性"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点参数面板仅展示 dmId/notifyUsers/dataTargets 三个专属属性(均必填)\n2. maxWaitTime/detectPollInterval/executeRetryMax/executeRetryInterval 不在面板展示(不暴露为节点 UI)\n3. 上述节奏参数仅通过实例级 enhance_json 配置\n4. dss_workflow_node_ui 中 sendfeishu 绑定的 key 不含 maxWaitTime/detectPollInterval/executeRetryMax/executeRetryInterval\n5. 公共属性(节点名/节点描述/业务标签/应用标签/是否复用引擎)正常展示"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "dataTargets DSL 解析测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】多级分区花括号保护等号与斜杠"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DataGo 服务可达\n2. DM 单含多级分区表 db_metrics.daily_kpi(fields=kpi_code,kpi_val,partition=dt=20260716/country=us)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 dataTargets=dt.01=db=db_metrics|table=daily_kpi|fields=kpi_code,kpi_val|partition={dt=20260716/country=us}\n2. 提交执行\n3. 检查 ② 请求体中 tables[0].partition 与顶层 partitions 字段值"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点解析 partition 时去除花括号，保留内部 dt=20260716/country=us\n2. 花括号内的 = 与 / 不被当作分隔符，完整传递给 ②\n3. ② 请求体 tables[0].partition=\"dt=20260716/country=us\"，顶层 partitions=[\"dt=20260716/country=us\"]\n4. DM 比对通过(字段为审批列子集；分区范围客户端不校验)"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】空分区与省略 partition 段等价"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DataGo 服务可达\n2. DM 单含非分区表 db_audit.t_dim_code(fields=code_id,code_name,无 partition)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 场景 A：配置 dataTargets=dt.01=db=db_audit|table=t_dim_code|fields=code_id,code_name|partition=\n2. 场景 B：配置 dataTargets=dt.01=db=db_audit|table=t_dim_code|fields=code_id,code_name(省略 partition 段)\n3. 分别提交执行，检查 ② 请求体"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 两种写法等价：partition 解析为 null(非分区表)\n2. ② 请求体 tables[0] 不含 partition 字段，顶层 partitions 为空数组\n3. DM 比对通过(字段为审批列子集)"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】行间分号与换行混合分隔"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DataGo 服务可达\n2. DM 单含 db_audit.t_event_log 与 db_audit.t_dim_code"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 场景 A：dataTargets 行间用分号分隔：dt.01=db=db_audit|table=t_event_log|fields=user_id,event,ts;dt.02=db=db_audit|table=t_dim_code|fields=code_id,code_name\n2. 场景 B：dataTargets 行间用换行分隔(textarea 多行输入)\n3. 场景 C：分号与换行混合(含空行、首尾空白)\n4. 分别提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 三种写法均解析为 2 个 DataTarget\n2. 分号、\\r、\\n 均作为行分隔符；空行与首尾空白被忽略\n3. ② 请求体 tables 数组含 2 个元素，顶层 fields 为两表字段合集"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】编号格式错误非 dt.NN"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DataGo 服务可达\n2. sendfeishu 节点已部署"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 场景 A：dataTargets=dt.aa=db=db_audit|table=t_event_log|fields=user_id,event,ts\n2. 场景 B：dataTargets=dt=db=db_audit|table=t_event_log|fields=user_id,event,ts\n3. 场景 C：dataTargets=db=db_audit|table=t_event_log|fields=user_id,event,ts(无 dt. 前缀)\n4. 分别提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 三种场景均 INIT 阶段失败，异常码 82001\n2. 错误消息含\"外发目标编号格式错误，需为 dt.序号\"或\"外发目标格式错误，需以 dt.序号= 开头\"\n3. 编号必须匹配正则 dt\\.\\d+"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】缺 db/table/fields 必填段"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DataGo 服务可达\n2. sendfeishu 节点已部署"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 场景 A：缺 db —— dt.01=table=t_event_log|fields=user_id,event,ts\n2. 场景 B：缺 table —— dt.01=db=db_audit|fields=user_id,event,ts\n3. 场景 C：缺 fields —— dt.01=db=db_audit|table=t_event_log\n4. 场景 D：fields 为空 —— dt.01=db=db_audit|table=t_event_log|fields=\n5. 分别提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 四种场景均 INIT 阶段失败，异常码 82001\n2. 错误消息含\"缺少 db/table/fields 必填段\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】未知字段段"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DataGo 服务可达\n2. sendfeishu 节点已部署"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 dataTargets=dt.01=db=db_audit|table=t_event_log|fields=user_id,event,ts|foo=bar\n2. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. INIT 阶段失败，异常码 82001\n2. 错误消息含\"存在未知字段: foo\"\n3. 仅允许 db/table/fields/partition 四种段 key"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】同库表同分区重复"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DataGo 服务可达\n2. sendfeishu 节点已部署"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 dataTargets=dt.01=db=db_audit|table=t_event_log|fields=user_id,event,ts|partition={ds=2026-07-14};dt.02=db=db_audit|table=t_event_log|fields=user_id,event,ts|partition={ds=2026-07-14}\n2. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. INIT 阶段失败，异常码 82001\n2. 错误消息含\"外发目标 dt.02 db_audit.t_event_log#ds=2026-07-14 重复，请检查\"\n3. 同一 (db, table, partition) 不允许重复，去重依据为 DataTarget.tableKey()=db.table#partition"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】同库表不同分区允许共存"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DataGo 服务可达\n2. DM 单 DM202607150001 含表 db_audit.t_event_log(fields=user_id,event,ts，审批分区覆盖 ds=2026-07-14 与 ds=2026-07-15)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 dataTargets=dt.01=db=db_audit|table=t_event_log|fields=user_id,event,ts|partition={ds=2026-07-14};dt.02=db=db_audit|table=t_event_log|fields=user_id,event,ts|partition={ds=2026-07-15}\n2. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. DSL 解析通过，不报 82001 重复错误\n2. 节点解析出 2 个外发目标，tableKey 分别为 db_audit.t_event_log#ds=2026-07-14 与 db_audit.t_event_log#ds=2026-07-15\n3. 节点进入 DETECTING 阶段，② 请求体 tables[] 含 2 个元素，各自内嵌对应 partition，顶层 partitions 含 ds=2026-07-14 与 ds=2026-07-15"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "DM 审批校验测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】字段超范围"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150001 存在，表 db_audit.t_event_log 审批列为 user_id,event,ts\n2. DataGo 服务可达"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 sendfeishu 节点：dmId=DM202607150001, notifyUsers=alexyang\n2. 配置 dataTargets=dt.01=db=db_audit|table=t_event_log|fields=user_id,event,ts,phone|partition={ds=2026-07-14}(fields 多了 phone)\n3. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ① 表单接口正常返回\n2. 节点在 DM 比对阶段失败，异常码 82003\n3. 错误消息含\"第1个外发目标 ... 字段超出DM单审批范围，越权字段: [phone]\"，并列出审批字段\n4. 不调 ②③ 接口"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】optype 为 datago 非法"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150004 存在，optype=datago(报告外发)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 sendfeishu 节点：dmId=DM202607150004, notifyUsers=alexyang\n2. 配置 dataTargets=dt.01=db=db_audit|table=t_event_log|fields=user_id,event,ts\n3. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ① 返回 optype=datago\n2. 节点在 DM 比对阶段失败，异常码 82003\n3. 错误消息含\"DM单optype=datago非table，请走现有报告外发接口\"\n4. 不调 ②③ 接口"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】notifyUsers 越权"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150001 存在，dmUser=alexyang,ryanchen\n2. ① 返回的 form.notifyUsers 含审批允许通知人集合 [alexyang, ryanchen]\n3. DataGo 服务可达"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 sendfeishu 节点：dmId=DM202607150001, notifyUsers=alexyang;unauthorized_user\n2. 配置 dataTargets=dt.01=db=db_audit|table=t_event_log|fields=user_id,event,ts|partition={ds=2026-07-14}\n3. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ① 表单接口正常返回\n2. 节点在 DM 比对阶段失败，异常码 82003\n3. 错误消息含\"飞书通知人超出DM单授权范围，越权用户: [unauthorized_user]\"\n4. 不调 ②③ 接口\n5. 若 ① 未返回审批通知人集合，则越权由 ③ 403 兜底(见“表单未返回审批通知人集合”用例)"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】库表不在 DM 单审批范围"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150001 仅含 db_audit.t_event_log 与 db_audit.t_dim_code\n2. DataGo 服务可达"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 dataTargets=dt.01=db=db_audit|table=t_not_exist|fields=user_id,event,ts\n2. dmId 与 notifyUsers 合法，提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ① 表单接口正常返回\n2. 节点在 DM 比对阶段失败，异常码 82003\n3. 错误消息含\"第1个外发目标库表 db_audit.t_not_exist 不在DM单审批范围内\"\n4. 不调 ②③ 接口"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】客户端不校验分区范围-分区不一致放行至②③"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150001 的 t_event_log 审批分区为 ds=2026-07-14，① 比对其他项均通过\n2. DataGo 服务可达\n3. 代码现状：DmInfoComparator.validatePartition 已实现但 validate() 未调用，分区范围不在客户端强校验"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 dataTargets=dt.01=db=db_audit|table=t_event_log|fields=user_id,event,ts|partition={ds=2026-07-15}(分区与审批分区不一致)\n2. dmId 与 notifyUsers 合法，提交执行\n3. 观察节点是否在 DM 比对阶段失败，是否继续进入 ②"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ① 表单接口正常返回\n2. 节点不在 DM 比对阶段因分区不一致失败(不抛 82003)\n3. 节点通过 DM 比对，进入 DETECTING 阶段调 ②(分区以节点填写值传递)\n4. 后续是否成功取决于 ②③ 对实际分区的处理"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】字段顺序与空白差异归一通过"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150001 的 t_event_log 审批列为 [user_id, event, ts]\n2. DataGo 服务可达"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 dataTargets=dt.01=db=db_audit|table=t_event_log|fields= ts ,event , user_id |partition={ds=2026-07-14}(字段顺序打乱、含空白)\n2. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点对 fields 做 trim、去空、去重、排序归一后为 [event, ts, user_id]\n2. DM 单 columns 归一后同为 [event, ts, user_id]\n3. 比对通过(子集语义)，节点进入 DETECTING 阶段\n4. 不因顺序或空白差异误判"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】notifyUsers 顺序空白去重归一通过"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150001 的 dmUser=alexyang,ryanchen\n2. ① 返回 form.notifyUsers=[alexyang, ryanchen]\n3. DataGo 服务可达"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 notifyUsers= ryanchen ; alexyang ; alexyang ;  (含空白、重复、顺序打乱)\n2. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点对 notifyUsers 做 trim、去空、去重、排序归一后为 [alexyang, ryanchen]\n2. 是 dmUser 子集，比对通过\n3. 节点进入 DETECTING 阶段"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】DM 单状态为 detected_fail"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150005 状态为 detected_fail(DM 单层面已检测不通过)\n2. DataGo 服务可达"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 dmId=DM202607150005，其余参数与 DM 单一致\n2. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ① 返回 status=detected_fail\n2. 节点在 DM 比对阶段(状态校验)失败，异常码 82005\n3. 错误消息含\"DM单检测不通过（命中敏感），DataGo已飞书通知\"\n4. 不调 ②③ 接口"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】DM 单状态为 detect_error"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150006 状态为 detect_error\n2. DataGo 服务可达"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 dmId=DM202607150006，其余参数与 DM 单一致\n2. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ① 返回 status=detect_error\n2. 节点在 DM 比对阶段失败，异常码 82006\n3. 错误消息含\"DM单检测异常，DataGo已飞书通知\"\n4. 不调 ②③ 接口"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】DM 单状态为 exported"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150007 状态为 exported(已外发)\n2. DataGo 服务可达"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 dmId=DM202607150007，其余参数与 DM 单一致\n2. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ① 返回 status=exported\n2. 节点在 DM 比对阶段失败，异常码 82002\n3. 错误消息含\"DM单已外发，不可重复外发\"\n4. 不调 ②③ 接口"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】分区校验未启用-DM 单未限定分区节点指定分区通过"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150002 的 t_dim_code 为非分区表(table.partition 为空)\n2. DataGo 服务可达\n3. 代码现状：validatePartition 未调用，分区范围不在客户端强校验"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 dataTargets=dt.01=db=db_audit|table=t_dim_code|fields=code_id,code_name|partition={ds=2026-07-14}(节点指定分区，但 DM 单未限定)\n2. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 客户端未启用分区范围校验，不因分区差异失败\n2. 比对通过(字段为审批列子集)，节点进入 DETECTING 阶段；分区一致性以 ②③检测阶段实际分区为准"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】分区校验未启用-节点未指定分区DM 单限定分区通过"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150001 的 t_event_log 限定分区 ds=2026-07-14\n2. DataGo 服务可达\n3. 代码现状：validatePartition 未调用，分区范围不在客户端强校验"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 dataTargets=dt.01=db=db_audit|table=t_event_log|fields=user_id,event,ts(节点未指定分区，DM 单限定分区)\n2. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 客户端未启用分区范围校验，节点未指定分区时不强制校验\n2. 比对通过(字段为审批列子集)，节点进入 DETECTING 阶段；分区以 ②③检测阶段 DM 单分区为准"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】表单未返回审批通知人集合越权交由外发兜底"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150001 的 ① 返回 form.notifyUsers 为空(未返回审批允许通知人集合)\n2. ② 检测将返回 detected_pass\n3. ③ 执行外发对越权 notifyUsers 返回 403"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 notifyUsers=alexyang;unauthorized_user(含越权用户)\n2. 提交执行，观察 ① 比对阶段是否放行，③ 是否兜底"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ① 比对阶段：form.notifyUsers 为空，跳过子集校验，放行\n2. 节点进入 DETECTING → ② 检测通过 → EXPORTING\n3. ③ 执行外发返回 403，错误消息含\"notifyUsers 必须是 dm 单检测用户的子集，越权用户: [unauthorized_user]\"\n4. 节点失败，异常码 82003(③ 403 映射为 82003)"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】DM 单不存在表单接口返回空"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150099 不存在\n2. DataGo 服务可达"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 dmId=DM202607150099，提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ① 返回 404 或 data:null\n2. 节点失败，异常码 82002\n3. 错误消息含\"DM单不存在或无审批信息\"\n4. 不调 ②③ 接口"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】表单接口调用异常"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DataGo 服务不可达(网络中断或服务宕机)\n2. sendfeishu 节点已部署"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法 dmId，提交执行\n2. 观察 ① 接口调用异常时的行为"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ① HTTP 调用抛出异常(ConnectException/SocketTimeoutException)；DataGoFeishuHttpUtils 内部抛 82011，被 queryExportForm 捕获并包装为 82002\n2. 节点失败，异常码 82002\n3. 错误消息含\"DataGo表单接口调用失败\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "检测阶段测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】检测不通过 detected_fail"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150001 合法，① 比对通过\n2. ② 首次创建返回 taskId=1024，后续轮询返回 status=detected_fail，resultSummary=\"命中敏感表 t_sensitive\"\n3. DataGo 已主动飞书通知"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数，提交执行\n2. 观察节点状态变化：Running(DETECTING)→Failed\n3. 检查 DSS 是否调 ③ 接口"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ② 首次创建任务返回 taskId\n2. 后续轮询返回 detected_fail\n3. 节点失败，异常码 82005\n4. 错误消息含\"DataGo检测不通过: 命中敏感表 t_sensitive\"\n5. DSS 不调 ③ 接口(检测不通过不外发)\n6. DSS 不重复发飞书通知(DataGo 已通知)"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】检测异常 detect_error"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，① 比对通过\n2. ② 首次创建返回 taskId，后续轮询返回 status=detect_error(DataGo 已自动重试 2 次仍失败)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数，提交执行\n2. 观察节点状态变化"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点失败，异常码 82006\n2. 错误消息含\"DataGo检测异常\"\n3. DSS 不调 ③ 接口\n4. DataGo 已飞书通知，DSS 不重复通知"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】检测轮询超时"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，① 比对通过\n2. ② 首次创建返回 taskId，后续轮询始终返回 inited/detecting(非终态)\n3. 实例级 wds.dss.appconn.datago.feishu.max.wait.time.ms=600(秒，缩短超时时间)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 实例级 max.wait.time.ms=600，配置合法节点参数，提交执行\n2. 等待超过 600 秒(10 分钟)，观察节点状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点在 DETECTING 阶段持续轮询，状态保持 Running\n2. 超过 600 秒(600000ms)后节点失败，异常码 82006\n3. 错误消息含\"任务超过最大等待时间\"或\"DataGo飞书多维表格外发任务等待超时\"\n4. 日志记录 startedAt、maxWaitTime、超时时的 stage=DETECTING"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】首次创建未返回 taskId"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，① 比对通过\n2. ② 首次创建(taskId=null)返回 200，但 data.taskId 为 null"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数，提交执行\n2. 观察节点首次进入 DETECTING 后的行为"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点首次调 ② 创建任务，响应中 taskId 为 null\n2. 节点失败，异常码 82004\n3. 错误消息含\"DataGo首次检测未返回taskId\"\n4. 不再进行后续轮询"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】任务接口调用失败"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，① 比对通过\n2. ② 接口返回 500(DataGo 内部错误)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数，提交执行\n2. 观察节点 DETECTING 阶段行为"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ② 接口返回 500\n2. 节点失败，异常码 82004\n3. 错误消息含\"DataGo任务接口调用失败\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】任务接口 403 dm 单无效"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. ① 比对通过(DM 单初始状态合法)\n2. ② 接口返回 403，message=\"dm 单无效或非 table 类型\"(DM 单在 ① 之后被撤销或过期)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数，提交执行\n2. 观察节点 DETECTING 阶段行为"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ② 接口返回 403\n2. 节点失败，异常码 82003(403 映射为 82003)\n3. 错误消息含\"dm 单无效或非 table 类型\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】任务接口返回未知状态"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，① 比对通过\n2. ② 返回 status=\"unknown_status\"(非枚举值)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数，提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ② 返回未知状态\n2. 节点失败，异常码 82004\n3. 错误消息含\"DataGo检测接口返回未知状态: unknown_status\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】任务接口返回 exported 直接成功"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，① 比对通过\n2. ② 首次创建返回 taskId，status=exported(任务已被外发，极端边界)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数，提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ② 返回 status=exported\n2. 节点 stage 直接置为 SUCCESS，状态 Success\n3. 不调 ③ 接口(任务已外发)"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "外发执行测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】单目标外发成功记录 bitableUrl 与 sheet 行数"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150002 存在，optype=table，status=detected_pass，包含单表 db_audit.t_dim_code(fields=code_id,code_name，非分区)\n2. dmUser=alexyang\n3. ② 返回 detected_pass，③ 返回 200 全部 success"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 sendfeishu 节点：dmId=DM202607150002, notifyUsers=alexyang\n2. 配置 dataTargets=dt.01=db=db_audit|table=t_dim_code|fields=code_id,code_name\n3. 提交执行，等待节点 Success\n4. 查询节点 result 与日志"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点成功，ExecutionResponseRef 为 success\n2. ③ 返回的 data.bitableName 形如 DM202607150002--1--{时间戳}\n3. ③ 返回的 data.bitableUrl 非空，日志中可查\n4. data.sheets 仅 1 个元素：tableName=t_dim_code，rows=N(实际行数)，status=success\n5. data.notifyUsers=[\"alexyang\"]，data.exportedAt 为 ISO 8601 时间\n6. 审计字段含 bitableUrl、sheetsSummary、exportStatus=success"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】外发部分失败重试耗尽"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，② 检测通过(detected_pass)，taskId=1024\n2. 实例级 wds.dss.appconn.datago.feishu.execute.retry.max=3\n3. ③ 执行外发返回 200，但 sheets 中 t_event_log.status=failed(飞书写入失败)\n4. 后续重试(共 3 次)均返回 200 且 t_event_log.status=failed"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数(多目标含 t_event_log)，提交执行\n2. 等待检测通过进入 EXPORTING 阶段\n3. 观察 ③ 重试行为与最终状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ③ 首次返回 200，sheets 含 failed，节点重试(executeRetryCount=1)\n2. 第 2、3 次重试仍失败(executeRetryCount=2、3)\n3. 重试耗尽后节点失败，异常码 82008\n4. 错误消息含\"DataGo外发部分表失败且重试耗尽（已写入不回滚）\"\n5. 已写入的 sheet 不回滚(日志记录哪些 sheet 成功)\n6. 重试间隔为 executeRetryInterval(默认 30 秒)"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】外发部分失败重试后成功"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，② 检测通过，taskId=1024\n2. 实例级 wds.dss.appconn.datago.feishu.execute.retry.max=3\n3. ③ 首次返回 200，sheets 含 1 个 failed\n4. ③ 第 2 次重试返回 200，sheets 全部 success"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数，提交执行\n2. 观察 ③ 重试后状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ③ 首次部分失败，节点重试(executeRetryCount=1)\n2. 第 2 次重试全部 success，节点成功，状态 Success\n3. 日志记录\"外发部分表失败，第1次重试\"与最终\"数据已外发到飞书多维表格\"\n4. 已写入的 sheet 不重复写入"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】飞书不可达 502 重试耗尽"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，② 检测通过，taskId=1024\n2. 实例级 wds.dss.appconn.datago.feishu.execute.retry.max=3\n3. ③ 执行外发持续返回 502(飞书不可达)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数，提交执行\n2. 观察 ③ 重试行为与最终状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ③ 首次返回 502，节点重试(executeRetryCount=1)\n2. 第 2、3 次重试仍返回 502\n3. 重试耗尽后节点失败，异常码 82007\n4. 错误消息含\"DataGo外发重试次数耗尽\"\n5. 日志记录每次重试的 httpCode=502"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】飞书不可达 504 重试耗尽"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，② 检测通过，taskId=1024\n2. 实例级 wds.dss.appconn.datago.feishu.execute.retry.max=3\n3. ③ 执行外发持续返回 504(飞书不可达)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数，提交执行\n2. 观察 ③ 重试行为与最终状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 504 与 502 行为一致，均触发重试\n2. 重试耗尽后节点失败，异常码 82007\n3. 错误消息含\"DataGo外发重试次数耗尽\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】飞书不可达重试后成功"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，② 检测通过，taskId=1024\n2. 实例级 wds.dss.appconn.datago.feishu.execute.retry.max=3\n3. ③ 首次返回 502，第 2 次返回 200 全部 success"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数，提交执行\n2. 观察 ③ 重试后状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ③ 首次 502，节点重试(executeRetryCount=1)\n2. 第 2 次重试 200 全部 success，节点成功，状态 Success\n3. 日志记录\"飞书服务不可达，第1次重试\"与最终\"数据已外发到飞书多维表格\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】超限 413 不可重试"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，② 检测通过，taskId=1024\n2. ③ 执行外发返回 413，message=\"表 t_big_data 超出大小限制(估算 62MB, 上限 50MB)\""
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置节点，dataTargets 指向超大数据量表，提交执行\n2. 观察 ③ 是否重试"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ③ 返回 413\n2. 节点立即失败(不重试)，异常码 82009\n3. 错误消息含\"超出大小限制\"或\"DataGo执行外发失败\"\n4. executeRetryCount 保持 0"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】状态冲突 409 不可重试"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，② 检测通过，taskId=1024\n2. ③ 执行外发返回 409，message=\"存在未检测通过的任务: [taskId=1025 status=detected_fail]\"(或 optype=datago 场景 409)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数，提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ③ 返回 409\n2. 节点立即失败(不重试)，异常码 82009\n3. 错误消息含\"存在未检测通过的任务\"或\"optype=datago 本期本接口不支持\"\n4. executeRetryCount 保持 0"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】外发 500 内部错误"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，② 检测通过，taskId=1024\n2. ③ 执行外发返回 500(DataGo 内部错误)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数，提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ③ 返回 500\n2. 节点失败，异常码 82007\n3. 500 不触发重试(仅 502/504 可重试，500 直接失败)\n4. 错误消息含\"DataGo执行外发失败\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】外发 400 参数错误"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，② 检测通过\n2. ③ 执行外发返回 400，message=\"optype 参数为必填项\"(模拟 DSS 侧构造请求异常)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数，提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. ③ 返回 400\n2. 节点失败，异常码 82001(400 映射为 82001)\n3. 不重试"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】外发阶段 maxWaitTime 超时"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，② 检测通过进入 EXPORTING\n2. 实例级 wds.dss.appconn.datago.feishu.max.wait.time.ms=600(秒)\n3. ③ 持续返回 502(飞书长期不可达)，重试间隔 30 秒\n4. 检测阶段耗时约 500 秒，外发阶段重试至 600 秒超时"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 实例级 max.wait.time.ms=600，配置合法节点参数，提交执行\n2. 观察超时判定"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点在 EXPORTING 阶段重试 ③\n2. 超过 600 秒后节点失败\n3. 异常码 82007(外发阶段超时映射为 82007，区别于检测阶段 82006)\n4. 错误消息含\"任务超过最大等待时间\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "兼容与生命周期测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】兼容旧单值字段回退"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单 DM202607150001 合法\n2. 存在旧版节点配置(未填 dataTargets，仅填 dbName/tableName/fields/partition)"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置 sendfeishu 节点(模拟旧节点升级)：dmId=DM202607150001, notifyUsers=alexyang\n2. dataTargets 留空，填写 dbName=db_audit, tableName=t_event_log, fields=user_id,event,ts, partition=ds=2026-07-14\n3. 提交执行"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 节点检测到 dataTargets 为空，走兼容回退逻辑\n2. 自动将 dbName/tableName/fields/partition 包装为单元素 DataTarget\n3. 包装后等价于 dt.01=db=db_audit|table=t_event_log|fields=user_id,event,ts|partition={ds=2026-07-14}\n4. 后续流程与正常流程一致，节点成功\n5. 旧节点升级后不破坏原有语义"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】节点 kill 状态置 KILLED 不再轮询"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，② 检测长时间返回 detecting(非终态)\n2. 节点处于 DETECTING 阶段 Running"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 配置合法节点参数，提交执行\n2. 等待节点进入 DETECTING 轮询状态\n3. 在 DSS 工作流执行界面点击\"杀死\"节点\n4. 观察 kill 后节点状态与后续轮询行为"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. kill 返回 true\n2. 节点 stage 置为 Killed，状态置为 Killed\n3. 节点不再继续轮询 DataGo(nextPollAt 不再生效)\n4. 日志含\"节点已终止，不再轮询DataGo\"\n5. result 返回 error(非 Success)"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "日志审计测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】日志审计字段完整性"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，端到端正常外发成功(同多目标端到端场景)\n2. ② 检测通过，③ 外发成功"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 执行正常外发流程(多目标端到端)\n2. 节点 Success 后，收集节点执行日志与审计字段\n3. 逐项核对审计字段"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 日志含 dmId、optype、库名、表名、字段数量、分区、通知人数、taskId、当前阶段、DataGo 返回状态\n2. 外发完成后日志含多维表格名称、bitableUrl、各 sheet 表名/行数/状态、实际通知用户、外发完成时间\n3. 审计字段至少包含：executionId、nodeId、user、dmId、optype、taskId、dataTargets、targetCount、notifyUsers、detectStatus、exportStatus、bitableUrl、sheetsSummary、errorMessage\n4. 日志含时间戳前缀(如 \"2026-07-20 10:30:00 ...\")\n5. 进度 progress 在 DETECTING 返回 0.3，EXPORTING 返回 0.8，SUCCESS 返回 1.0"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】日志脱敏不含原始数据与凭据"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DM 单合法，正常外发流程执行(含失败重试场景更佳)\n2. 节点执行完成"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1. 执行正常外发流程(或部分失败重试场景)\n2. 收集节点执行日志、审计字段、DataGoFeishuClient 与 DataGoFeishuHttpUtils 的 INFO 级日志\n3. 检查是否含敏感信息"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：1. 日志不含 DataGo 返回的原始数据内容(sheet 行数据、字段值)\n2. 日志不含飞书凭据(FS-* token、Authorization 头值)\n3. 飞书通知人仅记录账号标识(如 alexyang)，不记录飞书 user_open_id 等凭据\n4. ③ 返回的 sheets 仅记录 tableName/rows/status 摘要，不记录行数据\n5. HTTP 请求日志不含 Authorization 头值，响应体日志截断 2000 字符"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
