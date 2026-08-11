@@ -190,9 +190,14 @@ public class ECInstanceReleaseExecuteTask {
             ecInstanceRequest.setStatus(ecStatus);
             ecInstanceRequest.setYarnQueue(queueName);
             ecInstanceRequest.setCrossCluster(crossCluster);
+            //空闲时长门槛：引擎空闲时长需达到规则配置的 minIdleMinutes 才允许被回收，0 表示不限（默认）
+            int minIdleMinutes = strategy.getMinIdleMinutes();
+            long minIdleMs = minIdleMinutes <= 0 ? 0L : minIdleMinutes * 60_000L;
+            LOGGER.info("min idle duration threshold for killing: {} ms", minIdleMs);
             List<ECKillHistoryRecord> ecInstanceList = resourceManageClient.fetchECInstance(ecInstanceRequest, operator).stream()
                     .filter(e -> e.getUseResource() != null && e.getUseResource().getYarn() != null && queueName.equals(e.getUseResource().getYarn().getQueueName()))
                     .map(e -> ECKillHistoryRecord.convertECInstance2ECKillHistoryRecord(e, strategy.getWorkspaceId(), strategy.getStrategyId(), operator))
+                    .filter(r -> minIdleMs <= 0 || (r.getUnlockDuration() != null && r.getUnlockDuration() >= minIdleMs))
                     .collect(Collectors.toList());
             LOGGER.info("fetch ec instance list successfully. ec instance list size:{}", ecInstanceList.size());
             ECKillingPriorityQueue priorityQueue = ECKillingPriorityQueueFactory.getUserFairInstance(ecInstanceList);

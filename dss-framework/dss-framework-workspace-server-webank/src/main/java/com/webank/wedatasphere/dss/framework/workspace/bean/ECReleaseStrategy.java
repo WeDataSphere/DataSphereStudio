@@ -53,6 +53,10 @@ public class ECReleaseStrategy {
      * 规则状态：0 禁用中，1 启用中
      */
     private int status;
+    /**
+     * 最小空闲时长（分钟），引擎空闲时长需达到该值才允许被回收；0 表示不限（默认）
+     */
+    private int minIdleMinutes;
 
     public String getStrategyId() {
         return strategyId;
@@ -166,6 +170,13 @@ public class ECReleaseStrategy {
         this.status = status;
     }
 
+    public int getMinIdleMinutes() {
+        return minIdleMinutes;
+    }
+
+    public void setMinIdleMinutes(int minIdleMinutes) {
+        this.minIdleMinutes = minIdleMinutes;
+    }
 
     /**
      * 从Do持久化对象活化过来
