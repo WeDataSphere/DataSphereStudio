@@ -1,0 +1,141 @@
+{
+  "root": {
+    "data": {"text": "DSS_EC_RELEASE"},
+    "children": [{
+      "data": {"text": "路径"},
+      "children": [{
+        "data": {"text": "需求：000002"},
+        "children": [{
+          "data": {"text": "后端候选门槛过滤"},
+          "children": [{
+            "data": {"text": "分类：功能案例"},
+            "children": [{
+              "data": {"text": "【AIGC】门槛为0时候选集合与改动前一致"},
+              "children": [
+                {"data": {"text": "条件：规则minIdleMinutes=0，触发条件成立，队列空闲引擎集合S含各种空闲时长"}, "children": []},
+                {"data": {"text": "步骤：\n1、processStrategy执行候选筛选\n2、统计filter后的候选集合"}, "children": []},
+                {"data": {"text": "预期结果：候选集合等于S，门槛filter恒真，未剔除任何引擎，等价改动前行为"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】门槛为5分钟时空闲4分钟的引擎不进候选池"},
+              "children": [
+                {"data": {"text": "条件：规则minIdleMinutes=5，引擎E1空闲4分钟，状态Unlock且属该队列"}, "children": []},
+                {"data": {"text": "步骤：\n1、processStrategy筛选候选\n2、检查E1是否在候选集合"}, "children": []},
+                {"data": {"text": "预期结果：E1不在候选集合，unlockDuration=240000小于minIdleMs=300000被滤掉"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】门槛为5分钟时空闲6分钟的引擎仍在候选池"},
+              "children": [
+                {"data": {"text": "条件：规则minIdleMinutes=5，引擎E2空闲6分钟，状态Unlock且属该队列"}, "children": []},
+                {"data": {"text": "步骤：\n1、processStrategy筛选候选\n2、检查E2是否在候选集合"}, "children": []},
+                {"data": {"text": "预期结果：E2在候选集合，unlockDuration=360000大于等于minIdleMs=300000被保留"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】短空闲引擎不进入kill优先队列"},
+              "children": [
+                {"data": {"text": "条件：规则minIdleMinutes=5，候选含空闲1分钟和空闲6分钟引擎各一台，触发条件成立"}, "children": []},
+                {"data": {"text": "步骤：\n1、进入while kill循环\n2、检查进入UserFairECKillingPriorityQueue的引擎"}, "children": []},
+                {"data": {"text": "预期结果：仅空闲6分钟引擎进入优先队列，空闲1分钟引擎未被poll、未加入kill请求列表"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】分钟正确换算为毫秒"},
+              "children": [
+                {"data": {"text": "条件：规则minIdleMinutes=5"}, "children": []},
+                {"data": {"text": "步骤：\n1、processStrategy读取minIdleMinutes\n2、换算minIdleMs并输出日志"}, "children": []},
+                {"data": {"text": "预期结果：minIdleMs=5乘以60000=300000，日志输出min idle duration threshold for killing: 300000 ms"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】未知空闲时长的引擎被保守剔除"},
+              "children": [
+                {"data": {"text": "条件：规则minIdleMinutes=5，引擎E的lastUnlockTimestamp为空"}, "children": []},
+                {"data": {"text": "步骤：\n1、convertECInstance2ECKillHistoryRecord将unlockDuration置0\n2、门槛filter判断"}, "children": []},
+                {"data": {"text": "预期结果：E的unlockDuration被置0，门槛0小于300000为false，E被滤掉，不知空闲多久的不杀"}, "children": []}
+              ]
+            }]
+          }, {
+            "data": {"text": "分类：流程案例"},
+            "children": [{
+              "data": {"text": "【AIGC】触发条件不满足时门槛无副作用"},
+              "children": [
+                {"data": {"text": "条件：规则minIdleMinutes=5，队列用量未达触发高水位"}, "children": []},
+                {"data": {"text": "步骤：\n1、processStrategy执行\n2、检查是否进入候选筛选分支"}, "children": []},
+                {"data": {"text": "预期结果：不进入候选筛选分支，门槛filter不执行，无引擎被kill"}, "children": []}
+              ]
+            }]
+          }]
+        }, {
+          "data": {"text": "数据持久化与默认值"},
+          "children": [{
+            "data": {"text": "分类：接口案例"},
+            "children": [{
+              "data": {"text": "【AIGC】保存读取往返值一致"},
+              "children": [
+                {"data": {"text": "条件：新建或编辑规则填minIdleMinutes=10"}, "children": []},
+                {"data": {"text": "步骤：\n1、saveEcReleaseStrategy入库\n2、getEcReleaseStrategyList读回\n3、比较读回值"}, "children": []},
+                {"data": {"text": "预期结果：读回的minIdleMinutes等于10，往返一致"}, "children": []}
+              ]
+            }]
+          }, {
+            "data": {"text": "分类：参数配置"},
+            "children": [{
+              "data": {"text": "【AIGC】DB列NOT NULL DEFAULT 0且存量行回填0"},
+              "children": [
+                {"data": {"text": "条件：执行dss_1.23.0_update.sql的ALTER TABLE"}, "children": []},
+                {"data": {"text": "步骤：\n1、检查列定义\n2、检查存量行值\n3、INSERT不带该列验证默认值"}, "children": []},
+                {"data": {"text": "预期结果：列定义为NOT NULL DEFAULT 0，存量所有行min_idle_minutes=0，INSERT不带该列自动写0，显式插NULL报错"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】bean和DO字段为int默认0"},
+              "children": [
+                {"data": {"text": "条件：后端ECReleaseStrategy和ECReleaseStrategyDO字段类型为基本类型int"}, "children": []},
+                {"data": {"text": "步骤：\n1、new ECReleaseStrategy和new ECReleaseStrategyDO\n2、调用getMinIdleMinutes"}, "children": []},
+                {"data": {"text": "预期结果：getMinIdleMinutes返回0，基本类型默认即0，不可能为null，无NPE风险"}, "children": []}
+              ]
+            }]
+          }]
+        }, {
+          "data": {"text": "前端规则配置"},
+          "children": [{
+            "data": {"text": "分类：功能案例"},
+            "children": [{
+              "data": {"text": "【AIGC】新增规则时门槛字段默认显示0"},
+              "children": [
+                {"data": {"text": "条件：用户进入EC引擎释放规则页面，点击新增释放规则"}, "children": []},
+                {"data": {"text": "步骤：\n1、点击新增释放规则打开编辑弹窗\n2、查看最小空闲时长分钟输入框默认值"}, "children": []},
+                {"data": {"text": "预期结果：输入框默认显示0，InputNumber绑定formData.minIdleMinutes默认0"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】输入框最小值为0无法输入负数"},
+              "children": [
+                {"data": {"text": "条件：编辑弹窗已打开"}, "children": []},
+                {"data": {"text": "步骤：\n1、尝试输入-1\n2、按下调箭头尝试低于0"}, "children": []},
+                {"data": {"text": "预期结果：值钳制在0，InputNumber的min等于0生效，无法为负"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】规则列表卡片正确展示门槛"},
+              "children": [
+                {"data": {"text": "条件：存在规则A的min_idle_minutes=0和规则B的min_idle_minutes=8"}, "children": []},
+                {"data": {"text": "步骤：\n1、保存规则A和规则B\n2、查看规则列表卡片展示"}, "children": []},
+                {"data": {"text": "预期结果：规则A卡片显示最小空闲时长分钟不限，规则B卡片显示最小空闲时长分钟8分钟"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】编辑已有规则回填门槛值"},
+              "children": [
+                {"data": {"text": "条件：存在规则B的min_idle_minutes=8"}, "children": []},
+                {"data": {"text": "步骤：\n1、点击规则B的编辑\n2、查看输入框回填值"}, "children": []},
+                {"data": {"text": "预期结果：输入框显示8，edit方法回填item.minIdleMinutes或0兜底"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】新增重置回填三处默认均为0"},
+              "children": [
+                {"data": {"text": "条件：前端data的formData、add方法、edit方法三处默认处理"}, "children": []},
+                {"data": {"text": "步骤：\n1、核查data中formData.minIdleMinutes=0\n2、核查add重置为0\n3、核查edit回填item.minIdleMinutes或0"}, "children": []},
+                {"data": {"text": "预期结果：任一路径下未配置时字段恒为0，全链路默认0固化"}, "children": []}
+              ]
+            }]
+          }]
+        }]
+      }]
+    }]
+  }
+}
