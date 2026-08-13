@@ -1,0 +1,480 @@
+{
+  "root": {
+    "data": {"text": "DSS_SENDMAIL"},
+    "children": [{
+      "data": {"text": "路径"},
+      "children": [{
+        "data": {"text": "需求：REQ-DSS-1.23.0-002 sendemail调用DataGo图片外发"},
+        "children": [{
+          "data": {"text": "DataGoOutboundConfig 配置校验"},
+          "children": [{
+            "data": {"text": "分类：功能案例"},
+            "children": [{
+              "data": {"text": "【AIGC】DataGo外发配置完整-校验通过"},
+              "children": [
+                {"data": {"text": "条件：sendemail节点参数sendFeishu=true，api.base.url与token已配置有效值"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置所有DataGo外发配置项为有效值\n2、调用DataGoOutboundConfig.validate()"}, "children": []},
+                {"data": {"text": "预期结果：不抛出任何异常，日志输出DataGo outbound config validated"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】api.base.url为空-校验失败"},
+              "children": [
+                {"data": {"text": "条件：sendFeishu=true，wds.dss.appconn.datago.outbound.api.base.url为空字符串"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置api.base.url为空\n2、调用validate()"}, "children": []},
+                {"data": {"text": "预期结果：抛出IllegalArgumentException，异常消息包含api.base.url is not configured"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】token为空-校验失败"},
+              "children": [
+                {"data": {"text": "条件：sendFeishu=true，wds.dss.appconn.datago.outbound.token为空字符串"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置token为空\n2、调用validate()"}, "children": []},
+                {"data": {"text": "预期结果：抛出IllegalArgumentException，异常消息包含outbound token is not configured"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】source为空-校验失败"},
+              "children": [
+                {"data": {"text": "条件：sendFeishu=true，source为空字符串"}, "children": []},
+                {"data": {"text": "步骤：调用validate()"}, "children": []},
+                {"data": {"text": "预期结果：抛出IllegalArgumentException，异常消息包含outbound source is not configured"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】轮询参数非正数-校验失败"},
+              "children": [
+                {"data": {"text": "条件：连接配置有效，poll.interval=0"}, "children": []},
+                {"data": {"text": "步骤：调用validate()"}, "children": []},
+                {"data": {"text": "预期结果：抛出IllegalArgumentException，异常消息包含poll.interval must be positive"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】DataGo外发配置默认值验证"},
+              "children": [
+                {"data": {"text": "条件：未配置任何DataGo外发相关配置项"}, "children": []},
+                {"data": {"text": "步骤：\n1、不设置任何DataGo配置\n2、读取各配置项的默认值"}, "children": []},
+                {"data": {"text": "预期结果：API_BASE_URL/TOKEN为空，SOURCE=dss，CHANNEL=feishu，POLL_INTERVAL=10，MAX_WAIT=120，RETRY_MAX=3，IMAGE_MAXSIZE=10485760"}, "children": []}
+              ]
+            }]
+          }]
+        }, {
+          "data": {"text": "OutboundTaskStatus 状态判定"},
+          "children": [{
+            "data": {"text": "分类：功能案例"},
+            "children": [{
+              "data": {"text": "【AIGC】isSuccess-exported判定为成功"},
+              "children": [
+                {"data": {"text": "条件：传入exported/EXPORTED/ exported "}, "children": []},
+                {"data": {"text": "步骤：调用OutboundTaskStatus.isSuccess()"}, "children": []},
+                {"data": {"text": "预期结果：均返回true"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】isTerminal-终态判定"},
+              "children": [
+                {"data": {"text": "条件：传入exported/detected_fail/detect_error/export_failed及pending/detecting/detected_pass"}, "children": []},
+                {"data": {"text": "步骤：调用isTerminal()"}, "children": []},
+                {"data": {"text": "预期结果：前四个返回true，后三个返回false"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】isFailedTerminal-失败终态判定"},
+              "children": [
+                {"data": {"text": "条件：传入detected_fail/detect_error/export_failed/exported"}, "children": []},
+                {"data": {"text": "步骤：调用isFailedTerminal()"}, "children": []},
+                {"data": {"text": "预期结果：前三个返回true，exported返回false"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】null与未知状态不崩溃"},
+              "children": [
+                {"data": {"text": "条件：传入null和foobar"}, "children": []},
+                {"data": {"text": "步骤：调用isTerminal/isSuccess/isFailedTerminal"}, "children": []},
+                {"data": {"text": "预期结果：均返回false，不抛异常"}, "children": []}
+              ]
+            }]
+          }]
+        }, {
+          "data": {"text": "DataGoOutboundClient 接口客户端"},
+          "children": [{
+            "data": {"text": "分类：接口案例"},
+            "children": [{
+              "data": {"text": "【AIGC】①受理-正常流程返回taskId"},
+              "children": [
+                {"data": {"text": "条件：DataGo配置正确，含2张图片"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock ①接口返回success=true,data.taskId=2048\n2、调用submitImage(text,recipients,title,images)"}, "children": []},
+                {"data": {"text": "预期结果：返回taskId=2048，请求为multipart/form-data含source/type/channel/text/recipients/images，请求头含Authorization: Bearer"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】①受理-业务失败抛81002"},
+              "children": [
+                {"data": {"text": "条件：①接口返回success=false,code=400,message=text不能为空"}, "children": []},
+                {"data": {"text": "步骤：调用submitImage()"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81002)，消息包含submit failed和code=400"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】①受理-502/504退避重试成功"},
+              "children": [
+                {"data": {"text": "条件：①接口前两次返回502，第三次返回成功"}, "children": []},
+                {"data": {"text": "步骤：调用submitImage()"}, "children": []},
+                {"data": {"text": "预期结果：重试2次后成功返回taskId，每次间隔retry.interval秒"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】①受理-502/504重试耗尽抛81002"},
+              "children": [
+                {"data": {"text": "条件：①接口连续返回502超过retry.max次"}, "children": []},
+                {"data": {"text": "步骤：调用submitImage()"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81002)，消息包含after N retries (upstream unreachable)"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】①受理-响应无taskId抛81007"},
+              "children": [
+                {"data": {"text": "条件：①接口返回success=true但data无taskId"}, "children": []},
+                {"data": {"text": "步骤：调用submitImage()"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81007)，消息包含no taskId"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】①受理-taskId非数字抛81007"},
+              "children": [
+                {"data": {"text": "条件：①接口返回data.taskId=abc"}, "children": []},
+                {"data": {"text": "步骤：调用submitImage()"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81007)，消息包含not a number"}, "children": []}
+              ]
+            }]
+          }, {
+            "data": {"text": "分类：接口案例"},
+            "children": [{
+              "data": {"text": "【AIGC】②轮询-正常流程返回status"},
+              "children": [
+                {"data": {"text": "条件：②接口返回success=true,data.status=exported"}, "children": []},
+                {"data": {"text": "步骤：调用queryTask(2048)"}, "children": []},
+                {"data": {"text": "预期结果：返回exported，请求体为{\"taskId\":2048,\"source\":\"dss\"}，Content-Type为application/json"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】②轮询-业务失败抛81003"},
+              "children": [
+                {"data": {"text": "条件：②接口返回success=false,code=404,message=任务不存在"}, "children": []},
+                {"data": {"text": "步骤：调用queryTask()"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81003)，消息包含query failed"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】②轮询-502/504退避重试"},
+              "children": [
+                {"data": {"text": "条件：②接口首次返回504，第二次返回成功"}, "children": []},
+                {"data": {"text": "步骤：调用queryTask()"}, "children": []},
+                {"data": {"text": "预期结果：重试1次后返回status"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】②轮询-响应无status抛81007"},
+              "children": [
+                {"data": {"text": "条件：②接口返回success=true但data无status"}, "children": []},
+                {"data": {"text": "步骤：调用queryTask()"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81007)，消息包含no status"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】②轮询-401鉴权失败抛81003"},
+              "children": [
+                {"data": {"text": "条件：②接口返回401"}, "children": []},
+                {"data": {"text": "步骤：调用queryTask()"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81003)，非502/504不重试"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】HTTP响应无body抛81007"},
+              "children": [
+                {"data": {"text": "条件：HTTP返回500且errorStream为null"}, "children": []},
+                {"data": {"text": "步骤：触发readResponse"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81007)，消息包含no response body"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】escapeJson特殊字符转义"},
+              "children": [
+                {"data": {"text": "条件：传入双引号/换行/反斜杠/null"}, "children": []},
+                {"data": {"text": "步骤：调用DataGoOutboundClient.escapeJson()"}, "children": []},
+                {"data": {"text": "预期结果：双引号转\\\"，换行转\\n，反斜杠转\\\\，null返回空字符串"}, "children": []}
+              ]
+            }]
+          }]
+        }, {
+          "data": {"text": "DataGoImageSender 外发编排"},
+          "children": [{
+            "data": {"text": "分类：功能案例"},
+            "children": [{
+              "data": {"text": "【AIGC】完整流程-受理后轮询至exported"},
+              "children": [
+                {"data": {"text": "条件：Email含subject=测试报表,feishuTo=zhangsan,1个PNG附件"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock submitImage返回taskId=2048\n2、Mock queryTask返回exported\n3、调用DataGoImageSender.send(email)"}, "children": []},
+                {"data": {"text": "预期结果：submitImage调用1次text=测试报表recipients=[\"zhangsan\"]，queryTask调用至exported，不抛异常"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】feishuTo为null-跳过"},
+              "children": [
+                {"data": {"text": "条件：Email对象feishuTo为null"}, "children": []},
+                {"data": {"text": "步骤：调用DataGoImageSender.send(email)"}, "children": []},
+                {"data": {"text": "预期结果：不抛异常，不调用DataGo接口，日志输出feishuTo is empty, skip"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】feishuTo为空字符串-跳过"},
+              "children": [
+                {"data": {"text": "条件：Email对象feishuTo为空字符串"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：不抛异常，不调用DataGo接口"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】feishuTo仅含空格和分号-跳过"},
+              "children": [
+                {"data": {"text": "条件：Email对象feishuTo为  ;  ;  "}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：receivers为空，日志输出No valid Feishu receivers，不调用DataGo接口"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】多接收者分号分隔-转JSON数组"},
+              "children": [
+                {"data": {"text": "条件：feishuTo=zhangsan;lisi;wangwu"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：recipients=[\"zhangsan\",\"lisi\",\"wangwu\"]，submitImage调用1次（一次性受理）"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】接收者含前后空格-trim"},
+              "children": [
+                {"data": {"text": "条件：feishuTo为  zhangsan  ;  lisi  "}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：recipients=[\"zhangsan\",\"lisi\"]"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】subject为null-使用默认text"},
+              "children": [
+                {"data": {"text": "条件：Email对象subject为null"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：submitImage的text=DSS Email Notification"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】subject为纯空格-使用默认text"},
+              "children": [
+                {"data": {"text": "条件：Email对象subject为   "}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：trim后为空，text=DSS Email Notification"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】无附件-images为空仍受理"},
+              "children": [
+                {"data": {"text": "条件：attachments为null或空数组"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：images为空，submitImage仍调用，轮询至exported成功"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】非图片附件-不外发"},
+              "children": [
+                {"data": {"text": "条件：attachments含CSV/Excel/PDF/Markdown"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：isImageAttachment过滤后images为空，仅受理文本"}, "children": []}
+              ]
+            }]
+          }, {
+            "data": {"text": "分类：功能案例"},
+            "children": [{
+              "data": {"text": "【AIGC】图片附件File直接用"},
+              "children": [
+                {"data": {"text": "条件：PngAttachment的getFile()返回存在文件(≤10MB)"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：直接使用File作为images提交，不创建临时文件"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】图片附件Base64临时文件"},
+              "children": [
+                {"data": {"text": "条件：getFile()返回null，getBase64Str()返回合法base64"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：Base64解码写临时文件作为images提交"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】图片附件超过10MB-抛81006"},
+              "children": [
+                {"data": {"text": "条件：图片文件size=11MB"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81006)，消息包含exceeds"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】图片附件恰好10MB-通过"},
+              "children": [
+                {"data": {"text": "条件：图片文件size=10485760"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：通过校验，正常提交"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】图片Base64非法-抛81006"},
+              "children": [
+                {"data": {"text": "条件：getFile()=null，getBase64Str()=not_valid_base64!!!"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81006)，消息包含decode base64"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】图片无File无base64-抛81006"},
+              "children": [
+                {"data": {"text": "条件：getFile()=null，getBase64Str()=null"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81006)，消息包含neither File nor base64"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】轮询exported-成功"},
+              "children": [
+                {"data": {"text": "条件：queryTask返回exported"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：send正常返回，不抛异常"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】轮询detected_fail-抛81004"},
+              "children": [
+                {"data": {"text": "条件：queryTask返回detected_fail"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81004)，消息包含failed terminal status，DataGo已通知接收人不重发"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】轮询detect_error-抛81004"},
+              "children": [
+                {"data": {"text": "条件：queryTask返回detect_error"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81004)"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】轮询export_failed-抛81004"},
+              "children": [
+                {"data": {"text": "条件：queryTask返回export_failed"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81004)"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】轮询pending后转exported-成功"},
+              "children": [
+                {"data": {"text": "条件：queryTask前两次返回pending，第三次返回exported"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：每次非终态sleep poll.interval，最终成功"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】轮询超时-抛81005"},
+              "children": [
+                {"data": {"text": "条件：max.wait=120，queryTask持续返回pending超过120s"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81005)，消息包含polling timed out"}, "children": []}
+              ]
+            }]
+          }]
+        }, {
+          "data": {"text": "SendEmailRefExecutionOperation 集成"},
+          "children": [{
+            "data": {"text": "分类：流程案例"},
+            "children": [{
+              "data": {"text": "【AIGC】邮件发送后-sendFeishu且feishuTo有值-执行外发"},
+              "children": [
+                {"data": {"text": "条件：sendFeishu=true，feishuTo=zhangsan，邮件发送成功，DataGo外发Mock成功"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock emailSender.send()成功\n2、Mock DataGoImageSender.send()成功\n3、调用execute(requestRef)"}, "children": []},
+                {"data": {"text": "预期结果：邮件先发送成功，DataGoImageSender.send()被调用，返回成功响应"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】邮件发送后-节点未选择发送飞书-不执行外发"},
+              "children": [
+                {"data": {"text": "条件：sendFeishu=false，feishuTo=zhangsan"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置sendFeishu=false\n2、Mock emailSender.send()成功\n3、调用execute(requestRef)"}, "children": []},
+                {"data": {"text": "预期结果：仅发送邮件，DataGoImageSender.send()不被调用，返回成功响应"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】邮件发送后-feishuTo为空-不执行外发"},
+              "children": [
+                {"data": {"text": "条件：sendFeishu=true，feishuTo为null或空字符串"}, "children": []},
+                {"data": {"text": "步骤：调用execute(requestRef)"}, "children": []},
+                {"data": {"text": "预期结果：仅发送邮件，DataGoImageSender.send()不被调用，返回成功响应"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】DataGo外发失败-节点标记为错误"},
+              "children": [
+                {"data": {"text": "条件：sendFeishu=true，feishuTo=zhangsan，邮件发送成功，外发失败"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock emailSender.send()成功\n2、Mock DataGoImageSender.send()抛EmailSendFailedException\n3、调用execute(requestRef)"}, "children": []},
+                {"data": {"text": "预期结果：邮件发送成功但外发失败，返回错误响应，错误消息为飞书发送失败！"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】邮件发送失败-不执行外发"},
+              "children": [
+                {"data": {"text": "条件：邮件发送失败，sendFeishu=true且feishuTo有值"}, "children": []},
+                {"data": {"text": "步骤：\n1、Mock emailSender.send()抛异常\n2、调用execute(requestRef)"}, "children": []},
+                {"data": {"text": "预期结果：邮件失败立即返回错误，DataGoImageSender.send()不被调用，错误消息为发送邮件失败！"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】feishuTo为纯空格-不执行外发"},
+              "children": [
+                {"data": {"text": "条件：sendFeishu=true，feishuTo为纯空格"}, "children": []},
+                {"data": {"text": "步骤：调用execute(requestRef)"}, "children": []},
+                {"data": {"text": "预期结果：feishuTo.trim.nonEmpty为false，跳过外发，仅发邮件"}, "children": []}
+              ]
+            }]
+          }]
+        }, {
+          "data": {"text": "端到端业务流程"},
+          "children": [{
+            "data": {"text": "分类：流程案例"},
+            "children": [{
+              "data": {"text": "【AIGC】端到端-sendemail节点启用飞书含PNG附件"},
+              "children": [
+                {"data": {"text": "条件：DataGo配置正确，feishuTo有效，附件为PNG"}, "children": []},
+                {"data": {"text": "步骤：\n1、配置sendemail节点sendFeishu=true、feishuTo、PNG附件\n2、执行工作流"}, "children": []},
+                {"data": {"text": "预期结果：邮件发送成功，DataGo受理+轮询exported，飞书接收者收到文本+真图片消息，节点成功"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】端到端-无附件仅文本"},
+              "children": [
+                {"data": {"text": "条件：DataGo配置正确，无附件仅邮件正文"}, "children": []},
+                {"data": {"text": "步骤：执行工作流"}, "children": []},
+                {"data": {"text": "预期结果：DataGo受理images空，exported后接收者仅收到文本消息"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】端到端-节点未选择发送飞书仅发邮件"},
+              "children": [
+                {"data": {"text": "条件：sendFeishu=false，配置了feishuTo"}, "children": []},
+                {"data": {"text": "步骤：执行工作流"}, "children": []},
+                {"data": {"text": "预期结果：仅发送邮件，不调用DataGo，节点成功"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】端到端-命中敏感数据detected_fail节点失败"},
+              "children": [
+                {"data": {"text": "条件：sendFeishu=true，DataGo轮询返回detected_fail"}, "children": []},
+                {"data": {"text": "步骤：执行工作流"}, "children": []},
+                {"data": {"text": "预期结果：邮件发送成功，外发终态失败，节点标记失败，DataGo已主动通知接收人"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】端到端-token无效节点失败"},
+              "children": [
+                {"data": {"text": "条件：datago.outbound.token配置错误"}, "children": []},
+                {"data": {"text": "步骤：执行工作流"}, "children": []},
+                {"data": {"text": "预期结果：邮件发送成功，外发401失败，节点失败，日志包含飞书发送失败"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】端到端-多接收人均收到"},
+              "children": [
+                {"data": {"text": "条件：feishuTo=u1;u2;u3"}, "children": []},
+                {"data": {"text": "步骤：执行工作流"}, "children": []},
+                {"data": {"text": "预期结果：recipients三人，exported后三人均收到飞书消息"}, "children": []}
+              ]
+            }]
+          }]
+        }, {
+          "data": {"text": "配置项接口测试"},
+          "children": [{
+            "data": {"text": "分类：参数配置"},
+            "children": [{
+              "data": {"text": "【AIGC】配置项-自定义api.base.url"},
+              "children": [
+                {"data": {"text": "条件：配置自定义api.base.url"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置wds.dss.appconn.datago.outbound.api.base.url=http://custom:3003\n2、调用getApiBaseUrl"}, "children": []},
+                {"data": {"text": "预期结果：返回自定义地址，请求发送到自定义地址"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】节点参数-sendFeishu设为true字符串"},
+              "children": [
+                {"data": {"text": "条件：配置值为字符串true"}, "children": []},
+                {"data": {"text": "步骤：设置sendFeishu=true，执行execute并读取runtimeMap"}, "children": []},
+                {"data": {"text": "预期结果：sendFeishu按true处理，满足feishuTo非空时执行外发"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】轮询与重试参数调优"},
+              "children": [
+                {"data": {"text": "条件：调整poll.interval/max.wait/retry.max/retry.interval"}, "children": []},
+                {"data": {"text": "步骤：修改配置后执行外发"}, "children": []},
+                {"data": {"text": "预期结果：参数生效，轮询节奏与重试行为符合配置"}, "children": []}
+              ]
+            }]
+          }]
+        }]
+      }]
+    }]
+  }
+}

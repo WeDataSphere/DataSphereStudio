@@ -1,0 +1,404 @@
+{
+  "root": {
+    "data": {
+      "text": "DSS"
+    },
+    "children": [
+      {
+        "data": {
+          "text": "/所有目录/SIT/V1.23.0/DSS内存泄漏修复测试"
+        },
+        "children": [
+          {
+            "data": {
+              "text": "需求：REQ-DSS-1.23.0-FIX-003"
+            },
+            "children": [
+              {
+                "data": {
+                  "text": "内存泄漏主修复测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：接口案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-LEAK-001 员工信息连续刷新不累积"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务已部署dev-1.23.0-SNAPSHOT（含HttpStaffInfoGetter.java修复代码，StaffThread.run()已改为tempMap+synchronized(LOCK){clear();putAll();}原子替换）\n2. dss-apps-server正常运行，ESB HR接口可用（EsbConf.ESB_APPID/ESB_TOKEN/ESB_HTTP_URL/ESB_HR_STAFF_URL配置正确）\n3. StaffThread定时任务scheduleAtFixedRate(0, 1, HOURS)正常调度（HttpStaffInfoGetter.java:125-127）\n4. 已记录初始STAFF_INFO_MAP.size()与堆内存占用基线"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、启动dss-apps-server，执行jmap -histo:live <pid>记录初始堆内存，反射或日志获取STAFF_INFO_MAP.size()初始值\n2、等待或手动触发StaffThread.run()全量刷新第1次，记录刷新后STAFF_INFO_MAP.size()=N1，校验日志输出\"Staff info refreshed, current size: N1\"\n3、构造ESB返回不同数据集（含key漂移：大小写不一致、离职人员未移除），触发第2次刷新，记录size=N2\n4、连续触发第3、4、5次刷新（模拟5小时运行），每次记录size值\n5、执行jmap -dump:format=b,file=heap.hprof <pid> dump堆内存，用MAT分析HttpStaffInfoGetter的ConcurrentHashMap$Node[]占用\n6、对比5次刷新的size序列与MAT占用"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、每次刷新后STAFF_INFO_MAP.size()等于当次ESB全量返回有效条数，不随刷新次数单调增长（N1~N5各自等于对应ESB返回条数，不累积旧key）\n2、第2次刷新后Map不含第1次独有的key（验证clear()+putAll()原子替换生效，非增量put）\n3、日志每次刷新输出\"Staff info refreshed, current size: N\"（N为当前全量条数）\n4、MAT分析HttpStaffInfoGetter的ConcurrentHashMap$Node[]占用回落至单份全量数据大小，不再保持23,939,272 bytes（27.79%）残留\n5、满足AC-01验收标准，对应IT-01/IT-02集成测试场景"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-LEAK-003 员工信息查询命中与未命中"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务已部署dev-1.23.0-SNAPSHOT\n2. StaffThread至少成功刷新1次，STAFF_INFO_MAP已填充当前全量员工数据\n3. 已知存在用户englishName=existuser，不存在用户englishName=nouser"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、调用getStaffInfoByUsername(\"existuser\")，校验返回值\n2、调用getStaffInfoByUsername(\"nouser\")，校验返回值\n3、调用getAllUsers()，校验返回List大小\n4、调用getAllUsernames()，校验返回Set大小\n5、调用getAllDepartments()，校验返回部门列表\n6、对比getAllUsers().size()与STAFF_INFO_MAP.size()"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、getStaffInfoByUsername(\"existuser\")返回对应StaffInfo对象（englishName=existuser）\n2、getStaffInfoByUsername(\"nouser\")返回null\n3、getAllUsers()返回List<StaffInfo>，size等于STAFF_INFO_MAP.size()\n4、getAllUsernames()返回Set<String>，size等于STAFF_INFO_MAP.size()\n5、getAllDepartments()返回List<String>部门列表，来自当前全量数据\n6、行为与修复前一致（查询接口签名与返回结构未改动），满足AC-04，对应IT-05集成测试场景"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-LEAK-006 AppConn连续加载/卸载jar句柄不增长"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务已部署dev-1.23.0-SNAPSHOT（含AppStandardClassUtils.refreshClassloader修复：remove前保存oldClassLoader，remove后调用closeClassLoader）\n2. dss-server正常运行，已安装至少1个AppConn（如workflow）\n3. 记录初始jar文件句柄数：lsof -p <pid> | grep jar | wc -l = H0"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、执行sh appconn-install.sh workflow（已安装则跳过），记录初始jar句柄数H0\n2、循环执行10次：sh appconn-refresh.sh workflow（触发CommonAppConnLoader.getAppConn -> refreshClassloader -> closeClassLoader）\n3、每次refresh后执行lsof -p <pid> | grep jar | wc -l，记录句柄数H1~H10\n4、校验日志每次输出\"Closed old URLClassLoader for appConn: ...\"\n5、执行jmap -dump导出堆内存，用MAT分析URLJarFile实例数"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、10次刷新后jar句柄数H10保持稳定（允许小幅波动，不单调增长，H10约等于H0）\n2、日志每次refresh输出\"Closed old URLClassLoader for appConn: ...\"表明旧ClassLoader已close\n3、AppStandardClassUtils的CLASS_LOADER_MAP.size()与当前已加载AppConn数一致（不为10倍累积）\n4、MAT分析URLJarFile实例数不随刷新次数累积\n5、满足AC-02验收标准，对应IT-04集成测试场景"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-LEAK-007 close旧ClassLoader日志验证"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务已部署dev-1.23.0-SNAPSHOT（含closeClassLoader私有方法，instanceof URLClassLoader后close()）\n2. dss-server正常运行，已安装AppConn（如scriptis）\n3. CLASS_LOADER_MAP中已存在appConnName=scriptis的ClassLoader（AppConnClassLoader继承URLClassLoader）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、确认CLASS_LOADER_MAP.containsKey(\"scriptis\")=true\n2、触发refreshClassloader(\"scriptis\", () -> new AppConnClassLoader(jars, parent))（通过appconn-refresh.sh或直接调用）\n3、校验日志输出\"Closed old URLClassLoader for appConn: <oldClassLoader.toString()>\"\n4、校验closeClassLoader的instanceof判断：oldClassLoader instanceof URLClassLoader = true（AppConnClassLoader extends URLClassLoader）\n5、校验refreshClassloader返回值为新建的ClassLoader（!= oldClassLoader）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、日志输出LOGGER.info(\"Closed old URLClassLoader for appConn: {}\", classLoader)\n2、closeClassLoader执行((URLClassLoader) classLoader).close()成功，不抛异常\n3、refreshClassloader返回新建的AppConnClassLoader实例\n4、旧ClassLoader的jar文件句柄被释放\n5、满足AC-02中\"日志输出Closed old URLClassLoader表明旧ClassLoader已close\""
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-LEAK-008 close异常降级warn不阻断刷新"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 单元测试环境已搭建（JUnit + Mockito）\n2. AppStandardClassUtilsTest已注入mock的ClassLoader\n3. mock的URLClassLoader.close()抛IOException"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、构造mock URLClassLoader，mock close()方法抛new IOException(\"jar file deleted\")\n2、确保CLASS_LOADER_MAP.containsKey(\"testappconn\")=true，存入该mock ClassLoader\n3、调用AppStandardClassUtils.refreshClassloader(\"testappconn\", () -> new URLClassLoader(new URL[0]))\n4、校验refreshClassloader是否正常返回（不抛IOException）\n5、校验日志输出LOGGER.warn(\"Failed to close old URLClassLoader for appConn\", e)\n6、校验返回值为新建的ClassLoader"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、refreshClassloader正常返回新建ClassLoader，不抛IOException（异常被try-catch降级）\n2、日志输出LOGGER.warn(\"Failed to close old URLClassLoader for appConn\", e)（含IOException堆栈）\n3、close失败不阻断refresh主流程，新ClassLoader正常创建并注册到CLASS_LOADER_MAP\n4、满足AC-05验收标准，对应IT-06集成测试场景\n5、设计依据：设计文档4.2决策二，close失败仅影响句柄释放，不应阻断AppConn加载"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-LEAK-010 非URLClassLoader不close"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 单元测试环境已搭建（JUnit + Mockito）\n2. AppStandardClassUtilsTest可访问closeClassLoader逻辑（通过refreshClassloader间接验证）\n3. 准备非URLClassLoader的ClassLoader实例（如AppClassLoader或自定义ClassLoader未继承URLClassLoader）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、构造非URLClassLoader的mock ClassLoader（如mock(ClassLoader.class)，非URLClassLoader子类）\n2、将该mock ClassLoader存入CLASS_LOADER_MAP（appConnName=\"nonurlcl\"）\n3、调用AppStandardClassUtils.refreshClassloader(\"nonurlcl\", () -> new URLClassLoader(new URL[0]))\n4、校验不抛ClassCastException\n5、校验mock ClassLoader的close()未被调用（因instanceof URLClassLoader=false）\n6、校验refreshClassloader正常返回新建ClassLoader"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、refreshClassloader正常返回，不抛ClassCastException\n2、closeClassLoader判断instanceof URLClassLoader=false，不调用close()（no-op）\n3、非URLClassLoader的实例不受影响\n4、refresh主流程正常完成，新ClassLoader创建并注册\n5、设计依据：设计文档3.3.2 closeClassLoader的instanceof防御性判断"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "data": {
+                      "text": "分类：安全用例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-LEAK-002 员工信息刷新失败保留旧数据"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务已部署dev-1.23.0-SNAPSHOT（含修复代码）\n2. StaffThread已成功刷新至少1次，STAFF_INFO_MAP已填充当前全量员工数据（size=N）\n3. ESB HR接口模拟异常（网络超时/HTTP 500/返回非法JSON）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、记录当前STAFF_INFO_MAP.size()=N与已知存在的用户englishName=testuser\n2、模拟ESB接口异常：断开ESB网络或mock ESB返回HTTP 500\n3、触发StaffThread.run()执行（等待定时调度或手动触发）\n4、校验日志输出\"fail to get esb response, reason is ...\"（HttpStaffInfoGetter.java catch块）\n5、校验日志不输出\"Staff info refreshed\"（因异常未执行到原子替换块）\n6、调用getStaffInfoByUsername(\"testuser\")验证Map数据"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、ESB异常时STAFF_INFO_MAP不被clear()，保持上次成功刷新的数据（size仍=N）\n2、日志输出LOGGER.error(\"fail to get esb response, reason is \", e)，不输出\"Staff info refreshed\"\n3、getStaffInfoByUsername(\"testuser\")仍返回对应StaffInfo（旧数据可用）\n4、tempMap随方法栈销毁，synchronized(LOCK)块未执行，查询接口可用性不受影响\n5、满足R-04风险应对：刷新失败不清空旧Map，保留上一次成功数据"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-LEAK-005 原子替换期间并发读不抛异常"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务已部署dev-1.23.0-SNAPSHOT（含synchronized(LOCK){clear();putAll();}原子替换）\n2. dss-apps-server运行中，STAFF_INFO_MAP已填充数据\n3. 并发测试环境已搭建（多线程模拟并发查询）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、启动N=50个并发线程，循环调用getStaffInfoByUsername随机用户名（含存在/不存在/null）\n2、同时触发StaffThread.run()执行原子替换（clear()+putAll()）\n3、并发持续运行30秒，覆盖多次刷新周期\n4、收集所有查询线程的返回值与异常\n5、刷新完成后再次查询，校验数据一致性"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、并发查询期间不抛出任何异常（NullPointerException/ConcurrentModificationException等）\n2、替换瞬间部分查询可能返回null/默认值（可接受，由LOCK保护范围与ConcurrentHashMap读无锁特性决定）\n3、替换完成后查询返回正确的新全量数据\n4、不出现数据不一致（如部分新部分旧的混合态），因synchronized(LOCK)保证clear+putAll原子性\n5、满足AC-06验收标准"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "data": {
+                      "text": "分类：参数配置"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-LEAK-004 员工信息查询-null入参返回默认部门"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务已部署dev-1.23.0-SNAPSHOT\n2. StaffThread至少成功刷新1次，STAFF_INFO_MAP已填充数据\n3. WorkspaceServerConstant.DEFAULT_DEPARTMENT配置已知"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、调用getFullOrgNameByUsername(null)，校验返回值\n2、调用getFullOrgNameByUsername(\"\")（空字符串），校验返回值\n3、调用getFullOrgNameByUsername(\"nouser\")（不存在用户），校验返回值\n4、调用getStaffInfoByUsername(null)，校验返回值"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、getFullOrgNameByUsername(null)返回DEFAULT_DEPARTMENT（HttpStaffInfoGetter.java:135-136 null兜底逻辑）\n2、getFullOrgNameByUsername(\"\")返回DEFAULT_DEPARTMENT\n3、getFullOrgNameByUsername(\"nouser\")返回DEFAULT_DEPARTMENT\n4、getStaffInfoByUsername(null)返回null\n5、null兜底逻辑与修复前一致（查询接口未改动），满足AC-04"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": []
+                  },
+                  {
+                    "data": {
+                      "text": "分类：性能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-LEAK-009 URLJarFile实例数下降"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 修复后dss-server已在SIT/prod类环境连续运行24小时\n2. 已完成TC-LEAK-006的AppConn连续加载/卸载10次以上\n3. 修复前prod环境MAT基线：URLJarFile 568实例，占用9,190,544 bytes（10.29%）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、执行jmap -dump:format=b,file=heap.hprof <pid>导出堆内存\n2、用MAT打开heap.hprof，执行Leak Suspects分析\n3、查询sun.net.www.protocol.jar.URLJarFile实例数与retained size\n4、对比修复前prod基线：568实例 / 9,190,544 bytes（10.29%）\n5、连续触发AppConn refresh 5次后再次dump，对比URLJarFile实例数稳定性"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、URLJarFile实例数较修复前prod 568实例显著下降\n2、URLJarFile占用不再为MAT Problem Suspect（修复前9,190,544 bytes / 10.29%）\n3、连续刷新后URLJarFile实例数稳定，不随刷新次数增长\n4、根因验证：URLClassLoader.close()清除sun.net.www.protocol.jar.Handler缓存的URLJarFile引用，使其可被GC\n5、满足AC-03验收标准，对应IT-07集成测试场景"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "回归测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-REG-001 员工信息5个查询接口回归"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务已部署dev-1.23.0-SNAPSHOT\n2. StaffThread至少成功刷新1次，STAFF_INFO_MAP已填充当前全量员工数据\n3. 已知存在用户englishName=reguser，该用户有对应的orgFullName/department信息"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、调用getStaffInfoByUsername(\"reguser\")，校验返回StaffInfo的englishName/orgFullName/bgName字段\n2、调用getAllUsers()，校验返回List<StaffInfo>非空且含reguser\n3、调用getAllUsernames()，校验返回Set<String>含reguser\n4、调用getAllDepartments()，校验返回List<String>部门列表非空\n5、调用getFullOrgNameByUsername(\"reguser\")，校验返回orgFullName（非DEFAULT_DEPARTMENT）\n6、对比各接口返回数据的一致性"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、getStaffInfoByUsername(\"reguser\")返回StaffInfo，englishName=reguser，orgFullName/bgName字段正确\n2、getAllUsers()返回List含reguser，size=STAFF_INFO_MAP.size()\n3、getAllUsernames()返回Set含reguser，size=STAFF_INFO_MAP.size()\n4、getAllDepartments()返回部门列表，来自当前全量数据\n5、getFullOrgNameByUsername(\"reguser\")返回完整组织名（非DEFAULT_DEPARTMENT）\n6、5个查询接口行为与修复前完全一致（签名与返回结构未改动），满足AC-04"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-REG-002 AppConn热部署功能回归"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务已部署dev-1.23.0-SNAPSHOT\n2. 已安装至少2个AppConn（如workflow、scriptis）\n3. dss-server正常运行，工作流编排功能可用"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、执行sh bin/appconn-refresh.sh热部署刷新所有AppConn\n2、校验日志输出\"Closed old URLClassLoader for appConn: ...\"（refreshClassloader close生效）\n3、创建新工作流，拖入workflow节点（依赖workflow AppConn），保存\n4、编辑已有工作流，修改节点配置，保存\n5、执行工作流，校验Schedulis调度正常\n6、校验无ClassNotFoundException / NoClassDefFoundError异常"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、appconn-refresh.sh热部署成功，日志输出\"Closed old URLClassLoader\"\n2、工作流创建/编辑/执行功能正常，无异常\n3、无ClassNotFoundException / NoClassDefFoundError（close后旧CL不再使用，新CL正常加载类）\n4、第三方系统集成（Schedulis/Visualis/Qualitis）功能正常\n5、满足AC-05验收标准"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-REG-003 HDFS/ViewFS功能回归"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS服务已部署dev-1.23.0-SNAPSHOT\n2. DSS侧HDFS访问调用点已排查（DSS代码中new Configuration()已改为复用全局Configuration，若设计阶段确认可修复）\n3. HDFS/ViewFS配置正常，可读写"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、触发工作流产物读写（如保存工作流到HDFS）\n2、触发结果导出（如导出Scriptis查询结果到HDFS）\n3、执行jmap -dump导出堆内存，用MAT分析Configuration实例数\n4、对比修复前dev基线：39个Configuration实例，56,703,128 bytes（13.86%）；4个ViewFileSystem实例，158,190,400 bytes（38.68%）\n5、检查ViewFileSystem功能正常性"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、HDFS读写功能正常，工作流产物保存/读取成功\n2、结果导出到HDFS成功\n3、MAT分析DSS侧Configuration实例数下降（DSS可控部分；边界外部分如实标注依赖Linkis协调）\n4、ViewFileSystem相关功能正常（边界外部分如实标注，不强制量化）\n5、满足AC-07验收标准（DSS侧可控部分下降；Linkis侧待协调项不作为DSS单方面验收硬指标）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "children": []
+}
