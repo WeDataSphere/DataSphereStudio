@@ -99,6 +99,7 @@
         #{description,jdbcType=VARCHAR},
         #{queue},
         #{crossCluster},
+        #{minIdleMinutes,jdbcType=INTEGER},
         #{triggerConditionConf},
         #{terminateConditionConf},
         #{imsConf},
@@ -135,6 +136,9 @@
             </if>
             <if test="queue != null">
                 queue = #{queue},
+            </if>
+            <if test="minIdleMinutes != null">
+                minIdleMinutes = #{minIdleMinutes},
             </if>
             <if test="triggerConditionConf != null">
                 trigger_condition_conf = #{triggerConditionConf},

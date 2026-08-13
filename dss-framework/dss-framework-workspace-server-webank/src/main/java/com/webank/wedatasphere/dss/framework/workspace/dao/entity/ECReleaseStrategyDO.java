@@ -23,6 +23,10 @@ public class ECReleaseStrategyDO {
     private Date modifyTime;
 
     private int status;
+    /**
+     * 最小空闲时长（分钟），引擎空闲时长需达到该值才允许被回收；0 表示不限（默认）
+     */
+    private int minIdleMinutes;
 
     /**
      * 执行实例
@@ -143,6 +147,14 @@ public class ECReleaseStrategyDO {
 
     public void setStatus(int status) {
         this.status = status;
+    }
+
+    public int getMinIdleMinutes() {
+        return minIdleMinutes;
+    }
+
+    public void setMinIdleMinutes(int minIdleMinutes) {
+        this.minIdleMinutes = minIdleMinutes;
     }
 
     public String getExecuteInstance() {
