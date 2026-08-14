@@ -19,8 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 
 import static com.webank.wedatasphere.dss.framework.common.conf.TokenConf.HPMS_USER_TOKEN;

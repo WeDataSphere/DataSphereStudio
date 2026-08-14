@@ -10,7 +10,7 @@ import com.webank.wedatasphere.dss.scriptis.service.ScriptisProxyUserService;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;

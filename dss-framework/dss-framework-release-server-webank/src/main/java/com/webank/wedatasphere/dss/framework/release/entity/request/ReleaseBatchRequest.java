@@ -18,7 +18,7 @@
 
 package com.webank.wedatasphere.dss.framework.release.entity.request;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
 

@@ -23,7 +23,7 @@
     <packaging>pom</packaging>
     <groupId>com.webank.wedatasphere.dss</groupId>
     <artifactId>dss</artifactId>
-    <version>1.23.0-SNAPSHOT</version>
+    <version>1.23.0-springboot3-SNAPSHOT</version>
 
     <modules>
         <module>dss-commons</module>
@@ -35,34 +35,43 @@
         <module>dss-server</module>
         <module>plugins/linkis/dss-gateway-support</module>
         <module>plugins/azkaban/linkis-jobtype</module>
-        <module>plugins/dolphinscheduler</module>
+        <!-- dolphinscheduler-prod-metrics 依赖 DS 1.3.9（纯 javax），与 DSS 升级后的 jakarta 体系不兼容。
+             DS 社区无稳定 jakarta 版本，且该插件 provided 依赖运行时由 DS 实例提供，需待生产 DS 升级到 jakarta 版本后再启用并适配源码。
+             主项目不依赖此插件，跳过不影响 DSS 主体编译与运行。 -->
+        <!-- <module>plugins/dolphinscheduler</module> -->
         <module>assembly</module>
         <module>dss-git</module>
     </modules>
 
     <properties>
-        <dss.version>1.23.0-SNAPSHOT</dss.version>
-        <linkis.version>1.18.3-wds</linkis.version>
-        <scala.version>2.11.12</scala.version>
-        <jdk.compile.version>1.8</jdk.compile.version>
-        <maven.version>3.3.3</maven.version>
+        <dss.version>1.23.0-springboot3-SNAPSHOT</dss.version>
+        <linkis.version>2.0.0-jdk21-springboot3</linkis.version>
+        <scala.version>2.12.20</scala.version>
+        <java.version>21</java.version>
+        <jdk.compile.version>21</jdk.compile.version>
+        <maven.version>3.6.3</maven.version>
         <gson.version>2.8.9</gson.version>
         <fasterxml.jackson.version>2.14.1</fasterxml.jackson.version>
         <math3.version>3.1.1</math3.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpmime.version>4.5.13</httpmime.version>
-        <beanutils.version>1.9.4</beanutils.version>
+        <beanutils.version>1.11.0</beanutils.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring.version>5.3.34</spring.version>
+        <spring.version>6.1.14</spring.version>
         <mybatis.spring.boot.version>2.1.2</mybatis.spring.boot.version>
-        <spring.boot.version>2.7.18</spring.boot.version>
-        <spring.cloud.version>2021.0.8</spring.cloud.version>
+        <spring.boot.version>3.3.5</spring.boot.version>
+        <spring.cloud.version>2023.0.3</spring.cloud.version>
         <commons.math.version>3.1.1</commons.math.version>
         <commons.lang3.version>3.18.0</commons.lang3.version>
         <commons.lang.version>2.6</commons.lang.version>
-        <xstream.version>1.4.20</xstream.version>
+        <xstream.version>1.4.21</xstream.version>
         <jersey.version>2.30.1</jersey.version>
         <druid.version>1.2.4</druid.version>
+        <lombok.version>1.18.34</lombok.version>
+        <jakarta.annotation.version>2.1.1</jakarta.annotation.version>
+        <jakarta.servlet.version>6.0.0</jakarta.servlet.version>
+        <jakarta.validation.version>3.0.2</jakarta.validation.version>
+        <jakarta.ws.rs.version>3.0.0</jakarta.ws.rs.version>
         <log4j.version>2.25.4</log4j.version>
     </properties>
 
@@ -122,6 +131,32 @@
                 <groupId>com.alibaba</groupId>
                 <artifactId>druid</artifactId>
                 <version>${druid.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.annotation</groupId>
+                <artifactId>jakarta.annotation-api</artifactId>
+                <version>${jakarta.annotation.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.servlet</groupId>
+                <artifactId>jakarta.servlet-api</artifactId>
+                <version>${jakarta.servlet.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.validation</groupId>
+                <artifactId>jakarta.validation-api</artifactId>
+                <version>${jakarta.validation.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.ws.rs</groupId>
+                <artifactId>jakarta.ws.rs-api</artifactId>
+                <version>${jakarta.ws.rs.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -228,8 +263,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>8</source>
-                    <target>8</target>
+                    <source>${jdk.compile.version}</source>
+                    <target>${jdk.compile.version}</target>
                 </configuration>
             </plugin>
         </plugins>

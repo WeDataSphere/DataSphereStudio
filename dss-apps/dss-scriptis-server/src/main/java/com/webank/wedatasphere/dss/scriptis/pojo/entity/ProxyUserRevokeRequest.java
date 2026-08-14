@@ -1,6 +1,6 @@
 package com.webank.wedatasphere.dss.scriptis.pojo.entity;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 public class ProxyUserRevokeRequest {
 

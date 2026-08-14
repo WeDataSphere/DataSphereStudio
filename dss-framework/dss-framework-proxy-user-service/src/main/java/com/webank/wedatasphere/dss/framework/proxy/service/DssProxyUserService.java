@@ -7,7 +7,7 @@ import com.webank.wedatasphere.dss.framework.proxy.pojo.entity.DssProxyUser;
 import org.apache.linkis.server.security.ProxyUserSSOUtils;
 import scala.Option;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 public interface DssProxyUserService {

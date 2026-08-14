@@ -18,8 +18,8 @@ package com.webank.wedatasphere.dss.apiservice.core.exception;
 
 import org.apache.linkis.server.Message;
 
-import javax.validation.ConstraintViolationException;
-import javax.validation.ValidationException;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.ValidationException;
 import javax.ws.rs.ext.Provider;
 
 

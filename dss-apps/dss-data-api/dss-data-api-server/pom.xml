@@ -12,6 +12,11 @@
     <artifactId>dss-data-api-server</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
 <!--        <dependency>-->
 <!--            <groupId>com.webank.wedatasphere.dss</groupId>-->
 <!--            <artifactId>dss-framework-common</artifactId>-->
@@ -105,7 +110,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.16</version>
+            <version>${lombok.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>

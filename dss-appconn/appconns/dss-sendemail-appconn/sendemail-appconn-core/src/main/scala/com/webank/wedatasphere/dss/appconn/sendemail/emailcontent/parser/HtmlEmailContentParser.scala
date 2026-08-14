@@ -47,7 +47,7 @@ object HtmlEmailContentParser extends AbstractEmailContentParser[HtmlEmailConten
               } else if (htmlItem.getContentType.equals("html")) {
                 emailContent.setContent(htmlItem.getContent)
               } else {
-                error("unknow content type: " + emailContent.getFileType)
+                throw new IllegalArgumentException("unknow content type: " + emailContent.getFileType)
               }
           }
         case _ =>

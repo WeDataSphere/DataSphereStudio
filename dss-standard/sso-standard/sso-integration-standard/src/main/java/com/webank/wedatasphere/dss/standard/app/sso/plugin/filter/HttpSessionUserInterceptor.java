@@ -16,7 +16,7 @@
 
 package com.webank.wedatasphere.dss.standard.app.sso.plugin.filter;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 
 public interface HttpSessionUserInterceptor extends UserInterceptor {

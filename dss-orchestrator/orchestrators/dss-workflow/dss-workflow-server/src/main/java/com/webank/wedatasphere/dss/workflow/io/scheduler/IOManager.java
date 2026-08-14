@@ -20,7 +20,7 @@ import com.webank.wedatasphere.dss.common.exception.DSSErrorException;
 import com.webank.wedatasphere.dss.workflow.scheduler.DssJobManager;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 @Component
 public class IOManager extends DssJobManager {

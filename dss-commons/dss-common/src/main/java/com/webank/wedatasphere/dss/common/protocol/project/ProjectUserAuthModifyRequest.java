@@ -2,7 +2,7 @@ package com.webank.wedatasphere.dss.common.protocol.project;
 
 import com.webank.wedatasphere.dss.common.entity.DSSWorkspace;
 
-import javax.servlet.http.Cookie;
+import jakarta.servlet.http.Cookie;
 import java.util.HashMap;
 import java.util.Map;
 

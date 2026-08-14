@@ -67,7 +67,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 import scala.Tuple3;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.ResultSet;

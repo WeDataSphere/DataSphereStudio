@@ -22,7 +22,7 @@ import com.webank.wedatasphere.dss.framework.release.service.ReleaseService
 import com.webank.wedatasphere.dss.orchestrator.common.protocol.{RequestPublishHistory, RequestPublishUser, RequestReleaseOrchestration, RequestReleaseOrchestrationStatus}
 import org.apache.linkis.rpc.{RPCMessageEvent, Receiver, ReceiverChooser}
 
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 

@@ -41,11 +41,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
-import javax.validation.groups.Default;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
+import jakarta.validation.groups.Default;
 import java.text.MessageFormat;
 import java.util.Calendar;
 import java.util.List;

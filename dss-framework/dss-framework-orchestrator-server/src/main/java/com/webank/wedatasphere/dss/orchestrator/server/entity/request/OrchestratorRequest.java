@@ -18,7 +18,7 @@ package com.webank.wedatasphere.dss.orchestrator.server.entity.request;
 
 import com.webank.wedatasphere.dss.common.label.LabelRouteVO;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlRootElement;
 
 

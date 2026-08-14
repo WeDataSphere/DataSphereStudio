@@ -19,7 +19,7 @@ package com.webank.wedatasphere.dss.standard.app.sso.plugin
 import com.webank.wedatasphere.dss.standard.app.sso.builder.DssMsgBuilderOperation
 import com.webank.wedatasphere.dss.standard.app.sso.builder.DssMsgBuilderOperation.DSSMsg
 import com.webank.wedatasphere.dss.standard.app.sso.builder.impl.DSSMsgImpl
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 
 class DssMsgCacheOperationImpl private() extends DssMsgCacheOperation {

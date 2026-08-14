@@ -18,7 +18,7 @@ package com.webank.wedatasphere.dss.standard.app.sso.plugin;
 
 import com.webank.wedatasphere.dss.standard.app.sso.builder.DssMsgBuilderOperation.DSSMsg;
 import java.util.List;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 
 public abstract class AbstractWorkspacePlugin implements WorkspacePlugin {

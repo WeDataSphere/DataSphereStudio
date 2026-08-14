@@ -22,7 +22,7 @@ import com.webank.wedatasphere.dss.standard.app.sso.SSOIntegrationStandard
 import com.webank.wedatasphere.dss.standard.app.sso.origin.OriginSSOIntegrationStandardFactory
 import com.webank.wedatasphere.dss.standard.app.sso.origin.client.HttpClient
 import com.webank.wedatasphere.dss.standard.app.structure.project.plugin.ProjectPlugin
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 
 class OriginProjectPlugin private() extends ProjectPlugin {

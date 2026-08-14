@@ -1,6 +1,6 @@
 package com.webank.wedatasphere.dss.framework.workspace.bean.request;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * Author: xlinliu

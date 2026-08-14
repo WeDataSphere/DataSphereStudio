@@ -18,7 +18,7 @@ package com.webank.wedatasphere.dss.standard.app.structure.project.plugin.filter
 
 import com.webank.wedatasphere.dss.standard.app.structure.project.plugin.ProjectAuth;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 
 public interface ProjectAuthInterceptor {

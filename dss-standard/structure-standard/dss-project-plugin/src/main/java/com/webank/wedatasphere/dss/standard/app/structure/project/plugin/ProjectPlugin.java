@@ -19,7 +19,7 @@ package com.webank.wedatasphere.dss.standard.app.structure.project.plugin;
 import com.webank.wedatasphere.dss.standard.app.sso.SSOIntegrationStandard;
 import com.webank.wedatasphere.dss.standard.app.sso.origin.OriginSSOIntegrationStandardFactory;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;

@@ -20,8 +20,8 @@ import com.webank.wedatasphere.dss.common.conf.DSSCommonConf.DSS_TOKEN_TICKET_KE
 import com.webank.wedatasphere.dss.standard.app.sso.SSOIntegrationStandard
 import com.webank.wedatasphere.dss.standard.app.sso.plugin.filter.proxy.{DSSInternalProxyUserInterceptor, HttpRequestProxyUserInterceptor, HttpSessionProxyUserInterceptor}
 import com.webank.wedatasphere.dss.standard.sso.utils.ProxyUserSSOUtils
-import javax.servlet._
-import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
+import jakarta.servlet._
+import jakarta.servlet.http.{HttpServletRequest, HttpServletResponse}
 import org.apache.commons.lang.StringUtils
 import org.apache.linkis.protocol.util.ImmutablePair
 

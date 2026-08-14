@@ -19,7 +19,7 @@ package com.webank.wedatasphere.dss.standard.app.sso.plugin;
 import com.webank.wedatasphere.dss.standard.app.sso.builder.SSOBuilderService;
 import com.webank.wedatasphere.dss.standard.app.sso.plugin.impl.SSOMsgImpl;
 import com.webank.wedatasphere.dss.standard.app.sso.builder.DssMsgBuilderOperation.DSSMsg;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 
 public abstract class AbstractSSOMsgParseOperation implements SSOMsgParseOperation {

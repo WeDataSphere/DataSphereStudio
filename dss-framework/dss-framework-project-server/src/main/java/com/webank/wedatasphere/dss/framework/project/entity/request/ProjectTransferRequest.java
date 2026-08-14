@@ -16,7 +16,7 @@
 
 package com.webank.wedatasphere.dss.framework.project.entity.request;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 public class ProjectTransferRequest {
 

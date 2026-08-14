@@ -1,6 +1,6 @@
 package com.webank.wedatasphere.dss.standard.app.sso.plugin.filter.proxy;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author enjoyyin

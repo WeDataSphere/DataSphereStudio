@@ -23,7 +23,7 @@ import com.webank.wedatasphere.dss.standard.common.exception.AppStandardWarnExce
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 
 public abstract class AbstractProjectAuthInterceptor implements ProjectAuthInterceptor {

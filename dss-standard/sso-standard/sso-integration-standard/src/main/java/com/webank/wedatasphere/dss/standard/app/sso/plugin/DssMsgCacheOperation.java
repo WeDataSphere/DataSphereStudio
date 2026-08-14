@@ -18,7 +18,7 @@ package com.webank.wedatasphere.dss.standard.app.sso.plugin;
 
 import com.webank.wedatasphere.dss.standard.common.service.Operation;
 import com.webank.wedatasphere.dss.standard.app.sso.builder.DssMsgBuilderOperation.DSSMsg;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 
 public interface DssMsgCacheOperation extends Operation {

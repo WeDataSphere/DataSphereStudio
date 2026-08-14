@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.dss.workflow.common.protocol;
 
 
-import javax.servlet.http.Cookie;
+import jakarta.servlet.http.Cookie;
 
 public class RequestLockWorkflow {
     public RequestLockWorkflow() {

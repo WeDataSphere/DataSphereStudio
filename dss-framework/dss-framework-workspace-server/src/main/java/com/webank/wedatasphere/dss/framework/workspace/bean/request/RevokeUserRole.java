@@ -1,6 +1,6 @@
 package com.webank.wedatasphere.dss.framework.workspace.bean.request;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 import java.util.Arrays;
 import java.util.Objects;
 

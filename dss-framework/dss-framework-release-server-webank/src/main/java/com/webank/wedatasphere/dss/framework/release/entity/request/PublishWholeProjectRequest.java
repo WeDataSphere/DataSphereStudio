@@ -1,6 +1,6 @@
 package com.webank.wedatasphere.dss.framework.release.entity.request;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * 从生产中心发布整个工程到调度系统的请求类

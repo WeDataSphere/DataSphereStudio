@@ -2,7 +2,7 @@ package com.webank.wedatasphere.dss.framework.project.rpc
 
 import com.webank.wedatasphere.dss.framework.project.service.WebankDSSProjectOperateService
 import com.webank.wedatasphere.dss.orchestrator.common.protocol.RequestDeleteOrchestrator
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 import org.apache.linkis.rpc.{RPCMessageEvent, Receiver, ReceiverChooser}
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component

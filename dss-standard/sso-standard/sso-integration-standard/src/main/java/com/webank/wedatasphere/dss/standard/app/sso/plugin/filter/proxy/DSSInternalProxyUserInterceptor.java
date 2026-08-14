@@ -2,7 +2,7 @@ package com.webank.wedatasphere.dss.standard.app.sso.plugin.filter.proxy;
 
 import com.webank.wedatasphere.dss.standard.app.sso.builder.DssMsgBuilderOperation;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author enjoyyin

@@ -67,7 +67,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;

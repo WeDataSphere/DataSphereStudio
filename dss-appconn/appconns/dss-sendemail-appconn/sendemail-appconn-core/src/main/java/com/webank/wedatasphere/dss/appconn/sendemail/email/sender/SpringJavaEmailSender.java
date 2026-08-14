@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 
-import javax.mail.internet.MimeMessage;
-import javax.mail.util.ByteArrayDataSource;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.util.ByteArrayDataSource;
 import java.util.Map;
 import java.util.Properties;
 import java.util.function.BiConsumer;

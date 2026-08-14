@@ -10,7 +10,7 @@ import com.webank.wedatasphere.dss.framework.admin.service.DssAdminDeptService;
 import com.webank.wedatasphere.dss.framework.admin.xml.DssAdminDeptMapper;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

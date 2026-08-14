@@ -8,7 +8,7 @@ import com.webank.wedatasphere.dss.workflow.entity.DSSFlowNodeTemplate;
 import com.webank.wedatasphere.dss.workflow.entity.StarRocksNodeInfo;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
-import org.mapstruct.Mapper;
+import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
 

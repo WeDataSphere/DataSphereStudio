@@ -22,7 +22,7 @@ import com.webank.wedatasphere.dss.standard.app.sso.origin.OriginSSOIntegrationS
 import com.webank.wedatasphere.dss.standard.app.sso.origin.client.HttpClient
 import com.webank.wedatasphere.dss.standard.app.structure.project.plugin.{ProjectAuth, ProjectCooperationPlugin}
 import org.apache.linkis.httpclient.request.HttpAction
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 
 class OriginProjectCooperationPlugin private() extends ProjectCooperationPlugin {

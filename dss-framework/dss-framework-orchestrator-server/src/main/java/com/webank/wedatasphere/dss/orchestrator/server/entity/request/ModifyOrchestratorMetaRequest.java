@@ -1,6 +1,6 @@
 package com.webank.wedatasphere.dss.orchestrator.server.entity.request;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 public class ModifyOrchestratorMetaRequest {
 
     // 编排ID

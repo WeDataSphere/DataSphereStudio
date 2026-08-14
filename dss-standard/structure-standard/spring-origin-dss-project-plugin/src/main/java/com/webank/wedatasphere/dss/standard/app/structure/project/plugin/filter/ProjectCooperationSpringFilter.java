@@ -19,7 +19,7 @@ package com.webank.wedatasphere.dss.standard.app.structure.project.plugin.filter
 import com.webank.wedatasphere.dss.standard.app.sso.plugin.filter.UserInterceptor;
 import com.webank.wedatasphere.dss.standard.app.structure.project.plugin.ProjectCooperationPlugin;
 import com.webank.wedatasphere.dss.standard.app.structure.project.plugin.origin.OriginProjectCooperationPlugin;
-import javax.servlet.FilterConfig;
+import jakarta.servlet.FilterConfig;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;

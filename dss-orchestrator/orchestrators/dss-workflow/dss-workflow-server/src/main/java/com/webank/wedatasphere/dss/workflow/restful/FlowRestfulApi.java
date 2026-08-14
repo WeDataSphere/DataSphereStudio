@@ -64,10 +64,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.PostConstruct;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.constraints.NotNull;
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.NotNull;
 import java.io.IOException;
 import java.util.*;
 

@@ -3,7 +3,7 @@ package com.webank.wedatasphere.dss.workflow.dao;
 import com.webank.wedatasphere.dss.workflow.dto.NodeMetaDO;
 
 import org.apache.ibatis.annotations.Param;
-import org.mapstruct.Mapper;
+import org.apache.ibatis.annotations.Mapper;
 
 
 

@@ -29,8 +29,8 @@ import com.webank.wedatasphere.dss.standard.sso.utils.ProxyUserSSOUtils
 import org.apache.linkis.common.conf.Configuration
 import org.apache.linkis.common.utils.{Logging, Utils}
 import org.apache.linkis.httpclient.exception.HttpClientResultException
-import javax.servlet._
-import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
+import jakarta.servlet._
+import jakarta.servlet.http.{HttpServletRequest, HttpServletResponse}
 import org.apache.commons.lang.StringUtils
 
 

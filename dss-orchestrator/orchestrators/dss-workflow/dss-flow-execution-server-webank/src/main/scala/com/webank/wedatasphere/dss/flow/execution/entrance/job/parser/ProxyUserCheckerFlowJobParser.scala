@@ -14,7 +14,7 @@ import org.apache.linkis.common.utils.Logging
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 
 @Order(9)
 @Component

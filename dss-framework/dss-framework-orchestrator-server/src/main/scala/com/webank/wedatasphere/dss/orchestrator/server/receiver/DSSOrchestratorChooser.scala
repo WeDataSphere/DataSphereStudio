@@ -21,7 +21,7 @@ import com.webank.wedatasphere.dss.orchestrator.core.DSSOrchestratorContext
 import com.webank.wedatasphere.dss.orchestrator.server.entity.request.OrchestratorRequest
 import com.webank.wedatasphere.dss.orchestrator.server.service.{OrchestratorFrameworkService, OrchestratorPluginService, OrchestratorService}
 
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 import org.apache.linkis.rpc.{RPCMessageEvent, Receiver, ReceiverChooser}
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component

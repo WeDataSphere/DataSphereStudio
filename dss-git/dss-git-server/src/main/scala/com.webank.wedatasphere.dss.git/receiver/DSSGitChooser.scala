@@ -19,7 +19,7 @@ package com.webank.wedatasphere.dss.git.receiver
 import com.webank.wedatasphere.dss.git.common.protocol.request.{GitAddMemberRequest, GitArchiveProjectRequest, GitBaseRequest, GitBatchCommitRequest, GitCheckProjectRequest, GitCommitInfoBetweenRequest, GitCommitRequest, GitConnectRequest, GitCreateProjectRequest, GitCurrentCommitRequest, GitDeleteRequest, GitDiffFileContentRequest, GitDiffRequest, GitDiffTargetCommitRequest, GitFileContentRequest, GitHistoryRequest, GitRemoveRequest, GitRenameRequest, GitRevertRequest, GitSearchRequest, GitUserByWorkspaceIdRequest, GitUserInfoByRequest, GitUserInfoRequest, GitUserUpdateRequest}
 import com.webank.wedatasphere.dss.git.service.{DSSGitProjectManagerService, DSSGitWorkflowManagerService}
 
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 import org.apache.linkis.rpc.{RPCMessageEvent, Receiver, ReceiverChooser}
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component

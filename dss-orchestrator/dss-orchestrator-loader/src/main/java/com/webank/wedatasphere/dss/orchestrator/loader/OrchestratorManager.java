@@ -25,7 +25,7 @@ import com.webank.wedatasphere.dss.orchestrator.core.DSSOrchestrator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

@@ -30,11 +30,11 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
-import javax.validation.groups.Default;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
+import jakarta.validation.groups.Default;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.Arrays;

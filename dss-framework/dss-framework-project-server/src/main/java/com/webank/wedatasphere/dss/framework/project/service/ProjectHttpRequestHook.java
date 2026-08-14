@@ -4,7 +4,7 @@ import com.webank.wedatasphere.dss.framework.project.entity.request.*;
 import com.webank.wedatasphere.dss.framework.project.entity.vo.DSSProjectVo;
 import org.apache.linkis.server.Message;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author enjoyyin

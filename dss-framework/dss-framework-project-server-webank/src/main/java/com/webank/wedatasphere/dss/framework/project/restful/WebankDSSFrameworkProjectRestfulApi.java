@@ -35,10 +35,10 @@ import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.constraints.NotNull;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.NotNull;
 
 import com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite;
 import com.webank.wedatasphere.dss.workflow.service.ProjectOrchestratorWhiteService;

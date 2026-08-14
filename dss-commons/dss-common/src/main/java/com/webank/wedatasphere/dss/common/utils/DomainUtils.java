@@ -2,7 +2,7 @@ package com.webank.wedatasphere.dss.common.utils;
 
 import com.webank.wedatasphere.dss.common.conf.DSSCommonConf;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

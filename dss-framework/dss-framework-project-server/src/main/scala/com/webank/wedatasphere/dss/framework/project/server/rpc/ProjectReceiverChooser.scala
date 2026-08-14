@@ -22,7 +22,7 @@ import com.webank.wedatasphere.dss.framework.project.service.{DSSProjectService,
 import com.webank.wedatasphere.dss.framework.workspace.service.{DSSWorkspaceUserService, DSSWorkspaceService}
 import com.webank.wedatasphere.dss.orchestrator.common.protocol.{RequestProjectImportOrchestrator, RequestProjectUpdateOrcVersion}
 
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 import org.apache.linkis.protocol.usercontrol.{RequestUserListFromWorkspace, RequestUserWorkspace}
 import org.apache.linkis.rpc.{RPCMessageEvent, Receiver, ReceiverChooser}
 import org.springframework.beans.factory.annotation.Autowired
