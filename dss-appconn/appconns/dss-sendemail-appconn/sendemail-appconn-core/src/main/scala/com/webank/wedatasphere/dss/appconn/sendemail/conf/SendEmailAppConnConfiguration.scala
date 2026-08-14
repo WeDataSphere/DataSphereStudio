@@ -57,10 +57,21 @@ object SendEmailAppConnConfiguration {
       "com.webank.wedatasphere.dss.appconn.sendemail.hook.entity.visualis.MetaBaseEmailInfo," +
       "com.webank.wedatasphere.dss.appconn.sendemail.hook.entity.mlssv2.Mlssv2EmailInfo")
 
-  // Feishu integration configuration
-  val FEISHU_APP_ID = CommonVars("wds.dss.appconn.feishu.app.id", "")
-  val FEISHU_APP_TOKEN = CommonVars("wds.dss.appconn.feishu.app.token", "")
-  val FEISHU_SOURCE = CommonVars("wds.dss.appconn.feishu.source", "DSS")
-  val FEISHU_TEMPLATE_CODE = CommonVars("wds.dss.appconn.feishu.template.code", "")
-  val FEISHU_API_BASE_URL = CommonVars("wds.dss.appconn.feishu.api.base.url", "")
+  // DataGo image outbound configuration (replaces the former fass-core direct Feishu integration).
+  // Authentication uses a page-login session-token + dss_user_name cookie; whether to send is still
+  // controlled by the sendemail node parameter sendFeishu.
+  val DATAGO_OUTBOUND_API_BASE_URL = CommonVars("wds.dss.appconn.datago.outbound.api.base.url", "")
+  val DATAGO_OUTBOUND_SESSION_TOKEN = CommonVars("wds.dss.appconn.datago.outbound.session.token", "")
+  val DATAGO_OUTBOUND_DSS_USER_NAME = CommonVars("wds.dss.appconn.datago.outbound.dss.user.name", "")
+  val DATAGO_OUTBOUND_SOURCE = CommonVars("wds.dss.appconn.datago.outbound.source", "dss")
+  val DATAGO_OUTBOUND_CHANNEL = CommonVars("wds.dss.appconn.datago.outbound.channel", "feishu")
+  val DATAGO_OUTBOUND_SEND_PATH = CommonVars("wds.dss.appconn.datago.outbound.send.path", "/api/outbound/send")
+  val DATAGO_OUTBOUND_TASK_PATH = CommonVars("wds.dss.appconn.datago.outbound.task.path", "/api/outbound/task")
+  val DATAGO_OUTBOUND_POLL_INTERVAL: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.poll.interval", 10)
+  val DATAGO_OUTBOUND_MAX_WAIT: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.max.wait", 120)
+  val DATAGO_OUTBOUND_RETRY_MAX: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.retry.max", 3)
+  val DATAGO_OUTBOUND_RETRY_INTERVAL: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.retry.interval", 30)
+  val DATAGO_OUTBOUND_IMAGE_MAXSIZE: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.image.maxsize", 10485760)
+  val DATAGO_OUTBOUND_HTTP_CONNECT_TIMEOUT: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.http.connect.timeout", 10000)
+  val DATAGO_OUTBOUND_HTTP_READ_TIMEOUT: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.http.read.timeout", 60000)
 }

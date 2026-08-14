@@ -19,7 +19,7 @@ package com.webank.wedatasphere.dss.appconn.sendemail
 import java.util
 
 import com.webank.wedatasphere.dss.appconn.sendemail.conf.SendEmailAppConnInstanceConfiguration
-import com.webank.wedatasphere.dss.appconn.sendemail.feishu.FeishuMessageSender
+import com.webank.wedatasphere.dss.appconn.sendemail.outbound.DataGoImageSender
 import com.webank.wedatasphere.dss.standard.app.development.listener.ref.ExecutionResponseRef.ExecutionResponseRefBuilder
 import com.webank.wedatasphere.dss.standard.app.development.listener.ref.{ExecutionResponseRef, RefExecutionRequestRef}
 import com.webank.wedatasphere.dss.standard.app.development.operation.{AbstractDevelopmentOperation, RefExecutionOperation}
@@ -76,7 +76,7 @@ class SendEmailRefExecutionOperation
     if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) {
       logger.info(s"Feishu sending is selected and feishuTo is configured: ${email.getFeishuTo}")
       Utils.tryCatch {
-        FeishuMessageSender.send(email)
+        DataGoImageSender.send(email)
         logger.info("Feishu sending completed successfully.")
       } { t =>
         return putErrorMsg("飞书发送失败！", t)
