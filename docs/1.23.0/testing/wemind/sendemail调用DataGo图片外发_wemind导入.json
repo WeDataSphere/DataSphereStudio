@@ -24,11 +24,18 @@
                 {"data": {"text": "预期结果：抛出IllegalArgumentException，异常消息包含api.base.url is not configured"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】token为空-校验失败"},
+              "data": {"text": "【AIGC】session.token为空-校验失败"},
               "children": [
-                {"data": {"text": "条件：sendFeishu=true，wds.dss.appconn.datago.outbound.token为空字符串"}, "children": []},
-                {"data": {"text": "步骤：\n1、设置token为空\n2、调用validate()"}, "children": []},
-                {"data": {"text": "预期结果：抛出IllegalArgumentException，异常消息包含outbound token is not configured"}, "children": []}
+                {"data": {"text": "条件：sendFeishu=true，wds.dss.appconn.datago.outbound.session.token为空字符串"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置session.token为空\n2、调用validate()"}, "children": []},
+                {"data": {"text": "预期结果：抛出IllegalArgumentException，异常消息包含outbound session.token is not configured"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】dss.user.name为空-校验失败"},
+              "children": [
+                {"data": {"text": "条件：sendFeishu=true，api.base.url与session.token有效，dss.user.name为空字符串"}, "children": []},
+                {"data": {"text": "步骤：\n1、设置dss.user.name为空\n2、调用validate()"}, "children": []},
+                {"data": {"text": "预期结果：抛出IllegalArgumentException，异常消息包含dss.user.name is not configured"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】source为空-校验失败"},
@@ -49,7 +56,7 @@
               "children": [
                 {"data": {"text": "条件：未配置任何DataGo外发相关配置项"}, "children": []},
                 {"data": {"text": "步骤：\n1、不设置任何DataGo配置\n2、读取各配置项的默认值"}, "children": []},
-                {"data": {"text": "预期结果：API_BASE_URL/TOKEN为空，SOURCE=dss，CHANNEL=feishu，POLL_INTERVAL=10，MAX_WAIT=120，RETRY_MAX=3，IMAGE_MAXSIZE=10485760"}, "children": []}
+                {"data": {"text": "预期结果：API_BASE_URL/SESSION_TOKEN/DSS_USER_NAME为空，SOURCE=dss，CHANNEL=feishu，POLL_INTERVAL=10，MAX_WAIT=120，RETRY_MAX=3，IMAGE_MAXSIZE=10485760"}, "children": []}
               ]
             }]
           }]
@@ -96,7 +103,7 @@
               "children": [
                 {"data": {"text": "条件：DataGo配置正确，含2张图片"}, "children": []},
                 {"data": {"text": "步骤：\n1、Mock ①接口返回success=true,data.taskId=2048\n2、调用submitImage(text,recipients,title,images)"}, "children": []},
-                {"data": {"text": "预期结果：返回taskId=2048，请求为multipart/form-data含source/type/channel/text/recipients/images，请求头含Authorization: Bearer"}, "children": []}
+                {"data": {"text": "预期结果：返回taskId=2048，请求为multipart/form-data含source/type/channel/text/recipients/images，请求头含Authorization: Bearer <session-token>与Cookie: dss_user_name=<loginUser>"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】①受理-业务失败抛81002"},
@@ -133,6 +140,20 @@
                 {"data": {"text": "步骤：调用submitImage()"}, "children": []},
                 {"data": {"text": "预期结果：抛出EmailSendFailedException(81007)，消息包含not a number"}, "children": []}
               ]
+            }, {
+              "data": {"text": "【AIGC】①受理-recipients全v_前缀-DataGo400-抛81002"},
+              "children": [
+                {"data": {"text": "条件：①接口返回success=false,code=400,message=recipients不能为空，feishuTo=v_sunpengwang;v_test"}, "children": []},
+                {"data": {"text": "步骤：调用submitImage()，recipients=[\"v_sunpengwang\",\"v_test\"]"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81002)，消息包含submit failed和code=400，非502/504不重试"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】①受理-session-token过期401-抛81002"},
+              "children": [
+                {"data": {"text": "条件：①接口返回401，message=无效的session-token鉴权"}, "children": []},
+                {"data": {"text": "步骤：调用submitImage()"}, "children": []},
+                {"data": {"text": "预期结果：抛出EmailSendFailedException(81002)，非502/504不重试，消息含401或session-token"}, "children": []}
+              ]
             }]
           }, {
             "data": {"text": "分类：接口案例"},
@@ -141,7 +162,7 @@
               "children": [
                 {"data": {"text": "条件：②接口返回success=true,data.status=exported"}, "children": []},
                 {"data": {"text": "步骤：调用queryTask(2048)"}, "children": []},
-                {"data": {"text": "预期结果：返回exported，请求体为{\"taskId\":2048,\"source\":\"dss\"}，Content-Type为application/json"}, "children": []}
+                {"data": {"text": "预期结果：返回exported，请求体为{\"taskId\":2048,\"source\":\"dss\"}，Content-Type为application/json，请求头含Authorization: Bearer <session-token>与Cookie: dss_user_name=<loginUser>"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】②轮询-业务失败抛81003"},
@@ -347,6 +368,20 @@
                 {"data": {"text": "条件：max.wait=120，queryTask持续返回pending超过120s"}, "children": []},
                 {"data": {"text": "步骤：调用send(email)"}, "children": []},
                 {"data": {"text": "预期结果：抛出EmailSendFailedException(81005)，消息包含polling timed out"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】recipients含v_前缀与有效工号-仅有效接收人投递"},
+              "children": [
+                {"data": {"text": "条件：feishuTo=burdezhang;v_sunpengwang，①受理成功taskId=2048，②轮询exported"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)，recipients=[\"burdezhang\",\"v_sunpengwang\"]"}, "children": []},
+                {"data": {"text": "预期结果：submitImage调用1次recipients原样提交，exported后仅burdezhang收到飞书消息（DataGo过滤v_前缀）"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】recipients含系统用户前缀-DataGo过滤系统用户"},
+              "children": [
+                {"data": {"text": "条件：feishuTo=hadoopadmin;burdezhang，①受理成功②轮询exported"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)"}, "children": []},
+                {"data": {"text": "预期结果：DataGo过滤hadoop前缀系统用户，exported后仅burdezhang收到飞书消息"}, "children": []}
               ]
             }]
           }]

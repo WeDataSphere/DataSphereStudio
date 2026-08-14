@@ -48,7 +48,7 @@ HTTP/集成测试: 标注需 SIT 环境验证
 
 | 异常码 | 含义 | 触发场景 | 抛出位置 |
 |:------:|------|---------|---------|
-| —（IllegalArgumentException） | 配置缺失 | base.url/token/source/path 空，或轮询/重试参数非正 | DataGoOutboundConfig.validate() |
+| —（IllegalArgumentException） | 配置缺失 | base.url/session.token/dss.user.name/source/path 空，或轮询/重试参数非正 | DataGoOutboundConfig.validate() |
 | 81002 | 受理失败 | ① 非 2xx 或业务失败（400/401/413/500），502/504 重试耗尽 | DataGoOutboundClient.submitImage() |
 | 81003 | 轮询失败 | ② 非 2xx 或业务失败，502/504 重试耗尽 | DataGoOutboundClient.queryTask() |
 | 81004 | 终态非 exported | detected_fail / detect_error / export_failed / 未知终态 | DataGoImageSender.pollUntilTerminal() |
@@ -67,7 +67,8 @@ HTTP/集成测试: 标注需 SIT 环境验证
 | 方法 | 签名 | 说明 |
 |------|------|------|
 | getApiBaseUrl | `def getApiBaseUrl: String` | 读取 DataGo 基础地址 |
-| getToken | `def getToken: String` | 读取 Bearer Token |
+| getSessionToken | `def getSessionToken: String` | 读取页面登录 session-token |
+| getDssUserName | `def getDssUserName: String` | 读取 loginUser（dss_user_name / HDFS 归属用户） |
 | getSource | `def getSource: String` | 读取 source（默认 dss） |
 | getChannel | `def getChannel: String` | 读取渠道（默认 feishu） |
 | getSendPath / getTaskPath | `def getSendPath: String` 等 | ①② 接口路径 |
@@ -133,6 +134,8 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 | 路径6 | 轮询至失败终态 | detected_fail/detect_error/export_failed | 节点失败（81004） |
 | 路径7 | 轮询超时 | 超 max.wait 仍非终态 | 节点失败（81005） |
 | 路径8 | 邮件发送失败 | 邮件 SMTP 异常 | 不执行外发 |
+| 路径9 | recipients 过滤后为空 | feishuTo 全为 v_/系统用户前缀 | DataGo 400，节点失败（81002） |
+| 路径10 | 鉴权失败 | session-token 无效/过期/无 username | 401，节点失败（81002/81003） |
 
 ### 2.3 边界条件分析
 
@@ -140,7 +143,7 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 |------|-------|-------|
 | feishuTo | ""、"   "、单接收者、多接收者(分号)、含空格 | null |
 | text(subject) | null、""、"   "、含特殊字符、超长 | — |
-| recipients | 单元素、多元素、含空格元素 | 空数组 |
+| recipients | 单元素、多元素、含空格元素、含 v_/系统用户前缀 | 空数组 |
 | images | 0 张、1 张、N 张 | null 附件数组 |
 | 图片大小 | 恰好 10MB、10MB+1 | — |
 | attachment.getFile | null、不存在、存在 | — |
@@ -163,8 +166,9 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 **测试类型**：单元测试
 
 **前置条件**：
-- wds.dss.appconn.datago.outbound.api.base.url=http://datago:3003
-- wds.dss.appconn.datago.outbound.token=test_token
+- wds.dss.appconn.datago.outbound.api.base.url=http://uat.dss.bdap.weoa.com/cui
+- wds.dss.appconn.datago.outbound.session.token=test_session_token
+- wds.dss.appconn.datago.outbound.dss.user.name=burdezhang
 - wds.dss.appconn.datago.outbound.source=dss
 
 **测试步骤**：
@@ -195,15 +199,15 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 
 ---
 
-#### TC003：token 为空 - 校验失败
+#### TC003：session.token 为空 - 校验失败
 
-**前置条件**：api.base.url 有效，token=""
+**前置条件**：api.base.url 有效，session.token=""
 
-**测试步骤**：设置 token 为空，调用 `validate()`
+**测试步骤**：设置 session.token 为空，调用 `validate()`
 
 **预期结果**：
 - 抛出 `IllegalArgumentException`
-- 异常消息包含"outbound token is not configured"
+- 异常消息包含"outbound session.token is not configured"
 
 **优先级**：P0
 **覆盖场景**：负向场景 - 配置缺失
@@ -238,7 +242,8 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 
 **预期结果**：
 - API_BASE_URL = ""
-- TOKEN = ""
+- SESSION_TOKEN = ""
+- DSS_USER_NAME = ""
 - SOURCE = "dss"
 - CHANNEL = "feishu"
 - SEND_PATH = "/api/outbound/send"
@@ -311,7 +316,7 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 **预期结果**：
 - 返回 taskId=2048
 - 请求为 multipart/form-data，包含 source=dss、type=image、channel=feishu、text、recipients、images 字段
-- 请求头包含 `Authorization: Bearer <token>`
+- 请求头包含 `Authorization: Bearer <session-token>` 与 `Cookie: dss_user_name=<loginUser>`
 
 **优先级**：P0
 **覆盖场景**：关键路径 - 受理成功
@@ -391,6 +396,7 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 - 返回 "exported"
 - 请求体为 `{"taskId":2048,"source":"dss"}`
 - Content-Type 为 application/json
+- 请求头包含 `Authorization: Bearer <session-token>` 与 `Cookie: dss_user_name=<loginUser>`
 
 **优先级**：P0
 **覆盖场景**：关键路径 - 轮询成功
@@ -843,11 +849,11 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 
 ---
 
-#### TC058：端到端 - token 无效节点失败
+#### TC058：端到端 - session-token 无效节点失败
 
-**前置条件**：datago.outbound.token 配置错误
+**前置条件**：datago.outbound.session.token 配置错误/过期
 
-**预期结果**：邮件发送成功，外发 401 失败，节点失败，日志包含"飞书发送失败"
+**预期结果**：邮件发送成功，外发 401（`无效的 session-token 鉴权`）失败，节点失败，日志包含"飞书发送失败"
 
 **优先级**：P0
 **覆盖场景**：异常场景 - 鉴权失败
@@ -898,29 +904,100 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 
 ---
 
+### 3.8 recipients 过滤与 session-token 鉴权补充
+
+> 对齐接口文档 v0.3：DataGo 拒 `v_` 前缀外包与 `hadoop`/`hduser` 等系统用户前缀，过滤后为空返回 400；鉴权改 session-token + `Cookie: dss_user_name`。
+
+#### TC063：recipients 全为 v_ 前缀 - DataGo 400 - 抛 81002
+
+**前置条件**：① 接口返回 `{"success":false,"code":400,"message":"recipients 不能为空"}`；feishuTo=`v_sunpengwang;v_test`
+
+**测试步骤**：调用 `DataGoOutboundClient.submitImage(...)`，recipients=`["v_sunpengwang","v_test"]`
+
+**预期结果**：
+- 抛出 `EmailSendFailedException(81002)`
+- 异常消息包含"submit failed"和"code=400"（非 502/504，不重试）
+
+**优先级**：P0
+**覆盖场景**：异常场景 - recipients 过滤后为空
+
+---
+
+#### TC064：recipients 含 v_ 前缀与有效工号 - 仅有效接收人投递
+
+**前置条件**：① 受理成功（taskId=2048），② 轮询 exported；feishuTo=`burdezhang;v_sunpengwang`
+
+**测试步骤**：调用 `DataGoImageSender.send(email)`，recipients=`["burdezhang","v_sunpengwang"]`
+
+**预期结果**：
+- submitImage 调用 1 次，recipients 原样提交（sendemail 不预过滤）
+- exported 后仅 `burdezhang` 收到飞书消息（DataGo 侧过滤 `v_` 前缀）
+
+**优先级**：P1
+**覆盖场景**：关键路径 - 混合接收人过滤
+
+---
+
+#### TC065：recipients 含系统用户前缀 - DataGo 过滤
+
+**前置条件**：① 受理成功，② 轮询 exported；feishuTo=`hadoopadmin;burdezhang`
+
+**预期结果**：DataGo 过滤 `hadoop` 前缀系统用户，exported 后仅 `burdezhang` 收到飞书消息
+
+**优先级**：P2
+**覆盖场景**：边界场景 - 系统用户过滤
+
+---
+
+#### TC066：dss.user.name 为空 - 校验失败
+
+**前置条件**：api.base.url、session.token 有效，dss.user.name=""
+
+**测试步骤**：调用 `DataGoOutboundConfig.validate()`
+
+**预期结果**：抛出 `IllegalArgumentException`，消息包含"dss.user.name is not configured"
+
+**优先级**：P1
+**覆盖场景**：负向场景 - 鉴权用户缺失
+
+---
+
+#### TC067：① submitImage session-token 过期（401）- 抛 81002
+
+**前置条件**：① 接口返回 401（`无效的 session-token 鉴权`）
+
+**测试步骤**：调用 `DataGoOutboundClient.submitImage(...)`
+
+**预期结果**：抛出 `EmailSendFailedException(81002)`（非 502/504，不重试），异常消息包含"401"或"session-token"
+
+**优先级**：P1
+**覆盖场景**：异常场景 - 鉴权失败
+
+---
+
 ## 4. 测试用例统计
 
 ### 4.1 按优先级分布
 
 | 优先级 | 数量 | 占比 |
 |:------:|:----:|:----:|
-| P0 | 26 | 42% |
-| P1 | 28 | 45% |
-| P2 | 8 | 13% |
-| **总计** | **62** | **100%** |
+| P0 | 27 | 40% |
+| P1 | 31 | 46% |
+| P2 | 9 | 14% |
+| **总计** | **67** | **100%** |
 
 ### 4.2 按模块分布
 
 | 模块 | 测试用例数 |
 |------|:--------:|
-| DataGoOutboundConfig | 6 |
+| DataGoOutboundConfig | 7 |
 | OutboundTaskStatus | 4 |
-| DataGoOutboundClient | 13 |
-| DataGoImageSender | 24 |
+| DataGoOutboundClient | 15 |
+| DataGoImageSender | 26 |
 | SendEmailRefExecutionOperation | 6 |
 | 端到端业务流程 | 6 |
 | 配置项接口 | 3 |
-| **总计** | **62** |
+| **总计** | **67** |
 
 ### 4.3 验收标准覆盖检查
 
@@ -932,12 +1009,13 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 | AC-04 外发失败节点失败 | TC012, TC051, TC058 | OK |
 | AC-05 图片 >10MB 拒绝 | TC037 | OK |
 | AC-06 多接收人 | TC029, TC059 | OK |
-| AC-07 base.url/token 空抛配置异常 | TC002, TC003 | OK |
+| AC-07 base.url/session.token/dss.user.name 空抛配置异常 | TC002, TC003, TC066 | OK |
 | AC-08 502/504 自动重试 | TC013, TC019 | OK |
 | AC-09 轮询超时失败 | TC046 | OK |
 | AC-10 终态失败标记节点失败 | TC042, TC057 | OK |
+| AC-11 recipients 过滤后为空被拒 | TC063 | OK |
 
-**覆盖率**：10/10 验收标准 (100%)
+**覆盖率**：11/11 验收标准 (100%)
 
 ---
 
@@ -966,6 +1044,7 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 | TC024/TC041-TC047 编排与轮询 | 依赖 Mock DataGoOutboundClient | 添加 Mockito static mock 后补充 |
 | TC048-TC053 集成测试 | 依赖 Spring 容器 | SIT 环境验证 |
 | TC054-TC059 端到端 | 依赖完整 DSS+DataGo 环境 | SIT 环境验证 |
+| TC063-TC067 recipients 过滤/鉴权补充 | 依赖 Mock HTTP 与 DataGo 过滤行为 | 添加 Mockito 依赖后补充；TC064/TC065 需 DataGo 真实过滤 SIT 验证 |
 
 ---
 
@@ -973,4 +1052,4 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 
 - 已实现 32 个单元测试全部通过，核心逻辑（字段映射、接收者解析、图片判定、状态判定、转义、大小校验）验证正确。
 - HTTP 交互、轮询编排、集成与端到端测试需在 SIT 环境或引入 Mock 框架后补充。
-- 验收标准 10/10 全覆盖。
+- 验收标准 11/11 全覆盖（含 recipients 过滤后为空被拒 AC-11）。

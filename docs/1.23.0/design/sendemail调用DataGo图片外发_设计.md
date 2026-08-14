@@ -28,7 +28,7 @@
 | 维度 | 旧设计（fass-core 直发） | 新设计（DataGo 外发） |
 |------|--------------------------|----------------------|
 | 投递通道 | 直连 fass-core `/feishu/external/access/*` | DataGo `/api/outbound/send` + `/api/outbound/task` |
-| 鉴权 | FS-AppId/Nonce/Timestamp/Signature/Source 签名 | `Authorization: Bearer <token>` + IP 白名单 |
+| 鉴权 | FS-AppId/Nonce/Timestamp/Signature/Source 签名 | `Authorization: Bearer <session-token>` + `Cookie: dss_user_name=<loginUser>`（页面登录 session-token，loginUser=claims.username） |
 | 内容组装 | sendemail 拼 templateCode + params(imgKeys) | sendemail 提交 text+images，DataGo 组装 `DATAGO_NOTIFY` |
 | 敏感检测 | 无 | Qwen VL OCR + 大乔检测（DataGo 内部） |
 | 图片持久化 | 无 | HDFS 入库审计（DataGo 内部） |
@@ -120,8 +120,9 @@ SendEmailRefExecutionOperation.execute(requestRef)
 
 | 配置键 | CommonVars 变量 | 类型 | 默认值 | 说明 |
 |--------|------------------|------|--------|------|
-| `wds.dss.appconn.datago.outbound.api.base.url` | DATAGO_OUTBOUND_API_BASE_URL | String | "" | DataGo 基础地址（含端口，默认 3003，UAT 加 `/cui` 前缀） |
-| `wds.dss.appconn.datago.outbound.token` | DATAGO_OUTBOUND_TOKEN | String | "" | Bearer Token（DSS 服务间固定 Token） |
+| `wds.dss.appconn.datago.outbound.api.base.url` | DATAGO_OUTBOUND_API_BASE_URL | String | "" | DataGo 基础地址（含端口，默认 3003；DSS 前置/UAT 需加 `/cui` 前缀，如 `http://uat.dss.bdap.weoa.com/cui`） |
+| `wds.dss.appconn.datago.outbound.session.token` | DATAGO_OUTBOUND_SESSION_TOKEN | String | "" | 页面登录 session-token（`Authorization: Bearer <session-token>`，由 DataGo `SessionTokenService.validate` 校验） |
+| `wds.dss.appconn.datago.outbound.dss.user.name` | DATAGO_OUTBOUND_DSS_USER_NAME | String | "" | loginUser（写入 `Cookie: dss_user_name`；同时作为图片 HDFS 上传归属用户，= token claims.username） |
 | `wds.dss.appconn.datago.outbound.source` | DATAGO_OUTBOUND_SOURCE | String | "dss" | 任务来源，固定 dss |
 | `wds.dss.appconn.datago.outbound.channel` | DATAGO_OUTBOUND_CHANNEL | String | "feishu" | 渠道，本期仅飞书 |
 | `wds.dss.appconn.datago.outbound.send.path` | DATAGO_OUTBOUND_SEND_PATH | String | "/api/outbound/send" | ① 受理路径 |
@@ -138,6 +139,7 @@ SendEmailRefExecutionOperation.execute(requestRef)
 - 连接配置通过 CommonVars 管理，与现有邮件配置风格一致。
 - 是否发送飞书仍由 sendemail 节点参数 `sendFeishu` 控制（不变）。
 - 轮询/重试/超时参数化，便于不同环境调优。
+- 鉴权改用页面登录 session-token + `dss_user_name`（接口文档 v0.2，去 DSS 固定 Token + IP 白名单）；sendemail 为服务端执行，session-token 与 loginUser 由配置项注入（见 6.2）。**session-token 存在 TTL**，长期/调度执行需长效 token 或刷新机制（见九、待联调）。
 
 ### 3.2 DataGoOutboundConfig 配置校验
 
@@ -148,7 +150,8 @@ SendEmailRefExecutionOperation.execute(requestRef)
 ```scala
 object DataGoOutboundConfig extends Logging {
   def getApiBaseUrl: String
-  def getToken: String
+  def getSessionToken: String      // 页面登录 session-token
+  def getDssUserName: String       // loginUser（dss_user_name / HDFS 上传归属用户）
   def getSource: String
   def getChannel: String
   def getSendPath: String
@@ -162,7 +165,7 @@ object DataGoOutboundConfig extends Logging {
   def getReadTimeout: Int        // 毫秒
 
   def validate(): Unit = {
-    // base.url 非空、token 非空、source 非空、path 非空
+    // base.url 非空、session.token 非空、dss.user.name 非空、source 非空、path 非空
     // poll.interval/max.wait/retry 正数校验
   }
 }
@@ -202,15 +205,21 @@ object OutboundTaskStatus {
 
 #### 3.4.1 鉴权
 
-所有请求附加 Header：`Authorization: Bearer <token>`。token 来自配置项 `wds.dss.appconn.datago.outbound.token`。
+所有请求（①②）附加两个 Header：
+
+- `Authorization: Bearer <session-token>` —— session-token 来自配置项 `wds.dss.appconn.datago.outbound.session.token`。
+- `Cookie: dss_user_name=<loginUser>` —— loginUser 来自配置项 `wds.dss.appconn.datago.outbound.dss.user.name`，DataGo 校验 token 后取 `claims.username` 作为 loginUser（同时作为图片 HDFS 上传归属用户）。
+
+> 等价形式：亦可用 `Session-Token` 头单独传页面登录 token（接口文档 2.1）。本设计统一采用 `Authorization: Bearer` + `Cookie: dss_user_name` 形式（与 sendemail_image.txt 请求样例一致）。token 无效/过期/无 username -> 401。该鉴权仅对 `source=dss` 生效。
 
 #### 3.4.2 ① 受理 — submitImage
 
 ```
 submitImage(text, recipientsJson, title, images: Array[File]): Long
     |
-    +--> POST {baseUrl}/api/outbound/send  (multipart/form-data)
-    |    Header: Authorization: Bearer <token>
+    +--> POST {baseUrl}/api/outbound/send  (multipart/form-data; charset=utf-8)
+    |    Header: Authorization: Bearer <session-token>
+    |            Cookie: dss_user_name=<loginUser>
     |    Fields: source=dss, type=image, channel=feishu,
     |            text={text}, recipients={recipientsJson}, title={title},
     |            images={file1}, images={file2}, ...  (一图一段)
@@ -218,8 +227,11 @@ submitImage(text, recipientsJson, title, images: Array[File]): Long
     +--> 解析响应 {success, code, message, data:{taskId, status, imageCount}}
     +--> 成功 --> 返回 data.taskId
     +--> 失败 --> 抛 EmailSendFailedException(81002)
+    |            （含 recipients 过滤后为空等 400、401、413、500）
     +--> 502/504 --> 退避重试（retry.max/retry.interval），耗尽抛 81002
 ```
+
+> **recipients 过滤（DataGo 侧，权威）**：DataGo 不接受 `v_` 前缀用户（外包）与系统用户（`hadoop`/`hduser` 等前缀）；过滤后为空返回 400。sendemail 仅做 trim + 去空，**不预过滤**（避免与 DataGo 规则重复漂移），过滤结果以 DataGo 响应为准。
 
 **multipart 构造**：手写 boundary，文本字段（source/type/channel/text/recipients/title）以 form 字段提交，`images` 字段对每张图片重复一段（`Content-Disposition: form-data; name="images"; filename="xxx"`）。参照旧 `FeishuClient.uploadFile` 的 multipart 范式。
 
@@ -228,8 +240,10 @@ submitImage(text, recipientsJson, title, images: Array[File]): Long
 ```
 queryTask(taskId: Long): String  // 返回 status
     |
-    +--> POST {baseUrl}/api/outbound/task  (application/json)
-    |    Header: Authorization: Bearer <token>
+    +--> POST {baseUrl}/api/outbound/task  (application/json; charset=utf-8)
+    |    Header: Authorization: Bearer <session-token>
+    |            Cookie: dss_user_name=<loginUser>
+    |            Content-Type: application/json; charset=utf-8
     |    Body: {"taskId":N,"source":"dss"}
     |
     +--> 解析响应 {success, code, message, data:{taskId, status, resultSummary, ...}}
@@ -271,6 +285,7 @@ send(email: Email): Unit
     +--> 4. recipients = feishuTo.split(";").map(trim).filter(nonEmpty)
     |       空集合 → warn 跳过返回
     |       → JSON 数组字符串 ["u1","u2"]
+    |       （不预过滤 v_/系统用户，过滤在 DataGo 侧，见 3.4.2）
     +--> 5. 图片附件准备
     |       images = attachments.filter(isImageAttachment).map(prepareImageFile)
     |       prepareImageFile: File 直接用 / Base64 解码写临时文件；逐张校验 ≤ image.maxsize
@@ -304,7 +319,7 @@ attachment.isInstanceOf[PngAttachment] ||
 
 | 异常码 | 含义 | 触发场景 |
 |:------:|------|---------|
-| 81001 | 配置缺失 | base.url/token 未配置 |
+| 81001 | 配置缺失 | base.url/session.token/dss.user.name 未配置 |
 | 81002 | 受理失败 | ① 非 2xx 或业务失败（400/401/413/500，重试耗尽） |
 | 81003 | 轮询失败 | ② 非 2xx 或业务失败（重试耗尽） |
 | 81004 | 终态非 exported | detected_fail/detect_error/export_failed |
@@ -378,7 +393,8 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 | 配置键 | CommonVars 变量 | 类型 | 默认值 |
 |-------|----------------|------|--------|
 | wds.dss.appconn.datago.outbound.api.base.url | DATAGO_OUTBOUND_API_BASE_URL | String | "" |
-| wds.dss.appconn.datago.outbound.token | DATAGO_OUTBOUND_TOKEN | String | "" |
+| wds.dss.appconn.datago.outbound.session.token | DATAGO_OUTBOUND_SESSION_TOKEN | String | "" |
+| wds.dss.appconn.datago.outbound.dss.user.name | DATAGO_OUTBOUND_DSS_USER_NAME | String | "" |
 | wds.dss.appconn.datago.outbound.source | DATAGO_OUTBOUND_SOURCE | String | "dss" |
 | wds.dss.appconn.datago.outbound.channel | DATAGO_OUTBOUND_CHANNEL | String | "feishu" |
 | wds.dss.appconn.datago.outbound.send.path | DATAGO_OUTBOUND_SEND_PATH | String | "/api/outbound/send" |
@@ -411,9 +427,9 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 
 ### 6.1 DataGo 侧准备
 
-1. DataGo 配置 `outbound.dssTokens`（DSS 固定服务间 Token）与 `outbound.dssIpWhitelist`（DSS 来源 IP 白名单）。
-2. 确认 DataGo outbound 通道已支持 `type=image` + `source=dss`。
-3. 确认 DSS 服务器可访问 DataGo（默认端口 3003，UAT 需 `/cui` 前缀）。
+1. DataGo 开通 `source=dss` 的 session-token 鉴权（`SessionTokenService.validate` 校验页面登录 session-token，取 `claims.username` 为 loginUser，同时作为图片 HDFS 上传归属用户）；接口文档 v0.2 已去 DSS 固定 Token + IP 白名单。
+2. 确认 DataGo outbound 通道已支持 `type=image` + `source=dss`，且 recipients 过滤规则（拒 `v_` 前缀外包、`hadoop`/`hduser` 等系统用户前缀）生效。
+3. 确认 DSS 服务器可访问 DataGo（直连默认端口 3003；DSS 前置/UAT 走 `/cui` 前缀，如 `http://uat.dss.bdap.weoa.com/cui`）。
 
 ### 6.2 DSS 配置步骤
 
@@ -421,8 +437,10 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 
 ```properties
 # DataGo 数据外发图片消息配置（是否发送飞书由 sendemail 节点参数 sendFeishu 控制）
-wds.dss.appconn.datago.outbound.api.base.url=http://DATAGO_HOST:3003
-wds.dss.appconn.datago.outbound.token=xxxxxxxxxxxxxxxx
+# 直连 DataGo 用 http://DATAGO_HOST:3003；DSS 前置/UAT 需带 /cui 前缀
+wds.dss.appconn.datago.outbound.api.base.url=http://uat.dss.bdap.weoa.com/cui
+wds.dss.appconn.datago.outbound.session.token=xxxxxxxxxxxxxxxx
+wds.dss.appconn.datago.outbound.dss.user.name=burdezhang
 wds.dss.appconn.datago.outbound.source=dss
 wds.dss.appconn.datago.outbound.channel=feishu
 # wds.dss.appconn.datago.outbound.send.path=/api/outbound/send
@@ -436,7 +454,10 @@ wds.dss.appconn.datago.outbound.channel=feishu
 # wds.dss.appconn.datago.outbound.http.read.timeout=60000
 ```
 
-**升级提示**：原 `wds.dss.appconn.feishu.app.*` 配置项已删除，需替换为上述 `datago.outbound.*`。
+**升级提示**：
+- 原 `wds.dss.appconn.feishu.app.*` 配置项已删除，需替换为上述 `datago.outbound.*`。
+- 鉴权由「DSS 固定 Token + IP 白名单」改为「页面登录 session-token + `dss_user.name`」：原 `wds.dss.appconn.datago.outbound.token` 改为 `session.token`，并新增 `dss.user.name`。
+- `session.token` 为页面登录 session-token，**存在 TTL**，需定期更新或与 DataGo 确认长效 token/刷新机制（见九）。
 
 ### 6.3 sendemail 节点配置
 
@@ -464,22 +485,25 @@ feishuTo=zhangsan;lisi
 
 | 安全项 | 措施 |
 |-------|------|
-| Token 存储 | 配置文件明文存储，与邮件密码同等保护级别，需限制配置文件访问权限 |
-| 鉴权 | Bearer Token + IP 白名单双层（DataGo 侧校验） |
+| 凭据存储 | session-token / dss_user_name 配置文件明文存储，与邮件密码同等保护级别，需限制配置文件访问权限 |
+| 鉴权 | 页面登录 session-token + `dss_user_name`（loginUser=claims.username，DataGo `SessionTokenService.validate` 校验）；token 无效/过期/无 username -> 401 |
+| loginUser 归属 | loginUser 同时作为图片 HDFS 上传归属用户（不再用接收人首位），审计可溯到实际操作人 |
 | 敏感数据 | DataGo 内部 Qwen VL OCR + 大乔检测，命中阻断（sendemail 透明） |
-| 图片审计 | DataGo 内部 HDFS 持久化，可回溯 |
+| 图片审计 | DataGo 内部 HDFS 二进制直传持久化（v0.3，去 base64），可回溯 |
 | 网络安全 | 支持 HTTPS（base.url 配置） |
 
 ---
 
 ## 九、待联调确认
 
-接口文档 v0.1 标注的待确认项（不影响 sendemail 实现，仅影响部署配置）：
+接口文档 v0.3 / sendemail_image.txt 请求样例对齐后的待确认项（不影响 sendemail 实现，仅影响部署配置）：
 
-1. DSS 固定 Token / IP 白名单的实际值与配置方式。
-2. fass-core img_key 字段名（DataGo 内部，对 sendemail 透明）。
-3. `/cui` UAT 前缀是否生效（项目记忆 `cuiw1-uat-api-prefix`）。
-4. 502/504 退避重试的次数/间隔建议值。
+1. **session-token 来源与生命周期**：sendemail 为服务端执行，本期 session-token + dss_user_name 由配置注入；session-token 存在 TTL，长期/调度执行需长效 token 或刷新机制，待与 DataGo 确认。
+2. 401 鉴权失败消息（`无效的 session-token 鉴权`）的语义确认（token 无效/过期/无 username）。
+3. fass-core img_key 字段名（DataGo 内部，对 sendemail 透明）。
+4. `/cui` DSS 前置/UAT 前缀生效确认（请求样例 `http://uat.dss.bdap.weoa.com/cui/api/outbound/...`）。
+5. 502/504 退避重试的次数/间隔建议值。
+6. recipients 过滤规则（`v_` 前缀外包、`hadoop`/`hduser` 系统用户前缀）以 DataGo 实际生效为准。
 
 ---
 
@@ -488,3 +512,4 @@ feishuTo=zhangsan;lisi
 | 版本 | 日期 | 变更 |
 |------|------|------|
 | v1.0 | 2026-08-06 | 净替换 sendemail 飞书投递为 DataGo 数据外发图片消息接口；删除 fass-core 直发；新增 outbound 包 |
+| v1.1 | 2026-08-14 | 对齐接口文档 v0.3 与 sendemail_image.txt 样例：鉴权改页面登录 session-token + `Cookie: dss_user_name`（去 DSS 固定 Token + IP 白名单）；配置项 `token` 改 `session.token` 并新增 `dss.user.name`；base.url 标注 `/cui` 前缀；明确 DataGo recipients 过滤（v_/系统用户）；② queryTask 补 Cookie 头 |

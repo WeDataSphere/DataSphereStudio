@@ -29,7 +29,7 @@ sendemail 节点现有飞书投递（1.23.0 已开发）直连 fass-core 发模�
 ### 1.2 期望价值
 
 - **合规外发**：复用 DataGo 外发治理管线（HDFS 持久化 + Qwen VL OCR + 大乔敏感检测），敏感数据命中阻断。
-- **统一鉴权**：改用 DataGo 服务间 Bearer Token + IP 白名单，与 DataGo 多维表格外发一致。
+- **统一鉴权**：改用页面登录 session-token + `dss_user_name`（loginUser=claims.username），由 DataGo `SessionTokenService.validate` 校验，与 DataGo 多维表格外发一致；不再用 DSS 固定 Token + IP 白名单。
 - **审计可溯**：图片存 HDFS 入库，长期保留可回溯。
 - **降低维护成本**：删除 fass-core 直发的 FS-* 签名、templateCode、img_key 模板参数等逻辑，飞书投递收口到 DataGo。
 
@@ -67,10 +67,11 @@ sendemail 节点现有飞书投递（1.23.0 已开发）直连 fass-core 发模�
 
 | 编号 | 功能项 | 描述 |
 |:----:|-------|------|
-| F-P1-01 | 配置校验 | 进入外发流程时校验 base.url/token/source/path 非空，轮询/重试参数为正 |
+| F-P1-01 | 配置校验 | 进入外发流程时校验 base.url/session.token/dss.user.name/source/path 非空，轮询/重试参数为正 |
 | F-P1-02 | 502/504 重试 | 受理①与轮询②遇 502/504（上游不可达）退避重试，次数/间隔可配 |
 | F-P1-03 | 轮询超时保护 | 阻塞轮询超 max.wait 仍非终态则失败，避免线程长期占用 |
 | F-P1-04 | HTTP 超时可配 | 连接/读取超时可配 |
+| F-P1-05 | recipients 过滤感知 | DataGo 拒 `v_` 前缀外包与 `hadoop`/`hduser` 等系统用户前缀，过滤后为空返回 400；sendemail 不预过滤，400 透传为受理失败（81002） |
 
 ### 3.3 功能不包含
 
@@ -92,8 +93,9 @@ sendemail 节点现有飞书投递（1.23.0 已开发）直连 fass-core 发模�
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |-------|------|--------|------|
-| wds.dss.appconn.datago.outbound.api.base.url | String | "" | DataGo 基础地址 |
-| wds.dss.appconn.datago.outbound.token | String | "" | Bearer Token |
+| wds.dss.appconn.datago.outbound.api.base.url | String | "" | DataGo 基础地址（直连含端口；DSS 前置/UAT 带 `/cui` 前缀） |
+| wds.dss.appconn.datago.outbound.session.token | String | "" | 页面登录 session-token（Authorization: Bearer） |
+| wds.dss.appconn.datago.outbound.dss.user.name | String | "" | loginUser（Cookie dss_user_name，同时为 HDFS 上传归属用户） |
 | wds.dss.appconn.datago.outbound.source | String | "dss" | 任务来源 |
 | wds.dss.appconn.datago.outbound.channel | String | "feishu" | 渠道 |
 | wds.dss.appconn.datago.outbound.send.path | String | "/api/outbound/send" | ① 受理路径 |
@@ -161,6 +163,8 @@ sendemail 节点执行
 | BR-04 | 图片可选 | images 0~N 张，非图片附件不外发（与现状一致） |
 | BR-05 | 终态失败不重发 | DataGo 已通知接收人，sendemail 仅标记节点失败 |
 | BR-06 | 同步阻塞轮询 | 在 execute 线程内轮询至终态或超时 |
+| BR-07 | recipients 过滤在 DataGo 侧 | 不预过滤 `v_`/系统用户前缀；过滤后为空 DataGo 返回 400，sendemail 透传为受理失败 |
+| BR-08 | 鉴权用 session-token | 请求带 `Authorization: Bearer <session-token>` + `Cookie: dss_user_name=<loginUser>`；token 无效/过期/无 username -> 401 |
 
 ---
 
@@ -171,13 +175,14 @@ sendemail 节点执行
 | AC-01 | sendFeishu=false 时仅发邮件，不调 DataGo | 执行节点，日志无 DataGo 调用 |
 | AC-02 | sendFeishu=true 且 feishuTo 有值时邮件+飞书均发 | 执行节点，验证飞书收到图片消息 |
 | AC-03 | feishuTo 空时仅发邮件 | sendFeishu=true 不设 feishuTo，验证仅发邮件 |
-| AC-04 | 外发失败时节点失败 | 配置无效 token，验证节点失败 |
+| AC-04 | 外发失败时节点失败 | 配置无效 session-token，验证节点失败 |
 | AC-05 | 图片 >10MB 拒绝 | 构造超大图片，验证抛 81006 |
 | AC-06 | 多接收人（分号分隔） | feishuTo="u1;u2"，验证两人收到 |
-| AC-07 | base.url/token 空时抛配置异常 | sendFeishu=true 但 token 空，验证抛 IllegalArgumentException |
+| AC-07 | base.url/session.token/dss.user.name 空时抛配置异常 | sendFeishu=true 但 session-token 空，验证抛 IllegalArgumentException |
 | AC-08 | 502/504 自动重试 | 模拟上游不可达，验证按配置重试 |
 | AC-09 | 轮询超时失败 | max.wait 内未终态，验证抛 81005 |
 | AC-10 | 终态失败标记节点失败 | detected_fail 终态，验证节点失败且不重发 |
+| AC-11 | recipients 过滤后为空被拒 | feishuTo 全为 `v_`/系统用户前缀，DataGo 返回 400，sendemail 标记节点失败（81002） |
 
 ---
 
@@ -208,15 +213,15 @@ sendemail 节点执行
 | 节点参数 | 无 | sendFeishu/feishuTo 语义不变 |
 | 现有工作流 | 无 | sendFeishu 默认 false |
 | Email 接口 | 无 | feishuTo 字段不变 |
-| 配置文件 | **需升级** | feishu.app.* 删除，替换为 datago.outbound.* |
+| 配置文件 | **需升级** | feishu.app.* 删除，替换为 datago.outbound.*；鉴权 `token` 改 `session.token` 并新增 `dss.user.name` |
 
 ### 7.3 依赖项
 
 | 依赖 | 类型 | 说明 |
 |------|------|------|
-| DataGo outbound 通道 | 外部依赖 | 需支持 type=image + source=dss |
-| DataGo 鉴权 | 外部依赖 | DSS 固定 Token + IP 白名单 |
-| 网络连通性 | 基础设施 | DSS 可访问 DataGo（默认 3003） |
+| DataGo outbound 通道 | 外部依赖 | 需支持 type=image + source=dss，且 recipients 过滤规则生效 |
+| DataGo 鉴权 | 外部依赖 | 页面登录 session-token + dss_user_name（`SessionTokenService.validate`，loginUser=claims.username） |
+| 网络连通性 | 基础设施 | DSS 可访问 DataGo（直连 3003；DSS 前置/UAT 走 `/cui` 前缀） |
 
 ---
 
@@ -224,8 +229,9 @@ sendemail 节点执行
 
 | 编号 | 风险/约束 | 等级 | 应对措施 |
 |:----:|---------|:----:|---------|
-| R-01 | 接口 v0.1 待联调 | 中 | Token/IP/img_key 细节待 DataGo 确认，不影响实现 |
+| R-01 | 接口 v0.3 待联调 | 中 | session-token 来源/TTL、401 语义、img_key 细节待 DataGo 确认，不影响实现 |
 | R-02 | 同步阻塞轮询占用线程 | 中 | max.wait 默认 120s 上限，超时即失败 |
 | R-03 | DataGo 不可达 | 中 | 502/504 退避重试，耗尽标记节点失败 |
 | R-04 | 图片超大 | 低 | ≤10MB 前置校验，超限抛 81006 |
 | R-05 | OCR/检测耗时不确定 | 中 | 轮询超时兜底，通常 <1min |
+| R-06 | session-token 过期 | 中 | 长期/调度执行需长效 token 或刷新机制，待与 DataGo 确认 |
