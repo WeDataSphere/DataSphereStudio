@@ -52,6 +52,8 @@ object DataGoOutboundConfig extends Logging {
 
   def getImageMaxSize: Int = SendEmailAppConnConfiguration.DATAGO_OUTBOUND_IMAGE_MAXSIZE.getValue
 
+  def getImageBatchMaxCount: Int = SendEmailAppConnConfiguration.DATAGO_OUTBOUND_IMAGE_BATCH_MAXCOUNT.getValue
+
   def getConnectTimeout: Int = SendEmailAppConnConfiguration.DATAGO_OUTBOUND_HTTP_CONNECT_TIMEOUT.getValue
 
   def getReadTimeout: Int = SendEmailAppConnConfiguration.DATAGO_OUTBOUND_HTTP_READ_TIMEOUT.getValue

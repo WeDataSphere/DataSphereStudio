@@ -6,14 +6,14 @@
 
   背景:
     假如 用户已登录 DSS 系统
-    而且 DSS 服务器已配置 DataGo 外发参数（api.base.url / session.token / dss.user.name）
+    而且 DSS 服务器已配置 DataGo 外发参数（api.base.url / session.token）
     而且 DSS 服务器与 DataGo outbound 接口网络连通
 
     # 配置前提（appconn.properties）
     # | 配置项 | 值 | 说明 |
     # | wds.dss.appconn.datago.outbound.api.base.url | http://uat.dss.bdap.weoa.com/cui | DataGo 基础地址（DSS 前置/UAT 带 /cui 前缀） |
     # | wds.dss.appconn.datago.outbound.session.token | 有效页面登录 session-token | Authorization: Bearer |
-    # | wds.dss.appconn.datago.outbound.dss.user.name | loginUser（如 burdezhang） | Cookie dss_user_name，同时为 HDFS 上传归属用户 |
+    # dss_user_name（loginUser）不落配置，取工作流 runtime 的 executeUser（空则 submitUser）
 
   # ============================================================
   # 场景1: sendFeishu 开关控制
@@ -21,7 +21,7 @@
 
   场景: 节点选择发送飞书且配置完整时，sendemail 节点同时发送邮件并发起 DataGo 外发
     假如 sendemail 节点参数 sendFeishu=true
-    而且 DataGo 外发 api.base.url、session.token 和 dss.user.name 配置正确
+    而且 DataGo 外发 api.base.url 和 session.token 配置正确
     而且 sendemail 节点参数 feishuTo 配置了有效的飞书接收人工号
     而且 sendemail 节点包含邮件主题和 PNG 图片附件
     当 执行 sendemail 节点
@@ -169,14 +169,22 @@
     而且 异常消息包含"outbound session.token is not configured"
     而且 sendemail 节点状态为失败
 
-  场景: 节点选择发送飞书但 dss.user.name 为空时，sendemail 节点执行失败
+  场景: dss_user_name 取工作流 executeUser，空则回退 submitUser
     假如 sendemail 节点参数 sendFeishu=true
-    而且 wds.dss.appconn.datago.outbound.dss.user.name 为空
+    而且 runtimeMap 的 executeUser 为"v_sunpengwang"
+    而且 runtimeMap 的 submitUser 为"burdezhang"
     而且 sendemail 节点参数 feishuTo 配置了有效的飞书接收人工号
     当 执行 sendemail 节点
-    那么 抛出 IllegalArgumentException
-    而且 异常消息包含"dss.user.name is not configured"
-    而且 sendemail 节点状态为失败
+    那么 DataGo ①/② 请求头 Cookie 为 dss_user_name=v_sunpengwang
+    而且 sendemail 节点状态为成功
+
+  场景: executeUser 为空时 dss_user_name 回退 submitUser
+    假如 sendemail 节点参数 sendFeishu=true
+    而且 runtimeMap 的 executeUser 为空
+    而且 runtimeMap 的 submitUser 为"burdezhang"
+    而且 sendemail 节点参数 feishuTo 配置了有效的飞书接收人工号
+    当 执行 sendemail 节点
+    那么 DataGo ①/② 请求头 Cookie 为 dss_user_name=burdezhang
 
   场景: 节点选择发送飞书但 api.base.url 为空时，sendemail 节点执行失败
     假如 sendemail 节点参数 sendFeishu=true
@@ -288,6 +296,14 @@
     而且 附件的 getBase64Str() 返回合法的 Base64 编码
     当 执行 sendemail 节点
     那么 将 Base64 解码后写入临时文件并作为 images 提交
+
+  场景: 图片 Base64 含 CRLF 换行或数据 URI 前缀时仍能解码
+    假如 sendemail 节点参数 sendFeishu=true
+    而且 附件的 getFile() 返回 null
+    而且 附件的 getBase64Str() 为 commons-codec 分块（含 \r\n）或 data:image/png;base64, 数据 URI
+    当 执行 sendemail 节点
+    那么 剥离 CRLF 与数据 URI 前缀后解码成功并写入临时文件
+    而且 不抛出 81006
 
   场景: 图片附件超过 10MB 时外发失败
     假如 sendemail 节点参数 sendFeishu=true

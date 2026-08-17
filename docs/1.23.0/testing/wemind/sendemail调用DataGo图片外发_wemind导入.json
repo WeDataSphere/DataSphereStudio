@@ -31,11 +31,11 @@
                 {"data": {"text": "预期结果：抛出IllegalArgumentException，异常消息包含outbound session.token is not configured"}, "children": []}
               ]
             }, {
-              "data": {"text": "【AIGC】dss.user.name为空-校验失败"},
+              "data": {"text": "【AIGC】loginUser取executeUser空则回退submitUser"},
               "children": [
-                {"data": {"text": "条件：sendFeishu=true，api.base.url与session.token有效，dss.user.name为空字符串"}, "children": []},
-                {"data": {"text": "步骤：\n1、设置dss.user.name为空\n2、调用validate()"}, "children": []},
-                {"data": {"text": "预期结果：抛出IllegalArgumentException，异常消息包含dss.user.name is not configured"}, "children": []}
+                {"data": {"text": "条件：runtimeMap有executeUser=v_sunpengwang，submitUser=burdezhang"}, "children": []},
+                {"data": {"text": "步骤：从runtimeMap解析loginUser后调用DataGoImageSender.send(email,loginUser)"}, "children": []},
+                {"data": {"text": "预期结果：loginUser=v_sunpengwang，①/②请求Cookie为dss_user_name=v_sunpengwang；executeUser空时取submitUser"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】source为空-校验失败"},
@@ -56,7 +56,7 @@
               "children": [
                 {"data": {"text": "条件：未配置任何DataGo外发相关配置项"}, "children": []},
                 {"data": {"text": "步骤：\n1、不设置任何DataGo配置\n2、读取各配置项的默认值"}, "children": []},
-                {"data": {"text": "预期结果：API_BASE_URL/SESSION_TOKEN/DSS_USER_NAME为空，SOURCE=dss，CHANNEL=feishu，POLL_INTERVAL=10，MAX_WAIT=120，RETRY_MAX=3，IMAGE_MAXSIZE=10485760"}, "children": []}
+                {"data": {"text": "预期结果：API_BASE_URL/SESSION_TOKEN为空，SOURCE=dss，CHANNEL=feishu，POLL_INTERVAL=10，MAX_WAIT=120，RETRY_MAX=3，IMAGE_MAXSIZE=10485760（dss_user.name不再配置，loginUser取runtime的executeUser/submitUser）"}, "children": []}
               ]
             }]
           }]
@@ -326,6 +326,13 @@
                 {"data": {"text": "条件：getFile()=null，getBase64Str()=null"}, "children": []},
                 {"data": {"text": "步骤：调用send(email)"}, "children": []},
                 {"data": {"text": "预期结果：抛出EmailSendFailedException(81006)，消息包含neither File nor base64"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】图片Base64含CRLF或数据URI前缀-鲁棒解码"},
+              "children": [
+                {"data": {"text": "条件：getFile()=null，getBase64Str()为commons-codec分块(含\\r\\n)或data:image/png;base64,数据URI"}, "children": []},
+                {"data": {"text": "步骤：调用send(email)走Base64临时文件路径"}, "children": []},
+                {"data": {"text": "预期结果：剥离CRLF与数据URI前缀后解码成功，写临时文件提交，不抛81006；失败时异常含contentPrefix预览"}, "children": []}
               ]
             }, {
               "data": {"text": "【AIGC】轮询exported-成功"},

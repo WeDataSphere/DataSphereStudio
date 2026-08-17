@@ -68,10 +68,11 @@ object SendEmailAppConnConfiguration {
   val DATAGO_OUTBOUND_SEND_PATH = CommonVars("wds.dss.appconn.datago.outbound.send.path", "/api/outbound/send")
   val DATAGO_OUTBOUND_TASK_PATH = CommonVars("wds.dss.appconn.datago.outbound.task.path", "/api/outbound/task")
   val DATAGO_OUTBOUND_POLL_INTERVAL: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.poll.interval", 10)
-  val DATAGO_OUTBOUND_MAX_WAIT: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.max.wait", 120)
+  val DATAGO_OUTBOUND_MAX_WAIT: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.max.wait", 1800)
   val DATAGO_OUTBOUND_RETRY_MAX: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.retry.max", 3)
   val DATAGO_OUTBOUND_RETRY_INTERVAL: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.retry.interval", 30)
   val DATAGO_OUTBOUND_IMAGE_MAXSIZE: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.image.maxsize", 10485760)
+  val DATAGO_OUTBOUND_IMAGE_BATCH_MAXCOUNT: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.image.batch.maxcount", 10)
   val DATAGO_OUTBOUND_HTTP_CONNECT_TIMEOUT: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.http.connect.timeout", 10000)
   val DATAGO_OUTBOUND_HTTP_READ_TIMEOUT: CommonVars[Integer] = CommonVars[Integer]("wds.dss.appconn.datago.outbound.http.read.timeout", 60000)
 }

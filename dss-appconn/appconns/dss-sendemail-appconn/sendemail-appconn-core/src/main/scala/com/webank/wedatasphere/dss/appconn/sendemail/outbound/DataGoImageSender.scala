@@ -63,10 +63,21 @@ object DataGoImageSender extends Logging {
     val tempFiles = ArrayBuffer[File]()
     val imageFiles = prepareImageFiles(email.getAttachments, tempFiles)
     try {
-      val taskId = DataGoOutboundClient.submitImage(text, recipientsJson, title, imageFiles, loginUser)
-      logger.info(s"DataGo outbound task accepted, taskId=${taskId}, loginUser=${Option(loginUser).getOrElse("")}. Start polling until terminal.")
-      pollUntilTerminal(taskId, loginUser)
-      logger.info(s"DataGo outbound completed successfully, taskId=${taskId}, receivers=${receivers.mkString(",")}.")
+      val batchMaxCount = DataGoOutboundConfig.getImageBatchMaxCount
+      val batches: Array[Array[File]] =
+        if (imageFiles.isEmpty) Array(Array.empty[File])
+        else if (batchMaxCount <= 0) Array(imageFiles)
+        else imageFiles.grouped(batchMaxCount).toArray
+      logger.info(s"DataGo outbound: ${imageFiles.length} image(s) split into ${batches.length} batch(es) " +
+        s"(batchMaxCount=${batchMaxCount}, perBatchMaxWait=${DataGoOutboundConfig.getMaxWait}s, loginUser=${Option(loginUser).getOrElse("")}).")
+      var batchIndex = 0
+      batches.foreach { batch =>
+        batchIndex += 1
+        val taskId = DataGoOutboundClient.submitImage(text, recipientsJson, title, batch, loginUser)
+        logger.info(s"DataGo outbound batch ${batchIndex}/${batches.length} accepted, taskId=${taskId}, batchImages=${batch.length}. Start polling until terminal.")
+        pollUntilTerminal(taskId, loginUser)
+      }
+      logger.info(s"DataGo outbound completed successfully, ${batches.length} batch(es), receivers=${receivers.mkString(",")}.")
     } finally {
       tempFiles.foreach(cleanupTempFile)
     }

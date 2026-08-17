@@ -46,10 +46,13 @@ object DataGoOutboundClient extends Logging {
     val url = s"${baseUrl}${DataGoOutboundConfig.getSendPath}"
     val boundary = "----DSSDataGoBoundary" + System.currentTimeMillis()
     val body = buildMultipartBody(boundary, text, recipientsJson, title, images)
+    val imageSummary = if (images == null || images.isEmpty) "" else
+      images.map(f => s"${f.getName}(${f.length()}B,${imageContentType(f.getName)})").mkString(", ")
     logger.info(s"[DataGo ① request] url=${url}, loginUser=${Option(loginUser).getOrElse("")}, " +
       s"source=${DataGoOutboundConfig.getSource}, type=image, channel=${DataGoOutboundConfig.getChannel}, " +
       s"text=${text}, recipients=${recipientsJson}, title=${title}, " +
-      s"imageCount=${if (images == null) 0 else images.length}")
+      s"imageCount=${if (images == null) 0 else images.length}, bodyBytes=${body.length}" +
+      (if (imageSummary.isEmpty) "" else s", images=${imageSummary}"))
     val response = sendWithRetry(url, body, multipartContentType(boundary), op = "submit", loginUser = loginUser)
     logger.info(s"[DataGo ① response] ${response}")
 
@@ -207,7 +210,7 @@ object DataGoOutboundClient extends Logging {
       images.foreach { file =>
         out.write(s"--${boundary}${CRLF}".getBytes("UTF-8"))
         out.write(s"""Content-Disposition: form-data; name="images"; filename="${file.getName}"${CRLF}""".getBytes("UTF-8"))
-        out.write(s"Content-Type: application/octet-stream${CRLF}${CRLF}".getBytes("UTF-8"))
+        out.write(s"Content-Type: ${imageContentType(file.getName)}${CRLF}${CRLF}".getBytes("UTF-8"))
         out.write(Files.readAllBytes(file.toPath))
         out.write(CRLF.getBytes("UTF-8"))
       }
@@ -218,6 +221,17 @@ object DataGoOutboundClient extends Logging {
   }
 
   // ---------------------------------------------------------------- helpers
+
+  /** Image part Content-Type by filename extension, matching what curl guesses for `@file`. */
+  private def imageContentType(fileName: String): String = {
+    val n = if (fileName == null) "" else fileName.toLowerCase
+    if (n.endsWith(".jpg") || n.endsWith(".jpeg")) "image/jpeg"
+    else if (n.endsWith(".png")) "image/png"
+    else if (n.endsWith(".gif")) "image/gif"
+    else if (n.endsWith(".webp")) "image/webp"
+    else if (n.endsWith(".bmp")) "image/bmp"
+    else "application/octet-stream"
+  }
 
   def escapeJson(value: String): String = {
     if (value == null) {
