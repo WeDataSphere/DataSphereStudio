@@ -164,9 +164,9 @@ object DataGoOutboundClient extends Logging {
         sb.append(line)
       }
       reader.close()
-      val body = sb.toString
+      val responseBody = sb.toString
       logger.info(s"[DataGo HTTP] POST ${urlStr} -> HTTP ${responseCode}")
-      body
+      responseBody
     } catch {
       case e: UpstreamUnreachableException => throw e
       case e: java.net.ConnectException =>
