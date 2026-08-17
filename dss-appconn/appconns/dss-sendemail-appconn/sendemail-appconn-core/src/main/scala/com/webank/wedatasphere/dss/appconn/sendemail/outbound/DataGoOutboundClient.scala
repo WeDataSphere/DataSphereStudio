@@ -42,11 +42,11 @@ object DataGoOutboundClient extends Logging {
 
   // ---------------------------------------------------------------- ① submitImage
 
-  def submitImage(text: String, recipientsJson: String, title: String, images: Array[java.io.File]): Long = {
+  def submitImage(text: String, recipientsJson: String, title: String, images: Array[java.io.File], loginUser: String): Long = {
     val url = s"${baseUrl}${DataGoOutboundConfig.getSendPath}"
     val boundary = "----DSSDataGoBoundary" + System.currentTimeMillis()
     val body = buildMultipartBody(boundary, text, recipientsJson, title, images)
-    val response = sendWithRetry(url, body, multipartContentType(boundary), op = "submit")
+    val response = sendWithRetry(url, body, multipartContentType(boundary), op = "submit", loginUser = loginUser)
 
     val success = getFieldFromJson(response, "success")
     if (!"true".equalsIgnoreCase(success)) {
@@ -67,10 +67,10 @@ object DataGoOutboundClient extends Logging {
 
   // ---------------------------------------------------------------- ② queryTask
 
-  def queryTask(taskId: Long): String = {
+  def queryTask(taskId: Long, loginUser: String): String = {
     val url = s"${baseUrl}${DataGoOutboundConfig.getTaskPath}"
     val body = s"""{"taskId":${taskId},"source":"${escapeJson(DataGoOutboundConfig.getSource)}"}""".getBytes("UTF-8")
-    val response = sendWithRetry(url, body, "application/json; charset=utf-8", op = "query")
+    val response = sendWithRetry(url, body, "application/json; charset=utf-8", op = "query", loginUser = loginUser)
 
     if (response == null || response.trim.isEmpty) {
       throw new EmailSendFailedException(81007, "DataGo query response has no body")
@@ -98,14 +98,14 @@ object DataGoOutboundClient extends Logging {
    * Send with retry. Retries only on UpstreamUnreachableException (502/504 / network unreachable);
    * all other exceptions propagate immediately.
    */
-  private def sendWithRetry(url: String, body: Array[Byte], contentType: String, op: String): String = {
+  private def sendWithRetry(url: String, body: Array[Byte], contentType: String, op: String, loginUser: String): String = {
     val retryMax = DataGoOutboundConfig.getRetryMax
     val retryInterval = DataGoOutboundConfig.getRetryInterval
     var attempt = 0
     var lastError: UpstreamUnreachableException = null
     while (attempt <= retryMax) {
       try {
-        return sendPost(url, body, contentType)
+        return sendPost(url, body, contentType, loginUser)
       } catch {
         case e: UpstreamUnreachableException =>
           lastError = e
@@ -123,7 +123,7 @@ object DataGoOutboundClient extends Logging {
         s"${Option(lastError).map(_.getMessage).getOrElse("")}")
   }
 
-  private def sendPost(urlStr: String, body: Array[Byte], contentType: String): String = {
+  private def sendPost(urlStr: String, body: Array[Byte], contentType: String, loginUser: String): String = {
     val connection = new URL(urlStr).openConnection().asInstanceOf[HttpURLConnection]
     try {
       connection.setRequestMethod("POST")
@@ -132,7 +132,7 @@ object DataGoOutboundClient extends Logging {
       connection.setReadTimeout(DataGoOutboundConfig.getReadTimeout)
       connection.setRequestProperty("Content-Type", contentType)
       connection.setRequestProperty("Authorization", "Bearer " + DataGoOutboundConfig.getSessionToken)
-      connection.setRequestProperty("Cookie", "dss_user_name=" + DataGoOutboundConfig.getDssUserName)
+      connection.setRequestProperty("Cookie", "dss_user_name=" + Option(loginUser).getOrElse(""))
 
       val out = connection.getOutputStream
       out.write(body)

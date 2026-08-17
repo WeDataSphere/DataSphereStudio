@@ -35,10 +35,13 @@ import scala.collection.mutable.ArrayBuffer
  *   4. prepare image attachments (File or base64 temp file, each <= image.maxsize)
  *   5. ① submitImage -> taskId
  *   6. ② poll until terminal (exported = success; failed terminal = 81004; timeout = 81005)
+ *
+ * loginUser (the workflow executeUser, fallback submitUser, read from the runtime map by the
+ * caller) is threaded into ①/② as the dss_user_name cookie value = HDFS upload owner on DataGo.
  */
 object DataGoImageSender extends Logging {
 
-  def send(email: Email): Unit = {
+  def send(email: Email, loginUser: String): Unit = {
     val feishuTo = email.getFeishuTo
     if (feishuTo == null || feishuTo.trim.isEmpty) {
       logger.warn("feishuTo is empty, skip DataGo image outbound.")
@@ -60,9 +63,9 @@ object DataGoImageSender extends Logging {
     val tempFiles = ArrayBuffer[File]()
     val imageFiles = prepareImageFiles(email.getAttachments, tempFiles)
     try {
-      val taskId = DataGoOutboundClient.submitImage(text, recipientsJson, title, imageFiles)
-      logger.info(s"DataGo outbound task accepted, taskId=${taskId}. Start polling until terminal.")
-      pollUntilTerminal(taskId)
+      val taskId = DataGoOutboundClient.submitImage(text, recipientsJson, title, imageFiles, loginUser)
+      logger.info(s"DataGo outbound task accepted, taskId=${taskId}, loginUser=${Option(loginUser).getOrElse("")}. Start polling until terminal.")
+      pollUntilTerminal(taskId, loginUser)
       logger.info(s"DataGo outbound completed successfully, taskId=${taskId}, receivers=${receivers.mkString(",")}.")
     } finally {
       tempFiles.foreach(cleanupTempFile)
@@ -158,11 +161,11 @@ object DataGoImageSender extends Logging {
 
   // ---------------------------------------------------------------- polling
 
-  private def pollUntilTerminal(taskId: Long): Unit = {
+  private def pollUntilTerminal(taskId: Long, loginUser: String): Unit = {
     val deadline = System.currentTimeMillis() + DataGoOutboundConfig.getMaxWait * 1000L
     val interval = DataGoOutboundConfig.getPollInterval * 1000L
     while (true) {
-      val status = DataGoOutboundClient.queryTask(taskId)
+      val status = DataGoOutboundClient.queryTask(taskId, loginUser)
       if (OutboundTaskStatus.isTerminal(status)) {
         if (OutboundTaskStatus.isSuccess(status)) {
           return

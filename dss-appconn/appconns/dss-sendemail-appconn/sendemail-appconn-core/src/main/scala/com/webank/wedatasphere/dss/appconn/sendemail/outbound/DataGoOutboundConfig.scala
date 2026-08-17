@@ -23,17 +23,16 @@ import org.apache.linkis.common.utils.Logging
  * DataGo outbound configuration reader/validator.
  *
  * Reads datago.outbound.* config items from SendEmailAppConnConfiguration and validates them
- * before entering the outbound flow. Authentication uses a page-login session-token plus a
- * dss_user_name cookie (loginUser = claims.username on the DataGo side, also the HDFS upload
- * owner). The old DSS fixed token + IP whitelist is removed.
+ * before entering the outbound flow. Authentication uses a page-login session-token (config) plus
+ * a dss_user_name cookie whose value is the workflow executeUser (fallback submitUser), passed in
+ * from the runtime map by the caller (loginUser = HDFS upload owner on the DataGo side). The old
+ * DSS fixed token + IP whitelist is removed.
  */
 object DataGoOutboundConfig extends Logging {
 
   def getApiBaseUrl: String = SendEmailAppConnConfiguration.DATAGO_OUTBOUND_API_BASE_URL.getValue
 
   def getSessionToken: String = SendEmailAppConnConfiguration.DATAGO_OUTBOUND_SESSION_TOKEN.getValue
-
-  def getDssUserName: String = SendEmailAppConnConfiguration.DATAGO_OUTBOUND_DSS_USER_NAME.getValue
 
   def getSource: String = SendEmailAppConnConfiguration.DATAGO_OUTBOUND_SOURCE.getValue
 
@@ -65,10 +64,6 @@ object DataGoOutboundConfig extends Logging {
     if (getSessionToken.isEmpty) {
       throw new IllegalArgumentException("DataGo outbound session.token is not configured. " +
         "Please set wds.dss.appconn.datago.outbound.session.token in appconn.properties.")
-    }
-    if (getDssUserName.isEmpty) {
-      throw new IllegalArgumentException("DataGo outbound dss.user.name is not configured. " +
-        "Please set wds.dss.appconn.datago.outbound.dss.user.name in appconn.properties.")
     }
     if (getSource.isEmpty) {
       throw new IllegalArgumentException("DataGo outbound source is not configured. " +

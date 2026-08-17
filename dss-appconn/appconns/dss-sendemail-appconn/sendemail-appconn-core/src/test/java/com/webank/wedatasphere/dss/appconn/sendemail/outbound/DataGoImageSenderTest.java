@@ -314,4 +314,38 @@ public class DataGoImageSenderTest {
     public void testShouldSend_trueAndValidFeishuTo_sends() {
         assertTrue(shouldSend("true", "zhangsan"));
     }
+
+    // ---- loginUser (dss_user_name) = executeUser, fallback submitUser ----
+
+    private static String resolveLoginUser(String executeUser, String submitUser) {
+        if (executeUser != null && executeUser.length() > 0) {
+            return executeUser;
+        }
+        return submitUser == null ? "" : submitUser;
+    }
+
+    @Test
+    public void testResolveLoginUser_executeUserPresent_usesExecuteUser() {
+        assertEquals("v_sunpengwang", resolveLoginUser("v_sunpengwang", "burdezhang"));
+    }
+
+    @Test
+    public void testResolveLoginUser_executeUserEmpty_fallsBackToSubmitUser() {
+        assertEquals("burdezhang", resolveLoginUser("", "burdezhang"));
+    }
+
+    @Test
+    public void testResolveLoginUser_executeUserNull_fallsBackToSubmitUser() {
+        assertEquals("burdezhang", resolveLoginUser(null, "burdezhang"));
+    }
+
+    @Test
+    public void testResolveLoginUser_bothEmpty_returnsEmpty() {
+        assertEquals("", resolveLoginUser("", ""));
+    }
+
+    @Test
+    public void testResolveLoginUser_bothNull_returnsEmpty() {
+        assertEquals("", resolveLoginUser(null, null));
+    }
 }

@@ -74,9 +74,13 @@ class SendEmailRefExecutionOperation
     val runtimeMap = requestRef.getExecutionRequestRefContext.getRuntimeMap
     val sendFeishu = Option(runtimeMap.get("sendFeishu")).exists(_.toString.equalsIgnoreCase("true"))
     if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) {
-      logger.info(s"Feishu sending is selected and feishuTo is configured: ${email.getFeishuTo}")
+      // dss_user_name = workflow executeUser, fallback submitUser (loginUser = HDFS upload owner on DataGo)
+      val executeUser = Option(runtimeMap.get("executeUser")).map(_.toString).filter(_.nonEmpty).getOrElse("")
+      val submitUser = Option(runtimeMap.get("submitUser")).map(_.toString).filter(_.nonEmpty).getOrElse("")
+      val loginUser = if (executeUser.nonEmpty) executeUser else submitUser
+      logger.info(s"Feishu sending is selected and feishuTo is configured: ${email.getFeishuTo}, loginUser: ${loginUser}")
       Utils.tryCatch {
-        DataGoImageSender.send(email)
+        DataGoImageSender.send(email, loginUser)
         logger.info("Feishu sending completed successfully.")
       } { t =>
         return putErrorMsg("飞书发送失败！", t)

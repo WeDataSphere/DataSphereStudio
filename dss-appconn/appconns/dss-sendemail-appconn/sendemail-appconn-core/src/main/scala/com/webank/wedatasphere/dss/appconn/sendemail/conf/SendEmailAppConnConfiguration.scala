@@ -58,11 +58,11 @@ object SendEmailAppConnConfiguration {
       "com.webank.wedatasphere.dss.appconn.sendemail.hook.entity.mlssv2.Mlssv2EmailInfo")
 
   // DataGo image outbound configuration (replaces the former fass-core direct Feishu integration).
-  // Authentication uses a page-login session-token + dss_user_name cookie; whether to send is still
-  // controlled by the sendemail node parameter sendFeishu.
+  // Authentication uses a page-login session-token (config) + a dss_user_name cookie whose value is
+  // the workflow executeUser (fallback submitUser) from the runtime map, not a config item; whether
+  // to send is still controlled by the sendemail node parameter sendFeishu.
   val DATAGO_OUTBOUND_API_BASE_URL = CommonVars("wds.dss.appconn.datago.outbound.api.base.url", "")
   val DATAGO_OUTBOUND_SESSION_TOKEN = CommonVars("wds.dss.appconn.datago.outbound.session.token", "")
-  val DATAGO_OUTBOUND_DSS_USER_NAME = CommonVars("wds.dss.appconn.datago.outbound.dss.user.name", "")
   val DATAGO_OUTBOUND_SOURCE = CommonVars("wds.dss.appconn.datago.outbound.source", "dss")
   val DATAGO_OUTBOUND_CHANNEL = CommonVars("wds.dss.appconn.datago.outbound.channel", "feishu")
   val DATAGO_OUTBOUND_SEND_PATH = CommonVars("wds.dss.appconn.datago.outbound.send.path", "/api/outbound/send")
