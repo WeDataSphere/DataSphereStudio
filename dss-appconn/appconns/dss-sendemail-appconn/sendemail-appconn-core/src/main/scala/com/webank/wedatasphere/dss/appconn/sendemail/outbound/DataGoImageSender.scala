@@ -107,13 +107,7 @@ object DataGoImageSender extends Logging {
       throw new EmailSendFailedException(81006,
         s"Image attachment ${fileName} has neither File nor base64 content")
     }
-    val bytes = try {
-      Base64.getDecoder.decode(base64)
-    } catch {
-      case e: IllegalArgumentException =>
-        throw new EmailSendFailedException(81006,
-          s"Image attachment ${fileName} failed to decode base64: ${e.getMessage}")
-    }
+    val bytes = decodeBase64Image(base64, fileName)
     checkFileSize(bytes.length, fileName)
 
     val tempFile = try {
@@ -140,6 +134,40 @@ object DataGoImageSender extends Logging {
     if (size > max) {
       throw new EmailSendFailedException(81006,
         s"Image attachment ${fileName} size ${size} bytes exceeds the ${max} byte limit")
+    }
+  }
+
+  /**
+   * Decode an image attachment's base64 content robustly:
+   *   - strip a `data:<mime>;base64,` data-URI prefix (HTML inline images carry a data URI);
+   *   - strip whitespace / line breaks (commons-codec may chunk output every 76 chars);
+   *   - decode with the standard decoder, falling back to the MIME decoder;
+   *   - on failure surface a content preview so the actual format is diagnosable.
+   */
+  private def decodeBase64Image(raw: String, fileName: String): Array[Byte] = {
+    var s = if (raw == null) "" else raw.trim
+    if (s.startsWith("data:")) {
+      val marker = ";base64,"
+      val idx = s.indexOf(marker)
+      if (idx >= 0) s = s.substring(idx + marker.length)
+      else if (s.indexOf(',') >= 0) s = s.substring(s.indexOf(',') + 1)
+    }
+    val cleaned = s.filterNot(ch => ch == ' ' || ch == '\r' || ch == '\n' || ch == '\t')
+    if (cleaned.isEmpty) {
+      throw new EmailSendFailedException(81006,
+        s"Image attachment ${fileName} base64 content is empty after cleaning")
+    }
+    try {
+      Base64.getDecoder.decode(cleaned)
+    } catch {
+      case _: IllegalArgumentException =>
+        try {
+          Base64.getMimeDecoder.decode(cleaned)
+        } catch {
+          case e2: IllegalArgumentException =>
+            throw new EmailSendFailedException(81006,
+              s"Image attachment ${fileName} failed to decode base64: ${e2.getMessage}, contentPrefix=${cleaned.take(48)}")
+        }
     }
   }
 

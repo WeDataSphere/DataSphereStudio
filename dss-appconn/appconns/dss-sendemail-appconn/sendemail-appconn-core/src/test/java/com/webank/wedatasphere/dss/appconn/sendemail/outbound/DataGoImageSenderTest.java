@@ -348,4 +348,42 @@ public class DataGoImageSenderTest {
     public void testResolveLoginUser_bothNull_returnsEmpty() {
         assertEquals("", resolveLoginUser(null, null));
     }
+
+    // ---- base64 cleaning (data-URI prefix + CRLF/whitespace stripping) ----
+
+    private static String cleanBase64(String raw) {
+        String s = raw == null ? "" : raw.trim();
+        if (s.startsWith("data:")) {
+            String marker = ";base64,";
+            int idx = s.indexOf(marker);
+            if (idx >= 0) {
+                s = s.substring(idx + marker.length());
+            } else if (s.indexOf(',') >= 0) {
+                s = s.substring(s.indexOf(',') + 1);
+            }
+        }
+        StringBuilder sb = new StringBuilder();
+        for (char c : s.toCharArray()) {
+            if (c != ' ' && c != '\r' && c != '\n' && c != '\t') {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    @Test
+    public void testCleanBase64_dataUriPrefixStripped() {
+        assertEquals("iVBOR==", cleanBase64("data:image/png;base64,iVBOR=="));
+    }
+
+    @Test
+    public void testCleanBase64_crlfStripped() {
+        assertEquals("iVBORw0KGgoAAAANSUhEUg==",
+            cleanBase64("iVBORw0KGgoAAAANS\r\nUhEUg=="));
+    }
+
+    @Test
+    public void testCleanBase64_cleanUnchanged() {
+        assertEquals("iVBORw0KGgoAAAANSUhEUg==", cleanBase64("iVBORw0KGgoAAAANSUhEUg=="));
+    }
 }
