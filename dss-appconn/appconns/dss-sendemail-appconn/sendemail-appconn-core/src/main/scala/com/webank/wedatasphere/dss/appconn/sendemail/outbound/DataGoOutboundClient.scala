@@ -46,7 +46,12 @@ object DataGoOutboundClient extends Logging {
     val url = s"${baseUrl}${DataGoOutboundConfig.getSendPath}"
     val boundary = "----DSSDataGoBoundary" + System.currentTimeMillis()
     val body = buildMultipartBody(boundary, text, recipientsJson, title, images)
+    logger.info(s"[DataGo ① request] url=${url}, loginUser=${Option(loginUser).getOrElse("")}, " +
+      s"source=${DataGoOutboundConfig.getSource}, type=image, channel=${DataGoOutboundConfig.getChannel}, " +
+      s"text=${text}, recipients=${recipientsJson}, title=${title}, " +
+      s"imageCount=${if (images == null) 0 else images.length}")
     val response = sendWithRetry(url, body, multipartContentType(boundary), op = "submit", loginUser = loginUser)
+    logger.info(s"[DataGo ① response] ${response}")
 
     val success = getFieldFromJson(response, "success")
     if (!"true".equalsIgnoreCase(success)) {
@@ -70,7 +75,9 @@ object DataGoOutboundClient extends Logging {
   def queryTask(taskId: Long, loginUser: String): String = {
     val url = s"${baseUrl}${DataGoOutboundConfig.getTaskPath}"
     val body = s"""{"taskId":${taskId},"source":"${escapeJson(DataGoOutboundConfig.getSource)}"}""".getBytes("UTF-8")
+    logger.info(s"[DataGo ② request] url=${url}, taskId=${taskId}, source=${DataGoOutboundConfig.getSource}, loginUser=${Option(loginUser).getOrElse("")}, body=${new String(body, "UTF-8")}")
     val response = sendWithRetry(url, body, "application/json; charset=utf-8", op = "query", loginUser = loginUser)
+    logger.info(s"[DataGo ② response] ${response}")
 
     if (response == null || response.trim.isEmpty) {
       throw new EmailSendFailedException(81007, "DataGo query response has no body")
@@ -157,7 +164,9 @@ object DataGoOutboundClient extends Logging {
         sb.append(line)
       }
       reader.close()
-      sb.toString
+      val body = sb.toString
+      logger.info(s"[DataGo HTTP] POST ${urlStr} -> HTTP ${responseCode}")
+      body
     } catch {
       case e: UpstreamUnreachableException => throw e
       case e: java.net.ConnectException =>
