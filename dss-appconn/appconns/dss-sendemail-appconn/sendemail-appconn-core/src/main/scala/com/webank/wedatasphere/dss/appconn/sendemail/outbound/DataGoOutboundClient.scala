@@ -58,9 +58,7 @@ object DataGoOutboundClient extends Logging {
 
     val success = getFieldFromJson(response, "success")
     if (!"true".equalsIgnoreCase(success)) {
-      val code = getFieldFromJson(response, "code")
-      throw new EmailSendFailedException(81002,
-        s"DataGo submit failed: code=${code}, message=${getFieldFromJson(response, "message")}")
+      throw new EmailSendFailedException(81002, s"DataGo submit failed: ${response}")
     }
     val taskIdStr = getFieldFromJson(response, "taskId")
     if (taskIdStr == null || taskIdStr.isEmpty) {
@@ -87,9 +85,7 @@ object DataGoOutboundClient extends Logging {
     }
     val success = getFieldFromJson(response, "success")
     if (!"true".equalsIgnoreCase(success)) {
-      val code = getFieldFromJson(response, "code")
-      throw new EmailSendFailedException(81003,
-        s"DataGo query failed: code=${code}, message=${getFieldFromJson(response, "message")}")
+      throw new EmailSendFailedException(81003, s"DataGo query failed: ${response}")
     }
     val status = getFieldFromJson(response, "status")
     if (status == null || status.isEmpty) {

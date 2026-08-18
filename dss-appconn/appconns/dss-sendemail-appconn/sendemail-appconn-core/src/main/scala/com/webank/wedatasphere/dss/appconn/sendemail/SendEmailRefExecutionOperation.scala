@@ -83,7 +83,7 @@ class SendEmailRefExecutionOperation
         DataGoImageSender.send(email, loginUser)
         logger.info("Feishu sending completed successfully.")
       } { t =>
-        return putErrorMsg("飞书发送失败！", t)
+        return putErrorMsg(s"飞书发送失败！原因：${t.getMessage}", t)
       }
     } else if (sendFeishu) {
       logger.warn("Feishu sending is selected but feishuTo is empty, skip Feishu sending.")
