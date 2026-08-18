@@ -35,6 +35,10 @@ import org.apache.linkis.common.utils.Logging
  * Uses JDK HttpURLConnection with hand-written multipart and lightweight regex JSON extraction,
  * mirroring the prior FeishuClient (no external JSON/HTTP dependency).
  */
+
+/** Result of a ② task query: status plus the human-readable resultSummary (carries the failure reason on terminal-fail). */
+case class TaskQueryResult(status: String, resultSummary: String)
+
 object DataGoOutboundClient extends Logging {
 
   /** Retryable: HTTP 502/504 or a network-level unreachable condition. */
@@ -73,7 +77,7 @@ object DataGoOutboundClient extends Logging {
 
   // ---------------------------------------------------------------- ② queryTask
 
-  def queryTask(taskId: Long, loginUser: String): String = {
+  def queryTask(taskId: Long, loginUser: String): TaskQueryResult = {
     val url = s"${baseUrl}${DataGoOutboundConfig.getTaskPath}"
     val body = s"""{"taskId":${taskId},"source":"${escapeJson(DataGoOutboundConfig.getSource)}"}""".getBytes("UTF-8")
     logger.info(s"[DataGo ② request] url=${url}, taskId=${taskId}, source=${DataGoOutboundConfig.getSource}, loginUser=${Option(loginUser).getOrElse("")}, body=${new String(body, "UTF-8")}")
@@ -91,7 +95,8 @@ object DataGoOutboundClient extends Logging {
     if (status == null || status.isEmpty) {
       throw new EmailSendFailedException(81007, s"DataGo query response has no status: ${response}")
     }
-    status
+    val resultSummary = Option(getFieldFromJson(response, "resultSummary")).getOrElse("")
+    TaskQueryResult(status, resultSummary)
   }
 
   // ---------------------------------------------------------------- HTTP transport

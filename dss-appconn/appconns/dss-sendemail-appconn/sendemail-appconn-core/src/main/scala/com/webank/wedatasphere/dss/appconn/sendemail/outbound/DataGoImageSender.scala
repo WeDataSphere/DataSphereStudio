@@ -204,17 +204,19 @@ object DataGoImageSender extends Logging {
     val deadline = System.currentTimeMillis() + DataGoOutboundConfig.getMaxWait * 1000L
     val interval = DataGoOutboundConfig.getPollInterval * 1000L
     while (true) {
-      val status = DataGoOutboundClient.queryTask(taskId, loginUser)
+      val result = DataGoOutboundClient.queryTask(taskId, loginUser)
+      val status = result.status
       if (OutboundTaskStatus.isTerminal(status)) {
+        logger.info(s"DataGo outbound task ${taskId} terminal: status=${status}, resultSummary=${result.resultSummary}")
         if (OutboundTaskStatus.isSuccess(status)) {
           return
         }
         if (OutboundTaskStatus.isFailedTerminal(status)) {
           throw new EmailSendFailedException(81004,
-            s"DataGo outbound task ${taskId} ended in failed terminal status: ${status} (DataGo has notified receivers)")
+            s"DataGo outbound task ${taskId} ended in failed terminal status: ${status}, resultSummary: ${result.resultSummary} (DataGo has notified receivers)")
         }
         throw new EmailSendFailedException(81004,
-          s"DataGo outbound task ${taskId} ended in unknown terminal status: ${status}")
+          s"DataGo outbound task ${taskId} ended in unknown terminal status: ${status}, resultSummary: ${result.resultSummary}")
       }
       if (System.currentTimeMillis() > deadline) {
         throw new EmailSendFailedException(81005,
