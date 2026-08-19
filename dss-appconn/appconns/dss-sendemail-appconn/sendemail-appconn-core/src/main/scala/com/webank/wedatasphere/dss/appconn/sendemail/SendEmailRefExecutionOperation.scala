@@ -80,9 +80,12 @@ class SendEmailRefExecutionOperation
       val loginUser = if (executeUser.nonEmpty) executeUser else submitUser
       logger.info(s"Feishu sending is selected and feishuTo is configured: ${email.getFeishuTo}, loginUser: ${loginUser}")
       Utils.tryCatch {
+        appendExecutionLog(requestRef, "start Feishu sending")
         DataGoImageSender.send(email, loginUser)
         logger.info("Feishu sending completed successfully.")
+        appendExecutionLog(requestRef, "Feishu sending completed successfully.")
       } { t =>
+        appendExecutionLog(requestRef, s"Feishu sending completed failed. error reason: ${t.getMessage}")
         return putErrorMsg(s"飞书发送失败！原因：${t.getMessage}", t)
       }
     } else if (sendFeishu) {
@@ -95,6 +98,19 @@ class SendEmailRefExecutionOperation
   protected def putErrorMsg(errorMsg: String, t: Throwable): ExecutionResponseRef = {
     logger.error(s"failed to send email, $errorMsg ", t)
     new ExecutionResponseRefBuilder().setException(t).setErrorMsg(errorMsg).error()
+  }
+
+  /** Append a line to the workflow node's execution log (visible in the DSS UI), mirroring dss-datago-feishu-appconn. */
+  private def appendExecutionLog(requestRef: RefExecutionRequestRef.RefExecutionRequestRefImpl, message: String): Unit = {
+    try {
+      val ctx = requestRef.getExecutionRequestRefContext
+      if (ctx != null) {
+        val ts = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+        ctx.appendLog(s"$ts $message")
+      }
+    } catch {
+      case e: Exception => logger.warn("appendExecutionLog failed: " + e.getMessage, e)
+    }
   }
 
 }
