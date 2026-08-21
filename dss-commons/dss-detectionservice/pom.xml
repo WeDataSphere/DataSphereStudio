@@ -55,8 +55,8 @@
         </dependency>
 
         <dependency>
-            <artifactId>commons-lang3</artifactId>
             <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
             <version>${commons.lang3.version}</version>
         </dependency>
 
