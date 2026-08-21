@@ -78,9 +78,9 @@
             <version>5.8.21</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.4</version>
+            <groupId>org.apache.commons</groupId>
+            <version>${commons.lang3.version}</version>
         </dependency>
 
         <dependency>
