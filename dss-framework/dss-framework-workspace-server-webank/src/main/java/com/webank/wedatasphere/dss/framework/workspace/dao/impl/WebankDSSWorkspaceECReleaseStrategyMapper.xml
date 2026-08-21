@@ -36,6 +36,7 @@
         modify_time
         ,execute_instance
         ,execute_time
+        ,minIdleMinutes
     </sql>
 
 
@@ -99,7 +100,6 @@
         #{description,jdbcType=VARCHAR},
         #{queue},
         #{crossCluster},
-        #{minIdleMinutes,jdbcType=INTEGER},
         #{triggerConditionConf},
         #{terminateConditionConf},
         #{imsConf},
@@ -109,7 +109,8 @@
         #{modifier},
         now(),
         null,
-        null
+        null,
+        #{minIdleMinutes,jdbcType=INTEGER}
         )
     </insert>
 
