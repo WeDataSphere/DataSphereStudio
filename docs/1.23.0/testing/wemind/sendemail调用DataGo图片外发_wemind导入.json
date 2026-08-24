@@ -515,6 +515,40 @@
               ]
             }]
           }]
+        }, {
+          "data": {"text": "多图分批与失败原因"},
+          "children": [{
+            "data": {"text": "分类：功能案例"},
+            "children": [{
+              "data": {"text": "【AIGC】多图按张数分批-25张分3批无500"},
+              "children": [
+                {"data": {"text": "条件：image.batch.maxcount=10，节点含25张~55KB PNG附件，feishuTo有效"}, "children": []},
+                {"data": {"text": "步骤：执行sendemail节点(sendFeishu=true)"}, "children": []},
+                {"data": {"text": "预期结果：日志split into 3 batch(es)，各批10/10/5(part<20无500)，3批均exported，收件人收3条消息全投递，每批独立30min deadline"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】失败终态resultSummary打印并透传"},
+              "children": [
+                {"data": {"text": "条件：某批轮询返回status=detected_fail,resultSummary=命中敏感数据:手机号"}, "children": []},
+                {"data": {"text": "步骤：执行sendemail节点，观察节点执行日志与节点错误"}, "children": []},
+                {"data": {"text": "预期结果：终态日志带resultSummary，81004 desc带resultSummary，节点日志输出飞书发送失败及原因"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】节点执行日志appendLog-成功失败"},
+              "children": [
+                {"data": {"text": "条件：分别构造外发成功与外发失败两种场景"}, "children": []},
+                {"data": {"text": "步骤：执行sendemail节点，在DSS UI查看节点执行日志"}, "children": []},
+                {"data": {"text": "预期结果：成功日志含飞书发送成功；失败putErrorMsg前先输出飞书发送失败原因，随后节点失败"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】受理失败异常带原始响应体"},
+              "children": [
+                {"data": {"text": "条件：①接口返回500且body为{\"error\":\"Internal server error\"}"}, "children": []},
+                {"data": {"text": "步骤：执行sendemail节点"}, "children": []},
+                {"data": {"text": "预期结果：81002异常消息含原始响应体，节点日志输出飞书发送失败及该响应体，节点失败"}, "children": []}
+              ]
+            }]
+          }]
         }]
       }]
     }]

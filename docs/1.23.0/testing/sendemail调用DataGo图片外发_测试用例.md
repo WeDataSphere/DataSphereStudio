@@ -48,10 +48,10 @@ HTTP/集成测试: 标注需 SIT 环境验证
 
 | 异常码 | 含义 | 触发场景 | 抛出位置 |
 |:------:|------|---------|---------|
-| —（IllegalArgumentException） | 配置缺失 | base.url/session.token/dss.user.name/source/path 空，或轮询/重试参数非正 | DataGoOutboundConfig.validate() |
-| 81002 | 受理失败 | ① 非 2xx 或业务失败（400/401/413/500），502/504 重试耗尽 | DataGoOutboundClient.submitImage() |
-| 81003 | 轮询失败 | ② 非 2xx 或业务失败，502/504 重试耗尽 | DataGoOutboundClient.queryTask() |
-| 81004 | 终态非 exported | detected_fail / detect_error / export_failed / 未知终态 | DataGoImageSender.pollUntilTerminal() |
+| —（IllegalArgumentException） | 配置缺失 | base.url/session.token/source/path 空，或轮询/重试参数非正 | DataGoOutboundConfig.validate() |
+| 81002 | 受理失败 | ① 非 2xx 或业务失败（400/401/413/500），502/504 重试耗尽；desc 带 DataGo 原始响应体 | DataGoOutboundClient.submitImage() |
+| 81003 | 轮询失败 | ② 非 2xx 或业务失败，502/504 重试耗尽；desc 带 DataGo 原始响应体 | DataGoOutboundClient.queryTask() |
+| 81004 | 终态非 exported | detected_fail / detect_error / export_failed / 未知终态；desc 带 `resultSummary` | DataGoImageSender.pollUntilTerminal() |
 | 81005 | 轮询超时 | 超 max.wait 仍非终态 | DataGoImageSender.pollUntilTerminal() |
 | 81006 | 图片附件准备失败 | >10MB / 无 File 无 base64 / Base64 解码失败 / 写临时文件失败 | DataGoImageSender.prepareImageFile() |
 | 81007 | 响应解析失败 | 无 taskId / taskId 非数字 / 无 status / HTTP 无 body | DataGoOutboundClient |
@@ -68,7 +68,6 @@ HTTP/集成测试: 标注需 SIT 环境验证
 |------|------|------|
 | getApiBaseUrl | `def getApiBaseUrl: String` | 读取 DataGo 基础地址 |
 | getSessionToken | `def getSessionToken: String` | 读取页面登录 session-token |
-| getDssUserName | `def getDssUserName: String` | 读取 loginUser（dss_user_name / HDFS 归属用户） |
 | getSource | `def getSource: String` | 读取 source（默认 dss） |
 | getChannel | `def getChannel: String` | 读取渠道（默认 feishu） |
 | getSendPath / getTaskPath | `def getSendPath: String` 等 | ①② 接口路径 |
@@ -82,8 +81,8 @@ HTTP/集成测试: 标注需 SIT 环境验证
 
 | 方法 | 签名 | 异常 |
 |------|------|------|
-| submitImage | `def submitImage(text, recipientsJson, title, images): Long` | EmailSendFailedException(81002/81007) |
-| queryTask | `def queryTask(taskId): String` | EmailSendFailedException(81003/81007) |
+| submitImage | `def submitImage(text, recipientsJson, title, images, loginUser): Long` | EmailSendFailedException(81002/81007) |
+| queryTask | `def queryTask(taskId, loginUser): TaskQueryResult`（status + resultSummary） | EmailSendFailedException(81003/81007) |
 | escapeJson | `def escapeJson(value): String` | — |
 | sendWithRetry | `private def sendWithRetry(...)` | 502/504 退避重试 |
 | sendPost / readResponse | `private` | EmailSendFailedException(81007) |
@@ -93,8 +92,8 @@ HTTP/集成测试: 标注需 SIT 环境验证
 
 | 方法 | 签名 | 异常 |
 |------|------|------|
-| send | `def send(email: Email): Unit` | EmailSendFailedException(81002-81007) |
-| pollUntilTerminal | `private def pollUntilTerminal(taskId)` | 81004/81005 |
+| send | `def send(email: Email, loginUser: String): Unit`（内部按 `image.batch.maxcount` 分批） | EmailSendFailedException(81002-81007) |
+| pollUntilTerminal | `private def pollUntilTerminal(taskId, loginUser)`（每批独立 max.wait deadline；终态日志带 resultSummary） | 81004/81005 |
 | prepareImageFiles / prepareImageFile | `private` | 81006 |
 | isImageAttachment | `private` | — |
 | resolveText / toJsonArray | `private` | — |
@@ -168,8 +167,8 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 **前置条件**：
 - wds.dss.appconn.datago.outbound.api.base.url=http://uat.dss.bdap.weoa.com/cui
 - wds.dss.appconn.datago.outbound.session.token=test_session_token
-- wds.dss.appconn.datago.outbound.dss.user.name=burdezhang
 - wds.dss.appconn.datago.outbound.source=dss
+- runtimeMap: executeUser=v_sunpengwang（dss_user_name 首选），submitUser=v_sunpengwang（回退）
 
 **测试步骤**：
 1. 设置所有 DataGo 外发配置项为有效值
@@ -243,7 +242,6 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 **预期结果**：
 - API_BASE_URL = ""
 - SESSION_TOKEN = ""
-- DSS_USER_NAME = ""
 - SOURCE = "dss"
 - CHANNEL = "feishu"
 - SEND_PATH = "/api/outbound/send"
@@ -253,6 +251,7 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 - RETRY_MAX = 3
 - RETRY_INTERVAL = 30
 - IMAGE_MAXSIZE = 10485760
+- （dss_user.name 不再是配置项，loginUser 由 runtimeMap 的 executeUser/submitUser 提供）
 
 **优先级**：P1
 **覆盖场景**：边界场景 - 默认值
@@ -949,16 +948,31 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 
 ---
 
-#### TC066：dss.user.name 为空 - 校验失败
+#### TC066：loginUser 取 executeUser，空则回退 submitUser
 
-**前置条件**：api.base.url、session.token 有效，dss.user.name=""
+**前置条件**：runtimeMap 含 executeUser=v_sunpengwang、submitUser=burdezhang
 
-**测试步骤**：调用 `DataGoOutboundConfig.validate()`
+**测试步骤**：`SendEmailRefExecutionOperation` 从 runtimeMap 解析 loginUser 后调用 `DataGoImageSender.send(email, loginUser)`
 
-**预期结果**：抛出 `IllegalArgumentException`，消息包含"dss.user.name is not configured"
+**预期结果**：
+- loginUser=v_sunpengwang（executeUser 非空，首选）；①/② 请求 `Cookie: dss_user_name=v_sunpengwang`
+- 另：executeUser 为空时 loginUser=submitUser
 
 **优先级**：P1
-**覆盖场景**：负向场景 - 鉴权用户缺失
+**覆盖场景**：关键路径 - loginUser 来源
+
+---
+
+#### TC066b：图片 base64 含 CRLF/数据 URI 前缀 - 鲁棒解码
+
+**前置条件**：附件 `getBase64Str` 为 commons-codec 分块（每 76 字符 `\r\n`）或 `data:image/png;base64,...` 数据 URI；`getFile` 为空
+
+**测试步骤**：调用 `DataGoImageSender.send(email, loginUser)` 走 Base64 临时文件路径
+
+**预期结果**：剥离 CRLF/数据 URI 前缀后解码成功，写临时文件提交，不抛 81006；失败时异常含 `contentPrefix=` 预览
+
+**优先级**：P0
+**覆盖场景**：异常场景 - base64 解码鲁棒性
 
 ---
 
@@ -975,29 +989,76 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 
 ---
 
+#### TC068：多图按张数分批 - 25 张分 3 批，无 500
+
+**前置条件**：`image.batch.maxcount=10`；节点含 25 张 ~55KB PNG 附件；feishuTo 有效
+
+**测试步骤**：执行 sendemail 节点（sendFeishu=true）
+
+**预期结果**：
+- 日志 `split into 3 batch(es)`，各批 imageCount 依次 10/10/5（每批 part 数 < 20，无 500）
+- 3 批均 exported；收件人收到 3 条飞书消息，25 张图全投递
+- 每批日志带 `batch i/3 accepted, taskId=...`，且每批轮询独立 30min deadline
+
+**优先级**：P0
+**覆盖场景**：关键路径 - 多图分批（part 上限 20）
+
+---
+
+#### TC069：失败终态 - resultSummary 打印并透传
+
+**前置条件**：某批轮询返回 `status=detected_fail`，`resultSummary="命中敏感数据: 手机号"`
+
+**测试步骤**：执行 sendemail 节点，观察节点执行日志与节点错误
+
+**预期结果**：
+- 终态日志：`DataGo outbound task N terminal: status=detected_fail, resultSummary=命中敏感数据: 手机号`
+- 81004 desc 带 `resultSummary: 命中敏感数据: 手机号`
+- 节点执行日志（appendLog）：`飞书发送失败：...resultSummary...`；节点错误带 `原因：...`
+
+**优先级**：P0
+**覆盖场景**：异常场景 - 失败原因可见
+
+---
+
+#### TC070：节点执行日志 appendLog - 成功/失败
+
+**前置条件**：分别构造外发成功与外发失败（如 session-token 过期）两种场景
+
+**测试步骤**：执行 sendemail 节点，在 DSS UI 查看节点执行日志
+
+**预期结果**：
+- 成功：节点执行日志含 `yyyy-MM-dd HH:mm:ss 飞书发送成功`
+- 失败：`putErrorMsg` 前先输出 `飞书发送失败：<原因>`，随后节点状态失败
+
+**优先级**：P1
+**覆盖场景**：功能测试 - 节点日志可见
+
+---
+
 ## 4. 测试用例统计
 
 ### 4.1 按优先级分布
 
 | 优先级 | 数量 | 占比 |
 |:------:|:----:|:----:|
-| P0 | 27 | 40% |
-| P1 | 31 | 46% |
-| P2 | 9 | 14% |
-| **总计** | **67** | **100%** |
+| P0 | 30 | 42% |
+| P1 | 32 | 45% |
+| P2 | 9 | 13% |
+| **总计** | **71** | **100%** |
 
 ### 4.2 按模块分布
 
 | 模块 | 测试用例数 |
 |------|:--------:|
-| DataGoOutboundConfig | 7 |
+| DataGoOutboundConfig | 6 |
 | OutboundTaskStatus | 4 |
 | DataGoOutboundClient | 15 |
-| DataGoImageSender | 26 |
-| SendEmailRefExecutionOperation | 6 |
+| DataGoImageSender | 29 |
+| SendEmailRefExecutionOperation | 8 |
 | 端到端业务流程 | 6 |
 | 配置项接口 | 3 |
-| **总计** | **67** |
+| **总计** | **71** |
 
 ### 4.3 验收标准覆盖检查
 
@@ -1009,13 +1070,17 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 | AC-04 外发失败节点失败 | TC012, TC051, TC058 | OK |
 | AC-05 图片 >10MB 拒绝 | TC037 | OK |
 | AC-06 多接收人 | TC029, TC059 | OK |
-| AC-07 base.url/session.token/dss.user.name 空抛配置异常 | TC002, TC003, TC066 | OK |
+| AC-07 base.url/session.token 空抛配置异常 | TC002, TC003 | OK |
 | AC-08 502/504 自动重试 | TC013, TC019 | OK |
 | AC-09 轮询超时失败 | TC046 | OK |
 | AC-10 终态失败标记节点失败 | TC042, TC057 | OK |
 | AC-11 recipients 过滤后为空被拒 | TC063 | OK |
+| AC-12 loginUser 取 executeUser/submitUser | TC066 | OK |
+| base64 鲁棒解码（CRLF/数据 URI） | TC066b | OK |
+| AC-13 多图按张数分批 | TC068 | OK |
+| AC-14 失败原因可见 | TC069, TC070 | OK |
 
-**覆盖率**：11/11 验收标准 (100%)
+**覆盖率**：14/14 验收标准 (100%)
 
 ---
 
@@ -1028,13 +1093,15 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 | 测试分组 | 用例数 | 覆盖场景 |
 |---------|:----:|---------|
 | text 兜底 | 3 | null/blank/非空 subject |
-| receivers 解析 | 6 | null/空/纯空格/多接收者/仅分号/JSON 数组 |
+| receivers 解析 | 8 | null/空/纯空格/多接收者/仅分号/trim/JSON 数组 |
 | 图片附件判定 | 4 | png/csv/image media type/pdf |
 | 图片大小校验 | 3 | 限内/超限/临界 |
-| 状态判定 | 7 | success/terminal/failedTerminal/null/unknown |
+| 状态判定 | 5 | success/terminal/failedTerminal/null/unknown |
 | JSON 转义 | 5 | 引号/换行/反斜杠/null/普通文本 |
-| sendFeishu 控制逻辑 | 3 | false/空feishuTo/满足条件 |
-| 合计 | 32 | — |
+| sendFeishu 控制逻辑 | 4 | false/空feishuTo/nullfeishuTo/满足条件 |
+| loginUser 来源 | 5 | executeUser 非空/空回退submitUser/null回退/两者空/两者null |
+| base64 清洗 | 3 | 数据URI前缀剥离/CRLF剥离/干净不变 |
+| 合计 | 40 | — |
 
 ### 5.2 待补充测试（需 Mock 框架 / SIT 环境）
 
@@ -1045,11 +1112,13 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 | TC048-TC053 集成测试 | 依赖 Spring 容器 | SIT 环境验证 |
 | TC054-TC059 端到端 | 依赖完整 DSS+DataGo 环境 | SIT 环境验证 |
 | TC063-TC067 recipients 过滤/鉴权补充 | 依赖 Mock HTTP 与 DataGo 过滤行为 | 添加 Mockito 依赖后补充；TC064/TC065 需 DataGo 真实过滤 SIT 验证 |
+| TC068 多图分批 | 依赖完整 DSS+DataGo 环境 | SIT 环境验证（25 张/10 每批） |
+| TC069/TC070 resultSummary 与节点日志 | TC069 依赖 Mock 轮询；TC070 依赖 DSS UI | SIT 环境验证 |
 
 ---
 
 ## 6. 测试结论
 
-- 已实现 32 个单元测试全部通过，核心逻辑（字段映射、接收者解析、图片判定、状态判定、转义、大小校验）验证正确。
-- HTTP 交互、轮询编排、集成与端到端测试需在 SIT 环境或引入 Mock 框架后补充。
-- 验收标准 11/11 全覆盖（含 recipients 过滤后为空被拒 AC-11）。
+- 已实现 40 个纯逻辑单元测试全部通过，核心逻辑（字段映射、接收者解析、图片判定、状态判定、转义、大小校验、loginUser 来源、base64 清洗）验证正确。
+- HTTP 交互、轮询编排、分批（TC068）、resultSummary 透传（TC069）、节点日志（TC070）、集成与端到端测试需在 SIT 环境或引入 Mock 框架后补充。
+- 验收标准 14/14 全覆盖（含 recipients 过滤、loginUser 来源、base64 解码、多图分批、失败原因可见）。

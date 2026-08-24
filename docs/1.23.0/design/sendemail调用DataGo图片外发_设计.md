@@ -127,10 +127,11 @@ SendEmailRefExecutionOperation.execute(requestRef)
 | `wds.dss.appconn.datago.outbound.send.path` | DATAGO_OUTBOUND_SEND_PATH | String | "/api/outbound/send" | ① 受理路径 |
 | `wds.dss.appconn.datago.outbound.task.path` | DATAGO_OUTBOUND_TASK_PATH | String | "/api/outbound/task" | ② 轮询路径 |
 | `wds.dss.appconn.datago.outbound.poll.interval` | DATAGO_OUTBOUND_POLL_INTERVAL | Int | 10 | 轮询间隔（秒） |
-| `wds.dss.appconn.datago.outbound.max.wait` | DATAGO_OUTBOUND_MAX_WAIT | Int | 120 | 阻塞轮询超时上限（秒） |
+| `wds.dss.appconn.datago.outbound.max.wait` | DATAGO_OUTBOUND_MAX_WAIT | Int | 1800 | **每批**轮询超时上限（秒）；1800=30min/批 |
 | `wds.dss.appconn.datago.outbound.retry.max` | DATAGO_OUTBOUND_RETRY_MAX | Int | 3 | 502/504 重试次数 |
 | `wds.dss.appconn.datago.outbound.retry.interval` | DATAGO_OUTBOUND_RETRY_INTERVAL | Int | 30 | 重试退避间隔（秒） |
 | `wds.dss.appconn.datago.outbound.image.maxsize` | DATAGO_OUTBOUND_IMAGE_MAXSIZE | Int | 10485760 | 单图字节上限（10MB，接口硬约束） |
+| `wds.dss.appconn.datago.outbound.image.batch.maxcount` | DATAGO_OUTBOUND_IMAGE_BATCH_MAXCOUNT | Int | 10 | 按张数分批，每批图片数上限（DataGo multipart part 上限 20，默认 10 留余量；0=不分批） |
 | `wds.dss.appconn.datago.outbound.http.connect.timeout` | DATAGO_OUTBOUND_HTTP_CONNECT_TIMEOUT | Int | 10000 | 连接超时（毫秒） |
 | `wds.dss.appconn.datago.outbound.http.read.timeout` | DATAGO_OUTBOUND_HTTP_READ_TIMEOUT | Int | 60000 | 读取超时（毫秒） |
 
@@ -236,7 +237,7 @@ submitImage(text, recipientsJson, title, images: Array[File], loginUser: String)
 #### 3.4.3 ② 轮询 — queryTask
 
 ```
-queryTask(taskId: Long, loginUser: String): String  // 返回 status
+queryTask(taskId: Long, loginUser: String): TaskQueryResult  // 返回 (status, resultSummary)
     |
     +--> POST {baseUrl}/api/outbound/task  (application/json; charset=utf-8)
     |    Header: Authorization: Bearer <session-token>
@@ -245,10 +246,12 @@ queryTask(taskId: Long, loginUser: String): String  // 返回 status
     |    Body: {"taskId":N,"source":"dss"}
     |
     +--> 解析响应 {success, code, message, data:{taskId, status, resultSummary, ...}}
-    +--> 成功 --> 返回 data.status
-    +--> 失败 --> 抛 EmailSendFailedException(81003)
+    +--> 成功 --> 返回 TaskQueryResult(data.status, data.resultSummary)
+    +--> 失败 --> 抛 EmailSendFailedException(81003)（desc 带原始响应体）
     +--> 502/504 --> 退避重试，耗尽抛 81003
 ```
+
+> **resultSummary**：失败终态时承载原因（如「命中敏感数据」「OCR 失败」）。`pollUntilTerminal` 终态时日志带 `resultSummary`，81004 desc 也带，便于定位。
 
 #### 3.4.4 HTTP 工具方法
 
@@ -288,15 +291,17 @@ send(email: Email, loginUser: String): Unit      // loginUser=executeUser(空则
     |       images = attachments.filter(isImageAttachment).map(prepareImageFile)
     |       prepareImageFile: File 直接用 / Base64 解码写临时文件；逐张校验 ≤ image.maxsize
     |       失败 → 抛 81006；finally 清理临时文件
-    +--> 6. taskId = DataGoOutboundClient.submitImage(text, recipients, title=subject, images, loginUser)  // ①
-    +--> 7. 轮询终态
-            deadline = now + max.wait * 1000
-            loop:
-              status = DataGoOutboundClient.queryTask(taskId, loginUser)  // ②
-              exported            → 成功返回
-              detected_fail / detect_error / export_failed → 抛 81004
-              pending / detecting / detected_pass → sleep(poll.interval*1000)
-              now > deadline      → 抛 81005
+    +--> 6. 按张数分批：batches = images.grouped(image.batch.maxcount)
+    |       （默认 10/批；0=不分批）
+    |       原因：DataGo /api/outbound/send 单请求 multipart part 数上限 20，超过返回 500
+    |       → 每批 ≤ batch.maxcount 张图（< 20，留余量）
+    +--> 7. 逐批：taskId = DataGoOutboundClient.submitImage(text, recipients, title=subject, 该批, loginUser)  // ①
+    |       轮询终态（每批独立 deadline = now + max.wait*1000，默认 1800s=30min/批）
+    |       exported            → 该批成功
+    |       detected_fail / detect_error / export_failed → 抛 81004（fail-fast，后续批不再发）
+    |       pending / detecting / detected_pass → sleep(poll.interval*1000)
+    |       now > deadline      → 抛 81005
+    +--> 8. 全部 exported → 成功（每批 = 一条飞书消息，收件人收到 ⌈N/batch.maxcount⌉ 条）
 ```
 
 **图片附件准备双模式**：
@@ -317,13 +322,15 @@ attachment.isInstanceOf[PngAttachment] ||
 
 | 异常码 | 含义 | 触发场景 |
 |:------:|------|---------|
-| 81001 | 配置缺失 | base.url/session.token 未配置 |
-| 81002 | 受理失败 | ① 非 2xx 或业务失败（400/401/413/500，重试耗尽） |
-| 81003 | 轮询失败 | ② 非 2xx 或业务失败（重试耗尽） |
-| 81004 | 终态非 exported | detected_fail/detect_error/export_failed |
-| 81005 | 轮询超时 | 超 max.wait 仍非终态 |
-| 81006 | 图片附件准备失败 | >10MB / 格式不符 / Base64 解码失败 |
+| 81001 | 配置缺失 | base.url/session.token 未配置（desc 含具体缺哪项 + 配置键） |
+| 81002 | 受理失败 | ① 非 2xx 或业务失败（400/401/413/500，重试耗尽）；**desc 带 DataGo 原始响应体** |
+| 81003 | 轮询失败 | ② 非 2xx 或业务失败（重试耗尽）；**desc 带 DataGo 原始响应体** |
+| 81004 | 终态非 exported | detected_fail/detect_error/export_failed（fail-fast，后续批不再发；desc 带 `resultSummary` 失败原因） |
+| 81005 | 轮询超时 | 超 max.wait 仍非终态（每批独立 deadline） |
+| 81006 | 图片附件准备失败 | >10MB / 格式不符 / Base64 解码失败（带 contentPrefix 预览） |
 | 81007 | 响应解析失败 | 响应非 JSON / 缺字段 / 无 body |
+
+> 节点报错统一带 `原因：<异常 getMessage>`（`putErrorMsg`），即上述任一异常的 desc 都会在工作流节点错误里显示。
 
 ### 3.6 SendEmailRefExecutionOperation 集成
 
@@ -401,10 +408,11 @@ if (sendFeishu && email.getFeishuTo != null && email.getFeishuTo.trim.nonEmpty) 
 | wds.dss.appconn.datago.outbound.send.path | DATAGO_OUTBOUND_SEND_PATH | String | "/api/outbound/send" |
 | wds.dss.appconn.datago.outbound.task.path | DATAGO_OUTBOUND_TASK_PATH | String | "/api/outbound/task" |
 | wds.dss.appconn.datago.outbound.poll.interval | DATAGO_OUTBOUND_POLL_INTERVAL | Int | 10 |
-| wds.dss.appconn.datago.outbound.max.wait | DATAGO_OUTBOUND_MAX_WAIT | Int | 120 |
+| wds.dss.appconn.datago.outbound.max.wait | DATAGO_OUTBOUND_MAX_WAIT | Int | 1800 |
 | wds.dss.appconn.datago.outbound.retry.max | DATAGO_OUTBOUND_RETRY_MAX | Int | 3 |
 | wds.dss.appconn.datago.outbound.retry.interval | DATAGO_OUTBOUND_RETRY_INTERVAL | Int | 30 |
 | wds.dss.appconn.datago.outbound.image.maxsize | DATAGO_OUTBOUND_IMAGE_MAXSIZE | Int | 10485760 |
+| wds.dss.appconn.datago.outbound.image.batch.maxcount | DATAGO_OUTBOUND_IMAGE_BATCH_MAXCOUNT | Int | 10 |
 | wds.dss.appconn.datago.outbound.http.connect.timeout | DATAGO_OUTBOUND_HTTP_CONNECT_TIMEOUT | Int | 10000 |
 | wds.dss.appconn.datago.outbound.http.read.timeout | DATAGO_OUTBOUND_HTTP_READ_TIMEOUT | Int | 60000 |
 
@@ -446,10 +454,11 @@ wds.dss.appconn.datago.outbound.channel=feishu
 # wds.dss.appconn.datago.outbound.send.path=/api/outbound/send
 # wds.dss.appconn.datago.outbound.task.path=/api/outbound/task
 # wds.dss.appconn.datago.outbound.poll.interval=10
-# wds.dss.appconn.datago.outbound.max.wait=120
+# wds.dss.appconn.datago.outbound.max.wait=1800   # 每批轮询超时（秒），1800=30min/批
 # wds.dss.appconn.datago.outbound.retry.max=3
 # wds.dss.appconn.datago.outbound.retry.interval=30
 # wds.dss.appconn.datago.outbound.image.maxsize=10485760
+# wds.dss.appconn.datago.outbound.image.batch.maxcount=10   # 按张数分批，每批≤10（DataGo part 上限 20）；0=不分批
 # wds.dss.appconn.datago.outbound.http.connect.timeout=10000
 # wds.dss.appconn.datago.outbound.http.read.timeout=60000
 ```
@@ -474,10 +483,11 @@ feishuTo=zhangsan;lisi
 
 | 场景 | 性能影响 | 优化措施 |
 |------|---------|---------|
-| 同步阻塞轮询 | 占用执行线程，OCR+检测+投递通常 <1min | max.wait 默认 120s 上限，超时即失败 |
+| 同步阻塞轮询 | 占用执行线程，OCR+检测+投递通常 <1min | max.wait 默认 1800s=30min/批，每批独立 deadline，超时即失败 |
 | 多图片上传 | 与图片大小成正比 | 流式上传，逐张 ≤10MB 校验前置 |
+| 图片数 >20 张 | DataGo 单请求 part 上限 20，超过 500 | 按 `image.batch.maxcount`（默认 10）分批，每批一次受理+轮询；N 张→⌈N/10⌉ 批，最坏 ⌈N/10⌉×30min |
 | 502/504 重试 | 退避等待 | 可配次数/间隔，默认 3 次/30s |
-| 多接收人 | DataGo 内部逐接收人投递 | sendemail 仅受理一次，不逐人调用 |
+| 多接收人 | DataGo 内部逐接收人投递 | sendemail 每批受理一次，不逐人调用 |
 
 ---
 
@@ -514,3 +524,5 @@ feishuTo=zhangsan;lisi
 | v1.0 | 2026-08-06 | 净替换 sendemail 飞书投递为 DataGo 数据外发图片消息接口；删除 fass-core 直发；新增 outbound 包 |
 | v1.1 | 2026-08-14 | 对齐接口文档 v0.3 与 sendemail_image.txt 样例：鉴权改页面登录 session-token + `Cookie: dss_user_name`（去 DSS 固定 Token + IP 白名单）；配置项 `token` 改 `session.token` 并新增 `dss.user.name`；base.url 标注 `/cui` 前缀；明确 DataGo recipients 过滤（v_/系统用户）；② queryTask 补 Cookie 头 |
 | v1.2 | 2026-08-17 | `dss_user_name`（loginUser）不再配置项注入，改取工作流 runtime 的 `executeUser`（空则 `submitUser`）：删除 `wds.dss.appconn.datago.outbound.dss.user.name` 配置项与 `getDssUserName`；`send`/`submitImage`/`queryTask` 透传 `loginUser`；`SendEmailRefExecutionOperation` 从 runtimeMap 解析 loginUser |
+| v1.3 | 2026-08-17 | 图片 Base64 鲁棒解码：剥离 commons-codec 分块 CRLF 与 `data:...;base64,` 数据 URI 前缀，标准→MIME 解码回退，失败带 `contentPrefix` 预览；图片分 Content-Type 改按扩展名（`image/png` 等，对齐 curl）；①/② 请求参数与响应全量 INFO 日志（不截断） |
+| v1.4 | 2026-08-18 | 多图按张数分批：DataGo `/api/outbound/send` 单请求 multipart part 数上限 20（超 500），新增 `image.batch.maxcount`（默认 10，0=不分批）按批 `submitImage→pollUntilTerminal`；`max.wait` 默认 120→1800（30min/批，每批独立 deadline）；81002/81003 desc 改带 DataGo 原始响应体；`putErrorMsg` 统一带 `原因：<getMessage>` |

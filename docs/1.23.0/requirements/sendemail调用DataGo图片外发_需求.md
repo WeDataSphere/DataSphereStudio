@@ -69,10 +69,12 @@ sendemail 节点现有飞书投递（1.23.0 已开发）直连 fass-core 发模�
 |:----:|-------|------|
 | F-P1-01 | 配置校验 | 进入外发流程时校验 base.url/session.token/source/path 非空，轮询/重试参数为正 |
 | F-P1-02 | 502/504 重试 | 受理①与轮询②遇 502/504（上游不可达）退避重试，次数/间隔可配 |
-| F-P1-03 | 轮询超时保护 | 阻塞轮询超 max.wait 仍非终态则失败，避免线程长期占用 |
+| F-P1-03 | 轮询超时保护 | **每批**阻塞轮询超 max.wait（默认 1800s=30min/批，每批独立 deadline）仍非终态则失败 |
 | F-P1-04 | HTTP 超时可配 | 连接/读取超时可配 |
 | F-P1-05 | recipients 过滤感知 | DataGo 拒 `v_` 前缀外包与 `hadoop`/`hduser` 等系统用户前缀，过滤后为空返回 400；sendemail 不预过滤，400 透传为受理失败（81002） |
 | F-P1-06 | loginUser 来源 | `dss_user_name`=工作流 `executeUser`，空则 `submitUser`，从 runtimeMap 解析后透传（= HDFS 上传归属用户）；不落配置 |
+| F-P1-07 | 多图按张数分批 | DataGo `/api/outbound/send` 单请求 part 数上限 20（超 500）；按 `image.batch.maxcount`（默认 10）分批，每批一次受理+轮询；0=不分批 |
+| F-P1-08 | 失败原因透传 | 节点报错带 `原因：<异常 getMessage>`；81002/81003 desc 带 DataGo 原始响应体；81004 desc 带 `resultSummary` |
 
 ### 3.3 功能不包含
 
@@ -101,10 +103,11 @@ sendemail 节点现有飞书投递（1.23.0 已开发）直连 fass-core 发模�
 | wds.dss.appconn.datago.outbound.send.path | String | "/api/outbound/send" | ① 受理路径 |
 | wds.dss.appconn.datago.outbound.task.path | String | "/api/outbound/task" | ② 轮询路径 |
 | wds.dss.appconn.datago.outbound.poll.interval | Int | 10 | 轮询间隔（秒） |
-| wds.dss.appconn.datago.outbound.max.wait | Int | 120 | 超时上限（秒） |
+| wds.dss.appconn.datago.outbound.max.wait | Int | 1800 | 每批轮询超时（秒），1800=30min/批 |
 | wds.dss.appconn.datago.outbound.retry.max | Int | 3 | 502/504 重试次数 |
 | wds.dss.appconn.datago.outbound.retry.interval | Int | 30 | 重试间隔（秒） |
 | wds.dss.appconn.datago.outbound.image.maxsize | Int | 10485760 | 单图字节上限 |
+| wds.dss.appconn.datago.outbound.image.batch.maxcount | Int | 10 | 按张数分批，每批≤10（DataGo part 上限 20）；0=不分批 |
 | wds.dss.appconn.datago.outbound.http.connect.timeout | Int | 10000 | 连接超时（毫秒） |
 | wds.dss.appconn.datago.outbound.http.read.timeout | Int | 60000 | 读取超时（毫秒） |
 
@@ -169,6 +172,7 @@ sendemail 节点执行
 | BR-06 | 同步阻塞轮询 | 在 execute 线程内轮询至终态或超时 |
 | BR-07 | recipients 过滤在 DataGo 侧 | 不预过滤 `v_`/系统用户前缀；过滤后为空 DataGo 返回 400，sendemail 透传为受理失败 |
 | BR-08 | 鉴权用 session-token | 请求带 `Authorization: Bearer <session-token>` + `Cookie: dss_user_name=<loginUser>`；loginUser=`executeUser`（空则 `submitUser`）；token 无效/过期/无 username -> 401 |
+| BR-09 | 多图按张数分批 | 单请求 part 数 >20 DataGo 返回 500；按 `image.batch.maxcount`（默认 10）分批，每批 ≤10 张 < 20；每批一次受理+轮询，每批独立 30min 超时；fail-fast |
 
 ---
 
@@ -188,6 +192,8 @@ sendemail 节点执行
 | AC-10 | 终态失败标记节点失败 | detected_fail 终态，验证节点失败且不重发 |
 | AC-11 | recipients 过滤后为空被拒 | feishuTo 全为 `v_`/系统用户前缀，DataGo 返回 400，sendemail 标记节点失败（81002） |
 | AC-12 | loginUser 取 executeUser/submitUser | runtimeMap 有 executeUser 时以其为 dss_user_name；executeUser 空则取 submitUser；日志可见 loginUser |
+| AC-13 | 多图按张数分批 | 25 张图（batch.maxcount=10）→ 3 批（10/10/5），每批 ≤10 part < 20，无 500；收件人收 3 条消息，全部图片投递 |
+| AC-14 | 失败原因可见 | 受理/轮询/终态失败时节点报错带 `原因：...`（含 DataGo 原始响应体 / resultSummary） |
 
 ---
 
@@ -235,7 +241,7 @@ sendemail 节点执行
 | 编号 | 风险/约束 | 等级 | 应对措施 |
 |:----:|---------|:----:|---------|
 | R-01 | 接口 v0.3 待联调 | 中 | session-token 来源/TTL、401 语义、img_key 细节待 DataGo 确认，不影响实现 |
-| R-02 | 同步阻塞轮询占用线程 | 中 | max.wait 默认 120s 上限，超时即失败 |
+| R-02 | 同步阻塞轮询占用线程 | 中 | max.wait 默认 1800s=30min/批上限（每批独立），超时即失败 |
 | R-03 | DataGo 不可达 | 中 | 502/504 退避重试，耗尽标记节点失败 |
 | R-04 | 图片超大 | 低 | ≤10MB 前置校验，超限抛 81006 |
 | R-05 | OCR/检测耗时不确定 | 中 | 轮询超时兜底，通常 <1min |

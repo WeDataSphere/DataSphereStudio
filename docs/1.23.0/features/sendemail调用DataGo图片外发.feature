@@ -404,3 +404,43 @@
     而且 抛出 EmailSendFailedException(81002)
     而且 sendemail 节点状态为失败
     而且 不重试（非 502/504）
+
+  # ============================================================
+  # 场景11: 多图按张数分批（DataGo 单请求 part 上限 20）
+  # ============================================================
+
+  场景: 图片数超过 20 张时按 image.batch.maxcount 分批提交
+    假如 sendemail 节点参数 sendFeishu=true
+    而且 sendemail 节点包含 25 张 PNG 图片附件（每张 ~55KB）
+    而且 wds.dss.appconn.datago.outbound.image.batch.maxcount 为 10
+    而且 sendemail 节点参数 feishuTo 配置了有效的飞书接收人工号
+    而且 DataGo ① 受理每批均返回 success=true 且 taskId
+    而且 DataGo ② 轮询每批均返回 status=exported
+    当 执行 sendemail 节点
+    那么 日志输出 split into 3 batch(es)
+    而且 各批 imageCount 依次为 10/10/5（每批 part 数 < 20，无 500）
+    而且 每批独立轮询且每批超时上限为 30 分钟
+    而且 25 张图全部投递，收件人收到 3 条飞书消息
+    而且 sendemail 节点状态为成功
+
+  场景: 某批轮询命中敏感（detected_fail）时 fail-fast 且 resultSummary 可见
+    假如 sendemail 节点参数 sendFeishu=true
+    而且 sendemail 节点包含 25 张 PNG 图片附件，image.batch.maxcount=10
+    而且 DataGo 第 2 批轮询返回 status=detected_fail 且 resultSummary="命中敏感数据: 手机号"
+    当 执行 sendemail 节点
+    那么 抛出 EmailSendFailedException(81004)
+    而且 81004 异常消息包含"resultSummary: 命中敏感数据: 手机号"
+    而且 节点执行日志输出"飞书发送失败"及原因
+    而且 sendemail 节点状态为失败
+    而且 fail-fast 不再提交第 3 批
+
+  场景: 受理失败时节点错误与执行日志带原始响应体
+    假如 sendemail 节点参数 sendFeishu=true
+    而且 DataGo ① 受理接口返回 HTTP 500 且 body 为 {"error":"Internal server error"}
+    而且 sendemail 节点参数 feishuTo 配置了有效的飞书接收人工号
+    当 执行 sendemail 节点
+    那么 邮件发送成功
+    而且 抛出 EmailSendFailedException(81002)
+    而且 81002 异常消息包含原始响应体 {"error":"Internal server error"}
+    而且 节点执行日志输出"飞书发送失败：..."且带该响应体
+    而且 sendemail 节点状态为失败
