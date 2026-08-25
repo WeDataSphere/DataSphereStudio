@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -102,6 +103,20 @@ public class WebankDSSWorkspaceResourceTemplateRestful {
                     savedTemplate);
             return Message.ok().data("templateId", savedTemplate.getTemplateId());
         }catch (DSSRuntimeException e){
+            //数据库字段 config_value 长度超限（Data truncation）时，包装成用户可理解的提示，并定位 configValue 最长的配置项
+            String errorMsg = e.getMessage() == null ? "" : e.getMessage().toLowerCase();
+            if (errorMsg.contains("too long") && errorMsg.contains("config_value")) {
+                ECConfItem longest = ecConfTemplate.getParamDetails() == null ? null :
+                        ecConfTemplate.getParamDetails().stream()
+                                .filter(item -> item.getConfigValue() != null)
+                                .max(Comparator.comparingInt(item -> item.getConfigValue().length()))
+                                .orElse(null);
+                if (longest != null && longest.getKey() != null) {
+                    return Message.error("保存模板失败，配置项【" + longest.getKey() + "】的值过长（当前长度"
+                            + longest.getConfigValue().length() + "），已超出字段长度限制，请精简该配置项的值后重试。");
+                }
+                return Message.error("保存模板失败，配置项的值过长，已超出字段长度限制，请精简配置项的值后重试。");
+            }
             return Message.error("保存模板失败。"+e.getMessage());
         }
     }
