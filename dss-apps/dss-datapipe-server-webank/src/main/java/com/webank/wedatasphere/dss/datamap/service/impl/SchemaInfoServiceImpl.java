@@ -30,6 +30,11 @@ public class SchemaInfoServiceImpl implements SchemaInfoService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SchemaInfoServiceImpl.class);
 
+    /**
+     * HDFS默认三副本，配额(spaceQuota)是按副本数统计的物理容量，需除以副本数换算为逻辑容量
+     */
+    private static final int HDFS_REPLICATION_FACTOR = 3;
+
     @Autowired
     DataMapDataSource dataMapDataSource;
 
@@ -57,11 +62,28 @@ public class SchemaInfoServiceImpl implements SchemaInfoService {
             String DbSize = DMUtils.sizeTranslator(dmSchemaBaseInfoBean.getUsedSpace());
             schemaBaseInfoVo.setDbSize(DbSize);
             schemaBaseInfoVo.setTableQuantity(Integer.parseInt(dmSchemaBaseInfoBean.getTableNum()));
-            String DbCapacity = DMUtils.sizeTranslator(dmSchemaBaseInfoBean.getSpaceQuota());
+            // 配额(spaceQuota)按HDFS三副本统计的是物理容量，除以3换算为逻辑容量；DbSize(usedSpace)已是逻辑大小，无需换算
+            String DbCapacity = DMUtils.sizeTranslator(convertQuotaToLogicalSize(dmSchemaBaseInfoBean.getSpaceQuota()));
             schemaBaseInfoVo.setDbCapacity(DbCapacity);
             schemaBaseInfoVo.setDescription(dmSchemaBaseInfoBean.getDescription());
         }
         return schemaBaseInfoVo;
+    }
+
+    /**
+     * 将按HDFS副本数统计的物理配额换算为逻辑容量
+     * 空值或非数字时原样返回，交由sizeTranslator兜底处理
+     */
+    private String convertQuotaToLogicalSize(String quotaStr) {
+        if (StringUtils.isBlank(quotaStr)) {
+            return quotaStr;
+        }
+        try {
+            return String.valueOf(Long.parseLong(quotaStr) / HDFS_REPLICATION_FACTOR);
+        } catch (NumberFormatException nfe) {
+            LOG.warn("The format of space quota returned by DM is illegal: {}", quotaStr);
+            return quotaStr;
+        }
     }
 
     @Override
