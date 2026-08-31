@@ -10,7 +10,8 @@ import com.webank.wedatasphere.dss.common.server.esb.http.HttpStaffInfoGetter;
 import com.webank.wedatasphere.dss.framework.workspace.service.DSSWorkspaceAddUserHook;
 import com.webank.wedatasphere.dss.framework.workspace.service.ECConfTemplateApplyRuleService;
 import com.webank.wedatasphere.dss.common.conf.WorkspaceServerConstant;
-import org.eclipse.jetty.util.StringUtil;
+
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +50,7 @@ public class WebankDSSWorkspaceAddUserHookImpl implements DSSWorkspaceAddUserHoo
         List<ECConfigTemplateApplyRuleDO> dos = ecConfigTemplateApplyRuleMapper.getRules(filter);
         String fullOrgNameByUsername = httpStaffInfoGetter.getFullOrgNameByUsername(userName);
         List<String> ruleIds = new ArrayList<>();
-        if(StringUtil.isNotBlank(fullOrgNameByUsername)){
+        if(StringUtils.isNotBlank(fullOrgNameByUsername)){
             String departmentName = fullOrgNameByUsername.split(WorkspaceServerConstant.DEFAULT_STAFF_SPLIT)[0];
             ruleIds = ecConfigTemplateApplyRuleDepartmentMapper.selectBydDepartment(departmentName, workspaceId);
         }
