@@ -19,6 +19,7 @@ package com.webank.wedatasphere.dss.appconn.sendemail
 import java.util
 
 import com.webank.wedatasphere.dss.appconn.sendemail.conf.SendEmailAppConnInstanceConfiguration
+import com.webank.wedatasphere.dss.appconn.sendemail.cs.EmailCSHelper
 import com.webank.wedatasphere.dss.appconn.sendemail.outbound.DataGoImageSender
 import com.webank.wedatasphere.dss.standard.app.development.listener.ref.ExecutionResponseRef.ExecutionResponseRefBuilder
 import com.webank.wedatasphere.dss.standard.app.development.listener.ref.{ExecutionResponseRef, RefExecutionRequestRef}
@@ -50,7 +51,12 @@ class SendEmailRefExecutionOperation
     emailSender.init(properties)
   }
 
-  override def execute(requestRef: RefExecutionRequestRef.RefExecutionRequestRefImpl): ExecutionResponseRef = {
+  override def execute(requestRef: RefExecutionRequestRef.RefExecutionRequestRefImpl): ExecutionResponseRef =
+    Utils.tryFinally(executeWithJobIdsCache(requestRef)) {
+      EmailCSHelper.clearJobIdsCache(requestRef.getExecutionRequestRefContext)
+    }
+
+  private def executeWithJobIdsCache(requestRef: RefExecutionRequestRef.RefExecutionRequestRefImpl): ExecutionResponseRef = {
     val email = Utils.tryCatch {
       sendEmailAppConnHooks.foreach(_.preGenerate(requestRef))
       val email = emailGenerator.generateEmail(requestRef)

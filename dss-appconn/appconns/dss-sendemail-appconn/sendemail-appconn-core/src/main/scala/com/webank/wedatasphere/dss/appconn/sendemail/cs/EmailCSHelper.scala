@@ -36,12 +36,42 @@ import scala.collection.JavaConversions._
 
 object EmailCSHelper extends Logging{
 
+  private val JOB_IDS_CACHE_KEY = "__dss_sendemail_job_ids_cache__"
+
+  private case class JobIdsCache(jobIds: Array[Long])
+
   /**
     * update by peaceWong form cs to get job ID
     */
   def getJobIds(refContext: ExecutionRequestRefContext): Array[Long] = {
-    val contextIDStr = ContextServiceUtils.getContextIDStrByMap(refContext.getRuntimeMap)
-    val nodeIDs = refContext.getRuntimeMap.get("content") match {
+    val runtimeMap = refContext.getRuntimeMap
+    runtimeMap.synchronized {
+      runtimeMap.get(JOB_IDS_CACHE_KEY) match {
+        case cache: JobIdsCache =>
+          val cachedJobIds = cache.jobIds.clone()
+          info(s"From sendemail execution cache to get Job IDs ${cachedJobIds.toList}.")
+          cachedJobIds
+        case _ =>
+          val jobIds = loadJobIds(refContext)
+          runtimeMap.put(JOB_IDS_CACHE_KEY, JobIdsCache(jobIds.clone()))
+          jobIds
+      }
+    }
+  }
+
+  private[sendemail] def clearJobIdsCache(refContext: ExecutionRequestRefContext): Unit = {
+    if (refContext != null && refContext.getRuntimeMap != null) {
+      val runtimeMap = refContext.getRuntimeMap
+      runtimeMap.synchronized {
+        runtimeMap.remove(JOB_IDS_CACHE_KEY)
+      }
+    }
+  }
+
+  private def loadJobIds(refContext: ExecutionRequestRefContext): Array[Long] = {
+    val runtimeMap = refContext.getRuntimeMap
+    val contextIDStr = ContextServiceUtils.getContextIDStrByMap(runtimeMap)
+    val nodeIDs = runtimeMap.get("content") match {
       case string: String => JSONUtils.gson.fromJson(string, classOf[java.util.List[String]])
       case list: java.util.List[String] => list
     }
