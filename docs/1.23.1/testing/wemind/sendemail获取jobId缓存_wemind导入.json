@@ -1,0 +1,168 @@
+{
+  "root": {
+    "data": {"text": "DSS_SENDMAIL"},
+    "children": [{
+      "data": {"text": "路径"},
+      "children": [{
+        "data": {"text": "需求：REQ-DSS-1.23.1-001 sendemail获取jobId缓存"},
+        "children": [{
+          "data": {"text": "缓存命中与首次加载"},
+          "children": [{
+            "data": {"text": "分类：功能案例"},
+            "children": [{
+              "data": {"text": "【AIGC】执行内首次获取走CS原加载链并写缓存"},
+              "children": [
+                {"data": {"text": "条件：runtimeMap含content=[node1,node2]，CS侧nodeName/jobId查询可用"}, "children": []},
+                {"data": {"text": "步骤：\n1、构造Mock refContext(含runtimeMap)\n2、首次调用EmailCSHelper.getJobIds"}, "children": []},
+                {"data": {"text": "预期结果：返回与升级前一致的jobIds(顺序=content顺序)，日志输出From cs to getJob ids与Job IDs is，runtimeMap写入__dss_sendemail_job_ids_cache__(内容为返回值副本)"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】执行内第二次获取命中缓存"},
+              "children": [
+                {"data": {"text": "条件：首次getJobIds已完成，缓存已写入"}, "children": []},
+                {"data": {"text": "步骤：再次调用EmailCSHelper.getJobIds"}, "children": []},
+                {"data": {"text": "预期结果：返回与首次相同的jobIds(值与顺序)，日志输出From sendemail execution cache to get Job IDs，不再触发CS查询"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】多次获取仅一次CS加载"},
+              "children": [
+                {"data": {"text": "条件：缓存未写入，循环调用getJobIds共K次(K>=3)"}, "children": []},
+                {"data": {"text": "步骤：连续调用getJobIds并统计日志"}, "children": []},
+                {"data": {"text": "预期结果：From cs to getJob ids日志仅出现1次，其余K-1次均命中缓存"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】命中缓存返回数组为副本"},
+              "children": [
+                {"data": {"text": "条件：缓存已写入(jobIds=[1,2,3])"}, "children": []},
+                {"data": {"text": "步骤：\n1、getJobIds获取副本A，排序为[3,2,1]并追加元素4\n2、再次getJobIds获取副本B"}, "children": []},
+                {"data": {"text": "预期结果：B仍为[1,2,3](原始顺序与长度)，缓存未被A的修改污染"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】写缓存存副本-加载结果修改不影响缓存"},
+              "children": [
+                {"data": {"text": "条件：首次加载返回数组R(未命中分支返回加载结果本身)"}, "children": []},
+                {"data": {"text": "步骤：对R排序/增删后再次getJobIds"}, "children": []},
+                {"data": {"text": "预期结果：再次获取返回原始顺序与长度(缓存写入时已clone，R的修改不影响缓存)"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】缓存key存在非JobIdsCache类型值时安全覆盖"},
+              "children": [
+                {"data": {"text": "条件：runtimeMap预置__dss_sendemail_job_ids_cache__=普通字符串"}, "children": []},
+                {"data": {"text": "步骤：调用getJobIds"}, "children": []},
+                {"data": {"text": "预期结果：不抛ClassCastException，按未命中走CS加载并以JobIdsCache覆盖旧值"}, "children": []}
+              ]
+            }]
+          }]
+        }, {
+          "data": {"text": "异常与不写缓存"},
+          "children": [{
+            "data": {"text": "分类：异常案例"},
+            "children": [{
+              "data": {"text": "【AIGC】content为空抛80003且不写缓存"},
+              "children": [
+                {"data": {"text": "条件：runtimeMap content=[]"}, "children": []},
+                {"data": {"text": "步骤：调用getJobIds"}, "children": []},
+                {"data": {"text": "预期结果：抛EmailSendFailedException(80003,empty result set is not allowed)，runtimeMap无缓存key"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】CS返回jobIds为空抛80003且不写缓存"},
+              "children": [
+                {"data": {"text": "条件：content非空但所有节点jobId查询结果为空"}, "children": []},
+                {"data": {"text": "步骤：调用getJobIds"}, "children": []},
+                {"data": {"text": "预期结果：同content为空场景，80003且无缓存写入"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】加载失败后同执行内再次调用可重试加载"},
+              "children": [
+                {"data": {"text": "条件：首次getJobIds因CS异常失败(未写缓存)，CS恢复后Mock返回正常"}, "children": []},
+                {"data": {"text": "步骤：再次调用getJobIds"}, "children": []},
+                {"data": {"text": "预期结果：再次走CS加载链并成功写缓存(失败结果未被缓存)"}, "children": []}
+              ]
+            }]
+          }]
+        }, {
+          "data": {"text": "生命周期清理"},
+          "children": [{
+            "data": {"text": "分类：功能案例"},
+            "children": [{
+              "data": {"text": "【AIGC】clearJobIdsCache移除缓存"},
+              "children": [
+                {"data": {"text": "条件：缓存已写入"}, "children": []},
+                {"data": {"text": "步骤：调用EmailCSHelper.clearJobIdsCache(refContext)后再getJobIds"}, "children": []},
+                {"data": {"text": "预期结果：runtimeMap中key被移除，再次getJobIds重新走CS加载"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】clearJobIdsCache空安全"},
+              "children": [
+                {"data": {"text": "条件：分别构造refContext=null、runtimeMap=null"}, "children": []},
+                {"data": {"text": "步骤：调用clearJobIdsCache"}, "children": []},
+                {"data": {"text": "预期结果：静默返回，不抛NPE"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】execute正常成功后缓存被清理"},
+              "children": [
+                {"data": {"text": "条件：sendemail节点执行成功(邮件发送成功)"}, "children": []},
+                {"data": {"text": "步骤：执行节点，观察execute返回后runtimeMap"}, "children": []},
+                {"data": {"text": "预期结果：__dss_sendemail_job_ids_cache__不存在(tryFinally成功路径清理)"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】execute失败后缓存被清理"},
+              "children": [
+                {"data": {"text": "条件：邮件发送失败(SMTP异常)或DataGo外发失败，execute返回错误响应"}, "children": []},
+                {"data": {"text": "步骤：执行节点至失败结束"}, "children": []},
+                {"data": {"text": "预期结果：错误响应返回前finally已执行，缓存被移除"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】execute执行体抛异常时缓存被清理"},
+              "children": [
+                {"data": {"text": "条件：构造执行体抛出未捕获异常(如hooks抛RuntimeException)"}, "children": []},
+                {"data": {"text": "步骤：执行节点使异常向外传播"}, "children": []},
+                {"data": {"text": "预期结果：异常传播前finally清理缓存"}, "children": []}
+              ]
+            }]
+          }]
+        }, {
+          "data": {"text": "并发测试"},
+          "children": [{
+            "data": {"text": "分类：功能案例"},
+            "children": [{
+              "data": {"text": "【AIGC】并发首次获取仅一次CS加载"},
+              "children": [
+                {"data": {"text": "条件：缓存未写入，起N(>=8)个线程CountDownLatch对齐起点同时调用getJobIds"}, "children": []},
+                {"data": {"text": "步骤：并发调用并收集各线程结果"}, "children": []},
+                {"data": {"text": "预期结果：CS加载链仅执行1次(From cs to getJob ids日志仅一条)，各线程结果一致，无异常无脏数据"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】getJobIds与clearJobIdsCache并发无半态"},
+              "children": [
+                {"data": {"text": "条件：缓存已写入，线程A循环getJobIds，线程B循环clearJobIdsCache"}, "children": []},
+                {"data": {"text": "步骤：两线程并发运行一段时间后停止"}, "children": []},
+                {"data": {"text": "预期结果：getJobIds要么拿到完整缓存副本要么走完整加载，无部分写入状态，最终无异常"}, "children": []}
+              ]
+            }]
+          }]
+        }, {
+          "data": {"text": "端到端验证"},
+          "children": [{
+            "data": {"text": "分类：功能案例"},
+            "children": [{
+              "data": {"text": "【AIGC】多上游节点工作流执行-日志特征与内容一致"},
+              "children": [
+                {"data": {"text": "条件：工作流含>=2个上游节点(产出图片结果集)+sendemail节点(category=node)"}, "children": []},
+                {"data": {"text": "步骤：\n1、执行工作流\n2、查看sendemail节点日志与收件邮箱"}, "children": []},
+                {"data": {"text": "预期结果：日志中From cs to getJob ids至多1次，若多次获取出现From sendemail execution cache日志；邮件附件与升级前一致；节点成功"}, "children": []}
+              ]
+            }, {
+              "data": {"text": "【AIGC】存量工作流回归-行为与升级前一致"},
+              "children": [
+                {"data": {"text": "条件：升级前已验证的存量sendemail工作流(含sendFeishu=true的DataGo外发节点)"}, "children": []},
+                {"data": {"text": "步骤：升级后原样执行存量工作流"}, "children": []},
+                {"data": {"text": "预期结果：邮件/飞书投递行为、节点状态、异常表现与升级前完全一致(缓存对调用方透明)"}, "children": []}
+              ]
+            }]
+          }]
+        }]
+      }]
+    }]
+  }
+}
