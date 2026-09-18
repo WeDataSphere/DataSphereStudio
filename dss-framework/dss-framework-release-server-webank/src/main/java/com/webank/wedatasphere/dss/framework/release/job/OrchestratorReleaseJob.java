@@ -145,10 +145,13 @@ public class OrchestratorReleaseJob extends AbstractReleaseJob{
                 this.releaseEnv.getConversionService().uploadFlowVersionCompareInfo(releaseUser,
                         projectId, orchestratorId,workspace);
                 LOGGER.info("No 3.1 release for orchestrator,upload compare info to  scheduler success");
-            }catch (Exception e){
+            }catch (Throwable t){
                 //对比信息上传失败，不影响主流程，仅仅记录下错误。
-                LOGGER.error("upload workflow compare info failed",e);
-                this.getReleaseTask().setLogMsg("upload workflow compare info failed");
+                // 注意:必须 catch Throwable 而非 Exception。classloader 竞态/热刷新场景下,
+                // apply 内可能抛 NoClassDefFoundError 等 Error,catch(Exception) 接不住会被
+                // FutureTask 静默吞掉,导致 No3.1 之后无任何日志、job 卡死 RUNNING。
+                LOGGER.error("upload workflow compare info failed, class={}", t.getClass().getName(), t);
+                this.getReleaseTask().setLogMsg("upload workflow compare info failed: " + t.getClass().getSimpleName() + ": " + t.getMessage());
             }
             //4.在开发中心添加一个版本号
             errmsg = ReleaseCodeEnum.ERROR_FOURTH.getCode();
@@ -159,10 +162,14 @@ public class OrchestratorReleaseJob extends AbstractReleaseJob{
 
             //5.如果都没有报错，那么默认任务应该是成功的,那么则将所有的状态进行置为完成
             this.releaseEnv.getReleaseJobListener().onJobSucceed(this);
-        }catch(final Exception e) {
+        }catch(final Throwable e) {
+            // 必须接 Throwable 而非 Exception:run() 由 releaseThreadPool.submit(job) 包进 FutureTask 执行,
+            // 若此处抛出 NoClassDefFoundError 等 Error 且只 catch Exception,Error 会逃逸出 run(),
+            // 被 FutureTask 静默吞进 future.outcome(无人 future.get()),表现为 No3 后无日志、job 卡死 RUNNING。
+            // 这里接住后,走 onJobFailed 让任务快速失败、释放发布锁,并把完整堆栈记入日志。
             LOGGER.error("");
             LOGGER.error("");
-            LOGGER.error("release for orchestrator {} failed", orchestratorId, e);
+            LOGGER.error("release for orchestrator {} failed, class={}", orchestratorId, e.getClass().getName(), e);
             String errorCode = "";
             try {
                 if (e instanceof ErrorException) {
