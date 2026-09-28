@@ -3,7 +3,7 @@ package com.webank.wedatasphere.dss.workflow.service.impl;
 import com.webank.wedatasphere.dss.workflow.dao.ProjectOrchestratorWhiteMapper;
 import com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite;
 import com.webank.wedatasphere.dss.workflow.service.ProjectOrchestratorWhiteService;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

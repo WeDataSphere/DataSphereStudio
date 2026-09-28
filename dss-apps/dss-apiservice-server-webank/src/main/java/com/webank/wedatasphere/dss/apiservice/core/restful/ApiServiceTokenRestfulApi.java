@@ -32,7 +32,7 @@ import com.webank.wedatasphere.dss.apiservice.core.vo.TokenManagerVo;
 import com.webank.wedatasphere.dss.apiservice.core.bo.TokenQuery;
 import org.apache.linkis.server.Message;
 import org.apache.linkis.server.security.SecurityFilter;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

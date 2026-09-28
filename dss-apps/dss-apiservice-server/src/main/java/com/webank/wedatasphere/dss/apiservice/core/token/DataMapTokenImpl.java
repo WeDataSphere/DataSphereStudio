@@ -23,7 +23,7 @@ import com.webank.wedatasphere.dss.apiservice.core.exception.ApiServiceTokenExce
 import com.webank.wedatasphere.dss.apiservice.core.bo.ApiServiceToken;
 import com.webank.wedatasphere.dss.apiservice.core.vo.ApprovalVo;
 import com.webank.wedatasphere.dss.apiservice.core.vo.TokenManagerVo;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

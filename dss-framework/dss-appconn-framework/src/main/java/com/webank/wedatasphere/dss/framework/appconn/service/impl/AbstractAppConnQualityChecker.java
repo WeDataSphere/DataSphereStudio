@@ -3,7 +3,7 @@ package com.webank.wedatasphere.dss.framework.appconn.service.impl;
 import com.webank.wedatasphere.dss.appconn.core.AppConn;
 import com.webank.wedatasphere.dss.framework.appconn.exception.AppConnQualityErrorException;
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnQualityChecker;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

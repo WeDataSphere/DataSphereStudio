@@ -9,7 +9,7 @@ import com.webank.wedatasphere.dss.common.utils.DSSCommonUtils;
 import com.webank.wedatasphere.dss.common.StaffInfo;
 import com.webank.wedatasphere.dss.common.server.esb.conf.EsbConf;
 import com.webank.wedatasphere.dss.common.StaffInfoGetter;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.common.utils.Utils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;

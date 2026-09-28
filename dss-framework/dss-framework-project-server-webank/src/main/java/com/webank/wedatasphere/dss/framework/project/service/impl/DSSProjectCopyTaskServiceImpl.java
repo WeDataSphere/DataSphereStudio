@@ -22,7 +22,7 @@ import com.webank.wedatasphere.dss.framework.project.dao.DSSProjectCopyTaskMappe
 import com.webank.wedatasphere.dss.framework.project.entity.DSSProjectCopyTask;
 import com.webank.wedatasphere.dss.framework.project.entity.request.ProjectCopyStatusRequest;
 import com.webank.wedatasphere.dss.framework.project.service.DSSProjectCopyTaskService;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

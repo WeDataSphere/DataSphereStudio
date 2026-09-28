@@ -17,7 +17,7 @@
 package com.webank.wedatasphere.dss.common.utils;
 
 import com.webank.wedatasphere.dss.common.exception.*;
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.linkis.common.exception.ErrorException;
 import org.apache.linkis.common.exception.WarnException;
 import org.apache.linkis.server.Message;

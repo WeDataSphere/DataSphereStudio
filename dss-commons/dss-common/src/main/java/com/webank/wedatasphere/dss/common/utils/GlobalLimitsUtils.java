@@ -2,7 +2,7 @@ package com.webank.wedatasphere.dss.common.utils;
 
 import com.webank.wedatasphere.dss.common.conf.DSSCommonConf;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.common.conf.BDPConfiguration;
 import org.apache.linkis.protocol.util.ImmutablePair;
 import org.slf4j.Logger;

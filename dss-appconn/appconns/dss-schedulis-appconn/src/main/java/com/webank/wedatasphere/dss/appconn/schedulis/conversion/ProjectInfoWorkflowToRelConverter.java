@@ -26,7 +26,7 @@ import com.webank.wedatasphere.dss.workflow.conversion.entity.ProjectPreConversi
 import com.webank.wedatasphere.dss.workflow.conversion.operation.WorkflowToRelConverter;
 import com.webank.wedatasphere.dss.workflow.core.entity.Workflow;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

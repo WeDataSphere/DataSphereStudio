@@ -27,7 +27,7 @@ import com.webank.wedatasphere.dss.datamap.exception.DataMapException;
 import com.webank.wedatasphere.dss.datamap.service.SchemaInfoService;
 import com.webank.wedatasphere.dss.datamap.util.RestfulResponseUtils;
 import com.webank.wedatasphere.dss.standard.sso.utils.SSOHelper;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.server.Message;
 import org.apache.linkis.server.security.SecurityFilter;
 import org.apache.poi.ss.usermodel.*;

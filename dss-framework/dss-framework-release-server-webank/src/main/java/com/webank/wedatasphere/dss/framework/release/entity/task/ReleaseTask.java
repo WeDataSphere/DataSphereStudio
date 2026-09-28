@@ -19,7 +19,7 @@
 package com.webank.wedatasphere.dss.framework.release.entity.task;
 
 import com.webank.wedatasphere.dss.framework.release.job.ReleaseStatus;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Date;
 
