@@ -28,7 +28,7 @@ import com.webank.wedatasphere.dss.orchestrator.server.service.WebankAppService;
 import com.webank.wedatasphere.dss.sender.service.DSSSenderServiceFactory;
 import org.apache.linkis.rpc.Sender;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -15,7 +15,7 @@ import com.webank.wedatasphere.dss.git.service.DSSGitProjectManagerService;
 import com.webank.wedatasphere.dss.git.service.DSSGitWorkflowManagerService;
 import com.webank.wedatasphere.dss.git.utils.DSSGitUtils;
 import com.webank.wedatasphere.dss.git.utils.FileUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;

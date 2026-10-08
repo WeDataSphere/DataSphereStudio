@@ -23,7 +23,7 @@ import com.webank.wedatasphere.dss.apiservice.core.token.TokenAuth;
 import com.webank.wedatasphere.dss.apiservice.core.util.ApiUtils;
 import com.webank.wedatasphere.dss.apiservice.core.util.DateUtil;
 import com.webank.wedatasphere.dss.apiservice.core.vo.TokenManagerVo;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.server.Message;
 import org.apache.linkis.server.security.SecurityFilter;
 import org.slf4j.Logger;

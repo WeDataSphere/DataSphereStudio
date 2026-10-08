@@ -24,7 +24,7 @@ import com.webank.wedatasphere.dss.framework.appconn.dao.AppConnMapper;
 import com.webank.wedatasphere.dss.framework.appconn.dao.AppInstanceMapper;
 import com.webank.wedatasphere.dss.framework.appconn.entity.AppConnBean;
 import com.webank.wedatasphere.dss.framework.appconn.utils.AppConnServiceUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

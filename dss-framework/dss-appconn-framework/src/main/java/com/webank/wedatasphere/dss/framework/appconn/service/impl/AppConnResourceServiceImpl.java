@@ -31,7 +31,7 @@ import com.webank.wedatasphere.dss.framework.appconn.exception.AppConnNotExistsE
 import com.webank.wedatasphere.dss.framework.appconn.service.AppConnResourceUploadService;
 import com.webank.wedatasphere.dss.framework.appconn.utils.AppConnServiceUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.bml.client.BmlClient;
 import org.apache.linkis.bml.client.BmlClientFactory;
 import org.apache.linkis.bml.protocol.BmlUpdateResponse;

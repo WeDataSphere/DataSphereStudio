@@ -28,7 +28,7 @@ import com.webank.wedatasphere.dss.apiservice.core.service.ApprovalService;
 import com.webank.wedatasphere.dss.apiservice.core.vo.ApprovalVo;
 import com.webank.wedatasphere.dss.apiservice.core.vo.TokenManagerVo;
 import org.apache.linkis.common.exception.ErrorException;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;

@@ -37,7 +37,7 @@ import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
 import com.webank.wedatasphere.dss.sender.service.conf.DSSSenderServiceConf;
 import com.webank.wedatasphere.dss.standard.common.desc.AppDescImpl;
 import com.webank.wedatasphere.dss.standard.common.desc.AppInstanceImpl;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.common.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

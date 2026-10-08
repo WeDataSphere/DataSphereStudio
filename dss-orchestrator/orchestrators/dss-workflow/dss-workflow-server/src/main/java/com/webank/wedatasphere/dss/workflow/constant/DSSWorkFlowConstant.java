@@ -19,7 +19,7 @@ package com.webank.wedatasphere.dss.workflow.constant;
 import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
 import com.webank.wedatasphere.dss.common.conf.DSSCommonConf;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.linkis.common.conf.CommonVars;
 import org.apache.linkis.common.conf.CommonVars$;

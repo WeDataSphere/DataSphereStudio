@@ -26,7 +26,7 @@ import com.webank.wedatasphere.dss.orchestrator.core.plugin.DSSOrchestratorPlugi
 import com.webank.wedatasphere.dss.orchestrator.publish.ConversionDSSOrchestratorPlugin;
 import com.webank.wedatasphere.dss.sender.service.DSSSenderServiceFactory;
 import com.webank.wedatasphere.dss.standard.app.sso.Workspace;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.linkis.common.utils.ByteTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -20,7 +20,7 @@ import com.webank.wedatasphere.dss.framework.workspace.bean.DSSDictionary;
 import com.webank.wedatasphere.dss.framework.workspace.bean.vo.DSSDictionaryRequestVO;
 import com.webank.wedatasphere.dss.framework.workspace.service.DSSDictionaryService;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.server.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

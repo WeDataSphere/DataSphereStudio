@@ -28,7 +28,7 @@ import com.webank.wedatasphere.dss.linkis.node.execution.listener.LinkisExecutio
 import com.webank.wedatasphere.dss.plugins.azkaban.linkis.jobtype.conf.LinkisJobTypeConf;
 import com.webank.wedatasphere.dss.plugins.azkaban.linkis.jobtype.job.JobBuilder;
 import com.webank.wedatasphere.dss.plugins.azkaban.linkis.jobtype.log.AzkabanJobLog;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.common.utils.JsonUtils;
 import org.slf4j.Logger;
 

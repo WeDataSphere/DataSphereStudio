@@ -16,7 +16,7 @@
 
 package com.webank.wedatasphere.dss.framework.release.conf;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Arrays;
 

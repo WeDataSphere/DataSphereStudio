@@ -39,7 +39,7 @@ import org.apache.linkis.cs.common.entity.object.LinkisVariable;
 import org.apache.linkis.cs.common.entity.resource.LinkisBMLResource;
 import org.apache.linkis.cs.common.entity.source.*;
 import org.apache.linkis.cs.common.utils.CSCommonUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

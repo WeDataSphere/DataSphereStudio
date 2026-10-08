@@ -23,7 +23,7 @@ import com.webank.wedatasphere.dss.framework.release.dao.ReleaseTaskMapper;
 import com.webank.wedatasphere.dss.framework.release.job.AbstractReleaseJob;
 import com.webank.wedatasphere.dss.framework.release.job.ReleaseStatus;
 import com.webank.wedatasphere.dss.framework.release.job.hook.ReleaseHook;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

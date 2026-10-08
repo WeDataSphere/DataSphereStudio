@@ -26,7 +26,7 @@ import com.webank.wedatasphere.dss.orchestrator.core.impl.DefaultOrchestrator;
 import com.webank.wedatasphere.dss.orchestrator.core.type.DSSOrchestratorRelation;
 import com.webank.wedatasphere.dss.orchestrator.core.type.DSSOrchestratorRelationManager;
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

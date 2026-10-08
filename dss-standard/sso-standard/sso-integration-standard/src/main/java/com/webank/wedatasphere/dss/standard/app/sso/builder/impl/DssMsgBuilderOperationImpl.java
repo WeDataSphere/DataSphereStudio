@@ -17,7 +17,7 @@
 package com.webank.wedatasphere.dss.standard.app.sso.builder.impl;
 
 import com.webank.wedatasphere.dss.standard.app.sso.builder.DssMsgBuilderOperation;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

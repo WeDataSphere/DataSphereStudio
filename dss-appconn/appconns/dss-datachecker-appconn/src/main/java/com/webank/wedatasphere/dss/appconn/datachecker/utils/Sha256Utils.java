@@ -1,6 +1,6 @@
 package com.webank.wedatasphere.dss.appconn.datachecker.utils;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;

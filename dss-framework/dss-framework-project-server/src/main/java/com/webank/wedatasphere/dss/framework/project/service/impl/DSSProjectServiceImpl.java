@@ -76,7 +76,7 @@ import com.webank.wedatasphere.dss.standard.app.structure.project.ref.DSSProject
 import com.webank.wedatasphere.dss.standard.common.desc.AppInstance;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.rpc.Sender;
 import org.apache.linkis.server.Message;
 import org.slf4j.Logger;

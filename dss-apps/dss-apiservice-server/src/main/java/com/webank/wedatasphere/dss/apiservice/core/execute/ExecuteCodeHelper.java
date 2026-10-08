@@ -21,7 +21,7 @@ import com.webank.wedatasphere.dss.apiservice.core.action.ResultSetDownloadActio
 import com.webank.wedatasphere.dss.apiservice.core.action.ResultWorkspaceIds;
 import com.webank.wedatasphere.dss.apiservice.core.config.ApiServiceConfiguration;
 import com.webank.wedatasphere.dss.apiservice.core.exception.ApiExecuteException;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.common.utils.Utils;
 import org.apache.linkis.ujes.client.UJESClient;
 import org.apache.linkis.ujes.client.request.ResultSetAction;

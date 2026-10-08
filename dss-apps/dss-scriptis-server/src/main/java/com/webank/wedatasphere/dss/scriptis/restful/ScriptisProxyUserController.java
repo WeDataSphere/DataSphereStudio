@@ -9,7 +9,7 @@ import com.webank.wedatasphere.dss.scriptis.dao.ScriptisProxyUserMapper;
 import com.webank.wedatasphere.dss.scriptis.pojo.entity.ProxyUserRevokeRequest;
 import com.webank.wedatasphere.dss.scriptis.pojo.entity.ScriptisProxyUser;
 import com.webank.wedatasphere.dss.scriptis.service.ScriptisProxyUserService;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.server.Message;

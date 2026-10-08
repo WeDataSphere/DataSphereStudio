@@ -24,7 +24,7 @@ import com.webank.wedatasphere.dss.appconn.schedulis.conversion.NodeConverter;
 import com.webank.wedatasphere.dss.common.utils.DSSCommonUtils;
 import com.webank.wedatasphere.dss.workflow.core.constant.WorkflowConstant;
 import com.webank.wedatasphere.dss.workflow.core.entity.WorkflowNode;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;

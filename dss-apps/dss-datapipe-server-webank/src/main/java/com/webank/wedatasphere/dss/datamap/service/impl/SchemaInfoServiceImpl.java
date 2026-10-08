@@ -12,7 +12,7 @@ import com.webank.wedatasphere.dss.datamap.domain.vo.*;
 import com.webank.wedatasphere.dss.datamap.exception.DataMapException;
 import com.webank.wedatasphere.dss.datamap.service.DSSWorkspaceService;
 import com.webank.wedatasphere.dss.datamap.service.SchemaInfoService;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

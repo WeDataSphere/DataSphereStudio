@@ -279,7 +279,7 @@ public class DSSFrameworkProjectRestfulApi {
         if (projectModifyRequest.getDescription().length() > MAX_DESC_LENGTH) {
             return Message.error("The project description information is too long, exceeding the maximum length:" + MAX_DESC_LENGTH);
         }
-        if (org.apache.commons.lang3.StringUtils.isNotEmpty(projectModifyRequest.getBusiness()) && projectModifyRequest.getBusiness().length() > MAX_BUSSINESS_SIZE) {
+        if (org.apache.commons.lang.StringUtils.isNotEmpty(projectModifyRequest.getBusiness()) && projectModifyRequest.getBusiness().length() > MAX_BUSSINESS_SIZE) {
             return Message.error("The project bussiness is too long, exceeding the maximum length:" + MAX_BUSSINESS_SIZE);
         }
         DSSProjectDO dbProject = dssProjectService.getProjectById(projectModifyRequest.getId());

@@ -27,7 +27,7 @@ import com.webank.wedatasphere.dss.linkis.node.execution.conf.LinkisJobExecution
 import com.webank.wedatasphere.dss.linkis.node.execution.entity.BMLResource
 import com.webank.wedatasphere.dss.linkis.node.execution.job._
 import com.webank.wedatasphere.dss.workflow.core.entity.WorkflowNode
-import org.apache.commons.lang3.StringUtils
+import org.apache.commons.lang.StringUtils
 
 
 object AppConnJobBuilder {

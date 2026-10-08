@@ -18,7 +18,7 @@ import com.webank.wedatasphere.dss.git.common.protocol.response.GitHistoryRespon
 import com.webank.wedatasphere.dss.git.common.protocol.config.GitServerConfig;
 import com.webank.wedatasphere.dss.git.common.protocol.util.UrlUtils;
 import com.webank.wedatasphere.dss.git.constant.DSSGitConstant;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;

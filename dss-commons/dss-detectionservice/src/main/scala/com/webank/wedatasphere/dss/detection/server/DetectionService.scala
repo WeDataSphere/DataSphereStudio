@@ -6,7 +6,7 @@ import com.webank.wedatasphere.dss.detection.server.message.{DetectionMessage, I
 import com.webank.wedatasphere.dss.detection.server.method.{DetectionMethod, OfficialDetectionMethod}
 import com.webank.wedatasphere.dss.detection.server.result.{DetectionResult, DetectionResultFactory, ResultType}
 import com.webank.wedatasphere.dss.detection.server.utils.ConstantUtils
-import org.apache.commons.lang3.StringUtils
+import org.apache.commons.lang.StringUtils
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util

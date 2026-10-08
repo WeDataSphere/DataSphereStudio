@@ -55,7 +55,7 @@ import com.webank.wedatasphere.dss.workflow.entity.ProjectOrchestratorWhite;
 import com.webank.wedatasphere.dss.workflow.lock.DSSFlowEditLockManager;
 import com.webank.wedatasphere.dss.workflow.service.DSSFlowService;
 import com.webank.wedatasphere.dss.workflow.service.ProjectOrchestratorWhiteService;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.apache.linkis.server.Message;
 import org.apache.linkis.server.security.SecurityFilter;

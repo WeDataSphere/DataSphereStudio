@@ -26,7 +26,7 @@ import com.webank.wedatasphere.dss.apiservice.core.vo.MessageVo;
 import org.apache.linkis.common.exception.WarnException;
 import org.apache.linkis.server.Message;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

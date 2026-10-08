@@ -8,7 +8,7 @@ import com.webank.wedatasphere.dss.workflow.conversion.entity.WorkflowPreConvers
 import com.webank.wedatasphere.dss.workflow.conversion.operation.WorkflowToRelConverter;
 import com.webank.wedatasphere.dss.workflow.core.entity.Workflow;
 import com.webank.wedatasphere.dss.workflow.core.entity.WorkflowNode;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Map;
 import java.util.function.Function;

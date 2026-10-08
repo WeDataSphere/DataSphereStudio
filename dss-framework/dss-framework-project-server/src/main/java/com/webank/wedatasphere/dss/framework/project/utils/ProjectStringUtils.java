@@ -38,7 +38,7 @@ public class ProjectStringUtils {
     public static final String KEY_SPLIT = "-";
 
     public static List<String> convertList(String str){
-        if(org.apache.commons.lang3.StringUtils.isEmpty(str)){
+        if(org.apache.commons.lang.StringUtils.isEmpty(str)){
             return new ArrayList<>();
         }
         return Arrays.stream(str.split(MODE_SPLIT)).map(String::trim).filter((s)-> StringUtils.isNotBlank(s)).distinct().collect(Collectors.toList());

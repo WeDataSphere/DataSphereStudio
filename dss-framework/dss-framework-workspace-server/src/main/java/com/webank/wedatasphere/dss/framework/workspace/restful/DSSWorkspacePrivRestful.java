@@ -31,7 +31,7 @@ import com.webank.wedatasphere.dss.framework.workspace.service.DSSWorkspacePrivS
 import com.webank.wedatasphere.dss.framework.workspace.service.DSSWorkspaceService;
 import com.webank.wedatasphere.dss.framework.workspace.util.WorkspaceDBHelper;
 import com.webank.wedatasphere.dss.framework.workspace.util.WorkspaceUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.apache.linkis.server.Message;
 import org.apache.linkis.server.security.SecurityFilter;

@@ -23,7 +23,7 @@ import com.google.gson.JsonParser;
 import com.webank.wedatasphere.dss.common.entity.Resource;
 import com.webank.wedatasphere.dss.workflow.common.parser.NodeParser;
 import org.apache.linkis.server.BDPJettyServerHelper;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;

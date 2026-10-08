@@ -18,8 +18,8 @@ package com.webank.wedatasphere.dss.appconn.loader.loader;
 
 
 import com.webank.wedatasphere.dss.appconn.loader.conf.AppConnLoaderConf;
-import org.apache.commons.lang3.ClassUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.ClassUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +39,7 @@ public class AppConnLoaderFactory {
                     String className = AppConnLoaderConf.CLASS_LOADER_CLASS_NAME().getValue();
                     if (StringUtils.isNotBlank(className)){
                         try{
-                            clazz = (Class<? extends AppConnLoader>) ClassUtils.getClass(className);
+                            clazz = ClassUtils.getClass(className);
                         }catch(ClassNotFoundException e){
                             logger.warn(String.format("Can not get AppConnLoader class %s, CommonAppConnLoader will be used by default.", className), e);
                         }

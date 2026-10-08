@@ -1,6 +1,6 @@
 package com.webank.wedatasphere.dss.detection.server.utils;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
 

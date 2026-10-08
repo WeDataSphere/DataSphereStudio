@@ -20,7 +20,7 @@ package com.webank.wedatasphere.dss.common.utils;
 
 import com.webank.wedatasphere.dss.common.exception.DSSErrorException;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

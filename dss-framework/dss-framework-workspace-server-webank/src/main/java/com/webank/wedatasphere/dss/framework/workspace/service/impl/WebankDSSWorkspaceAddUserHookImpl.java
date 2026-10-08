@@ -11,7 +11,7 @@ import com.webank.wedatasphere.dss.framework.workspace.service.DSSWorkspaceAddUs
 import com.webank.wedatasphere.dss.framework.workspace.service.ECConfTemplateApplyRuleService;
 import com.webank.wedatasphere.dss.common.conf.WorkspaceServerConstant;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

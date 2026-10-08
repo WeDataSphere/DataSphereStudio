@@ -11,7 +11,7 @@ import com.webank.wedatasphere.dss.framework.project.entity.ProjectOperateRecord
 import com.webank.wedatasphere.dss.framework.project.enums.ProjectOperateRecordStatusEnum;
 import com.webank.wedatasphere.dss.framework.project.enums.ProjectOperateTypeEnum;
 import com.webank.wedatasphere.dss.framework.project.service.WebankDSSProjectOperateService;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Nullable;

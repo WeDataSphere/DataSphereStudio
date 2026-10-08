@@ -21,7 +21,7 @@ import com.webank.wedatasphere.dss.appconn.sendemail.emailcontent.domain.TableEm
 import org.apache.linkis.common.utils.Utils
 import org.apache.linkis.storage.resultset.table.{TableMetaData, TableRecord}
 import org.apache.commons.io.IOUtils
-import org.apache.commons.lang3.StringUtils
+import org.apache.commons.lang.StringUtils
 
 object TableEmailContentParser extends AbstractEmailContentParser[TableEmailContent] {
   override protected def parseEmailContent(emailContent: TableEmailContent,

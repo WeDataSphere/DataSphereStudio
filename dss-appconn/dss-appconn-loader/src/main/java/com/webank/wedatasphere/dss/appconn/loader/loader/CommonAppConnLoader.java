@@ -24,7 +24,7 @@ import com.webank.wedatasphere.dss.appconn.loader.utils.AppConnUtils;
 import com.webank.wedatasphere.dss.common.utils.DSSExceptionUtils;
 import com.webank.wedatasphere.dss.standard.common.utils.AppStandardClassUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.linkis.common.conf.BDPConfiguration;
 import org.apache.linkis.common.exception.ErrorException;
 import org.slf4j.Logger;
