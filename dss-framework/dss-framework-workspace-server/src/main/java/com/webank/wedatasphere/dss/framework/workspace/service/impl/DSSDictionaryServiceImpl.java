@@ -21,7 +21,7 @@ import com.webank.wedatasphere.dss.framework.workspace.bean.DSSDictionary;
 import com.webank.wedatasphere.dss.framework.workspace.bean.vo.DSSDictionaryRequestVO;
 import com.webank.wedatasphere.dss.framework.workspace.dao.DSSDictionaryMapper;
 import com.webank.wedatasphere.dss.framework.workspace.service.DSSDictionaryService;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

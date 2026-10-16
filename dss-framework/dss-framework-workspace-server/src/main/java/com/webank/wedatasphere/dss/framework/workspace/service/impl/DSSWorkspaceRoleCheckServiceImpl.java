@@ -3,7 +3,7 @@ package com.webank.wedatasphere.dss.framework.workspace.service.impl;
 import com.webank.wedatasphere.dss.framework.workspace.dao.DSSWorkspaceMapper;
 import com.webank.wedatasphere.dss.framework.workspace.service.DSSWorkspaceRoleCheckService;
 import com.webank.wedatasphere.dss.framework.workspace.service.DSSWorkspaceService;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;

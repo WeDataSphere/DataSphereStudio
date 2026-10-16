@@ -1,6 +1,6 @@
 package com.webank.wedatasphere.dss.framework.appconn.conf;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.common.conf.CommonVars;
 
 import java.util.Arrays;

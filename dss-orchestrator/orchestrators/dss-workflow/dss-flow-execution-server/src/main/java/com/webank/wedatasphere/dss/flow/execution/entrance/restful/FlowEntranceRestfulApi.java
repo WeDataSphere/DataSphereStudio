@@ -30,7 +30,7 @@ import com.webank.wedatasphere.dss.flow.execution.entrance.enums.ExecuteStrategy
 import com.webank.wedatasphere.dss.flow.execution.entrance.service.WorkflowExecutionInfoService;
 import com.webank.wedatasphere.dss.standard.sso.utils.SSOHelper;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.common.log.LogUtils;
 import org.apache.linkis.entrance.EntranceServer;
 import org.apache.linkis.entrance.annotation.EntranceServerBeanAnnotation;

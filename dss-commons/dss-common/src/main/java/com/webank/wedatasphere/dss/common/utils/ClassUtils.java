@@ -18,7 +18,7 @@ package com.webank.wedatasphere.dss.common.utils;
 
 import com.webank.wedatasphere.dss.common.exception.DSSErrorException;
 import com.webank.wedatasphere.dss.common.exception.DSSRuntimeException;
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.reflections.Reflections;
 
 import java.util.List;

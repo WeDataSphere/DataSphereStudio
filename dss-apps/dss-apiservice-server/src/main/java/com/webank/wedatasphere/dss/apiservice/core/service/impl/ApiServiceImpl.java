@@ -43,7 +43,7 @@ import org.apache.linkis.storage.script.Variable;
 import org.apache.linkis.storage.script.VariableParser;
 import org.apache.linkis.storage.script.writer.StorageScriptFsWriter;
 import org.apache.linkis.ujes.client.UJESClient;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Consts;
 import org.apache.ibatis.annotations.Param;
 //import org.mortbay.log.Log;

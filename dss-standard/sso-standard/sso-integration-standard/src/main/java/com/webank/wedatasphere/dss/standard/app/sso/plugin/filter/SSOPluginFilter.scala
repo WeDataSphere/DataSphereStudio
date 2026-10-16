@@ -22,7 +22,7 @@ import com.webank.wedatasphere.dss.standard.app.sso.plugin.filter.proxy.{DSSInte
 import com.webank.wedatasphere.dss.standard.sso.utils.ProxyUserSSOUtils
 import javax.servlet._
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 import org.apache.linkis.protocol.util.ImmutablePair
 
 

@@ -14,7 +14,7 @@ import com.webank.wedatasphere.dss.apiservice.core.stategy.ExecutionEngineServic
 import com.webank.wedatasphere.dss.apiservice.core.util.HttpClientUtil;
 import com.webank.wedatasphere.dss.apiservice.core.vo.ApiServiceVo;
 import com.webank.wedatasphere.dss.apiservice.core.vo.ApiVersionVo;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.ujes.client.UJESClient;
 import org.apache.linkis.ujes.client.response.JobExecuteResult;
 import org.slf4j.Logger;

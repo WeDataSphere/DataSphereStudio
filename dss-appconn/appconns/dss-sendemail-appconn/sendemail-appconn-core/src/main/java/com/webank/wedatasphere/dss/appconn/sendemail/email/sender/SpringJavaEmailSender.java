@@ -20,7 +20,7 @@ import com.webank.wedatasphere.dss.appconn.sendemail.email.Email;
 import com.webank.wedatasphere.dss.appconn.sendemail.email.domain.Attachment;
 import com.webank.wedatasphere.dss.appconn.sendemail.exception.EmailSendFailedException;
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.common.conf.CommonVars;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

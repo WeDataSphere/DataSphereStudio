@@ -4,7 +4,7 @@ import com.webank.wedatasphere.dss.flow.execution.entrance.dao.WorkflowExecuteIn
 import com.webank.wedatasphere.dss.flow.execution.entrance.entity.WorkflowExecuteInfo;
 import com.webank.wedatasphere.dss.flow.execution.entrance.entity.WorkflowExecuteInfoVo;
 import com.webank.wedatasphere.dss.flow.execution.entrance.service.WorkflowExecutionInfoService;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

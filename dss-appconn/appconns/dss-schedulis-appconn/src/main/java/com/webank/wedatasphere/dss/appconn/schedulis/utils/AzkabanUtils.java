@@ -17,7 +17,7 @@
 package com.webank.wedatasphere.dss.appconn.schedulis.utils;
 
 import com.webank.wedatasphere.dss.common.utils.DSSCommonUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 import java.util.Objects;

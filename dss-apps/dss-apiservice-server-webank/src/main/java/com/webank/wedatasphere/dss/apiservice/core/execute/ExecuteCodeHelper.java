@@ -12,7 +12,7 @@ import gudusoft.gsqlparser.TGSqlParser;
 import gudusoft.gsqlparser.nodes.TTable;
 import gudusoft.gsqlparser.nodes.TTableList;
 import gudusoft.gsqlparser.stmt.TUseDatabase;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.common.utils.Utils;
 import org.apache.linkis.governance.common.entity.task.RequestPersistTask;
 import org.apache.linkis.ujes.client.UJESClient;

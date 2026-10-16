@@ -33,8 +33,8 @@ import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalO
 import com.webank.wedatasphere.dss.workflow.conversion.entity.ConvertedRel;
 import com.webank.wedatasphere.dss.workflow.conversion.operation.WorkflowToRelSynchronizer;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.linkis.httpclient.request.BinaryBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

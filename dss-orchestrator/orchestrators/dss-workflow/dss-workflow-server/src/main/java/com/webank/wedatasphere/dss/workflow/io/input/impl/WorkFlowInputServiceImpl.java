@@ -40,7 +40,7 @@ import com.webank.wedatasphere.dss.workflow.io.input.WorkFlowInputService;
 import com.webank.wedatasphere.dss.common.service.BMLService;
 import com.webank.wedatasphere.dss.workflow.scheduler.DssJobThreadPool;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.cs.common.utils.CSCommonUtils;
 import org.apache.linkis.server.BDPJettyServerHelper;
 import org.slf4j.Logger;

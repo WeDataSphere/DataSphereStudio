@@ -3,7 +3,7 @@ package com.webank.wedatasphere.dss.orchestrator.core.type;
 import com.webank.wedatasphere.dss.common.utils.ClassUtils;
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationWarnException;
 import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.common.conf.BDPConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

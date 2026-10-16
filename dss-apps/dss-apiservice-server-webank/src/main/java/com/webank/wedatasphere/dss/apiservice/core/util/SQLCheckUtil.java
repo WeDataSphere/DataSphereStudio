@@ -18,7 +18,7 @@
 
 package com.webank.wedatasphere.dss.apiservice.core.util;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
