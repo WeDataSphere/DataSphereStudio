@@ -2,10 +2,11 @@ package org.apache.dolphinscheduler.api.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.dolphinscheduler.api.enums.Status;
+import org.apache.dolphinscheduler.api.service.impl.BaseServiceImpl;
 import org.apache.dolphinscheduler.api.utils.PageInfo;
-import org.apache.dolphinscheduler.common.Constants;
+import org.apache.dolphinscheduler.common.constants.Constants;
 import org.apache.dolphinscheduler.common.utils.DateUtils;
 import org.apache.dolphinscheduler.dao.entity.ProcessInstance;
 import org.apache.dolphinscheduler.dao.entity.Project;
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
  * @since 0.5.0
  */
 @Service
-public class ProcessInstanceMetricsService extends BaseDAGService  {
+public class ProcessInstanceMetricsService extends BaseServiceImpl  {
 
     private static final Logger logger = LoggerFactory.getLogger(ProcessInstanceMetricsService.class);
 
@@ -47,7 +48,7 @@ public class ProcessInstanceMetricsService extends BaseDAGService  {
         Map<String, Object> result = new HashMap<>(16);
         Project project = projectMapper.queryByName(projectName);
 
-        Map<String, Object> checkResult = projectService.checkProjectAndAuth(loginUser, project, projectName);
+        Map<String, Object> checkResult = projectService.checkProjectAndAuth(loginUser, project, project.getCode(), projectName);
         Status resultEnum = (Status)checkResult.get(Constants.STATUS);
         if (resultEnum != Status.SUCCESS) {
             return checkResult;
@@ -85,8 +86,8 @@ public class ProcessInstanceMetricsService extends BaseDAGService  {
             }
         }
 
-        pageInfo.setTotalCount((int)processInstanceList.getTotal());
-        pageInfo.setLists(processInstances);
+        pageInfo.setTotal((int)processInstanceList.getTotal());
+        pageInfo.setTotalList(processInstances);
         result.put(Constants.DATA_LIST, pageInfo);
         putMsg(result, Status.SUCCESS);
         return result;
@@ -96,7 +97,7 @@ public class ProcessInstanceMetricsService extends BaseDAGService  {
         Integer processDefinitionId, String executorName, List<String> dateList, int state, int step) {
         Project project = projectMapper.queryByName(projectName);
 
-        Map<String, Object> checkResult = projectService.checkProjectAndAuth(loginUser, project, projectName);
+        Map<String, Object> checkResult = projectService.checkProjectAndAuth(loginUser, project, project.getCode(), projectName);
         Status resultEnum = (Status)checkResult.get(Constants.STATUS);
         if (resultEnum != Status.SUCCESS) {
             return checkResult;

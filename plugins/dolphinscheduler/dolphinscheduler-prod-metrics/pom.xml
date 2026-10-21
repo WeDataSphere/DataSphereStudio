@@ -35,6 +35,54 @@
             <artifactId>dolphinscheduler-api</artifactId>
             <version>${dolphinscheduler.version}</version>
             <scope>provided</scope>
+            <exclusions>
+                <!-- DS 3.2.1 仍基于 Spring 5 + javax.servlet，与 DSS 升级后的 Spring 6 + jakarta 体系冲突。
+                     排除其传递的 javax servlet-api 与 Spring 5 web/webmvc，使编译 classpath 上只剩 jakarta 版，
+                     保证 SSOPluginFilter(jakarta.Filter) 能正确匹配 FilterRegistrationBean 的类型上界。 -->
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>javax.servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.servlet.jsp</groupId>
+                    <artifactId>jsp-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-web</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-webmvc</artifactId>
+                </exclusion>
+                <!-- DS 3.2.1 基于 Spring Boot 2.x(javax)，其传递的 spring-boot 2.7.3 提供的是
+                     javax 版 FilterRegistrationBean，与 DSS 的 Spring Boot 3(jakarta)冲突，
+                     导致 FilterRegistrationBean<SSOPluginFilter> 类型上界不匹配。全部排除。 -->
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-autoconfigure</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-web</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- DSS 已升级到 Spring Boot 3(jakarta)。上面排除 DS 传递的 javax 版 spring-boot 后，
+             FilterRegistrationBean 需由 DSS 的 spring-boot 3.3.5 提供（jakarta 版），与 SSOPluginFilter(jakarta.Filter) 匹配。 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot</artifactId>
+            <version>${spring.boot.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.webank.wedatasphere.dss</groupId>

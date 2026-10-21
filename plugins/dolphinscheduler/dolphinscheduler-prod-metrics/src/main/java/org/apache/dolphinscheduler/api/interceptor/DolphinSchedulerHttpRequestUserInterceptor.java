@@ -7,7 +7,8 @@ import org.apache.dolphinscheduler.api.enums.Status;
 import org.apache.dolphinscheduler.api.exceptions.ServiceException;
 import org.apache.dolphinscheduler.api.security.Authenticator;
 import org.apache.dolphinscheduler.api.service.SessionService;
-import org.apache.dolphinscheduler.common.Constants;
+import org.apache.dolphinscheduler.common.constants.Constants;
+import org.apache.dolphinscheduler.dao.entity.Session;
 import org.apache.dolphinscheduler.dao.entity.User;
 import org.apache.dolphinscheduler.dao.mapper.UserMapper;
 import org.slf4j.Logger;
@@ -44,7 +45,8 @@ public class DolphinSchedulerHttpRequestUserInterceptor implements HttpRequestUs
             logger.error("DSS user {} is not exists in DolphinScheduler db.", user);
             throw new ServiceException(Status.USER_NOT_EXIST);
         }
-        String sessionId = sessionService.createSession(userObj, BaseController.getClientIpAddress(req));
+        Session session = sessionService.createSessionIfAbsent(userObj);
+        String sessionId = session.getId();
         Cookie cookie = new Cookie(Constants.SESSION_ID, sessionId);
         cookie.setHttpOnly(true);
         logger.info("added a new session.id {} for DSS user {}.", sessionId, user);
@@ -58,14 +60,35 @@ public class DolphinSchedulerHttpRequestUserInterceptor implements HttpRequestUs
 
     @Override
     public boolean isUserExistInSession(HttpServletRequest req) {
-        return authenticator.getAuthUser(req) != null;
+        return getUser(req) != null;
     }
 
     @Override
     public String getUser(HttpServletRequest req) {
-        User user = authenticator.getAuthUser(req);
+        String sessionId = getSessionId(req);
+        if(sessionId == null) {
+            return null;
+        }
+        Session session = sessionService.getSession(sessionId);
+        if(session == null) {
+            return null;
+        }
+        User user = userMapper.selectById(session.getUserId());
         if(user != null) {
             return user.getUserName();
+        }
+        return null;
+    }
+
+    private String getSessionId(HttpServletRequest req) {
+        Cookie[] cookies = req.getCookies();
+        if(cookies == null) {
+            return null;
+        }
+        for(Cookie cookie : cookies) {
+            if(Constants.SESSION_ID.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
         }
         return null;
     }
