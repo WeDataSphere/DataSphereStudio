@@ -38,6 +38,10 @@
                     <artifactId>mchange-commons-java</artifactId>
                     <groupId>com.mchange</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>c3p0</artifactId>
+                    <groupId>com.mchange</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -45,6 +49,12 @@
             <artifactId>mchange-commons-java</artifactId>
             <groupId>com.mchange</groupId>
             <version>0.4.0</version>
+        </dependency>
+
+        <dependency>
+            <artifactId>c3p0</artifactId>
+            <groupId>com.mchange</groupId>
+            <version>0.14.0</version>
         </dependency>
 
         <dependency>
