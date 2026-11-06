@@ -1,0 +1,779 @@
+{
+  "root": {
+    "data": {
+      "text": "DSS"
+    },
+    "children": [
+      {
+        "data": {
+          "text": "/所有目录/SIT/V1.26.0/信号节点状态查询超时永久Running修复测试"
+        },
+        "children": [
+          {
+            "data": {
+              "text": "需求：REQ-DSS-1.26.0-FIX-001"
+            },
+            "children": [
+              {
+                "data": {
+                  "text": "P0状态查询异常治理测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-001 entrance短暂抖动（小于30分钟）后ER节点继续轮询并正常翻转Success"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. DSS flow-execution-server已部署含修复的dev-1.26.0-SNAPSHOT，Linkis entrance正常运行\n2. 工作流A含EventSender、工作流B含EventReceiver（nodeType=linkis.appconn.eventchecker.eventreceiver，msg.after.send=false），B依赖A的信号\n3. 工作流A的EventSender已执行成功，信号已写入event_queue表（SQL查询确认）\n4. 工作流B的ER节点已提交、DSS侧状态Running，runner位于nodeRunnerQueue中被轮询\n5. 失败阈值wds.dss.flow.node.state.fetch.fail.timeout保持默认1800000ms（30分钟）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、通过tc对DSS→entrance方向的状态查询流量注入网络延迟（大于wds.linkis.flow.connection.timeout，如400s），持续5分钟（远小于30分钟阈值）\n2、期间每隔约1分钟抓取flow-execution-server日志，检索failed to get、continuous failure关键字\n3、期间在工作流B实例页面观察ER节点状态\n4、5分钟后移除延迟注入，恢复entrance正常\n5、等待1~2个轮询周期（poller调度5s+单节点间隔3s）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、抖动期间每轮查询失败仅输出error/warn日志，isLinkisJobCompleted返回false，节点保持Running且runner仍保留在nodeRunnerQueue中被继续轮询，不存在移出队列行为\n2、warn日志周期输出连续失败信息，含节点名、已连续失败时长、阈值剩余时间（continuous failure ... threshold ...）\n3、不出现返回true但节点状态为Running的日志组合（无status is completed与Running并存）\n4、entrance恢复后ER节点在下一个轮询周期内查询到entrance侧终态Success，节点翻转为Succeed，输出Finished to execute node of 节点名\n5、工作流B下游节点正常调度执行，工作流最终成功结束（满足AC-01，对应IT-01，覆盖F-P0-01/F-P0-04）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-002 连续失败期间warn日志周期输出失败时长与阈值剩余时间"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. ER节点已提交且状态Running，轮询正常（lastStatusSuccessTime已初始化）\n2. 日志采集正常，可按时间过滤\n3. entrance故障注入手段可用（延迟注入或测试桩使getState抛SocketTimeoutException）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、注入状态查询失败，持续约10分钟（或将阈值调小至15分钟等比缩短）\n2、收集期间全部continuous failure warn日志\n3、校验日志中连续失败时长字段随时间的递增关系\n4、恢复entrance，确认下一次成功查询后不再输出该warn"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、失败期间每轮查询（间隔约3s+）均输出warn日志，内容含：节点名、连续失败时长（秒）、阈值总时长、剩余时间、最后异常摘要（Cause: SocketTimeoutException...）\n2、日志中的失败时长随时间单调递增（如60s→120s→...→600s），与注入起点吻合，无跳变或归零\n3、成功查询恢复后warn停止输出\n4、阈值剩余时间=阈值-已失败时长，数值正确（满足AC-01可观测性要求，覆盖F-P0-04）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-003 失败-成功-失败交错时连续失败计时自动重置"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 单测环境：可注入mock的LinkisNodeExecutionImpl.getState行为序列\n2. 失败阈值wds.dss.flow.node.state.fetch.fail.timeout配置为测试值（如300000ms）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、使getState按序返回：抛异常（第1-2轮）→返回Running（第3轮，非终态）→抛异常（第4轮起持续）\n2、第4轮失败后读取warn日志中的连续失败时长\n3、持续失败至第3轮成功后再过满阈值时长，观察是否升级\n4、校验lastStatusSuccessTime刷新时机（成功返回Running也应刷新）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、第3轮返回Running（非终态）属于成功获取状态，lastStatusSuccessTime被刷新为当前时刻\n2、第4轮失败的warn日志中连续失败时长从0附近重新起算，非延续第1-2轮累计值\n3、仅自最近一次成功查询起连续失败满阈值才升级为Failed；交错场景（失败时长均小于阈值且中间穿插成功）永不升级\n4、节点状态在整个交错期间保持Running，最终恢复成功后正常翻终态（满足AC-01，对应设计决策4.2计时基准）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "data": {
+                      "text": "分类：异常案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-004 entrance长期不可用连续失败达30分钟阈值时节点kill并翻Failed告警"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. ER节点已提交且状态Running（工作流B有下游节点待调度）\n2. 测试配置wds.dss.flow.node.state.fetch.fail.timeout=120000（2分钟，加速验证）\n3. Linkis管理台可查询该节点taskID"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、注入状态查询持续失败（延迟注入或桩），保持超过2分钟不恢复\n2、观察达到2分钟阈值时刻的节点行为：DSS节点状态、Linkis任务状态、error告警日志\n3、检查工作流B整体状态与runner轮询情况\n4、重新运行工作流B验证可重跑"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、连续失败时长达到阈值的轮次：系统对节点对应Linkis任务执行kill（Linkis侧任务转Cancelled/Killed，管理台可查），节点状态翻转为Failed（终态）\n2、error级告警日志输出（Escalate to Failed），含节点名、失败时长（约120s）、阈值、最后异常摘要\n3、该runner被移出nodeRunnerQueue后不再被重复处理，无重复kill/重复翻转\n4、工作流B正常结束为Failed状态（不再永久挂起），下游节点不执行；工作流B可重新运行\n5、升级翻转走transitionState(Failed)→FlowEntranceJob.onStatusChanged既有失败链路（runningNodes→failedNodes，工作流kill结束）（满足AC-02，对应IT-02，覆盖F-P0-02）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-005 阈值边界-失败29分钟后恢复不误杀节点正常翻转"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. ER节点Running，entrance侧信号任务实际仍在等待或已Success\n2. 阈值等比加速配置：wds.dss.flow.node.state.fetch.fail.timeout=120000ms（等比代表30分钟场景的29分钟）\n3. 已知该节点信号在event_queue中存在（或entrance侧任务即将翻Success）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、注入状态查询失败，精确控制在阈值前恢复（如阈值120s，注入110s后移除）\n2、恢复后观察下一轮查询与节点状态\n3、校验恢复时刻前最后一轮warn日志中的失败时长与剩余时间"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、失败时长（110s）小于阈值（120s），全程不触发升级：无Escalate to Failed、无kill、节点不被置Failed\n2、恢复后下一轮查询成功，lastStatusSuccessTime刷新，连续失败计时清零\n3、entrance侧信号任务若已Success，ER节点立即翻Succeed，工作流正常推进\n4、未达阈值前最后一轮warn日志显示剩余时间约10s，数值正确（满足AC-01/AC-02边界不误杀）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-006 阈值边界-失败31分钟超过阈值正确升级Failed"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 同TC-ERFIX-004（阈值wds.dss.flow.node.state.fetch.fail.timeout=120000ms加速）\n2. 注入手段可持续超过阈值时长"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、注入状态查询持续失败130s（超出阈值10s，等比代表31分钟）\n2、观察跨过阈值时刻（第120s后的第一个轮询轮次）的行为\n3、校验升级时机：失败时长刚达阈值的那一轮即升级，而非下一轮或更晚"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、失败时长达到120s后的第一个查询轮次即触发升级：kill Linkis任务+节点置Failed+error告警，返回true结束轮询\n2、告警日志中失败时长约120~123s（阈值+一个轮询间隔内误差），不出现明显延迟升级\n3、升级后节点不再被轮询，工作流结束为Failed，可重跑\n4、不出现失败时长未达阈值即升级（误杀）或超阈值仍不升级（漏杀）两个方向的偏差（满足AC-02边界正确翻转）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-007 升级时kill请求失败不阻断节点置Failed"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 单测环境：mock LinkisNodeExecutionImpl.cancel抛异常（如SocketTimeoutException）\n2. 节点已连续失败达到阈值\n3. 集成场景：entrance仍不可用时kill调用必然超时失败"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、使状态查询连续失败达阈值，同时保持kill链路不可用（cancel调用同样超时/抛异常）\n2、观察升级流程是否继续执行\n3、校验日志中kill失败的记录方式"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、kill抛出的异常被tryAndWarn吞掉，仅记录warn日志，不向上抛出\n2、transitionState(Failed)正常执行，节点照常翻转为Failed终态，轮询结束——状态收敛不依赖kill成功\n3、error告警日志（Escalate to Failed）仍正常输出\n4、Linkis侧任务可能仍在运行（kill失败），但DSS侧工作流已正确结束为Failed，无节点滞留Running（满足AC-02，对应设计4.7场景3）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-008 升级kill与entrance侧任务实际已完成的幂等竞态"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 构造场景：状态查询持续失败达阈值，但entrance侧该任务实际已翻Success（仅对状态查询接口注入故障，或桩上设定查询恒抛异常+任务实际已Succeed+kill可达）\n2. Linkis管理台可查该taskID真实状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、维持查询失败满阈值，触发升级kill（此时entrance侧任务已Success）\n2、查询Linkis侧该任务状态是否因kill改变\n3、确认DSS侧节点终态与工作流状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、kill对已完成的Linkis任务是幂等空操作：entrance侧任务状态保持Success不变，不产生副作用或错误级联\n2、DSS侧节点被置Failed（查不到真实状态，保守收敛），error日志留痕可追溯\n3、工作流以失败结束、可重跑——相比修复前永久挂起是严格改善（接受任务实际成功但节点置Failed的最差结果）\n4、kill与transitionState(Failed)不产生状态双翻转冲突（transitionState幂等保护生效）（对应设计4.7/R-06）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "data": {
+                      "text": "分类：回归案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-009 ErrorException业务错误路径仍返回false继续轮询不升级"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 可构造Linkis返回业务错误响应（ErrorException从响应JSON解析而来，区别于HTTP超时）\n2. 节点状态Running"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、使getState抛ErrorException（Linkis业务错误，如任务不存在类响应）\n2、观察isLinkisJobCompleted返回值与节点状态\n3、连续多次ErrorException后恢复正常，观察是否误触升级"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、ErrorException分支行为与修复前完全一致：仅输出warn日志（failed to get ... state），返回false继续轮询\n2、连续ErrorException期间不进入升级判定（ErrorException分支先于Throwable分支匹配），节点不翻Failed、不被kill\n3、恢复后节点按真实状态正常翻转\n4、该路径为修复明确保留项（设计5.1兼容性核对表），回归不得引入行为变化（满足AC-04）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "P0状态映射兜底测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：接口案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-010 Linkis已知状态串经枚举快路径正确映射且大小写宽容"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 单测环境可直调NodeExecutionState.fromLinkisStateName\n2. 以设计文档3.3.3完整映射表作为断言依据"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、逐一传入DSS枚举内的状态串：Inited、Scheduled、WaitForRetry、Running、Succeed、Failed、Cancelled、Skipped（及前后带空格变体）\n2、传入大小写变体：running、SUCCEED、failed、CANCELLED\n3、断言各返回值的枚举类型与isCompleted结果"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、枚举内状态串全部命中快路径返回对应枚举值，结果与原withName一致（正常路径零行为变更）\n2、大小写变体经equalsIgnoreCase命中同一枚举值（如succeed→Succeed），属安全性增强不引入行为差异\n3、终态判断正确：Succeed/Failed/Cancelled/Timeout/Skipped的isCompleted=true；Inited/Scheduled/WaitForRetry/Running的isCompleted=false\n4、无任何已知状态串落入未知兜底分支（不输出Unknown Linkis job state warn）（满足AC-03/AC-04）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-011 entrance返回未知状态串时映射Running继续轮询并warn原始串"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 测试桩可控制getState返回值序列：SomeNewLinkisState（未知串）→Running→Succeed\n2. ER节点状态Running"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、使getState返回未知状态串SomeNewLinkisState，持续2个以上轮询周期\n2、观察是否抛NoSuchElementException、节点轮询是否中断\n3、校验warn日志内容\n4、桩切换为返回Running再返回Succeed，观察节点翻转"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、未知串被映射为Running（非终态），isLinkisJobCompleted返回false，节点继续留在轮询队列，全程无NoSuchElementException中断\n2、warn日志输出Unknown Linkis job state [SomeNewLinkisState], mapped to Running by default，含原始状态串\n3、恢复返回正常状态串后，节点按真实终态正常翻转（Succeed），下游正常调度\n4、未知串轮询期间不参与失败升级计时（属成功获取状态），节点不因未知串被误杀（满足AC-03，对应IT-03，覆盖F-P0-03）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-012 终态别名success/killed/timeout等确定性翻译为对应终态"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 单测环境可直调fromLinkisStateName，按设计3.3.3映射表（LINKIS_STATE_ALIASES）准备全部别名条目\n2. 集成抽样环境：测试桩可控制getState返回值"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、逐条传入成功终态别名：success、succeeded、succeed\n2、逐条传入失败终态别名：failed、failure、error、failed_for_resultsize\n3、逐条传入取消终态别名：cancelled、canceled、cancel、killed、kill、shutdown、stopped\n4、逐条传入超时终态别名：timeout、time_out、scheduled_timeout、queue_full_timeout\n5、逐条传入中间态别名：submitting、queued、idle、sched、scheduled、wait_for_retry、retry、init\n6、集成抽样：测试桩使getState依次返回success、killed、timeout，观察节点翻转"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、成功别名组全部映射Succeed（isCompleted=true）；集成抽样中success使节点翻Succeed\n2、失败别名组全部映射Failed；failed_for_resultsize（Linkis结果集超限失败）同样映射Failed\n3、取消别名组全部映射Cancelled；集成抽样中killed使节点翻Cancelled（而非被兜底为Running遭30分钟阈值误杀）\n4、超时别名组全部映射Timeout；scheduled_timeout（排队超时）映射Timeout终态\n5、中间态别名正确映射（submitting/queued/idle→Running，sched→Scheduled，retry→WaitForRetry，init→Inited），均非终态\n6、全部别名命中映射表，不输出Unknown Linkis job state warn（满足AC-03，对应设计决策4.3）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-013 空串与null状态串兜底Running不抛空指针"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 单测环境可直调fromLinkisStateName，可传入null与空串"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、传入null调用fromLinkisStateName\n2、传入空字符串\n3、传入纯空白串（trim后为空）\n4、断言返回值与异常情况"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、null不抛NullPointerException，返回Running\n2、空串与纯空白串返回Running（非终态）\n3、三种输入均不中断轮询、不进入异常分支（视为成功获取状态但状态未知）\n4、以不抛异常、不中断轮询为硬性要求（满足AC-03极端输入兜底）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "P1超时兜底与配置测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：回归案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-014 普通节点max.running.time默认-1时超时兜底不生效"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 不配置wds.dss.flow.node.max.running.time（默认-1）\n2. 普通节点（如Scriptis脚本节点，nodeType非信号节点）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、单测：普通节点startTime回拨超长时间（如25小时），调用isNodeRunningTimeout超时判定\n2、集成：执行一个运行时长超过历史常规阈值的普通节点任务（或单测等价验证），观察是否出现exceeded max running time日志与Timeout翻转"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、默认-1时isNodeRunningTimeout恒返回false，不触发超时兜底\n2、长时间运行的普通节点不被kill、不翻Timeout，行为与修复前完全一致（零回归，多小时合法任务不受影响）\n3、无exceeded max running time日志输出（满足AC-04/AC-06，对应设计4.4默认关闭决策）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "data": {
+                      "text": "分类：异常案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-015 配置max.running.time后普通节点超时翻Timeout并结束工作流"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 配置wds.dss.flow.node.max.running.time=60000（60秒）并重启生效\n2. 工作流含一个正常执行约2分钟的普通节点（如sleep型脚本）\n3. entrance健康（状态查询正常，排除P0路径干扰）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、启动工作流，节点进入Running\n2、观察60秒时刻节点的状态翻转、kill行为与日志\n3、观察工作流整体状态与FlowEntranceJob日志"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、节点运行满60s的下一个轮询轮次触发兜底：先尝试kill Linkis任务（失败仅warn），再transitionState(Timeout)翻Timeout终态，返回true结束轮询\n2、error日志输出exceeded max running time，含节点名、配置时长、startTime\n3、FlowEntranceJob输出node(...) exceeded max running time, turned to Timeout（ERROR级）\n4、节点从runningNodes迁移到failedNodes，工作流以失败结束（不挂起），可重跑\n5、未配置时（默认-1）同场景不触发——与TC-ERFIX-014互为开关验证（满足AC-02变体，对应IT-08）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-016 信号节点默认2小时超时兜底生效翻Timeout"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 不配置wds.dss.flow.node.max.running.time（保持-1），使信号节点走独立默认配置\n2. 测试加速：临时配置wds.dss.flow.node.max.running.time.signal=120000（2分钟，等比代表默认2小时）\n3. ER节点持续Running等待信号：构造entrance侧maxLoopTime兜底失效场景（如测试桩使getState恒返回Running、entrance侧信号任务不翻终态），且信号不写入"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、提交工作流B，ER节点进入Running并持续轮询（状态查询本身正常，恒返回Running）\n2、观察超过信号节点最大运行时长（加速值2分钟）后的行为\n3、校验节点终态、工作流状态、日志关键字"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、运行时长达到加速阈值的轮询轮次：kill Linkis任务+节点翻Timeout终态\n2、error日志输出exceeded max running time（信号节点独立默认生效；生产默认2h=2×entrance侧max.receive.hours）\n3、FlowEntranceJob Timeout分支生效：runningNodes→failedNodes，工作流失败结束，不挂起\n4、信号节点识别依赖wds.dss.flow.signal.nodes（默认eventreceiver）与nodeType比对——FlowExecutionUtils.isSignalNode首次接线生效\n5、默认关闭的普通节点不受该信号配置影响（同工作流中普通节点无超时翻转）（满足AC-02变体，对应IT-07，覆盖F-P1-01/F-P1-03）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-017 信号节点合法等待窗口内（1.5小时）不被超时兜底误杀"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. ER节点Running，entrance侧任务处于合法等待期（max.receive.hours默认1小时内）\n2. 单测：nodeType=eventreceiver、startTime回拨1.5小时（小于2小时信号默认阈值）\n3. 集成等比：信号阈值加速为120s，ER节点在90s（窗口内）时收到信号"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、单测：nodeType=eventreceiver、startTime回拨1.5h，调用isNodeRunningTimeout\n2、集成等比：ER节点等待90s（小于加速阈值120s）后信号到达\n3、观察窗口内节点是否触发Timeout"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、1.5h小于2h，超时判定返回false，不触发kill、不翻Timeout\n2、集成场景：90s时信号到达，ER节点正常翻Succeed（合法等待不被误杀，验证与entrance侧maxLoopTime的竞态余量）\n3、仅当超过2h（entrance侧兜底也失效的极端场景）才触发兜底——DSS侧兜底晚于entrance侧max.receive.hours（1h）触发（对应设计2.3/4.4，缓解R-02）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-018 Timeout状态节点触发FlowEntranceJob分支迁移节点并结束工作流"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 工作流B结构：ER节点→下游节点（至少1个），另有1个已成功的上游节点\n2. 通过TC-ERFIX-015或TC-ERFIX-016手段使某节点翻Timeout"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、触发节点翻Timeout\n2、检查FlowContext中节点所在集合：runningNodes/failedNodes/succeedNodes\n3、校验isFlowCompleted与工作流实例最终状态\n4、校验下游节点状态与kill级联行为"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、FlowEntranceJob onStatusChanged的Timeout分支被命中：输出ERROR日志（exceeded max running time, turned to Timeout）\n2、超时节点从runningNodes迁移到failedNodes（FlowContext.changedNodeState），不滞留runningNodes\n3、isFlowCompleted最终为true，工作流实例正常结束为失败状态——不出现节点已Timeout但工作流仍Running的新形态挂起（R-07专项验证）\n4、工作流kill级联：下游节点被取消/跳过，不执行\n5、Timeout分支行为与Failed分支对齐（迁移+日志+kill工作流）（对应设计3.3.4，高风险必测项）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "回归验证测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：回归案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-019 正常节点全生命周期Succeed/Failed/Cancelled三路径翻转回归"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. entrance健康，无任何故障注入\n2. 工作流含Scriptis脚本节点（SQL/Spark均可）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、场景一：执行正常成功的脚本（如select 1），观察节点全生命周期状态序列\n2、场景二：执行抛错脚本（如select * from not_exist_table），观察翻转\n3、场景三：节点运行中（如长SQL）对工作流执行人工取消，观察翻转\n4、三个场景均检查runner移出队列与工作流推进/结束"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、成功场景：状态序列Scheduled→Running→Succeed，翻转走onStatusChanged+transitionState既有路径，输出Finished to execute node of，行为与修复前一致\n2、失败场景：节点翻Failed，工作流失败结束，下游不执行\n3、取消场景：节点翻Cancelled（cancel()链路不改动），runner移出队列\n4、三种终态下runner均正常移出轮询队列，工作流正常推进/结束；poller的status is completed日志与实际终态一致\n5、全程无continuous failure/Unknown Linkis job state/Escalate to Failed等新增路径日志——确认正常路径零变更（满足AC-04，对应IT-04）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-020 EmptyJob空节点与EventSender节点回归不受影响"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 工作流A含EmptyJob空节点与EventSender信号发送节点\n2. entrance健康"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、执行工作流A\n2、观察EmptyJob节点提交时刻的状态翻转\n3、观察EventSender发送成功后的状态翻转与event_queue表写入\n4、检查两类节点是否进入任何异常分支"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、EmptyJob提交时直接翻Succeed（DefaultNodeRunner.run()的112-116路径不变，不进入轮询）\n2、EventSender信号成功写入event_queue后正常翻Succeed\n3、两类节点均不进入Throwable/ErrorException异常分支，无新增路径日志\n4、工作流A正常成功结束（满足AC-05，对应IT-05）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-021 多节点DAG工作流正常编排回归"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. entrance健康\n2. 工作流含多类型节点DAG：上游脚本节点→中游2个并行节点（不同类型AppConn，如Scriptis SQL+Spark）→下游汇总节点，总节点数≥5"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、正常执行工作流，观察各节点调度顺序、并行分支与状态翻转\n2、变体：使中游某节点执行失败，观察失败传导（FlowEntranceJob.kill→killNodes级联取消）\n3、多节点同时在跑期间观察poller轮询吞吐（20线程、3s间隔）是否正常"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、正常场景：DAG拓扑顺序调度正确，并行节点各自独立翻转Succeed，下游在全部上游完成后执行，工作流成功结束\n2、失败场景：失败节点翻Failed，其余在跑节点被级联取消翻Cancelled，工作流失败结束（失败传导链路复用，行为与修复前一致）\n3、多节点并发轮询正常，无节点漏轮询/重复翻转\n4、本次修改（DefaultNodeRunner/FlowEntranceJob）未破坏既有编排语义（满足AC-04）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-022 零配置升级兼容-不配置新增配置项服务行为正常"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 使用修复前相同的部署配置启动服务（不配置任何本次新增配置项）\n2. wds.linkis.flow.connection.timeout不配置（走代码默认300000）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、零新增配置启动flow-execution-server，检查启动日志无配置缺失报错\n2、执行含信号节点的工作流全流程（Sender→Receiver→下游）\n3、抽查配置默认值生效情况（日志或配置读取接口）：fail.timeout=1800000、max.running.time=-1、signal=7200000\n4、校验wds.linkis.flow.connection.timeout不配置时语义与修复前一致"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、服务启动正常，新配置项按默认值生效，不配置不报错、不强制修改部署\n2、含信号节点工作流全流程行为正常（相较修复前仅增加30分钟失败收敛与信号节点2h兜底两项保护，正常任务无感知）\n3、既有配置语义全部不变（connection.timeout/poller系列/signal.nodes）\n4、不新增数据库表、不改表结构（满足AC-06，对应IT-06）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-023 服务重启后失败计时从新startTime初始化"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 单测：可执行一次完整run()后检查lastStatusSuccessTime字段\n2. 集成：可重启flow-execution-server，并可注入entrance持续不可用"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、单测：正常执行run()，校验lastStatusSuccessTime==startTime\n2、集成：重启服务后重新提交工作流，若entrance处于持续不可用状态（注入），观察升级发生时刻\n3、对比重启前后工作流行为语义"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、节点提交时lastStatusSuccessTime初始化为startTime（提交即处于失败计时保护下）\n2、重启后计时重新从新startTime起算（重启前累计的失败时长丢失并重置）——重启后entrance持续不可用时，自新提交起30分钟后才升级，而非立即\n3、重启本身中断工作流为既有行为，计时重置语义自洽（R-03接受项），无异常状态残留（满足AC-06变体，对应设计4.6）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "data": {
+                  "text": "信号链路与应急SOP测试"
+                },
+                "children": [
+                  {
+                    "data": {
+                      "text": "分类：功能案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-024 信号收发端到端链路Sender发送Receiver接收下游调度"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. entrance健康，无任何故障注入\n2. 工作流A：EventSender（msgKey=test_signal_001）→记录节点\n3. 工作流B：EventReceiver（msgKey=test_signal_001，msg.after.send=false）→下游执行节点"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、启动工作流B，ER节点进入Running等待信号\n2、启动工作流A，EventSender执行发送\n3、查询event_queue表确认信号写入（msgKey=test_signal_001）\n4、观察工作流B的ER节点在1~2个query.frequency（60s）周期内的翻转\n5、观察下游节点调度与两个工作流的最终状态"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、Sender节点执行成功翻Succeed，信号持久化到event_queue\n2、ER节点在信号到达后1个轮询周期（60s级）内翻Succeed，event_status游标推进（日志The last record id was ...）\n3、工作流B下游节点正常调度执行，B成功结束；A成功结束\n4、正常信号链路不因本次改动（DefaultNodeRunner/NodeExecutionState/FlowEntranceJob）受任何影响（满足AC-01/AC-05）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "data": {
+                      "text": "分类：回归案例"
+                    },
+                    "children": [
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-025 应急SOP-msg.after.send为false时kill重跑旧信号可被消费"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 存在一个因本Bug已卡死Running的ER节点（用修复前版本构造，或测试桩拔掉修复逻辑模拟），其msg.after.send=false\n2. 该信号已写入event_queue，event_status表游标未推进过该msg_id\n3. 修复版本已部署"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、在DSS前端对卡死的工作流B实例执行Kill（走FlowEntranceJob.kill→killNodes→runner.cancel）\n2、重新运行工作流B\n3、观察ER节点1~2个query.frequency（60s）周期内的状态与event_status游标推进日志"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、kill后卡死工作流实例终止（存量卡死节点可被清理）\n2、重跑后新ER实例按event_status游标继续消费（AbstractEventCheckReceiver.getOffset），查询窗口起点为全窗口（allStartTime）\n3、旧信号（kill前写入的）被正常接收，ER节点翻Success，工作流B继续执行——信号不丢不重\n4、游标推进日志正常输出，无重复消费（updateMsgOffset的ON DUPLICATE KEY UPDATE保护）（满足AC-07 false组，对应IT-10）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "data": {
+                          "text": "【AIGC】TC-ERFIX-026 应急SOP-msg.after.send为true时kill重跑旧信号不被消费需重发"
+                        },
+                        "children": [
+                          {
+                            "data": {
+                              "text": "条件：1. 存在卡死Running的ER节点（同TC-ERFIX-025构造），其msg.after.send=true\n2. 旧信号已写入event_queue（写入时间早于重跑时刻）"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "步骤：\n1、Kill卡死的工作流B实例\n2、重新运行工作流B，不重发信号\n3、观察ER节点状态（等待数个query.frequency周期，确认旧信号不被消费）\n4、由上游业务方人工重发信号（同msgKey再写入event_queue）\n5、再次观察ER节点翻转"
+                            },
+                            "children": []
+                          },
+                          {
+                            "data": {
+                              "text": "预期结果：\n1、重跑后新ER实例的查询窗口起点为新实例进程启动时间（nowStartTime），旧信号落在窗口外不被消费\n2、不重发信号时ER节点持续Running等待（该边界行为符合代码语义，非Bug；须写入运维SOP提示）\n3、人工重发信号后，ER节点在1个query.frequency周期内翻Success，工作流继续\n4、验证结论固化为运维SOP：msg.after.send=true的kill重跑必须先通知上游重发信号（满足AC-07 true组，对应IT-10）"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "children": []
+}
