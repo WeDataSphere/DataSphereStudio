@@ -134,13 +134,6 @@ class FlowEntranceJob(persistManager: PersistenceManager) extends EntranceExecut
         printLog(s"node($nodeName) from inited to scheduled", "INFO")
         if (NodeExecutionState.isInited(fromState))
           FlowContext.changedNodeState(this.getFlowContext.getPendingNodes, this.getFlowContext.getScheduledNodes, node, "node in scheduled")
-      // REQ-DSS-1.26.0-FIX-001 P1: 超时终态分支（对齐 Failed 分支行为）。
-      // 缺失该分支时节点翻 Timeout 后会滞留 runningNodes，isFlowCompleted 恒 false，工作流仍然挂起。
-      case NodeExecutionState.Timeout =>
-        printLog(s"node($nodeName) exceeded max running time, turned to Timeout", "ERROR")
-        if (NodeExecutionState.isRunning(fromState))
-          FlowContext.changedNodeState(this.getFlowContext.getRunningNodes, this.getFlowContext.getFailedNodes, node, "node execute timeout")
-        this.kill()
       case _ =>
     }
     tryCompleted

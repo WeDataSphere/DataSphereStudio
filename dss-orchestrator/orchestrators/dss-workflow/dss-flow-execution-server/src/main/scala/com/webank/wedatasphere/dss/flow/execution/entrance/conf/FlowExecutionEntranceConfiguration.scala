@@ -54,24 +54,6 @@ object FlowExecutionEntranceConfiguration {
 
   val SIGNAL_NODES = CommonVars("wds.dss.flow.signal.nodes", "linkis.appconn.eventchecker.eventreceiver")
 
-  // ===== 以下为 REQ-DSS-1.26.0-FIX-001 新增 =====
-
-  // P0：连续状态获取失败升级阈值（毫秒）。自最近一次成功获取到 entrance 状态起算，
-  // 持续失败达到该时长后 kill Linkis 任务并将节点置为 Failed。
-  // 默认 30 分钟：entrance Full GC 恢复通常为分钟级；readTimeout=300s 时约容忍 6 次连续失败，
-  // readTimeout 调优为 60s 后约容忍 30 次，可区分"抖动"与"真不可用"。<=0 视为无限等待（不建议）。
-  val NODE_STATE_FETCH_FAIL_TIMEOUT = CommonVars("wds.dss.flow.node.state.fetch.fail.timeout", 30 * 60 * 1000L)
-
-  // P1：节点级最大运行时长兜底（毫秒），-1 表示关闭。
-  // 从节点 startTime 起算，非终态且超过该时长时节点翻转为 Timeout 终态。
-  val NODE_MAX_RUNNING_TIME = CommonVars("wds.dss.flow.node.max.running.time", -1L)
-
-  // P1：信号节点（EventReceiver 等）最大运行时长兜底（毫秒），-1 表示关闭。
-  // 未显式配置 NODE_MAX_RUNNING_TIME 的信号节点按本值兜底；默认 2 小时 = 2 × entrance 侧
-  // max.receive.hours（默认 1 小时，EventChecker.java:68-70），留足余量避免与 entrance 侧
-  // maxLoopTime 兜底竞态误杀仍在合法等待的节点。
-  val SIGNAL_NODE_MAX_RUNNING_TIME = CommonVars("wds.dss.flow.node.max.running.time.signal", 2 * 60 * 60 * 1000L)
-
   val PROPS_MAP = "props_map"
 
   val WORKSPACE = "workspace"
