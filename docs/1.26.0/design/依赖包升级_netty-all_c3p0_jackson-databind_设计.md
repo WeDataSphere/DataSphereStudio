@@ -194,11 +194,13 @@ DataSphere Studio (DSS) 1.26.0 迭代期间完成三项第三方依赖升级，�
 
 ### 6.1 同步状态（发布前必须对齐）
 
+> **2026-11-13 更新**：收口开发（commit 8dde410a6）完成后，主仓库三处缺口已补齐，见 §6.4；同步仓库 c3p0 补齐仍待同步侧执行。
+
 | 变更 | 主仓库 | 同步仓库 | 动作 |
 |------|:------:|:--------:|------|
 | jackson-databind 2.18.12（根 pom 属性） | ✅ a6edbeddd | ✅ 0bd9d5125 | 已一致，无动作 |
 | c3p0 0.14.0（flow-execution-server） | ✅ b5e1fac60 | ❌ 无此变更 | 同步仓库补齐 c3p0 排除+钉版本 |
-| netty-all 4.2.13.Final（assembly/dss-package） | ❌ 主仓库 dss-package 无 netty-all 直接依赖 | ✅ 1bbbf7397 | 确认主仓库打包链路是否需要同步 netty-all 钉版本；若需要，按同步仓库方式在 dss-package 增加 |
+| netty-all 4.2.13.Final（assembly/dss-package） | ✅ 8dde410a6 已补齐 | ✅ 1bbbf7397 | ~~确认主仓库打包链路~~ → **已按同步仓库方式在 dss-package 增加** |
 | （遗留）dss-appconn-core jackson 2.14.1 覆盖 | ❌ 未升级 | — | 纳入后续迭代 |
 
 ### 6.2 验证步骤
@@ -221,6 +223,37 @@ DataSphere Studio (DSS) 1.26.0 迭代期间完成三项第三方依赖升级，�
 - **c3p0**：移除 flow-execution-server pom.xml:41-44 排除项与 pom.xml:54-58 显式依赖，恢复传递解析
 - **netty-all**：assembly/dss-package/pom.xml:254 版本回退至 4.2.5.Final
 回滚后重新打包即可，无数据/配置迁移。建议回滚决策以验证阶段 6.2-3/6.2-4 的失败现象为准。
+
+---
+
+## 6.4 收口开发记录（2026-11-13，commit 8dde410a6，工单 559049/559050 核验补充口径落地）
+
+按两个 DPMS 工单核验补充的收口要求，完成主仓库侧 3 文件 pom 变更（无业务代码改动）：
+
+### 6.4.1 变更清单
+
+| # | 文件 | 变更 | 工单 |
+|---|------|------|------|
+| 1 | 根 `pom.xml` | properties 新增 `c3p0.version=0.14.0`、`mchange.commons.java.version=0.6.0`、`netty.version=4.2.13.Final`；dependencyManagement 新增 c3p0、mchange-commons-java 管理 + **导入 netty-bom**（type=pom, scope=import） | 559049 + 559050 |
+| 2 | `dss-flow-execution-server/pom.xml` | c3p0/mchange-commons-java 版本号改为引用根属性（`${c3p0.version}`/`${mchange.commons.java.version}`）；**mchange-commons-java 0.4.0 → 0.6.0**（按 c3p0 0.14.0 官方 POM 配套对齐，工单 559049 核验补充明确要求）；保留 linkis-jobhistory 传递排除项 | 559049 |
+| 3 | `assembly/dss-package/pom.xml` | **显式引入 netty-all 4.2.13.Final**（`${netty.version}`）——补齐主仓库与同步仓库的钉版本缺口（原 §6.1 第 3 行动作项落地） | 559050 |
+
+### 6.4.2 验证结果（本机，2026-11-13）
+
+| 验证项 | 结果 |
+|-------|------|
+| flow-execution-server 编译（-am 含上游） | ✅ 通过 |
+| dependency:tree：c3p0 | ✅ `com.mchange:c3p0:jar:0.14.0:compile` |
+| dependency:tree：mchange-commons-java | ✅ `com.mchange:mchange-commons-java:jar:0.6.0:compile` |
+| dependency:tree：netty-all | ✅ `io.netty:netty-all:jar:4.2.13.Final:provided`（bom 裁决生效） |
+| 根 pom netty-bom 声明 | ✅ type=pom/scope=import（effective-pom 不展开显示 import 条目，属 help 插件正常行为，裁决结果以 dependency:tree 为准） |
+| 构建环境附带修复 | 本地 m2 仓库 72 个截断损坏 jar（linkis-rpc/entrance/storage、HikariCP、netty-codec 等）全量扫描清理后复扫 0 坏，构建恢复 |
+
+### 6.4.3 工单验证口径继承（559049/559050 第三、四节）
+
+- c3p0 侧：公开构件字节码符合 Java 8 基线；连接池构造、配置读写、JavaBean 检查和关闭烟测通过（未连接数据库）；完整 Maven 构建、最终包审计和 kf 联调尚待执行。
+- netty 侧：官方 netty-bom/netty-all POM 和 netty-common 字节码已核实；kf 完整构建、最终包依赖审计及业务联调尚待执行。
+- 缺实际发布包扫描时不宣称漏洞已清零；平台 SDL 已回读为不涉及（开源组件升级）。
 
 ---
 
