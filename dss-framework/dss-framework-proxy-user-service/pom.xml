@@ -61,6 +61,11 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- REQ-01(1.26.0): aiSwitch 响应解析（governanceStationAdmin 轻量 DTO），版本由父 dependencyManagement 管理 -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+        </dependency>
 
     </dependencies>
 
