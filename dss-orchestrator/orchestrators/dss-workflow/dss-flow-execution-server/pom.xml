@@ -48,13 +48,13 @@
         <dependency>
             <artifactId>mchange-commons-java</artifactId>
             <groupId>com.mchange</groupId>
-            <version>0.4.0</version>
+            <version>${mchange.commons.java.version}</version>
         </dependency>
 
         <dependency>
             <artifactId>c3p0</artifactId>
             <groupId>com.mchange</groupId>
-            <version>0.14.0</version>
+            <version>${c3p0.version}</version>
         </dependency>
 
         <dependency>

@@ -126,6 +126,12 @@
             <artifactId>jackson-databind</artifactId>
             <version>${fasterxml.jackson.version}</version>
         </dependency>
+        <!-- 559050 netty 组件升级：打包层显式钉 4.2.13.Final（与同步仓库对齐，主仓库缺口补齐） -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>
