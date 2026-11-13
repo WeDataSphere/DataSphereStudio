@@ -1,0 +1,118 @@
+{
+  "list": [
+    {
+      "versionName": "1.26.0",
+      "productId": "100199",
+      "productName": "BDP_DSS",
+      "dpms": {
+        "versionPlanId": "181933",
+        "releasePlanUrl": "http://dpms.weoa.com/#/product/100199/story/list",
+        "optUserName": "ryanchen",
+        "testUserName": "stacyyan",
+        "opsUserName": "falinhe"
+      },
+      "testSetId": "327880",
+      "regressionTestSetId": "327881",
+      "isNeedGrayRelease": 1,
+      "grayReleaseDate": "2026-11-26",
+      "testReportId": null,
+      "contextSchemaVersion": "2.1",
+      "versionContextPath": "dev/versions/1.26.0/version-context.md",
+      "entrySubsystemId": "5425",
+      "subsystemId": "5425",
+      "subsystemName": "DSS-IDE",
+      "subsystemVersionId": "1.26.0",
+      "branchName": "dev-1.26.0",
+      "pipelineId": null,
+      "pipelineVersion": "DSS-IDE_1.26.0",
+      "isMultiGit": false,
+      "subsystems": [
+        {
+          "subsystemId": "5425",
+          "subsystemName": "DSS-IDE",
+          "subsystemVersionId": "1.26.0",
+          "branchName": "dev-1.26.0",
+          "pipelineId": null,
+          "pipelineVersion": "DSS-IDE_1.26.0",
+          "gitUrl": null,
+          "localPath": null,
+          "modules": [],
+          "isEntry": true
+        }
+      ],
+      "repositories": [],
+      "nextReqIndex": 3,
+      "requirements": [
+        {
+          "name": "个人权限自检删除用户权限",
+          "rawFullName": "【低风险】【系统优化】【DSS】【权限管理】【后端需求】个人权限自检删除用户权限",
+          "reqIndex": 2,
+          "reqPrefix": "REQ-04",
+          "type": "OPTIMIZE",
+          "priority": "P1",
+          "dpmsStoryId": 559046,
+          "reqSubsystemId": "5425",
+          "repositoryId": null,
+          "status": "development",
+          "currentStage": "6",
+          "lastCompletedStage": "5.5",
+          "stageHistory": ["0", "1", "1.1", "2", "2.1", "3", "3.2", "4", "5.5", "6"],
+          "skipDecisions": {"1.1": "executed", "2.1": "executed"},
+          "rollbackHistory": [],
+          "contextPath": "dev/versions/1.26.0/active/permission-selfcheck-sql/context.md",
+          "contextSchemaVersion": "1.0",
+          "contextRevision": 2,
+          "stage1HookDone": false,
+          "stage2HookDone": false,
+          "biz_task_id": null,
+          "biz_session_id": null,
+          "biz_api_url": "http://localhost:50009"
+        },
+        {
+          "name": "AI用户切换",
+          "rawFullName": "【中风险】【用户体验优化】【DSS】【Scriptis-代理用户】【后端需求】AI用户切换",
+          "reqIndex": 1,
+          "reqPrefix": "REQ-01",
+          "type": "ENHANCE",
+          "priority": "P2",
+          "dpmsStoryId": 560976,
+          "reqSubsystemId": "5425",
+          "repositoryId": null,
+          "status": "development",
+          "currentStage": "6",
+          "lastCompletedStage": "5",
+          "stageHistory": [
+            "0",
+            "1",
+            "1.1",
+            "1.2",
+            "1.6",
+            "2",
+            "2.1",
+            "3",
+            "4",
+            "5"
+          ],
+          "skipDecisions": {
+            "1.1": "executed",
+            "1.2": "skipped"
+          },
+          "rollbackHistory": [],
+          "contextPath": "dev/versions/1.26.0/active/ai-user-switch/context.md",
+          "contextSchemaVersion": "1.0",
+          "contextRevision": 13,
+          "checkpointId": "1.26.0:REQ-01:5:2026-11-13T16:40:00+08:00",
+          "stage1HookDone": true,
+          "stage2HookDone": true,
+          "biz_task_id": null,
+          "biz_session_id": null,
+          "biz_api_url": "http://localhost:50009"
+        }
+      ],
+      "assigned": true,
+      "started": true,
+      "status": "active",
+      "createdAt": "2026-11-10T14:54:22"
+    }
+  ]
+}
