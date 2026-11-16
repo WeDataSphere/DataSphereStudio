@@ -2,6 +2,7 @@ package com.webank.wedatasphere.dss.framework.proxy.conf;
 
 import com.webank.wedatasphere.dss.common.conf.DSSCommonConf;
 import org.apache.linkis.common.conf.CommonVars;
+import org.apache.linkis.common.conf.Configuration;
 
 /**
  * @author enjoyyin
@@ -22,9 +23,10 @@ public class ProxyUserConfiguration {
      * （设计 §1.1.5 零新增配置项；OPT-D1 定论：模块内自声明同 key 常量，不引入跨模块编译依赖）。
      * 基址/Token 已被既有生产调用使用，无需新增部署配置。
      */
-    /** Linkis 网关基址（与 LinkisConnConf.LINKIS_URL 同 key） */
+    /** Linkis 网关基址（与 LinkisConnConf.LINKIS_URL 同 key；fallback 与 WebankDSSScriptisConfiguration.LINKIS_URL 等既有先例一致，
+     *  未显式配置时由 linkis Configuration 从 linkis.properties 解析真实网关地址，修复 dev 环境空基址降级问题） */
     public static final CommonVars<String> LINKIS_GATEWAY_URL =
-            CommonVars.apply("wds.linkis.gateway.url.v1", "");
+            CommonVars.apply("wds.linkis.gateway.url.v1", Configuration.getGateWayURL());
     /** governanceStationAdmin 服务内路径（与 LinkisConnConf.CONF_GOVERNANCE_ADMIN_PATH 同源拼接） */
     public static final String GOVERNANCE_STATION_ADMIN_PATH = "/api/rest_j/v1/jobhistory/governanceStationAdmin";
     /** Linkis admin Token 认证 header（与 LinkisConnConf.LINKIS_RESOURCE_ADMIN_TOKEN_* 同 key） */
