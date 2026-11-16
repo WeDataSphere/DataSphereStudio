@@ -1,10 +1,10 @@
 ---
 contextSchemaVersion: '1.0'
-contextRevision: 13
-checkpointId: "1.26.0:REQ-01:5:2026-11-13T16:40:00+08:00"
+contextRevision: 14
+checkpointId: "1.26.0:REQ-01:6:2026-11-16T20:40:00+08:00"
 checkpointState: clean
 currentStage: '6'
-lastCompletedStage: '5'
+lastCompletedStage: '6'
 stageHistory:
 - '0'
 - '1'
@@ -16,6 +16,7 @@ stageHistory:
 - 3
 - 4
 - 5
+- 6
 skipDecisions:
   '1.1': executed
   '1.2': skipped
@@ -2186,3 +2187,25 @@ stageOutputs 的 '2' 条目（写入于 2026-11-12T15:30:00+08:00）：
 - **push 待办**: 行外 PR 合入且行内同步回 dev-1.26.0 后，回填 pushResult 并作废 push 待补录（此前 biz API :50009 不可用无待补录项，本条为流程内待办）
 - **deploymentTriggerSummary**: 行内 push 由同步机制完成后自然触发（wds.dss 流水线），本地无 CI/CD 直推动作
 | 5 | 部署确认 | 成功 | - | 2026-11-13T16:40:00+08:00 | PACE流水线1039300005095610执行成功（trigger 1039600010534955，16:17-16:33）：组1编译dev-1.26.0 build#367✅、组2编译Release1.26.0 build#342✅、组3部署DSS-GZ-BDAP-DEV(10.107.97.166)✅；deploymentStatus=confirmed |
+## 🧪 Stage 6 测试用例生成记录（2026-11-16T20:40:00+08:00）
+
+**testCases**: 20 条（TC-F-01~07 功能 / TC-D-01~05 开关降级 / TC-R-01~04 回归 / TC-B-01~04 边界），与 Stage 5.5 测试澄清纪要 F/D/R/B 四组场景 100% 对齐。
+
+**testCaseDoc**: docs/1.26.0/testing/REQ-01_新增AI用户切换（aiSwitch开启时免代理授权校验，直接切换至_ai用户）_测试用例.md
+
+**DPMS 同步（B5）**:
+- addTestCase ×20 成功（testCaseId 52158160~52158179，产品 BDP_DSS，path=功能测试，type=接口案例，autoOrManual=自动化）
+- linkTestCaseToTestPlan ×20 → 测试集 327880（SIT）成功（successCount=20）
+- associateTestCaseWithStory ×20 → story 560976 成功
+- testCaseId 缓存已持久化（biz_task_id=1.26.0-REQ-01）
+
+**B4 转提测（补执行）**: story 560976 deliver-story 转测试成功（B5.5 前置）
+
+**B5.5 测试用例评审**: savaTestCaseReview 成功（reviewName=测试用例评审-REQ-01新增AI用户切换，reviewResult=通过，参与人 ryanchen/stacyyan）；评审结论=20 用例与澄清纪要对齐、风险必测五项全覆盖、dev 冒烟通过
+
+**dev 冒烟补充记录（2026-11-16）**: dssxc(172.21.158.252) 磁盘清理（/data/logs/dss-ide 2026-08/09 共 10.5G）后重新部署，eureka DSS-APPS-SERVER 恢复单实例（bdpujes110003:9206）；冒烟复验 S-2×6 全通过（此前双实例负载均衡致约 50% 失败的环境干扰已消除）
+
+**风险必测覆盖**: R-001→TC-D-02/04/05，R-002→TC-F-02/03/04+TC-B-04，R-003→TC-R-02，R-004→TC-D-01/03，R-005→TC-D-05（全覆盖）
+
+**injection_risk**: level=N/A（非插件需求），跳过注入攻击测试
+| 6 | 测试用例生成 | 成功 | docs/1.26.0/testing/REQ-01_..._测试用例.md | 2026-11-16T20:40:00+08:00 | 20用例生成并同步DPMS（327880+560976）；B4转测试补执行；B5.5评审通过 |

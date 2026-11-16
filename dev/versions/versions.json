@@ -56,8 +56,22 @@
           "status": "development",
           "currentStage": "6",
           "lastCompletedStage": "5.5",
-          "stageHistory": ["0", "1", "1.1", "2", "2.1", "3", "3.2", "4", "5.5", "6"],
-          "skipDecisions": {"1.1": "executed", "2.1": "executed"},
+          "stageHistory": [
+            "0",
+            "1",
+            "1.1",
+            "2",
+            "2.1",
+            "3",
+            "3.2",
+            "4",
+            "5.5",
+            "6"
+          ],
+          "skipDecisions": {
+            "1.1": "executed",
+            "2.1": "executed"
+          },
           "rollbackHistory": [],
           "contextPath": "dev/versions/1.26.0/active/permission-selfcheck-sql/context.md",
           "contextSchemaVersion": "1.0",
@@ -79,8 +93,8 @@
           "reqSubsystemId": "5425",
           "repositoryId": null,
           "status": "development",
-          "currentStage": "6",
-          "lastCompletedStage": "5",
+          "currentStage": "7",
+          "lastCompletedStage": "6",
           "stageHistory": [
             "0",
             "1",
